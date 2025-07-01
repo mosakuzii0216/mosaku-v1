@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # バックエンド (Nest.js) サービス
+  backend:
+    build:
+      context: ./backend      # ./backend ディレクトリのDockerfileを使う
+      target: development     # Dockerfile内の development ステージをビルド
+    container_name: memo-app-backend
+    volumes:
+      - ./backend:/usr/src/app         # ホストの./backendをコンテナの/usr/src/appに同期（ホットリロード用）
+      - /usr/src/app/node_modules    # ただしnode_modulesはコンテナ内のものを使う
+    ports:
+      - "3000:3000"            # コンテナの3000番ポートをホストに公開（デバッグ用）
+    depends_on:
+      - db                     # dbサービスが起動してから起動する
+    env_file: ./.env             # .envファイルから環境変数を読み込む
+    restart: unless-stopped      # コンテナが落ちたら自動で再起動
+
+  # フロントエンド (React) サービス
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    container_name: memo-app-frontend
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - "5173:5173"            # Viteの開発サーバーポートを公開
+    env_file: ./.env
+    restart: unless-stopped
+
+  # データベース (PostgreSQL) サービス
+  db:
+    image: postgres:16-alpine    # Docker Hubの公式イメージを直接使う
+    container_name: memo-app-db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # DBデータを永続化するためのボリューム
+    ports:
+      - "5432:5432"            # DBに直接接続したい場合に使う
+    env_file: ./.env
+    restart: unless-stopped
+
+  # リバースプロキシ (Nginx) サービス
+  nginx:
+    build: ./nginx       # ./nginx ディレクトリのDockerfileを使う
+    container_name: memo-app-proxy
+    ports:
+      - "80:80"                # 外部からの窓口となる80番ポートを公開
+    depends_on:
+      - frontend
+      - backend
+
+# DBのデータを永続化するための名前付きボリュームを定義
+volumes:
+  postgres_data:
