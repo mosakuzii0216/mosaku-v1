@@ -6,6 +6,6 @@ export default defineConfig({
   plugins: [react()],
   server: { // ← このserverオブジェクトを追加
     host: true, // Dockerコンテナの外部からアクセスを許可
-    port: 5173, // ポートを明示的に指定（任意ですが推奨）
+    port: 5173, // ポートを元に戻す
   }
 })

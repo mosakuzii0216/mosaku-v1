@@ -14,12 +14,35 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  FREE
+  PREMIUM
+  ADMIN
+}
+
+model User {
+  id          String   @id @default(cuid())
+  supabaseId  String   @unique @map("supabase_id")
+  email       String   @unique
+  name        String?
+  role        UserRole @default(FREE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  memos       Memo[]
+  
+  @@map("users")
+}
+
 model Memo {
   id        String   @id @default(cuid())
   title     String   @db.VarChar(100)
   content   String   @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@map("memos")
 }

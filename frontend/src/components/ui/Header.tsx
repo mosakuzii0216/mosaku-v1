@@ -1,4 +1,5 @@
 import { useMemoStore } from '../../stores/useMemoStore';
+import { useAuth } from '../../hooks/useAuth';
 
 interface HeaderProps {
   onCreateClick: () => void;
@@ -6,6 +7,7 @@ interface HeaderProps {
 
 export const Header = ({ onCreateClick }: HeaderProps) => {
   const { currentView, goToList } = useMemoStore();
+  const { userProfile, signOut } = useAuth();
 
   return (
     <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
@@ -23,12 +25,25 @@ export const Header = ({ onCreateClick }: HeaderProps) => {
         </h1>
       </div>
       
-      <button
-        onClick={onCreateClick}
-        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-      >
-        + 新規作成
-      </button>
+      <div className="flex items-center space-x-3">
+        {userProfile && (
+          <span className="text-sm text-gray-600">
+            {userProfile.name || userProfile.email} ({userProfile.role})
+          </span>
+        )}
+        <button
+          onClick={onCreateClick}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+        >
+          + 新規作成
+        </button>
+        <button
+          onClick={signOut}
+          className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+        >
+          ログアウト
+        </button>
+      </div>
     </header>
   );
 };

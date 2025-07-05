@@ -8,46 +8,51 @@ import {
   Delete,
   Query,
   ValidationPipe,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { MemoService } from './memo.service';
 import { CreateMemoDto } from './dto/create-memo.dto';
 import { UpdateMemoDto } from './dto/update-memo.dto';
 import { SearchMemoDto } from './dto/search-memo.dto';
+import { SupabaseGuard } from '../auth/supabase.guard';
 
 @Controller('memos')
+@UseGuards(SupabaseGuard)
 export class MemoController {
   constructor(private readonly memoService: MemoService) {}
 
   @Post()
-  create(@Body(ValidationPipe) createMemoDto: CreateMemoDto) {
-    return this.memoService.create(createMemoDto);
+  create(@Body(ValidationPipe) createMemoDto: CreateMemoDto, @Request() req) {
+    return this.memoService.create(createMemoDto, req.user.id);
   }
 
   @Get()
-  findAll() {
-    return this.memoService.findAll();
+  findAll(@Request() req) {
+    return this.memoService.findAll(req.user.id);
   }
 
   @Get('search')
-  search(@Query(ValidationPipe) searchMemoDto: SearchMemoDto) {
-    return this.memoService.search(searchMemoDto.q || '');
+  search(@Query(ValidationPipe) searchMemoDto: SearchMemoDto, @Request() req) {
+    return this.memoService.search(searchMemoDto.q || '', req.user.id);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.memoService.findOne(id);
+  findOne(@Param('id') id: string, @Request() req) {
+    return this.memoService.findOne(id, req.user.id);
   }
 
   @Patch(':id')
   update(
     @Param('id') id: string,
     @Body(ValidationPipe) updateMemoDto: UpdateMemoDto,
+    @Request() req,
   ) {
-    return this.memoService.update(id, updateMemoDto);
+    return this.memoService.update(id, updateMemoDto, req.user.id);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.memoService.remove(id);
+  remove(@Param('id') id: string, @Request() req) {
+    return this.memoService.remove(id, req.user.id);
   }
 }
