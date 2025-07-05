@@ -18,7 +18,12 @@ export const MemoList = () => {
   if (error) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="text-red-500">エラーが発生しました</div>
+        <div className="text-red-500">
+          <div>エラーが発生しました</div>
+          <div className="text-sm mt-2">
+            {error instanceof Error ? error.message : 'Unknown error'}
+          </div>
+        </div>
       </div>
     );
   }

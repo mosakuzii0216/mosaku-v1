@@ -1,6 +1,6 @@
 import type { Memo, CreateMemoDto, UpdateMemoDto } from '../types/memo';
 
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'http://localhost/api';
 
 class ApiClient {
   private async request<T>(

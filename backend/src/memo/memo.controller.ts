@@ -14,7 +14,7 @@ import { CreateMemoDto } from './dto/create-memo.dto';
 import { UpdateMemoDto } from './dto/update-memo.dto';
 import { SearchMemoDto } from './dto/search-memo.dto';
 
-@Controller('api/memos')
+@Controller('memos')
 export class MemoController {
   constructor(private readonly memoService: MemoService) {}
 

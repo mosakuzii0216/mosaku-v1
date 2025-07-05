@@ -16,7 +16,7 @@ export const useMemos = () => {
   
   const query = useQuery({
     queryKey: QUERY_KEYS.memos,
-    queryFn: apiClient.getMemos,
+    queryFn: () => apiClient.getMemos(),
   });
 
   useEffect(() => {
