@@ -7,12 +7,15 @@ export default function AuthForm() {
   const handleGoogleLogin = async () => {
     setLoading(true)
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const redirectUrl = `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`
+            
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: redirectUrl
         }
       })
+      
       if (error) throw error
     } catch (error) {
       console.error('ログインエラー:', error)
@@ -27,7 +30,7 @@ export default function AuthForm() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`
         }
       })
       if (error) throw error
@@ -43,14 +46,13 @@ export default function AuthForm() {
       <h2 className="text-2xl font-bold mb-6 text-center">ログイン</h2>
       
       <div className="space-y-4">
-        {/* 一時的にGoogleを無効化 */}
-        {/* <button
+        <button
           onClick={handleGoogleLogin}
           disabled={loading}
           className="w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
         >
           {loading ? 'ログイン中...' : 'Googleでログイン'}
-        </button> */}
+        </button>
         
         <button
           onClick={handleGitHubLogin}

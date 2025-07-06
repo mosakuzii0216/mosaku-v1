@@ -9,6 +9,8 @@ RUN npm install
 
 # Development Stage
 FROM base AS development
+COPY . .
+RUN npx prisma generate
 CMD ["npm", "run", "start:dev"]
 
 # Production Stage
