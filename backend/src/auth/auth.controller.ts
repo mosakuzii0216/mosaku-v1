@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Request, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SupabaseGuard } from './supabase.guard';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -42,7 +42,7 @@ export class AuthController {
     });
 
     if (!user) {
-      throw new Error('User not found. Please sync your account first.');
+      throw new NotFoundException('User not found. Please sync your account first.');
     }
 
     return user;

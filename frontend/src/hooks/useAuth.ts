@@ -53,11 +53,33 @@ export const useAuth = () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
 
-      const response = await fetch('/api/auth/me', {
+      // まずユーザープロフィールを取得を試行
+      let response = await fetch('http://localhost/api/auth/me', {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
         }
       })
+
+      // ユーザーが存在しない場合は同期を実行
+      if (!response.ok && response.status === 404) {
+        await fetch('http://localhost/api/auth/sync-user', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name: authUser.user_metadata?.full_name || authUser.email
+          })
+        })
+        
+        // 同期後に再度プロフィールを取得
+        response = await fetch('http://localhost/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        })
+      }
 
       if (response.ok) {
         const profile = await response.json()
