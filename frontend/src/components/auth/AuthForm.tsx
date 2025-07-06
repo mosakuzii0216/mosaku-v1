@@ -4,12 +4,15 @@ import { supabase } from '../../lib/supabase'
 export default function AuthForm() {
   const [loading, setLoading] = useState(false)
 
+
   const handleGoogleLogin = async () => {
     setLoading(true)
     try {
-      const redirectUrl = `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`
-            
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const redirectUrl = window.location.port 
+        ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}/auth/callback`
+        : `${window.location.origin}/auth/callback`
+      
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: redirectUrl
@@ -27,10 +30,14 @@ export default function AuthForm() {
   const handleGitHubLogin = async () => {
     setLoading(true)
     try {
+      const redirectUrl = window.location.port 
+        ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}/auth/callback`
+        : `${window.location.origin}/auth/callback`
+        
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`
+          redirectTo: redirectUrl
         }
       })
       if (error) throw error
