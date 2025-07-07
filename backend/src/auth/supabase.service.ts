@@ -8,18 +8,18 @@ export class SupabaseService {
   constructor() {
     this.supabase = createClient(
       process.env.SUPABASE_URL!,
-      process.env.SUPABASE_KEY!
+      process.env.SUPABASE_KEY!,
     );
   }
 
   async verifyToken(token: string) {
     try {
       const { data, error } = await this.supabase.auth.getUser(token);
-      
+
       if (error) {
         throw new Error(error.message);
       }
-      
+
       return data.user;
     } catch (error) {
       throw new Error('Invalid token');

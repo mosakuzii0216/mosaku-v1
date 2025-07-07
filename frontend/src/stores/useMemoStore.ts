@@ -34,7 +34,7 @@ interface MemoStore {
   goToCreate: () => void;
 }
 
-export const useMemoStore = create<MemoStore>((set, get) => ({
+export const useMemoStore = create<MemoStore>((set) => ({
   // 初期状態
   memos: [],
   selectedMemo: null,
