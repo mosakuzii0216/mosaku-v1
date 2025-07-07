@@ -147,4 +147,27 @@ export class AuthController {
       throw new BadRequestException(error.message || 'Failed to resend confirmation email');
     }
   }
+
+  @Post('reset-password')
+  async resetPassword(@Body() body: { email: string }) {
+    const { email } = body;
+
+    try {
+      const { error } = await this.supabaseService
+        .getClient()
+        .auth.resetPasswordForEmail(email, {
+          redirectTo: `http://localhost/auth/reset-password`
+        });
+
+      if (error) {
+        throw new BadRequestException(error.message);
+      }
+
+      return {
+        message: 'Password reset email sent successfully. Please check your inbox.',
+      };
+    } catch (error: any) {
+      throw new BadRequestException(error.message || 'Failed to send password reset email');
+    }
+  }
 }

@@ -7,6 +7,7 @@ import { MobileLayout } from './components/layouts/MobileLayout';
 import { DesktopLayout } from './components/layouts/DesktopLayout';
 import AuthGuard from './components/auth/AuthGuard';
 import AuthCallback from './components/auth/AuthCallback';
+import PasswordReset from './components/auth/PasswordReset';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,6 +42,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/auth/reset-password" element={<PasswordReset />} />
           <Route path="/*" element={
             <AuthGuard>
               <AppContent />
