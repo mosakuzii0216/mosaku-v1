@@ -1,57 +1,28 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import OAuthWithInviteForm from './OAuthWithInviteForm'
 
 export default function AuthForm() {
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
+  const [invitationCode, setInvitationCode] = useState('')
   const [message, setMessage] = useState('')
   const [showResendConfirmation, setShowResendConfirmation] = useState(false)
-  const [mode, setMode] = useState<'login' | 'signup' | 'resetPassword'>('login')
+  const [mode, setMode] = useState<'login' | 'signup' | 'resetPassword' | 'oauth-google' | 'oauth-github'>('login')
 
 
   const handleGoogleLogin = async () => {
-    setLoading(true)
-    try {
-      const redirectUrl = window.location.port 
-        ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}/auth/callback`
-        : `${window.location.origin}/auth/callback`
-      
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUrl
-        }
-      })
-      
-      if (error) throw error
-    } catch (error) {
-      console.error('ログインエラー:', error)
-    } finally {
-      setLoading(false)
-    }
+    // 新規登録モードまたはログインモードでも招待コード必須にする場合
+    setMode('oauth-google')
+    return
   }
 
   const handleGitHubLogin = async () => {
-    setLoading(true)
-    try {
-      const redirectUrl = window.location.port 
-        ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}/auth/callback`
-        : `${window.location.origin}/auth/callback`
-        
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: {
-          redirectTo: redirectUrl
-        }
-      })
-      if (error) throw error
-    } catch (error) {
-      console.error('ログインエラー:', error)
-    } finally {
-      setLoading(false)
-    }
+    // 新規登録モードまたはログインモードでも招待コード必須にする場合
+    setMode('oauth-github')
+    return
   }
 
   const handleEmailAuth = async (e: React.FormEvent) => {
@@ -69,7 +40,8 @@ export default function AuthForm() {
           body: JSON.stringify({
             email,
             password,
-            name: name || undefined
+            name: name || undefined,
+            invitationCode
           })
         })
         
@@ -164,6 +136,14 @@ export default function AuthForm() {
     }
   }
 
+  if (mode === 'oauth-google') {
+    return <OAuthWithInviteForm provider="google" onBack={() => setMode('login')} />
+  }
+
+  if (mode === 'oauth-github') {
+    return <OAuthWithInviteForm provider="github" onBack={() => setMode('login')} />
+  }
+
   return (
     <div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-center">
@@ -251,18 +231,35 @@ export default function AuthForm() {
           </div>
           
           {mode === 'signup' && (
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                名前（任意）
-              </label>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+            <>
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  名前（任意）
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="invitationCode" className="block text-sm font-medium text-gray-700 mb-1">
+                  招待コード（必須）
+                </label>
+                <input
+                  type="text"
+                  id="invitationCode"
+                  value={invitationCode}
+                  onChange={(e) => setInvitationCode(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="招待コードを入力してください"
+                />
+              </div>
+            </>
           )}
           
           <button
@@ -296,6 +293,7 @@ export default function AuthForm() {
               setEmail('')
               setPassword('')
               setName('')
+              setInvitationCode('')
               setShowResendConfirmation(false)
             }}
             className="text-blue-500 hover:text-blue-600 text-sm"
@@ -310,6 +308,7 @@ export default function AuthForm() {
               setEmail('')
               setPassword('')
               setName('')
+              setInvitationCode('')
               setShowResendConfirmation(false)
             }}
             className="text-blue-500 hover:text-blue-600 text-sm"
@@ -336,7 +335,7 @@ export default function AuthForm() {
               disabled={loading}
               className="w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
             >
-              {loading ? 'ログイン中...' : 'Googleでログイン'}
+              {loading ? 'ログイン中...' : (mode === 'signup' ? 'Googleで新規登録' : 'Googleでログイン')}
             </button>
             
             <button
@@ -344,7 +343,7 @@ export default function AuthForm() {
               disabled={loading}
               className="w-full bg-gray-800 hover:bg-gray-900 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
             >
-              {loading ? 'ログイン中...' : 'GitHubでログイン'}
+              {loading ? 'ログイン中...' : (mode === 'signup' ? 'GitHubで新規登録' : 'GitHubでログイン')}
             </button>
           </div>
         </>

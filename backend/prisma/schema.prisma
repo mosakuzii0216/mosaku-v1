@@ -29,7 +29,8 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
-  memos       Memo[]
+  memos             Memo[]
+  createdInviteCodes InvitationCode[]
   
   @@map("users")
 }
@@ -45,4 +46,19 @@ model Memo {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@map("memos")
+}
+
+model InvitationCode {
+  id          String    @id @default(cuid())
+  code        String    @unique @db.VarChar(50)
+  maxUses     Int       @default(1) @map("max_uses")
+  usedCount   Int       @default(0) @map("used_count")
+  expiresAt   DateTime? @map("expires_at")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  createdById String    @map("created_by_id")
+  createdBy   User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  
+  @@map("invitation_codes")
 }

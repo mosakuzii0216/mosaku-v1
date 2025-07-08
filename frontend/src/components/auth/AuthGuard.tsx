@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import { User } from '@supabase/supabase-js'
+import type { User } from '@supabase/supabase-js'
 import AuthForm from './AuthForm'
 
 interface AuthGuardProps {
@@ -23,7 +23,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
     // 認証状態の変更を監視
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (_, session) => {
         setUser(session?.user ?? null)
         setLoading(false)
       }

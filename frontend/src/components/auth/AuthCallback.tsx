@@ -29,19 +29,47 @@ export default function AuthCallback() {
 
   const syncUserData = async (accessToken: string) => {
     try {
-      const response = await fetch('/api/auth/sync-user', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: ''
+      // ローカルストレージから招待コードを取得
+      const invitationCode = localStorage.getItem('pendingInvitationCode')
+      
+      if (invitationCode) {
+        // 招待コード付きでユーザー登録
+        const response = await fetch('http://localhost/api/auth/sync-user-with-invite', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: '',
+            invitationCode
+          })
         })
-      })
 
-      if (!response.ok) {
-        console.error('ユーザー同期エラー:', await response.text())
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('ユーザー同期エラー:', errorText)
+        } else {
+          // 成功したら招待コードを削除
+          localStorage.removeItem('pendingInvitationCode')
+        }
+      } else {
+        // 既存のログインユーザー（招待コードなし）
+        const response = await fetch('http://localhost/api/auth/sync-user', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: ''
+          })
+        })
+
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('ユーザー同期エラー:', errorText)
+        }
       }
     } catch (error) {
       console.error('ユーザー同期エラー:', error)
