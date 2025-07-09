@@ -35,6 +35,10 @@ export class AuthController {
       return existingUser;
     }
 
+    // 管理者メールアドレスかどうかをチェック
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const isAdmin = adminEmail && supabaseUser.email === adminEmail;
+
     const newUser = await this.prisma.user.create({
       data: {
         supabaseId: supabaseUser.id,
@@ -43,7 +47,7 @@ export class AuthController {
           createUserDto.name ||
           supabaseUser.user_metadata?.full_name ||
           supabaseUser.email,
-        role: 'FREE',
+        role: isAdmin ? 'ADMIN' : 'FREE',
       },
     });
 
@@ -67,12 +71,16 @@ export class AuthController {
     // 招待コードを検証
     await this.invitationService.verifyInvitation(invitationCode);
 
+    // 管理者メールアドレスかどうかをチェック
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const isAdmin = adminEmail && supabaseUser.email === adminEmail;
+
     const newUser = await this.prisma.user.create({
       data: {
         supabaseId: supabaseUser.id,
         email: supabaseUser.email,
         name: name || supabaseUser.user_metadata?.full_name || supabaseUser.email,
-        role: 'FREE',
+        role: isAdmin ? 'ADMIN' : 'FREE',
       },
     });
 
@@ -87,7 +95,7 @@ export class AuthController {
   async getMe(@Request() req: any) {
     const supabaseUser = req.user;
 
-    const user = await this.prisma.user.findUnique({
+    let user = await this.prisma.user.findUnique({
       where: { supabaseId: supabaseUser.id },
     });
 
@@ -95,6 +103,17 @@ export class AuthController {
       throw new NotFoundException(
         'User not found. Please sync your account first.',
       );
+    }
+
+    // 既存ユーザーの管理者権限を確認・更新
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const shouldBeAdmin = adminEmail && user.email === adminEmail;
+    
+    if (shouldBeAdmin && user.role !== 'ADMIN') {
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: { role: 'ADMIN' },
+      });
     }
 
     return user;
@@ -141,13 +160,17 @@ export class AuthController {
         });
 
         if (!existingUser) {
+          // 管理者メールアドレスかどうかをチェック
+          const adminEmail = process.env.ADMIN_EMAIL;
+          const isAdmin = adminEmail && data.user.email === adminEmail;
+
           await this.prisma.user.create({
             data: {
               supabaseId: data.user.id,
               email: data.user.email!,
               name:
                 name || data.user.user_metadata?.full_name || data.user.email!,
-              role: 'FREE',
+              role: isAdmin ? 'ADMIN' : 'FREE',
             },
           });
 

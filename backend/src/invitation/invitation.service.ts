@@ -63,9 +63,29 @@ export class InvitationService {
     });
   }
 
+  async getAllInvitations() {
+    return this.prisma.invitationCode.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async deleteInvitation(id: string, createdById: string) {
     const invitation = await this.prisma.invitationCode.findFirst({
       where: { id, createdById },
+    });
+
+    if (!invitation) {
+      throw new BadRequestException('Invitation not found');
+    }
+
+    return this.prisma.invitationCode.delete({
+      where: { id },
+    });
+  }
+
+  async deleteAnyInvitation(id: string) {
+    const invitation = await this.prisma.invitationCode.findUnique({
+      where: { id },
     });
 
     if (!invitation) {

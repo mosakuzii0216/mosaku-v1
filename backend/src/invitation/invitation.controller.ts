@@ -15,11 +15,11 @@ import { VerifyInvitationDto } from './dto/verify-invitation.dto';
 import { SupabaseGuard } from '../auth/supabase.guard';
 
 @Controller('invitation')
-@UseGuards(SupabaseGuard)
 export class InvitationController {
   constructor(private readonly invitationService: InvitationService) {}
 
   @Post()
+  @UseGuards(SupabaseGuard)
   async createInvitation(
     @Body() createInvitationDto: CreateInvitationDto,
     @Request() req: any,
@@ -41,22 +41,24 @@ export class InvitationController {
   }
 
   @Get()
+  @UseGuards(SupabaseGuard)
   async getInvitations(@Request() req: any) {
     // Only admin users can view invitations
     if (req.user.role !== 'ADMIN') {
       throw new BadRequestException('Only admin users can view invitations');
     }
 
-    return this.invitationService.getInvitations(req.user.id);
+    return this.invitationService.getAllInvitations();
   }
 
   @Delete(':id')
+  @UseGuards(SupabaseGuard)
   async deleteInvitation(@Param('id') id: string, @Request() req: any) {
     // Only admin users can delete invitations
     if (req.user.role !== 'ADMIN') {
       throw new BadRequestException('Only admin users can delete invitations');
     }
 
-    return this.invitationService.deleteInvitation(id, req.user.id);
+    return this.invitationService.deleteAnyInvitation(id);
   }
 }
