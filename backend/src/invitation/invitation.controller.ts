@@ -8,15 +8,32 @@ import {
   UseGuards,
   Request,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InvitationService } from './invitation.service';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
 import { VerifyInvitationDto } from './dto/verify-invitation.dto';
 import { SupabaseGuard } from '../auth/supabase.guard';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('invitation')
 export class InvitationController {
-  constructor(private readonly invitationService: InvitationService) {}
+  constructor(
+    private readonly invitationService: InvitationService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  private async getLocalUser(supabaseUser: any) {
+    const user = await this.prisma.user.findUnique({
+      where: { supabaseId: supabaseUser.id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found in local database');
+    }
+
+    return user;
+  }
 
   @Post()
   @UseGuards(SupabaseGuard)
@@ -24,14 +41,17 @@ export class InvitationController {
     @Body() createInvitationDto: CreateInvitationDto,
     @Request() req: any,
   ) {
+    // Get local user data to check role
+    const localUser = await this.getLocalUser(req.user);
+    
     // Only admin users can create invitations
-    if (req.user.role !== 'ADMIN') {
+    if (localUser.role !== 'ADMIN') {
       throw new BadRequestException('Only admin users can create invitations');
     }
 
     return this.invitationService.createInvitation(
       createInvitationDto,
-      req.user.id,
+      localUser.id,
     );
   }
 
@@ -43,8 +63,11 @@ export class InvitationController {
   @Get()
   @UseGuards(SupabaseGuard)
   async getInvitations(@Request() req: any) {
+    // Get local user data to check role
+    const localUser = await this.getLocalUser(req.user);
+    
     // Only admin users can view invitations
-    if (req.user.role !== 'ADMIN') {
+    if (localUser.role !== 'ADMIN') {
       throw new BadRequestException('Only admin users can view invitations');
     }
 
@@ -54,8 +77,11 @@ export class InvitationController {
   @Delete(':id')
   @UseGuards(SupabaseGuard)
   async deleteInvitation(@Param('id') id: string, @Request() req: any) {
+    // Get local user data to check role
+    const localUser = await this.getLocalUser(req.user);
+    
     // Only admin users can delete invitations
-    if (req.user.role !== 'ADMIN') {
+    if (localUser.role !== 'ADMIN') {
       throw new BadRequestException('Only admin users can delete invitations');
     }
 
