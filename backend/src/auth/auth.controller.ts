@@ -239,4 +239,36 @@ export class AuthController {
       );
     }
   }
+
+  @Post('update-admin-role')
+  @UseGuards(SupabaseGuard)
+  async updateAdminRole(@Request() req: any) {
+    const supabaseUser = req.user;
+    
+    // 管理者メールアドレスかどうかをチェック
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const shouldBeAdmin = adminEmail && supabaseUser.email === adminEmail;
+    
+    if (!shouldBeAdmin) {
+      throw new BadRequestException('This email is not authorized as admin');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { supabaseId: supabaseUser.id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: user.id },
+      data: { role: 'ADMIN' },
+    });
+
+    return {
+      message: 'Admin role updated successfully',
+      user: updatedUser,
+    };
+  }
 }
