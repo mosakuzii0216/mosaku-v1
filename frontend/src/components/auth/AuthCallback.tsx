@@ -32,9 +32,26 @@ export default function AuthCallback() {
       // ローカルストレージから招待コードを取得
       const invitationCode = localStorage.getItem('pendingInvitationCode')
       
-      if (invitationCode) {
-        // 招待コード付きでユーザー登録
-        const response = await fetch('http://localhost/api/auth/sync-user-with-invite', {
+      // 最初に既存ユーザーかどうかをチェック
+      const syncResponse = await fetch('http://localhost/api/auth/sync-user', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: ''
+        })
+      })
+
+      if (syncResponse.ok) {
+        // 既存ユーザーの場合、招待コードがあっても削除
+        if (invitationCode) {
+          localStorage.removeItem('pendingInvitationCode')
+        }
+      } else if (invitationCode) {
+        // 新規ユーザーで招待コードがある場合
+        const inviteResponse = await fetch('http://localhost/api/auth/sync-user-with-invite', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -46,30 +63,21 @@ export default function AuthCallback() {
           })
         })
 
-        if (!response.ok) {
-          const errorText = await response.text()
-          console.error('ユーザー同期エラー:', errorText)
+        if (!inviteResponse.ok) {
+          const errorText = await inviteResponse.text()
+          console.error('新規ユーザー登録エラー:', errorText)
+          // 招待コード関連のエラーの場合、招待コード入力画面にリダイレクト
+          navigate('/auth?error=invite_required')
+          return
         } else {
           // 成功したら招待コードを削除
           localStorage.removeItem('pendingInvitationCode')
         }
       } else {
-        // 既存のログインユーザー（招待コードなし）
-        const response = await fetch('http://localhost/api/auth/sync-user', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: ''
-          })
-        })
-
-        if (!response.ok) {
-          const errorText = await response.text()
-          console.error('ユーザー同期エラー:', errorText)
-        }
+        // 新規ユーザーで招待コードがない場合、招待コード入力を求める
+        console.log('新規ユーザーは招待コードが必要です')
+        navigate('/auth?error=invite_required')
+        return
       }
     } catch (error) {
       console.error('ユーザー同期エラー:', error)

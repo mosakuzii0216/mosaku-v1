@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import OAuthWithInviteForm from './OAuthWithInviteForm'
 
 export default function AuthForm() {
+  const [searchParams] = useSearchParams()
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -12,17 +14,71 @@ export default function AuthForm() {
   const [showResendConfirmation, setShowResendConfirmation] = useState(false)
   const [mode, setMode] = useState<'login' | 'signup' | 'resetPassword' | 'oauth-google' | 'oauth-github'>('login')
 
+  useEffect(() => {
+    const error = searchParams.get('error')
+    if (error === 'invite_required') {
+      setMessage('新規ユーザーの場合は招待コードが必要です。新規登録を選択してください。')
+      setMode('signup')
+    }
+  }, [searchParams])
+
 
   const handleGoogleLogin = async () => {
-    // 新規登録モードまたはログインモードでも招待コード必須にする場合
-    setMode('oauth-google')
-    return
+    setLoading(true)
+    setMessage('')
+    
+    try {
+      const redirectUrl = window.location.port 
+        ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}/auth/callback`
+        : `${window.location.origin}/auth/callback`;
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl
+        }
+      });
+
+      if (error) throw error;
+    } catch (error: unknown) {
+      console.error('Google認証エラー:', error);
+      setMessage(error instanceof Error ? error.message : 'Authentication failed');
+    } finally {
+      setLoading(false);
+    }
   }
 
   const handleGitHubLogin = async () => {
-    // 新規登録モードまたはログインモードでも招待コード必須にする場合
-    setMode('oauth-github')
-    return
+    setLoading(true)
+    setMessage('')
+    
+    try {
+      const redirectUrl = window.location.port 
+        ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}/auth/callback`
+        : `${window.location.origin}/auth/callback`;
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: redirectUrl
+        }
+      });
+
+      if (error) throw error;
+    } catch (error: unknown) {
+      console.error('GitHub認証エラー:', error);
+      setMessage(error instanceof Error ? error.message : 'Authentication failed');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleOAuthWithInvite = (provider: 'google' | 'github') => {
+    if (provider === 'google') {
+      setMode('oauth-google')
+    } else {
+      setMode('oauth-github')
+    }
   }
 
   const handleEmailAuth = async (e: React.FormEvent) => {
@@ -331,7 +387,7 @@ export default function AuthForm() {
           
           <div className="space-y-3">
             <button
-              onClick={handleGoogleLogin}
+              onClick={mode === 'signup' ? () => handleOAuthWithInvite('google') : handleGoogleLogin}
               disabled={loading}
               className="w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
             >
@@ -339,7 +395,7 @@ export default function AuthForm() {
             </button>
             
             <button
-              onClick={handleGitHubLogin}
+              onClick={mode === 'signup' ? () => handleOAuthWithInvite('github') : handleGitHubLogin}
               disabled={loading}
               className="w-full bg-gray-800 hover:bg-gray-900 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
             >
