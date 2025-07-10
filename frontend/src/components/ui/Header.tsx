@@ -1,5 +1,6 @@
 import { useMemoStore } from '../../stores/useMemoStore';
 import { useAuth } from '../../hooks/useAuth';
+import { Link } from 'react-router-dom';
 
 interface HeaderProps {
   onCreateClick: () => void;
@@ -30,6 +31,16 @@ export const Header = ({ onCreateClick }: HeaderProps) => {
           <span className="text-sm text-gray-600">
             {userProfile.name || userProfile.email} ({userProfile.role})
           </span>
+        )}
+        {userProfile?.role === 'ADMIN' && (
+          <Link
+            to="/admin/invitations"
+            className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center"
+            title="招待コード管理"
+          >
+            <span className="hidden sm:inline">📧 招待コード管理</span>
+            <span className="sm:hidden">📧</span>
+          </Link>
         )}
         <button
           onClick={onCreateClick}
