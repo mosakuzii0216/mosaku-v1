@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
 interface InvitationCode {
@@ -146,7 +147,16 @@ export default function InvitationManager() {
 
   return (
     <div className="max-w-6xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">招待コード管理</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
+        <h1 className="text-3xl font-bold">招待コード管理</h1>
+        <Link
+          to="/"
+          className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center justify-center sm:justify-start"
+        >
+          <span className="mr-2">←</span>
+          <span>トップページに戻る</span>
+        </Link>
+      </div>
       
       {message && (
         <div className={`mb-4 p-3 rounded-lg text-sm ${
