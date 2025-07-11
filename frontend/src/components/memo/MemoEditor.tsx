@@ -64,16 +64,16 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
     }
   }, [transcript, activeField, resetTranscript]);
 
-  // 自動保存（既存メモの場合のみ）
+  // 自動保存（新規作成・編集共通）
   useEffect(() => {
-    if (!isCreate && memo && hasChanges) {
+    if (hasChanges && (title.trim() || content.trim())) {
       const timer = setTimeout(() => {
         handleSave();
       }, 2000);
 
       return () => clearTimeout(timer);
     }
-  }, [title, content, hasChanges, isCreate, memo, handleSave]);
+  }, [title, content, hasChanges, handleSave]);
 
   const handleCancel = () => {
     if (hasChanges && !window.confirm('変更が保存されていません。破棄しますか？')) {
@@ -111,20 +111,10 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
         </button>
         
         <div className="flex items-center space-x-2">
-          {!isCreate && hasChanges && (
+          {hasChanges && (
             <span className="text-sm text-gray-500">
               自動保存中...
             </span>
-          )}
-          
-          {isCreate && (
-            <button
-              onClick={handleSave}
-              disabled={isLoading || (!title.trim() && !content.trim())}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50"
-            >
-              {isLoading ? '保存中...' : '保存'}
-            </button>
           )}
         </div>
       </div>
