@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useMemoStore } from '../../stores/useMemoStore';
 import { useCreateMemo, useUpdateMemo } from '../../hooks/useMemoQueries';
+import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import type { Memo } from '../../types/memo';
 
 interface MemoEditorProps {
@@ -12,10 +13,20 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
   const { goToList, goToDetail } = useMemoStore();
   const createMemo = useCreateMemo();
   const updateMemo = useUpdateMemo();
+  const {
+    isListening,
+    transcript,
+    isSupported,
+    startListening,
+    stopListening,
+    resetTranscript,
+    error: speechError,
+  } = useSpeechRecognition();
 
   const [title, setTitle] = useState(memo?.title || '');
   const [content, setContent] = useState(memo?.content || '');
   const [hasChanges, setHasChanges] = useState(false);
+  const [activeField, setActiveField] = useState<'content' | null>(null);
 
   // 変更検知
   useEffect(() => {
@@ -24,18 +35,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
     setHasChanges(title !== originalTitle || content !== originalContent);
   }, [title, content, memo]);
 
-  // 自動保存（既存メモの場合のみ）
-  useEffect(() => {
-    if (!isCreate && memo && hasChanges) {
-      const timer = setTimeout(() => {
-        handleSave();
-      }, 2000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [title, content, hasChanges, isCreate, memo]);
-
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     if (!title.trim() && !content.trim()) {
       return;
     }
@@ -54,7 +54,26 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
         },
       });
     }
-  };
+  }, [title, content, isCreate, createMemo, memo, hasChanges, updateMemo]);
+
+  // 音声認識結果をコンテンツフィールドに反映
+  useEffect(() => {
+    if (transcript && activeField === 'content') {
+      setContent(prev => prev + transcript);
+      resetTranscript();
+    }
+  }, [transcript, activeField, resetTranscript]);
+
+  // 自動保存（既存メモの場合のみ）
+  useEffect(() => {
+    if (!isCreate && memo && hasChanges) {
+      const timer = setTimeout(() => {
+        handleSave();
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [title, content, hasChanges, isCreate, memo, handleSave]);
 
   const handleCancel = () => {
     if (hasChanges && !window.confirm('変更が保存されていません。破棄しますか？')) {
@@ -65,6 +84,16 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
       goToList();
     } else if (memo) {
       goToDetail(memo);
+    }
+  };
+
+  const handleVoiceInput = () => {
+    if (isListening) {
+      stopListening();
+      setActiveField(null);
+    } else {
+      setActiveField('content');
+      startListening();
     }
   };
 
@@ -103,21 +132,63 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
       {/* エディター */}
       <div className="flex-1 flex flex-col p-4">
         <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col">
-          <input
-            type="text"
-            placeholder="タイトルを入力..."
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="text-2xl font-bold border-none outline-none placeholder-gray-400 mb-4 bg-transparent"
-          />
+          {/* タイトル入力エリア */}
+          <div className="mb-4">
+            <input
+              type="text"
+              placeholder="タイトルを入力..."
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="text-2xl font-bold border-none outline-none placeholder-gray-400 bg-transparent w-full"
+            />
+          </div>
           
-          <textarea
-            placeholder="メモを入力..."
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="flex-1 resize-none border-none outline-none placeholder-gray-400 leading-relaxed bg-transparent"
-            autoFocus={isCreate}
-          />
+          {/* コンテンツ入力エリア */}
+          <div className="relative flex-1 flex flex-col">
+            <textarea
+              placeholder="メモを入力..."
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="flex-1 resize-none border-none outline-none placeholder-gray-400 leading-relaxed bg-transparent pr-12"
+              autoFocus={isCreate}
+            />
+            {isSupported && (
+              <button
+                onClick={handleVoiceInput}
+                className={`absolute right-2 top-4 p-2 rounded-full transition-colors ${
+                  isListening && activeField === 'content'
+                    ? 'bg-red-500 text-white animate-pulse'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                }`}
+                title="音声入力"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
+                </svg>
+              </button>
+            )}
+          </div>
+          
+          {/* 音声認識エラー表示 */}
+          {speechError && (
+            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+              {speechError}
+            </div>
+          )}
+          
+          {/* 音声認識状態表示 */}
+          {isListening && (
+            <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-blue-700 text-sm">
+              🎤 音声認識中... コンテンツに入力されます
+            </div>
+          )}
+          
+          {/* ブラウザサポート警告 */}
+          {!isSupported && (
+            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-700 text-sm">
+              お使いのブラウザは音声認識をサポートしていません
+            </div>
+          )}
         </div>
       </div>
     </div>
