@@ -19,7 +19,7 @@ export const MobileLayout = () => {
         return selectedMemo ? (
           <MemoDetail memo={selectedMemo} />
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
             メモが選択されていません
           </div>
         );
@@ -28,7 +28,7 @@ export const MobileLayout = () => {
         return selectedMemo ? (
           <MemoEditor memo={selectedMemo} />
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
             メモが選択されていません
           </div>
         );
@@ -45,7 +45,7 @@ export const MobileLayout = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-white">
+    <div className="h-screen flex flex-col bg-white dark:bg-gray-900">
       <Header onCreateClick={goToCreate} />
       <main className="flex-1 overflow-hidden">
         {renderContent()}

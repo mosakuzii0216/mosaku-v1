@@ -81,16 +81,16 @@ export const TagManager: React.FC = () => {
   return (
     <div className="flex flex-col h-full">
       {/* ヘッダー */}
-      <div className="border-b border-gray-200 p-4">
+      <div className="border-b border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-900">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">タグ管理</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">タグ管理</h1>
           <button
             onClick={() => {
               setShowCreateForm(true);
               setEditingTag(null);
             }}
             disabled={isCreating}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-300"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md disabled:bg-gray-300 dark:disabled:bg-gray-600 transition-colors"
           >
             + 新しいタグ
           </button>
@@ -103,23 +103,23 @@ export const TagManager: React.FC = () => {
             placeholder="タグを検索..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         {/* タグ数表示 */}
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-gray-600 dark:text-gray-400">
           {filteredTags.length} / {tags.length} タグ
         </div>
       </div>
 
       {/* メインコンテンツ */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-4xl mx-auto">
           {/* タグ作成・編集フォーム */}
           {(showCreateForm || editingTag) && (
-            <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6 shadow-sm">
-              <h3 className="text-lg font-semibold mb-4">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 shadow-sm">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
                 {editingTag ? 'タグを編集' : '新しいタグを作成'}
               </h3>
               <TagForm
@@ -134,12 +134,12 @@ export const TagManager: React.FC = () => {
           {/* タグ一覧 */}
           {tagsQuery.isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="text-gray-500">読み込み中...</div>
+              <div className="text-gray-500 dark:text-gray-400">読み込み中...</div>
             </div>
           ) : tagsQuery.error ? (
-            <div className="text-red-500 text-center py-8">
+            <div className="text-red-500 dark:text-red-400 text-center py-8">
               <div className="mb-2">タグの読み込みに失敗しました</div>
-              <div className="text-sm text-red-400">
+              <div className="text-sm text-red-400 dark:text-red-300">
                 エラー: {tagsQuery.error.message || 'Unknown error'}
               </div>
               <button 
@@ -150,7 +150,7 @@ export const TagManager: React.FC = () => {
               </button>
             </div>
           ) : filteredTags.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
               {searchQuery ? '検索結果がありません' : 'タグがありません'}
             </div>
           ) : (
@@ -158,12 +158,12 @@ export const TagManager: React.FC = () => {
               {filteredTags.map((tag) => (
                 <div
                   key={tag.id}
-                  className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
+                  className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <TagChip tag={tag} />
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
                         作成日: {new Date(tag.createdAt).toLocaleDateString('ja-JP')}
                       </div>
                     </div>
@@ -172,14 +172,14 @@ export const TagManager: React.FC = () => {
                       <button
                         onClick={() => handleEditClick(tag)}
                         disabled={isUpdating}
-                        className="text-blue-600 hover:text-blue-800 px-3 py-1 rounded border border-blue-200 hover:bg-blue-50 disabled:opacity-50"
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 px-3 py-1 rounded border border-blue-200 dark:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 disabled:opacity-50 transition-colors"
                       >
                         編集
                       </button>
                       <button
                         onClick={() => handleDeleteTag(tag)}
                         disabled={isDeleting}
-                        className="text-red-600 hover:text-red-800 px-3 py-1 rounded border border-red-200 hover:bg-red-50 disabled:opacity-50"
+                        className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 px-3 py-1 rounded border border-red-200 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900 disabled:opacity-50 transition-colors"
                       >
                         削除
                       </button>

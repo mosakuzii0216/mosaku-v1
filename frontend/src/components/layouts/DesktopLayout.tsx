@@ -16,7 +16,7 @@ export const DesktopLayout = () => {
         return selectedMemo ? (
           <MemoDetail memo={selectedMemo} />
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
             メモを選択してください
           </div>
         );
@@ -25,7 +25,7 @@ export const DesktopLayout = () => {
         return selectedMemo ? (
           <MemoEditor memo={selectedMemo} />
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
             メモが選択されていません
           </div>
         );
@@ -38,7 +38,7 @@ export const DesktopLayout = () => {
       
       default:
         return (
-          <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
             メモを選択してください
           </div>
         );
@@ -46,13 +46,13 @@ export const DesktopLayout = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-white">
+    <div className="h-screen flex flex-col bg-white dark:bg-gray-900">
       <Header onCreateClick={goToCreate} />
       
       <main className="flex-1 flex overflow-hidden">
         {/* 左サイドバー - メモ一覧 (タグ管理時は非表示) */}
         {currentView !== 'tags' && (
-          <div className="w-80 border-r border-gray-200 flex flex-col">
+          <div className="w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col">
             <MemoList />
           </div>
         )}

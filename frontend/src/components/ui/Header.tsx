@@ -1,6 +1,7 @@
 import { useMemoStore } from '../../stores/useMemoStore';
 import { useAuth } from '../../hooks/useAuth';
 import { Link } from 'react-router-dom';
+import { ThemeToggle } from './ThemeToggle';
 
 interface HeaderProps {
   onCreateClick: () => void;
@@ -11,7 +12,7 @@ export const Header = ({ onCreateClick }: HeaderProps) => {
   const { userProfile, signOut } = useAuth();
 
   return (
-    <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
       <div className="flex items-center">
         {currentView !== 'list' && (
           <button
@@ -21,7 +22,7 @@ export const Header = ({ onCreateClick }: HeaderProps) => {
             ←
           </button>
         )}
-        <h1 className="text-xl font-semibold text-gray-900">
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
           メモアプリ
         </h1>
         
@@ -31,8 +32,8 @@ export const Header = ({ onCreateClick }: HeaderProps) => {
             onClick={goToList}
             className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
               currentView === 'list' || currentView === 'detail' || currentView === 'edit' || currentView === 'create'
-                ? 'bg-blue-100 text-blue-800'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             📝 メモ
@@ -41,8 +42,8 @@ export const Header = ({ onCreateClick }: HeaderProps) => {
             onClick={goToTags}
             className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
               currentView === 'tags'
-                ? 'bg-blue-100 text-blue-800'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             🏷️ タグ
@@ -51,8 +52,9 @@ export const Header = ({ onCreateClick }: HeaderProps) => {
       </div>
       
       <div className="flex items-center space-x-3">
+        <ThemeToggle />
         {userProfile && (
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-gray-600 dark:text-gray-300">
             {userProfile.name || userProfile.email} ({userProfile.role})
           </span>
         )}
