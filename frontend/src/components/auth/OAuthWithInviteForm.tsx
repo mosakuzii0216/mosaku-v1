@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { apiClient } from '../../utils/api';
 
 interface OAuthWithInviteFormProps {
   provider: 'google' | 'github';
@@ -18,18 +19,7 @@ export default function OAuthWithInviteForm({ provider, onBack }: OAuthWithInvit
 
     try {
       // 招待コードを事前検証
-      const response = await fetch('http://localhost/api/invitation/verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ code: invitationCode }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Invalid invitation code');
-      }
+      await apiClient.verifyInvitationCode(invitationCode);
 
       // 招待コードが有効な場合、OAuth認証を開始
       // 招待コードをローカルストレージに保存（認証後に使用）

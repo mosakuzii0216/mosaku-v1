@@ -97,7 +97,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
     }
   };
 
-  const isLoading = createMemo.isPending || updateMemo.isPending;
 
   return (
     <div className="flex flex-col h-full">

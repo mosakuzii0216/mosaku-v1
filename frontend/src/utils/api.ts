@@ -85,6 +85,39 @@ class ApiClient {
     }
     return this.request<Memo[]>(`/memos/search?${params.toString()}`);
   }
+
+  // 招待コード検証（認証不要）
+  async verifyInvitationCode(code: string): Promise<any> {
+    const url = `${API_BASE_URL}/invitation/verify`;
+    
+    const config: RequestInit = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ code }),
+    };
+
+    const response = await fetch(url, config);
+
+    if (!response.ok) {
+      let errorMessage = 'Invalid invitation code';
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const error = await response.json();
+          errorMessage = error.message || errorMessage;
+        } else {
+          errorMessage = `API Error: ${response.status} ${response.statusText}`;
+        }
+      } catch (parseError) {
+        errorMessage = `Network Error: ${response.status} ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  }
 }
 
 export const apiClient = new ApiClient();
