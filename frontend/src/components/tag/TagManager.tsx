@@ -23,12 +23,7 @@ export const TagManager: React.FC = () => {
 
   // Sync tags data to store
   useEffect(() => {
-    console.log('TagManager: tagsQuery.data updated:', tagsQuery.data);
-    console.log('TagManager: tagsQuery.isLoading:', tagsQuery.isLoading);
-    console.log('TagManager: tagsQuery.error:', tagsQuery.error);
-    
     if (tagsQuery.data) {
-      console.log('Setting tags to store:', tagsQuery.data);
       useTagStore.getState().setTags(tagsQuery.data);
     }
   }, [tagsQuery.data]);
@@ -39,23 +34,12 @@ export const TagManager: React.FC = () => {
   }, [searchQuery, setStoreSearchQuery]);
 
   const filteredTags = getFilteredTags();
-  
-  // Debug: Log current state
-  useEffect(() => {
-    console.log('TagManager: Current tags in store:', tags);
-    console.log('TagManager: Filtered tags:', filteredTags);
-  }, [tags, filteredTags]);
 
   const handleCreateTag = async (data: { name: string; color: string }) => {
-    console.log('Creating tag with data:', data);
     try {
-      const result = await createTag(data);
-      console.log('Tag created successfully:', result);
+      await createTag(data);
       setShowCreateForm(false);
     } catch (error) {
-      console.error('Failed to create tag:', error);
-      
-      // エラーメッセージを詳しく解析
       let errorMessage = 'タグの作成に失敗しました';
       if (error.message.includes('401') || error.message.includes('認証')) {
         errorMessage = '認証エラーが発生しました。再度ログインしてください。';
@@ -74,7 +58,7 @@ export const TagManager: React.FC = () => {
       await updateTag({ id: editingTag.id, data });
       setEditingTag(null);
     } catch (error) {
-      console.error('Failed to update tag:', error);
+      alert(`タグの更新に失敗しました: ${error.message || error}`);
     }
   };
 

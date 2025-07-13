@@ -9,14 +9,8 @@ class ApiClient {
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {
-      console.error('No session found');
       throw new Error('認証が必要です');
     }
-    
-    console.log('Auth session found:', { 
-      user: session.user?.email, 
-      token: session.access_token ? 'present' : 'missing' 
-    });
     
     return {
       'Authorization': `Bearer ${session.access_token}`,
@@ -28,8 +22,6 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
-    console.log('Making API request to:', url);
-    
     const authHeaders = await this.getAuthHeaders();
     
     const config: RequestInit = {
@@ -41,47 +33,18 @@ class ApiClient {
       ...options,
     };
 
-    console.log('Request config:', { 
-      url, 
-      method: config.method || 'GET',
-      headers: config.headers 
-    });
-
     let response: Response;
     try {
       response = await fetch(url, config);
-      console.log('Response received:', { 
-        status: response.status, 
-        statusText: response.statusText,
-        ok: response.ok 
-      });
     } catch (networkError) {
-      console.error('Network error:', networkError);
       throw new Error(`ネットワークエラー: ${networkError.message}`);
     }
 
     if (!response.ok) {
-      console.error('API Request failed:', {
-        url,
-        status: response.status,
-        statusText: response.statusText,
-        config,
-      });
-      
       if (response.status === 401) {
         throw new Error('認証エラー: ログインし直してください');
       }
-      
-      let errorMessage = `HTTP error! status: ${response.status}`;
-      try {
-        const errorBody = await response.text();
-        console.error('Error response body:', errorBody);
-        errorMessage += ` - ${errorBody}`;
-      } catch (e) {
-        console.error('Failed to read error response body:', e);
-      }
-      
-      throw new Error(errorMessage);
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     return response.json();
@@ -139,10 +102,7 @@ class ApiClient {
 
   // タグ一覧取得
   async getTags(): Promise<Tag[]> {
-    console.log('Getting tags via API...');
-    const result = await this.request<Tag[]>('/tags');
-    console.log('Tags received from API:', result);
-    return result;
+    return this.request<Tag[]>('/tags');
   }
 
   // 特定タグ取得
@@ -152,13 +112,10 @@ class ApiClient {
 
   // タグ作成
   async createTag(data: CreateTagDto): Promise<Tag> {
-    console.log('Creating tag via API:', data);
-    const result = await this.request<Tag>('/tags', {
+    return this.request<Tag>('/tags', {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    console.log('Tag created successfully via API:', result);
-    return result;
   }
 
   // タグ更新

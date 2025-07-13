@@ -10,17 +10,7 @@ export const useTagQueries = () => {
   // タグ一覧取得
   const tagsQuery = useQuery({
     queryKey: ['tags'],
-    queryFn: async () => {
-      console.log('useTagQueries: Starting getTags query...');
-      try {
-        const result = await apiClient.getTags();
-        console.log('useTagQueries: getTags succeeded:', result);
-        return result;
-      } catch (error) {
-        console.error('useTagQueries: getTags failed:', error);
-        throw error;
-      }
-    },
+    queryFn: apiClient.getTags,
     retry: 1,
     staleTime: 30000, // 30秒間はキャッシュを使用
   });

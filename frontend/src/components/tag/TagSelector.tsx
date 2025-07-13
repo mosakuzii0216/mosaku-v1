@@ -68,7 +68,7 @@ export const TagSelector: React.FC<TagSelectorProps> = ({
       setSearchQuery('');
       setIsOpen(false);
     } catch (error) {
-      console.error('Failed to create tag:', error);
+      alert(`タグの作成に失敗しました: ${error.message || error}`);
     }
   };
 
