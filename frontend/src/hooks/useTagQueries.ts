@@ -10,8 +10,21 @@ export const useTagQueries = () => {
   // タグ一覧取得
   const tagsQuery = useQuery({
     queryKey: ['tags'],
-    queryFn: apiClient.getTags,
-    retry: 1,
+    queryFn: async () => {
+      try {
+        return await apiClient.getTags();
+      } catch (error) {
+        console.error('タグ取得エラー:', error);
+        throw error;
+      }
+    },
+    retry: (failureCount, error) => {
+      // 認証エラーの場合はリトライしない
+      if (error.message?.includes('認証') || error.message?.includes('401')) {
+        return false;
+      }
+      return failureCount < 2;
+    },
     staleTime: 30000, // 30秒間はキャッシュを使用
   });
 

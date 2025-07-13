@@ -138,7 +138,16 @@ export const TagManager: React.FC = () => {
             </div>
           ) : tagsQuery.error ? (
             <div className="text-red-500 text-center py-8">
-              タグの読み込みに失敗しました
+              <div className="mb-2">タグの読み込みに失敗しました</div>
+              <div className="text-sm text-red-400">
+                エラー: {tagsQuery.error.message || 'Unknown error'}
+              </div>
+              <button 
+                onClick={() => tagsQuery.refetch()}
+                className="mt-2 px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+              >
+                再試行
+              </button>
             </div>
           ) : filteredTags.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
