@@ -1,11 +1,14 @@
 import { useMemoStore } from '../../stores/useMemoStore';
+import { useAppInit } from '../../hooks/useAppInit';
 import { Header } from '../ui/Header';
 import { MemoList } from '../memo/MemoList';
 import { MemoDetail } from '../memo/MemoDetail';
 import { MemoEditor } from '../memo/MemoEditor';
+import { TagManager } from '../tag/TagManager';
 
 export const MobileLayout = () => {
   const { currentView, selectedMemo, goToCreate } = useMemoStore();
+  useAppInit(); // アプリ初期化（タグロード等）
 
   const renderContent = () => {
     switch (currentView) {
@@ -32,6 +35,9 @@ export const MobileLayout = () => {
       
       case 'create':
         return <MemoEditor isCreate />;
+      
+      case 'tags':
+        return <TagManager />;
       
       default:
         return <MemoList />;

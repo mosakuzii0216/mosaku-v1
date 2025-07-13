@@ -11,7 +11,7 @@ import { UpdateMemoDto } from './dto/update-memo.dto';
 export class MemoService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(supabaseUserId: string) {
+  async findAll(supabaseUserId: string, tagIds?: string[]) {
     const user = await this.prisma.user.findUnique({
       where: { supabaseId: supabaseUserId },
     });
@@ -20,8 +20,26 @@ export class MemoService {
       throw new NotFoundException('User not found');
     }
 
+    const whereClause: any = { userId: user.id };
+
+    // Filter by tags if provided
+    if (tagIds && tagIds.length > 0) {
+      whereClause.memoTags = {
+        some: {
+          tagId: { in: tagIds },
+        },
+      };
+    }
+
     return this.prisma.memo.findMany({
-      where: { userId: user.id },
+      where: whereClause,
+      include: {
+        memoTags: {
+          include: {
+            tag: true,
+          },
+        },
+      },
       orderBy: {
         updatedAt: 'desc',
       },
@@ -39,6 +57,13 @@ export class MemoService {
 
     const memo = await this.prisma.memo.findUnique({
       where: { id },
+      include: {
+        memoTags: {
+          include: {
+            tag: true,
+          },
+        },
+      },
     });
 
     if (!memo) {
@@ -126,7 +151,7 @@ export class MemoService {
     });
   }
 
-  async search(query: string, supabaseUserId: string) {
+  async search(query: string, supabaseUserId: string, tagIds?: string[]) {
     const user = await this.prisma.user.findUnique({
       where: { supabaseId: supabaseUserId },
     });
@@ -136,26 +161,44 @@ export class MemoService {
     }
 
     if (!query) {
-      return this.findAll(supabaseUserId);
+      return this.findAll(supabaseUserId, tagIds);
+    }
+
+    const whereClause: any = {
+      userId: user.id,
+      OR: [
+        {
+          title: {
+            contains: query,
+            mode: 'insensitive',
+          },
+        },
+        {
+          content: {
+            contains: query,
+            mode: 'insensitive',
+          },
+        },
+      ],
+    };
+
+    // Filter by tags if provided
+    if (tagIds && tagIds.length > 0) {
+      whereClause.memoTags = {
+        some: {
+          tagId: { in: tagIds },
+        },
+      };
     }
 
     return this.prisma.memo.findMany({
-      where: {
-        userId: user.id,
-        OR: [
-          {
-            title: {
-              contains: query,
-              mode: 'insensitive',
-            },
+      where: whereClause,
+      include: {
+        memoTags: {
+          include: {
+            tag: true,
           },
-          {
-            content: {
-              contains: query,
-              mode: 'insensitive',
-            },
-          },
-        ],
+        },
       },
       orderBy: {
         updatedAt: 'desc',

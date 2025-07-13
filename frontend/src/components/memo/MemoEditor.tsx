@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useMemoStore } from '../../stores/useMemoStore';
 import { useCreateMemo, useUpdateMemo } from '../../hooks/useMemoQueries';
+import { useTagQueries } from '../../hooks/useTagQueries';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
+import { TagSelector } from '../tag/TagSelector';
 import type { Memo } from '../../types/memo';
 
 interface MemoEditorProps {
@@ -13,6 +15,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
   const { goToList, goToDetail } = useMemoStore();
   const createMemo = useCreateMemo();
   const updateMemo = useUpdateMemo();
+  const { assignTags } = useTagQueries();
   const {
     isListening,
     transcript,
@@ -25,6 +28,9 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 
   const [title, setTitle] = useState(memo?.title || '');
   const [content, setContent] = useState(memo?.content || '');
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
+    memo?.memoTags?.map(mt => mt.tag.id) || []
+  );
   const [hasChanges, setHasChanges] = useState(false);
   const [activeField, setActiveField] = useState<'content' | null>(null);
 
@@ -32,19 +38,31 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
   useEffect(() => {
     const originalTitle = memo?.title || '';
     const originalContent = memo?.content || '';
-    setHasChanges(title !== originalTitle || content !== originalContent);
-  }, [title, content, memo]);
+    const originalTagIds = memo?.memoTags?.map(mt => mt.tag.id) || [];
+    const tagsChanged = JSON.stringify(selectedTagIds.sort()) !== JSON.stringify(originalTagIds.sort());
+    setHasChanges(title !== originalTitle || content !== originalContent || tagsChanged);
+  }, [title, content, selectedTagIds, memo]);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (!title.trim() && !content.trim()) {
       return;
     }
 
     if (isCreate) {
-      createMemo.mutate({
-        title: title.trim() || '無題',
-        content: content.trim(),
+      const result = await new Promise<Memo>((resolve, reject) => {
+        createMemo.mutate({
+          title: title.trim() || '無題',
+          content: content.trim(),
+        }, {
+          onSuccess: resolve,
+          onError: reject,
+        });
       });
+      
+      // 新規作成後にタグを割り当て
+      if (selectedTagIds.length > 0) {
+        assignTags({ memoId: result.id, data: { tagIds: selectedTagIds } });
+      }
     } else if (memo && hasChanges) {
       updateMemo.mutate({
         id: memo.id,
@@ -53,8 +71,15 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
           content: content.trim(),
         },
       });
+      
+      // タグの変更があれば更新
+      const originalTagIds = memo.memoTags?.map(mt => mt.tag.id) || [];
+      const tagsChanged = JSON.stringify(selectedTagIds.sort()) !== JSON.stringify(originalTagIds.sort());
+      if (tagsChanged) {
+        assignTags({ memoId: memo.id, data: { tagIds: selectedTagIds } });
+      }
     }
-  }, [title, content, isCreate, createMemo, memo, hasChanges, updateMemo]);
+  }, [title, content, selectedTagIds, isCreate, createMemo, memo, hasChanges, updateMemo, assignTags]);
 
   // 音声認識結果をコンテンツフィールドに反映
   useEffect(() => {
@@ -129,6 +154,18 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="text-2xl font-bold border-none outline-none placeholder-gray-400 bg-transparent w-full"
+            />
+          </div>
+
+          {/* タグ選択エリア */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              タグ
+            </label>
+            <TagSelector
+              selectedTagIds={selectedTagIds}
+              onTagsChange={setSelectedTagIds}
+              className="w-full"
             />
           </div>
           

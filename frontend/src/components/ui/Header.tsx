@@ -7,7 +7,7 @@ interface HeaderProps {
 }
 
 export const Header = ({ onCreateClick }: HeaderProps) => {
-  const { currentView, goToList } = useMemoStore();
+  const { currentView, goToList, goToTags } = useMemoStore();
   const { userProfile, signOut } = useAuth();
 
   return (
@@ -24,6 +24,30 @@ export const Header = ({ onCreateClick }: HeaderProps) => {
         <h1 className="text-xl font-semibold text-gray-900">
           メモアプリ
         </h1>
+        
+        {/* ナビゲーションボタン */}
+        <div className="ml-6 flex items-center space-x-2">
+          <button
+            onClick={goToList}
+            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+              currentView === 'list' || currentView === 'detail' || currentView === 'edit' || currentView === 'create'
+                ? 'bg-blue-100 text-blue-800'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            📝 メモ
+          </button>
+          <button
+            onClick={goToTags}
+            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+              currentView === 'tags'
+                ? 'bg-blue-100 text-blue-800'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            🏷️ タグ
+          </button>
+        </div>
       </div>
       
       <div className="flex items-center space-x-3">

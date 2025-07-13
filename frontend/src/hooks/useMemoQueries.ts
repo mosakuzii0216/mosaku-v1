@@ -2,21 +2,23 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { apiClient } from '../utils/api';
 import { useMemoStore } from '../stores/useMemoStore';
+import { useTagStore } from '../stores/useTagStore';
 import type { CreateMemoDto, UpdateMemoDto } from '../types/memo';
 
 const QUERY_KEYS = {
-  memos: ['memos'] as const,
+  memos: (tagIds?: string[]) => ['memos', { tagIds }] as const,
   memo: (id: string) => ['memos', id] as const,
-  search: (query: string) => ['memos', 'search', query] as const,
+  search: (query: string, tagIds?: string[]) => ['memos', 'search', query, { tagIds }] as const,
 };
 
 // メモ一覧取得
 export const useMemos = () => {
   const { setMemos } = useMemoStore();
+  const { selectedTags } = useTagStore();
   
   const query = useQuery({
-    queryKey: QUERY_KEYS.memos,
-    queryFn: () => apiClient.getMemos(),
+    queryKey: QUERY_KEYS.memos(selectedTags),
+    queryFn: () => apiClient.getMemos(selectedTags.length > 0 ? selectedTags : undefined),
   });
 
   useEffect(() => {
@@ -40,10 +42,11 @@ export const useMemo = (id: string) => {
 // メモ検索
 export const useSearchMemos = (query: string) => {
   const { setMemos } = useMemoStore();
+  const { selectedTags } = useTagStore();
   
   const searchQuery = useQuery({
-    queryKey: QUERY_KEYS.search(query),
-    queryFn: () => apiClient.searchMemos(query),
+    queryKey: QUERY_KEYS.search(query, selectedTags),
+    queryFn: () => apiClient.searchMemos(query, selectedTags.length > 0 ? selectedTags : undefined),
     enabled: query.length > 0,
   });
 
@@ -67,7 +70,7 @@ export const useCreateMemo = () => {
 
   useEffect(() => {
     if (mutation.isSuccess && mutation.data) {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memos });
+      queryClient.invalidateQueries({ queryKey: ['memos'] });
       addMemo(mutation.data);
       goToDetail(mutation.data);
     }
@@ -88,7 +91,7 @@ export const useUpdateMemo = () => {
 
   useEffect(() => {
     if (mutation.isSuccess && mutation.data) {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memos });
+      queryClient.invalidateQueries({ queryKey: ['memos'] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memo(mutation.data.id) });
       updateMemo(mutation.data);
     }
@@ -108,7 +111,7 @@ export const useDeleteMemo = () => {
 
   useEffect(() => {
     if (mutation.isSuccess && mutation.variables) {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memos });
+      queryClient.invalidateQueries({ queryKey: ['memos'] });
       deleteMemo(mutation.variables);
       goToList();
     }

@@ -1,5 +1,6 @@
 import type { Memo } from '../../types/memo';
 import { useMemoStore } from '../../stores/useMemoStore';
+import { TagChip } from '../tag/TagChip';
 
 interface MemoItemProps {
   memo: Memo;
@@ -45,9 +46,22 @@ export const MemoItem = ({ memo }: MemoItemProps) => {
       </div>
       
       {memo.content && (
-        <p className="text-sm text-gray-600 line-clamp-2">
+        <p className="text-sm text-gray-600 line-clamp-2 mb-2">
           {getPreview(memo.content)}
         </p>
+      )}
+
+      {/* タグ表示 */}
+      {memo.memoTags && memo.memoTags.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-2">
+          {memo.memoTags.map((memoTag) => (
+            <TagChip
+              key={memoTag.tag.id}
+              tag={memoTag.tag}
+              onClick={(e) => e?.stopPropagation()}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

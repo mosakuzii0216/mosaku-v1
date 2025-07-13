@@ -1,4 +1,5 @@
 import type { Memo, CreateMemoDto, UpdateMemoDto } from '../types/memo';
+import type { Tag, CreateTagDto, UpdateTagDto, AssignTagsDto, MemoTag } from '../types/tag';
 import { supabase } from '../lib/supabase';
 
 const API_BASE_URL = 'http://localhost/api';
@@ -8,8 +9,14 @@ class ApiClient {
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {
+      console.error('No session found');
       throw new Error('認証が必要です');
     }
+    
+    console.log('Auth session found:', { 
+      user: session.user?.email, 
+      token: session.access_token ? 'present' : 'missing' 
+    });
     
     return {
       'Authorization': `Bearer ${session.access_token}`,
@@ -21,6 +28,8 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
+    console.log('Making API request to:', url);
+    
     const authHeaders = await this.getAuthHeaders();
     
     const config: RequestInit = {
@@ -32,21 +41,60 @@ class ApiClient {
       ...options,
     };
 
-    const response = await fetch(url, config);
+    console.log('Request config:', { 
+      url, 
+      method: config.method || 'GET',
+      headers: config.headers 
+    });
+
+    let response: Response;
+    try {
+      response = await fetch(url, config);
+      console.log('Response received:', { 
+        status: response.status, 
+        statusText: response.statusText,
+        ok: response.ok 
+      });
+    } catch (networkError) {
+      console.error('Network error:', networkError);
+      throw new Error(`ネットワークエラー: ${networkError.message}`);
+    }
 
     if (!response.ok) {
+      console.error('API Request failed:', {
+        url,
+        status: response.status,
+        statusText: response.statusText,
+        config,
+      });
+      
       if (response.status === 401) {
         throw new Error('認証エラー: ログインし直してください');
       }
-      throw new Error(`HTTP error! status: ${response.status}`);
+      
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      try {
+        const errorBody = await response.text();
+        console.error('Error response body:', errorBody);
+        errorMessage += ` - ${errorBody}`;
+      } catch (e) {
+        console.error('Failed to read error response body:', e);
+      }
+      
+      throw new Error(errorMessage);
     }
 
     return response.json();
   }
 
   // メモ一覧取得
-  async getMemos(): Promise<Memo[]> {
-    return this.request<Memo[]>('/memos');
+  async getMemos(tagIds?: string[]): Promise<Memo[]> {
+    const params = new URLSearchParams();
+    if (tagIds && tagIds.length > 0) {
+      tagIds.forEach(tagId => params.append('tagIds', tagId));
+    }
+    const queryString = params.toString();
+    return this.request<Memo[]>(`/memos${queryString ? `?${queryString}` : ''}`);
   }
 
   // 特定メモ取得
@@ -78,12 +126,76 @@ class ApiClient {
   }
 
   // メモ検索
-  async searchMemos(query: string): Promise<Memo[]> {
+  async searchMemos(query: string, tagIds?: string[]): Promise<Memo[]> {
     const params = new URLSearchParams();
     if (query) {
       params.append('q', query);
     }
+    if (tagIds && tagIds.length > 0) {
+      tagIds.forEach(tagId => params.append('tagIds', tagId));
+    }
     return this.request<Memo[]>(`/memos/search?${params.toString()}`);
+  }
+
+  // タグ一覧取得
+  async getTags(): Promise<Tag[]> {
+    console.log('Getting tags via API...');
+    const result = await this.request<Tag[]>('/tags');
+    console.log('Tags received from API:', result);
+    return result;
+  }
+
+  // 特定タグ取得
+  async getTag(id: string): Promise<Tag> {
+    return this.request<Tag>(`/tags/${id}`);
+  }
+
+  // タグ作成
+  async createTag(data: CreateTagDto): Promise<Tag> {
+    console.log('Creating tag via API:', data);
+    const result = await this.request<Tag>('/tags', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    console.log('Tag created successfully via API:', result);
+    return result;
+  }
+
+  // タグ更新
+  async updateTag(id: string, data: UpdateTagDto): Promise<Tag> {
+    return this.request<Tag>(`/tags/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // タグ削除
+  async deleteTag(id: string): Promise<void> {
+    await this.request(`/tags/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // タグ検索
+  async searchTags(query: string): Promise<Tag[]> {
+    const params = new URLSearchParams();
+    if (query) {
+      params.append('q', query);
+    }
+    return this.request<Tag[]>(`/tags/search?${params.toString()}`);
+  }
+
+  // メモにタグを割り当て
+  async assignTagsToMemo(memoId: string, data: AssignTagsDto): Promise<Memo> {
+    return this.request<Memo>(`/tags/memo/${memoId}/assign`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // メモのタグ取得
+  async getMemoTags(memoId: string): Promise<MemoTag[]> {
+    return this.request<MemoTag[]>(`/tags/memo/${memoId}`);
   }
 
   // 招待コード検証（認証不要）

@@ -30,6 +30,7 @@ model User {
   updatedAt   DateTime @updatedAt
   
   memos             Memo[]
+  tags              Tag[]
   createdInviteCodes InvitationCode[]
   
   @@map("users")
@@ -44,6 +45,8 @@ model Memo {
   
   userId    String   @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  memoTags  MemoTag[]
   
   @@map("memos")
 }
@@ -61,4 +64,30 @@ model InvitationCode {
   createdBy   User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
   
   @@map("invitation_codes")
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @db.VarChar(50)
+  color     String   @db.VarChar(7) // Hex color code like #FF5733
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  memoTags  MemoTag[]
+  
+  @@map("tags")
+}
+
+model MemoTag {
+  memoId String @map("memo_id")
+  tagId  String @map("tag_id")
+  
+  memo   Memo   @relation(fields: [memoId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  
+  @@id([memoId, tagId])
+  @@map("memo_tags")
 }

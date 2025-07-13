@@ -1,11 +1,14 @@
 import { useMemoStore } from '../../stores/useMemoStore';
+import { useAppInit } from '../../hooks/useAppInit';
 import { Header } from '../ui/Header';
 import { MemoList } from '../memo/MemoList';
 import { MemoDetail } from '../memo/MemoDetail';
 import { MemoEditor } from '../memo/MemoEditor';
+import { TagManager } from '../tag/TagManager';
 
 export const DesktopLayout = () => {
   const { currentView, selectedMemo, goToCreate } = useMemoStore();
+  useAppInit(); // アプリ初期化（タグロード等）
 
   const renderMainContent = () => {
     switch (currentView) {
@@ -30,6 +33,9 @@ export const DesktopLayout = () => {
       case 'create':
         return <MemoEditor isCreate />;
       
+      case 'tags':
+        return <TagManager />;
+      
       default:
         return (
           <div className="flex items-center justify-center h-full text-gray-500">
@@ -44,10 +50,12 @@ export const DesktopLayout = () => {
       <Header onCreateClick={goToCreate} />
       
       <main className="flex-1 flex overflow-hidden">
-        {/* 左サイドバー - メモ一覧 */}
-        <div className="w-80 border-r border-gray-200 flex flex-col">
-          <MemoList />
-        </div>
+        {/* 左サイドバー - メモ一覧 (タグ管理時は非表示) */}
+        {currentView !== 'tags' && (
+          <div className="w-80 border-r border-gray-200 flex flex-col">
+            <MemoList />
+          </div>
+        )}
         
         {/* 右メインエリア - メモ詳細/編集 */}
         <div className="flex-1 flex flex-col">

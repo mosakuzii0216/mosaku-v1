@@ -28,13 +28,19 @@ export class MemoController {
   }
 
   @Get()
-  findAll(@Request() req) {
-    return this.memoService.findAll(req.user.id);
+  findAll(@Query('tagIds') tagIds: string | string[], @Request() req) {
+    const tagIdArray = Array.isArray(tagIds) ? tagIds : tagIds ? [tagIds] : undefined;
+    return this.memoService.findAll(req.user.id, tagIdArray);
   }
 
   @Get('search')
-  search(@Query(ValidationPipe) searchMemoDto: SearchMemoDto, @Request() req) {
-    return this.memoService.search(searchMemoDto.q || '', req.user.id);
+  search(
+    @Query(ValidationPipe) searchMemoDto: SearchMemoDto,
+    @Query('tagIds') tagIds: string | string[],
+    @Request() req,
+  ) {
+    const tagIdArray = Array.isArray(tagIds) ? tagIds : tagIds ? [tagIds] : undefined;
+    return this.memoService.search(searchMemoDto.q || '', req.user.id, tagIdArray);
   }
 
   @Get(':id')
