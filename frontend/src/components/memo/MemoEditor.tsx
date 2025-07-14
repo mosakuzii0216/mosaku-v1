@@ -126,17 +126,17 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
   return (
     <div className="flex flex-col h-full">
       {/* ヘッダー */}
-      <div className="border-b border-gray-200 p-4 flex items-center justify-between">
+      <div className="border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between bg-white dark:bg-gray-900">
         <button
           onClick={handleCancel}
-          className="p-2 text-gray-600 hover:text-gray-900"
+          className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
         >
           ← {isCreate ? 'キャンセル' : '戻る'}
         </button>
         
         <div className="flex items-center space-x-2">
           {hasChanges && (
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-gray-500 dark:text-gray-400">
               自動保存中...
             </span>
           )}
@@ -144,7 +144,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
       </div>
 
       {/* エディター */}
-      <div className="flex-1 flex flex-col p-4">
+      <div className="flex-1 flex flex-col p-4 bg-white dark:bg-gray-900">
         <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col">
           {/* タイトル入力エリア */}
           <div className="mb-4">
@@ -153,13 +153,13 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
               placeholder="タイトルを入力..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="text-2xl font-bold border-none outline-none placeholder-gray-400 bg-transparent w-full"
+              className="text-2xl font-bold border-none outline-none placeholder-gray-400 dark:placeholder-gray-500 bg-transparent w-full text-gray-900 dark:text-white"
             />
           </div>
 
           {/* タグ選択エリア */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               タグ
             </label>
             <TagSelector
@@ -175,7 +175,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
               placeholder="メモを入力..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="flex-1 resize-none border-none outline-none placeholder-gray-400 leading-relaxed bg-transparent pr-12"
+              className="flex-1 resize-none border-none outline-none placeholder-gray-400 dark:placeholder-gray-500 leading-relaxed bg-transparent pr-12 text-gray-900 dark:text-white"
               autoFocus={isCreate}
             />
             {isSupported && (
@@ -184,7 +184,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
                 className={`absolute right-2 top-4 p-2 rounded-full transition-colors ${
                   isListening && activeField === 'content'
                     ? 'bg-red-500 text-white animate-pulse'
-                    : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                    : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'
                 }`}
                 title="音声入力"
               >

@@ -28,12 +28,12 @@ export const MemoDetail = ({ memo }: MemoDetailProps) => {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
       {/* ヘッダー */}
-      <div className="border-b border-gray-200 p-4 flex items-center justify-between">
+      <div className="border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
         <button
           onClick={goToList}
-          className="p-2 text-gray-600 hover:text-gray-900 md:hidden"
+          className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white md:hidden"
         >
           ← 戻る
         </button>
@@ -58,11 +58,11 @@ export const MemoDetail = ({ memo }: MemoDetailProps) => {
       {/* コンテンツ */}
       <div className="flex-1 overflow-y-auto p-4">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
             {memo.title || '無題'}
           </h1>
           
-          <div className="text-sm text-gray-500 mb-6">
+          <div className="text-sm text-gray-500 dark:text-gray-400 mb-6">
             作成: {formatDate(memo.createdAt)}
             {memo.updatedAt !== memo.createdAt && (
               <span className="ml-4">
@@ -72,7 +72,7 @@ export const MemoDetail = ({ memo }: MemoDetailProps) => {
           </div>
 
           <div className="prose max-w-none">
-            <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">
+            <div className="whitespace-pre-wrap text-gray-800 dark:text-gray-200 leading-relaxed">
               {memo.content || 'コンテンツがありません'}
             </div>
           </div>
