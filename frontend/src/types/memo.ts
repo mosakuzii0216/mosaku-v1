@@ -1,4 +1,4 @@
-import { MemoTag } from './tag';
+import type { MemoTag } from './tag';
 
 export interface Memo {
   id: string;

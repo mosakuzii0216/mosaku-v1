@@ -28,7 +28,9 @@ export const MemoItem = ({ memo }: MemoItemProps) => {
   };
 
   const getPreview = (content: string) => {
-    return content.length > 100 ? content.substring(0, 100) + '...' : content;
+    // HTMLタグを除去してプレーンテキストを取得
+    const plainText = content.replace(/<[^>]*>/g, '');
+    return plainText.length > 100 ? plainText.substring(0, 100) + '...' : plainText;
   };
 
   return (
@@ -58,7 +60,7 @@ export const MemoItem = ({ memo }: MemoItemProps) => {
             <TagChip
               key={memoTag.tag.id}
               tag={memoTag.tag}
-              onClick={(e) => e?.stopPropagation()}
+              onClick={() => {}}
             />
           ))}
         </div>

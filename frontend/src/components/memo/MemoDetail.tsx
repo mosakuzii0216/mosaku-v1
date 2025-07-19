@@ -71,10 +71,11 @@ export const MemoDetail = ({ memo }: MemoDetailProps) => {
             )}
           </div>
 
-          <div className="prose max-w-none">
-            <div className="whitespace-pre-wrap text-gray-800 dark:text-gray-200 leading-relaxed">
-              {memo.content || 'コンテンツがありません'}
-            </div>
+          <div className="prose prose-sm sm:prose-base lg:prose-lg xl:prose-xl max-w-none dark:prose-invert">
+            <div 
+              className="text-gray-800 dark:text-gray-200 leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: memo.content || 'コンテンツがありません' }}
+            />
           </div>
         </div>
       </div>

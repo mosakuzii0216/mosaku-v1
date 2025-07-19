@@ -3,6 +3,7 @@ import { useMemoStore } from '../../stores/useMemoStore';
 import { useCreateMemo, useUpdateMemo } from '../../hooks/useMemoQueries';
 import { useTagQueries } from '../../hooks/useTagQueries';
 import { TagSelector } from '../tag/TagSelector';
+import { RichTextEditor } from '../editor/RichTextEditor';
 import type { Memo } from '../../types/memo';
 
 interface MemoEditorProps {
@@ -144,12 +145,11 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
           
           {/* コンテンツ入力エリア */}
           <div className="relative flex-1 flex flex-col">
-            <textarea
+            <RichTextEditor
+              content={content}
+              onChange={setContent}
               placeholder="メモを入力..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="flex-1 resize-none border-none outline-none placeholder-gray-400 dark:placeholder-gray-500 leading-relaxed bg-transparent text-gray-900 dark:text-white"
-              autoFocus={isCreate}
+              className="flex-1"
             />
           </div>
           
