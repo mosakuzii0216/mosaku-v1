@@ -32,6 +32,8 @@ model User {
   memos             Memo[]
   tags              Tag[]
   createdInviteCodes InvitationCode[]
+  createdThemes     Theme[]
+  favoriteThemes    UserFavoriteTheme[]
   
   @@map("users")
 }
@@ -45,6 +47,9 @@ model Memo {
   
   userId    String   @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  themeId   String?  @map("theme_id")
+  theme     Theme?   @relation(fields: [themeId], references: [id], onDelete: SetNull)
   
   memoTags  MemoTag[]
   
@@ -90,4 +95,39 @@ model MemoTag {
   
   @@id([memoId, tagId])
   @@map("memo_tags")
+}
+
+model Theme {
+  id          String   @id @default(cuid())
+  name        String   @db.VarChar(50)
+  description String?  @db.VarChar(200)
+  isSystem    Boolean  @default(false)
+  isPublic    Boolean  @default(false)
+  
+  // スタイル設定（JSON形式）
+  styles      Json
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // 作成者（システムテーマの場合はnull）
+  createdById String?  @map("created_by_id")
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  
+  // リレーション
+  memos           Memo[]
+  userFavorites   UserFavoriteTheme[]
+  
+  @@map("themes")
+}
+
+model UserFavoriteTheme {
+  userId  String @map("user_id")
+  themeId String @map("theme_id")
+  
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme   Theme  @relation(fields: [themeId], references: [id], onDelete: Cascade)
+  
+  @@id([userId, themeId])
+  @@map("user_favorite_themes")
 }
