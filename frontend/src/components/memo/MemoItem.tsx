@@ -42,9 +42,19 @@ export const MemoItem = ({ memo }: MemoItemProps) => {
         <h3 className="font-medium text-gray-900 dark:text-white truncate flex-1 mr-2">
           {memo.title || '無題'}
         </h3>
-        <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-          {formatDate(memo.updatedAt)}
-        </span>
+        <div className="flex items-center space-x-2">
+          {/* テーマインジケーター */}
+          {memo.theme && (
+            <div
+              className="w-3 h-3 rounded-full border border-gray-300"
+              style={{ backgroundColor: memo.theme.styles.colors.accentColor }}
+              title={`テーマ: ${memo.theme.name}`}
+            />
+          )}
+          <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+            {formatDate(memo.updatedAt)}
+          </span>
+        </div>
       </div>
       
       {memo.content && (
@@ -53,18 +63,28 @@ export const MemoItem = ({ memo }: MemoItemProps) => {
         </p>
       )}
 
-      {/* タグ表示 */}
-      {memo.memoTags && memo.memoTags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2">
-          {memo.memoTags.map((memoTag) => (
-            <TagChip
-              key={memoTag.tag.id}
-              tag={memoTag.tag}
-              onClick={() => {}}
-            />
-          ))}
+      {/* メタ情報（タグとテーマ） */}
+      <div className="flex items-center justify-between mt-2">
+        {/* タグ表示 */}
+        <div className="flex flex-wrap gap-1 flex-1">
+          {memo.memoTags && memo.memoTags.length > 0 && (
+            memo.memoTags.map((memoTag) => (
+              <TagChip
+                key={memoTag.tag.id}
+                tag={memoTag.tag}
+                onClick={() => {}}
+              />
+            ))
+          )}
         </div>
-      )}
+        
+        {/* テーマ名表示 */}
+        {memo.theme && (
+          <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 truncate">
+            {memo.theme.name}
+          </span>
+        )}
+      </div>
     </div>
   );
 };

@@ -1,5 +1,7 @@
 import { useMemoStore } from '../../stores/useMemoStore';
 import { useDeleteMemo } from '../../hooks/useMemoQueries';
+import { useEffect } from 'react';
+import { applyThemeToElement, removeThemeFromElement } from '../../utils/themeUtils';
 import type { Memo } from '../../types/memo';
 
 interface MemoDetailProps {
@@ -9,6 +11,34 @@ interface MemoDetailProps {
 export const MemoDetail = ({ memo }: MemoDetailProps) => {
   const { goToEdit, goToList } = useMemoStore();
   const deleteMemo = useDeleteMemo();
+
+  // テーマの適用
+  useEffect(() => {
+    const container = document.getElementById(`memo-detail-${memo.id}`);
+    if (container && memo.theme) {
+      // Pick型のthemeオブジェクトを完全なTheme型に変換
+      const fullTheme = {
+        ...memo.theme,
+        description: null,
+        isSystem: true,
+        isPublic: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdById: null,
+        createdBy: null,
+        favoriteCount: 0,
+        usageCount: 0,
+        isFavorited: false,
+      };
+      applyThemeToElement(container, fullTheme);
+    }
+    
+    return () => {
+      if (container) {
+        removeThemeFromElement(container);
+      }
+    };
+  }, [memo.id, memo.theme]);
 
   const handleDelete = () => {
     if (window.confirm('このメモを削除しますか？')) {
@@ -57,12 +87,49 @@ export const MemoDetail = ({ memo }: MemoDetailProps) => {
 
       {/* コンテンツ */}
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+        <div 
+          id={`memo-detail-${memo.id}`}
+          className="max-w-4xl mx-auto"
+          style={{
+            backgroundColor: memo.theme ? 'var(--theme-bg-color)' : undefined,
+            color: memo.theme ? 'var(--theme-text-color)' : undefined,
+            fontFamily: memo.theme ? 'var(--theme-font-family)' : undefined,
+            fontSize: memo.theme ? 'var(--theme-font-size)' : undefined,
+            padding: memo.theme ? 'var(--theme-padding)' : undefined,
+            borderRadius: memo.theme ? 'var(--theme-border-radius)' : undefined,
+          }}
+        >
+          <h1 
+            className="text-2xl font-bold mb-2"
+            style={{
+              color: memo.theme ? 'var(--theme-heading-color)' : undefined,
+              fontFamily: memo.theme ? 'var(--theme-heading-font-family, var(--theme-font-family))' : undefined,
+              fontSize: memo.theme ? 'var(--theme-heading-font-size)' : undefined,
+              fontWeight: memo.theme ? 'var(--theme-heading-font-weight)' : undefined,
+            }}
+          >
             {memo.title || '無題'}
           </h1>
           
-          <div className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+          {/* テーマ情報表示 */}
+          {memo.theme && (
+            <div className="mb-3 pb-3 border-b" style={{ borderColor: 'var(--theme-border-color)' }}>
+              <span 
+                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                style={{
+                  backgroundColor: 'var(--theme-accent-color)',
+                  color: 'var(--theme-bg-color)',
+                }}
+              >
+                テーマ: {memo.theme.name}
+              </span>
+            </div>
+          )}
+          
+          <div 
+            className="text-sm mb-6"
+            style={{ color: memo.theme ? 'var(--theme-subtext-color)' : undefined }}
+          >
             作成: {formatDate(memo.createdAt)}
             {memo.updatedAt !== memo.createdAt && (
               <span className="ml-4">
@@ -71,9 +138,18 @@ export const MemoDetail = ({ memo }: MemoDetailProps) => {
             )}
           </div>
 
-          <div className="prose prose-sm sm:prose-base lg:prose-lg xl:prose-xl max-w-none dark:prose-invert">
+          <div 
+            className="prose prose-sm sm:prose-base lg:prose-lg xl:prose-xl max-w-none"
+            style={{
+              color: memo.theme ? 'var(--theme-text-color)' : undefined,
+              lineHeight: memo.theme ? 'var(--theme-line-height)' : undefined,
+            }}
+          >
             <div 
-              className="text-gray-800 dark:text-gray-200 leading-relaxed"
+              className="leading-relaxed"
+              style={{
+                color: memo.theme ? 'var(--theme-text-color)' : undefined,
+              }}
               dangerouslySetInnerHTML={{ __html: memo.content || 'コンテンツがありません' }}
             />
           </div>

@@ -1,5 +1,6 @@
 import type { Memo, CreateMemoDto, UpdateMemoDto } from '../types/memo';
 import type { Tag, CreateTagDto, UpdateTagDto, AssignTagsDto, MemoTag } from '../types/tag';
+import type { Theme, ThemeSearchParams, CreateThemeData, UpdateThemeData } from '../types/theme';
 import { supabase } from '../lib/supabase';
 
 const API_BASE_URL = 'http://localhost/api';
@@ -44,6 +45,78 @@ class ApiClient {
       if (response.status === 401) {
         throw new Error('認証エラー: ログインし直してください');
       }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  // 認証不要のリクエスト（テーマ用）
+  private async requestPublic<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const url = `${API_BASE_URL}${endpoint}`;
+    
+    const config: RequestInit = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    let response: Response;
+    try {
+      response = await fetch(url, config);
+    } catch (networkError) {
+      throw new Error(`ネットワークエラー: ${networkError.message}`);
+    }
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  // 認証が可能な場合のみ認証ヘッダーを追加するリクエスト
+  private async requestWithOptionalAuth<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const url = `${API_BASE_URL}${endpoint}`;
+    
+    // 認証情報を取得（失敗しても続行）
+    let authHeaders: Record<string, string> = {};
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        authHeaders = {
+          'Authorization': `Bearer ${session.access_token}`,
+        };
+      }
+    } catch {
+      // 認証失敗時は無認証でリクエスト
+    }
+    
+    const config: RequestInit = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders,
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    let response: Response;
+    try {
+      response = await fetch(url, config);
+    } catch (networkError) {
+      throw new Error(`ネットワークエラー: ${networkError.message}`);
+    }
+
+    if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -186,6 +259,83 @@ class ApiClient {
     }
 
     return response.json();
+  }
+
+  // ========== テーマ関連API ==========
+
+  // テーマ一覧取得（検索・フィルタリング対応）
+  async getThemes(params?: ThemeSearchParams): Promise<Theme[]> {
+    const searchParams = new URLSearchParams();
+    if (params?.query) searchParams.append('query', params.query);
+    if (params?.category) searchParams.append('category', params.category);
+    if (params?.isSystem !== undefined) searchParams.append('isSystem', params.isSystem.toString());
+    if (params?.isPublic !== undefined) searchParams.append('isPublic', params.isPublic.toString());
+    if (params?.favoritesOnly !== undefined) searchParams.append('favoritesOnly', params.favoritesOnly.toString());
+    
+    const queryString = searchParams.toString();
+    return this.requestWithOptionalAuth<Theme[]>(`/theme${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // システムテーマ一覧取得（認証不要）
+  async getSystemThemes(): Promise<Theme[]> {
+    return this.requestPublic<Theme[]>('/theme/system/list');
+  }
+
+  // 公開テーマ一覧取得（認証不要）
+  async getPublicThemes(): Promise<Theme[]> {
+    return this.requestWithOptionalAuth<Theme[]>('/theme/public/list');
+  }
+
+  // カテゴリ別テーマ一覧取得
+  async getThemesByCategory(category: string): Promise<Theme[]> {
+    return this.requestWithOptionalAuth<Theme[]>(`/theme/category/${category}`);
+  }
+
+  // 特定テーマ取得
+  async getTheme(id: string): Promise<Theme> {
+    return this.requestWithOptionalAuth<Theme>(`/theme/${id}`);
+  }
+
+  // テーマ作成（管理者のみ）
+  async createTheme(data: CreateThemeData): Promise<Theme> {
+    return this.request<Theme>('/theme', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // テーマ更新（管理者のみ）
+  async updateTheme(id: string, data: UpdateThemeData): Promise<Theme> {
+    return this.request<Theme>(`/theme/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // テーマ削除（管理者のみ）
+  async deleteTheme(id: string): Promise<void> {
+    await this.request(`/theme/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // テーマをお気に入りに追加
+  async addToFavoriteThemes(themeId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/theme/${themeId}/favorite`, {
+      method: 'POST',
+    });
+  }
+
+  // テーマをお気に入りから削除
+  async removeFromFavoriteThemes(themeId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/theme/${themeId}/favorite`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ユーザーのお気に入りテーマ一覧取得
+  async getFavoriteThemes(): Promise<Theme[]> {
+    return this.request<Theme[]>('/theme/favorites/me');
   }
 }
 

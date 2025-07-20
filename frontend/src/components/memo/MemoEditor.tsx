@@ -3,8 +3,10 @@ import { useMemoStore } from '../../stores/useMemoStore';
 import { useCreateMemo, useUpdateMemo } from '../../hooks/useMemoQueries';
 import { useTagQueries } from '../../hooks/useTagQueries';
 import { TagSelector } from '../tag/TagSelector';
+import { ThemeSelector } from '../theme/ThemeSelector';
 import { RichTextEditor } from '../editor/RichTextEditor';
 import type { Memo } from '../../types/memo';
+import type { Theme } from '../../types/theme';
 
 interface MemoEditorProps {
   memo?: Memo;
@@ -22,6 +24,21 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
     memo?.memoTags?.map(mt => mt.tag.id) || []
   );
+  const [selectedTheme, setSelectedTheme] = useState<Theme | null>(
+    memo?.theme ? {
+      ...memo.theme,
+      description: null,
+      isSystem: true,
+      isPublic: true,
+      createdAt: '',
+      updatedAt: '',
+      createdById: null,
+      createdBy: null,
+      favoriteCount: 0,
+      usageCount: 0,
+    } as Theme : null
+  );
+  const [showThemeSelector, setShowThemeSelector] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
   // 変更検知
@@ -29,9 +46,18 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
     const originalTitle = memo?.title || '';
     const originalContent = memo?.content || '';
     const originalTagIds = memo?.memoTags?.map(mt => mt.tag.id) || [];
+    const originalThemeId = memo?.themeId || null;
+    
     const tagsChanged = JSON.stringify(selectedTagIds.sort()) !== JSON.stringify(originalTagIds.sort());
-    setHasChanges(title !== originalTitle || content !== originalContent || tagsChanged);
-  }, [title, content, selectedTagIds, memo]);
+    const themeChanged = selectedTheme?.id !== originalThemeId;
+    
+    setHasChanges(
+      title !== originalTitle || 
+      content !== originalContent || 
+      tagsChanged || 
+      themeChanged
+    );
+  }, [title, content, selectedTagIds, selectedTheme, memo]);
 
   const handleSave = useCallback(async () => {
     if (!title.trim() && !content.trim()) {
@@ -43,6 +69,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
         createMemo.mutate({
           title: title.trim() || '無題',
           content: content.trim(),
+          themeId: selectedTheme?.id,
         }, {
           onSuccess: resolve,
           onError: reject,
@@ -59,6 +86,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
         data: {
           title: title.trim() || '無題',
           content: content.trim(),
+          themeId: selectedTheme?.id,
         },
       });
       
@@ -69,7 +97,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
         assignTags({ memoId: memo.id, data: { tagIds: selectedTagIds } });
       }
     }
-  }, [title, content, selectedTagIds, isCreate, createMemo, memo, hasChanges, updateMemo, assignTags]);
+  }, [title, content, selectedTagIds, selectedTheme, isCreate, createMemo, memo, hasChanges, updateMemo, assignTags]);
 
 
   // 自動保存（新規作成・編集共通）
@@ -142,6 +170,56 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
               className="w-full"
             />
           </div>
+
+          {/* テーマ選択エリア（新規作成時のみ） */}
+          {isCreate && (
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  テーマ
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowThemeSelector(!showThemeSelector)}
+                  className="text-sm text-blue-500 hover:text-blue-600"
+                >
+                  {showThemeSelector ? 'テーマ選択を閉じる' : 'テーマを選択'}
+                </button>
+              </div>
+              
+              {/* 選択されたテーマの表示 */}
+              {selectedTheme && (
+                <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      選択中: {selectedTheme.name}
+                    </span>
+                    <button
+                      onClick={() => setSelectedTheme(null)}
+                      className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                      解除
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* テーマ選択UI */}
+              {showThemeSelector && (
+                <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 max-h-96 overflow-y-auto">
+                  <ThemeSelector
+                    selectedThemeId={selectedTheme?.id}
+                    onThemeSelect={(theme) => {
+                      setSelectedTheme(theme);
+                      setShowThemeSelector(false);
+                    }}
+                    showFavorites={true}
+                    className="max-h-80"
+                  />
+                </div>
+              )}
+            </div>
+          )}
           
           {/* コンテンツ入力エリア */}
           <div className="relative flex-1 flex flex-col">
