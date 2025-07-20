@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, MaxLength } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, IsOptional } from 'class-validator';
 
 export class CreateMemoDto {
   @IsString()
@@ -8,4 +8,8 @@ export class CreateMemoDto {
 
   @IsString()
   content: string;
+
+  @IsString()
+  @IsOptional()
+  themeId?: string; // テーマID（オプショナル）
 }

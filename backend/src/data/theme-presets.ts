@@ -23,7 +23,7 @@ export const themePresets: ThemePreset[] = [
         headingColor: '#111827',
         subtextColor: '#6B7280',
         mutedTextColor: '#9CA3AF',
-        dividerColor: '#F3F4F6'
+        dividerColor: '#F3F4F6',
       },
       typography: {
         fontFamily: '"Inter", system-ui, sans-serif',
@@ -33,20 +33,20 @@ export const themePresets: ThemePreset[] = [
         fontWeight: '400',
         headingFontWeight: '600',
         boldFontWeight: '700',
-        lineHeight: '1.6'
+        lineHeight: '1.6',
       },
       layout: {
         padding: '1rem',
         margin: '0.5rem',
         borderRadius: '0.5rem',
         borderWidth: '1px',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
       },
       animations: {
         transitionDuration: '200ms',
-        hoverTransition: 'all 200ms ease-in-out'
-      }
-    }
+        hoverTransition: 'all 200ms ease-in-out',
+      },
+    },
   },
 
   {
@@ -66,7 +66,7 @@ export const themePresets: ThemePreset[] = [
         headingColor: '#1F2937',
         subtextColor: '#6B7280',
         mutedTextColor: '#9CA3AF',
-        dividerColor: '#E5E7EB'
+        dividerColor: '#E5E7EB',
       },
       typography: {
         fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -75,19 +75,19 @@ export const themePresets: ThemePreset[] = [
         smallFontSize: '0.875rem',
         fontWeight: '400',
         headingFontWeight: '600',
-        lineHeight: '1.6'
+        lineHeight: '1.6',
       },
       layout: {
         padding: '1rem',
         margin: '0.5rem',
         borderRadius: '0.375rem',
         borderWidth: '1px',
-        boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+        boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
       },
       animations: {
-        transitionDuration: '150ms'
-      }
-    }
+        transitionDuration: '150ms',
+      },
+    },
   },
 
   {
@@ -107,7 +107,7 @@ export const themePresets: ThemePreset[] = [
         headingColor: '#FFFFFF',
         subtextColor: '#D1D5DB',
         mutedTextColor: '#9CA3AF',
-        dividerColor: '#4B5563'
+        dividerColor: '#4B5563',
       },
       typography: {
         fontFamily: '"Inter", system-ui, sans-serif',
@@ -116,19 +116,19 @@ export const themePresets: ThemePreset[] = [
         smallFontSize: '0.875rem',
         fontWeight: '400',
         headingFontWeight: '600',
-        lineHeight: '1.6'
+        lineHeight: '1.6',
       },
       layout: {
         padding: '1rem',
         margin: '0.5rem',
         borderRadius: '0.5rem',
         borderWidth: '1px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)'
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
       },
       animations: {
-        transitionDuration: '200ms'
-      }
-    }
+        transitionDuration: '200ms',
+      },
+    },
   },
 
   // ========== ビジネス系 ==========
@@ -149,7 +149,7 @@ export const themePresets: ThemePreset[] = [
         headingColor: '#1A202C',
         subtextColor: '#4A5568',
         mutedTextColor: '#718096',
-        dividerColor: '#E2E8F0'
+        dividerColor: '#E2E8F0',
       },
       typography: {
         fontFamily: '"Roboto", "Helvetica Neue", sans-serif',
@@ -158,19 +158,19 @@ export const themePresets: ThemePreset[] = [
         smallFontSize: '0.875rem',
         fontWeight: '400',
         headingFontWeight: '500',
-        lineHeight: '1.7'
+        lineHeight: '1.7',
       },
       layout: {
         padding: '1.25rem',
         margin: '0.75rem',
         borderRadius: '0.25rem',
         borderWidth: '1px',
-        boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.06)'
+        boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.06)',
       },
       animations: {
-        transitionDuration: '150ms'
-      }
-    }
+        transitionDuration: '150ms',
+      },
+    },
   },
 
   {
@@ -190,7 +190,7 @@ export const themePresets: ThemePreset[] = [
         headingColor: '#2D3748',
         subtextColor: '#4A5568',
         mutedTextColor: '#718096',
-        dividerColor: '#E2E8F0'
+        dividerColor: '#E2E8F0',
       },
       typography: {
         fontFamily: '"Crimson Text", "Times New Roman", serif',
@@ -199,19 +199,19 @@ export const themePresets: ThemePreset[] = [
         smallFontSize: '1rem',
         fontWeight: '400',
         headingFontWeight: '600',
-        lineHeight: '1.8'
+        lineHeight: '1.8',
       },
       layout: {
         padding: '1.5rem',
         margin: '1rem',
         borderRadius: '0.125rem',
         borderWidth: '2px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
       },
       animations: {
-        transitionDuration: '250ms'
-      }
-    }
+        transitionDuration: '250ms',
+      },
+    },
   },
 
   // ========== 学習・勉強系 ==========
@@ -232,7 +232,7 @@ export const themePresets: ThemePreset[] = [
         headingColor: '#1E40AF',
         subtextColor: '#3730A3',
         mutedTextColor: '#6366F1',
-        dividerColor: '#BFDBFE'
+        dividerColor: '#BFDBFE',
       },
       typography: {
         fontFamily: '"Noto Sans", "Helvetica Neue", sans-serif',
@@ -241,19 +241,19 @@ export const themePresets: ThemePreset[] = [
         smallFontSize: '0.875rem',
         fontWeight: '400',
         headingFontWeight: '600',
-        lineHeight: '1.7'
+        lineHeight: '1.7',
       },
       layout: {
         padding: '1rem',
         margin: '0.5rem',
         borderRadius: '0.5rem',
         borderWidth: '1px',
-        boxShadow: '0 1px 3px 0 rgba(59, 130, 246, 0.1)'
+        boxShadow: '0 1px 3px 0 rgba(59, 130, 246, 0.1)',
       },
       animations: {
-        transitionDuration: '200ms'
-      }
-    }
+        transitionDuration: '200ms',
+      },
+    },
   },
 
   {
@@ -273,7 +273,7 @@ export const themePresets: ThemePreset[] = [
         headingColor: '#7C2D12',
         subtextColor: '#92400E',
         mutedTextColor: '#B45309',
-        dividerColor: '#FBBF24'
+        dividerColor: '#FBBF24',
       },
       typography: {
         fontFamily: '"Crimson Pro", "Georgia", serif',
@@ -282,19 +282,19 @@ export const themePresets: ThemePreset[] = [
         smallFontSize: '1rem',
         fontWeight: '400',
         headingFontWeight: '600',
-        lineHeight: '1.8'
+        lineHeight: '1.8',
       },
       layout: {
         padding: '1.5rem',
         margin: '1rem',
         borderRadius: '0.25rem',
         borderWidth: '1px',
-        boxShadow: '0 1px 2px 0 rgba(217, 119, 6, 0.1)'
+        boxShadow: '0 1px 2px 0 rgba(217, 119, 6, 0.1)',
       },
       animations: {
-        transitionDuration: '200ms'
-      }
-    }
+        transitionDuration: '200ms',
+      },
+    },
   },
 
   // ========== クリエイティブ系 ==========
@@ -315,7 +315,7 @@ export const themePresets: ThemePreset[] = [
         headingColor: '#7C3AED',
         subtextColor: '#8B5CF6',
         mutedTextColor: '#A78BFA',
-        dividerColor: '#DDD6FE'
+        dividerColor: '#DDD6FE',
       },
       typography: {
         fontFamily: '"Playfair Display", "Times New Roman", serif',
@@ -324,19 +324,19 @@ export const themePresets: ThemePreset[] = [
         smallFontSize: '1rem',
         fontWeight: '400',
         headingFontWeight: '700',
-        lineHeight: '1.6'
+        lineHeight: '1.6',
       },
       layout: {
         padding: '1.25rem',
         margin: '0.75rem',
         borderRadius: '0.75rem',
         borderWidth: '2px',
-        boxShadow: '0 4px 6px -1px rgba(168, 85, 247, 0.1)'
+        boxShadow: '0 4px 6px -1px rgba(168, 85, 247, 0.1)',
       },
       animations: {
-        transitionDuration: '300ms'
-      }
-    }
+        transitionDuration: '300ms',
+      },
+    },
   },
 
   {
@@ -356,7 +356,7 @@ export const themePresets: ThemePreset[] = [
         headingColor: '#A0522D',
         subtextColor: '#D2691E',
         mutedTextColor: '#BC8F8F',
-        dividerColor: '#F4A460'
+        dividerColor: '#F4A460',
       },
       typography: {
         fontFamily: '"EB Garamond", "Garamond", serif',
@@ -365,19 +365,19 @@ export const themePresets: ThemePreset[] = [
         smallFontSize: '1rem',
         fontWeight: '400',
         headingFontWeight: '600',
-        lineHeight: '1.8'
+        lineHeight: '1.8',
       },
       layout: {
         padding: '1.5rem',
         margin: '1rem',
         borderRadius: '0.125rem',
         borderWidth: '1px',
-        boxShadow: '0 2px 4px 0 rgba(139, 69, 19, 0.1)'
+        boxShadow: '0 2px 4px 0 rgba(139, 69, 19, 0.1)',
       },
       animations: {
-        transitionDuration: '250ms'
-      }
-    }
+        transitionDuration: '250ms',
+      },
+    },
   },
 
   // ========== リラックス系 ==========
@@ -398,7 +398,7 @@ export const themePresets: ThemePreset[] = [
         headingColor: '#15803D',
         subtextColor: '#166534',
         mutedTextColor: '#16A34A',
-        dividerColor: '#86EFAC'
+        dividerColor: '#86EFAC',
       },
       typography: {
         fontFamily: '"Inter", system-ui, sans-serif',
@@ -407,19 +407,19 @@ export const themePresets: ThemePreset[] = [
         smallFontSize: '0.875rem',
         fontWeight: '400',
         headingFontWeight: '500',
-        lineHeight: '1.7'
+        lineHeight: '1.7',
       },
       layout: {
         padding: '1rem',
         margin: '0.5rem',
         borderRadius: '0.5rem',
         borderWidth: '1px',
-        boxShadow: '0 1px 3px 0 rgba(34, 197, 94, 0.1)'
+        boxShadow: '0 1px 3px 0 rgba(34, 197, 94, 0.1)',
       },
       animations: {
-        transitionDuration: '200ms'
-      }
-    }
+        transitionDuration: '200ms',
+      },
+    },
   },
 
   {
@@ -439,7 +439,7 @@ export const themePresets: ThemePreset[] = [
         headingColor: '#92400E',
         subtextColor: '#B45309',
         mutedTextColor: '#D97706',
-        dividerColor: '#FBBF24'
+        dividerColor: '#FBBF24',
       },
       typography: {
         fontFamily: '"Source Sans Pro", "Helvetica Neue", sans-serif',
@@ -448,19 +448,19 @@ export const themePresets: ThemePreset[] = [
         smallFontSize: '0.875rem',
         fontWeight: '400',
         headingFontWeight: '600',
-        lineHeight: '1.6'
+        lineHeight: '1.6',
       },
       layout: {
         padding: '1rem',
         margin: '0.5rem',
         borderRadius: '0.5rem',
         borderWidth: '1px',
-        boxShadow: '0 1px 2px 0 rgba(245, 158, 11, 0.1)'
+        boxShadow: '0 1px 2px 0 rgba(245, 158, 11, 0.1)',
       },
       animations: {
-        transitionDuration: '200ms'
-      }
-    }
+        transitionDuration: '200ms',
+      },
+    },
   },
 
   // ========== 季節・特別系 ==========
@@ -481,7 +481,7 @@ export const themePresets: ThemePreset[] = [
         headingColor: '#9D174D',
         subtextColor: '#BE185D',
         mutedTextColor: '#DB2777',
-        dividerColor: '#F9A8D4'
+        dividerColor: '#F9A8D4',
       },
       typography: {
         fontFamily: '"Noto Serif JP", "Yu Mincho", serif',
@@ -490,19 +490,19 @@ export const themePresets: ThemePreset[] = [
         smallFontSize: '0.875rem',
         fontWeight: '400',
         headingFontWeight: '500',
-        lineHeight: '1.7'
+        lineHeight: '1.7',
       },
       layout: {
         padding: '1rem',
         margin: '0.5rem',
         borderRadius: '0.75rem',
         borderWidth: '1px',
-        boxShadow: '0 1px 3px 0 rgba(236, 72, 153, 0.1)'
+        boxShadow: '0 1px 3px 0 rgba(236, 72, 153, 0.1)',
       },
       animations: {
-        transitionDuration: '250ms'
-      }
-    }
+        transitionDuration: '250ms',
+      },
+    },
   },
 
   {
@@ -522,7 +522,7 @@ export const themePresets: ThemePreset[] = [
         headingColor: '#0369A1',
         subtextColor: '#0284C7',
         mutedTextColor: '#0EA5E9',
-        dividerColor: '#38BDF8'
+        dividerColor: '#38BDF8',
       },
       typography: {
         fontFamily: '"Open Sans", "Helvetica Neue", sans-serif',
@@ -531,19 +531,19 @@ export const themePresets: ThemePreset[] = [
         smallFontSize: '0.875rem',
         fontWeight: '400',
         headingFontWeight: '600',
-        lineHeight: '1.6'
+        lineHeight: '1.6',
       },
       layout: {
         padding: '1rem',
         margin: '0.5rem',
         borderRadius: '0.5rem',
         borderWidth: '1px',
-        boxShadow: '0 1px 3px 0 rgba(14, 165, 233, 0.1)'
+        boxShadow: '0 1px 3px 0 rgba(14, 165, 233, 0.1)',
       },
       animations: {
-        transitionDuration: '200ms'
-      }
-    }
+        transitionDuration: '200ms',
+      },
+    },
   },
 
   // ========== アクセシビリティ系 ==========
@@ -564,7 +564,7 @@ export const themePresets: ThemePreset[] = [
         headingColor: '#000000',
         subtextColor: '#333333',
         mutedTextColor: '#666666',
-        dividerColor: '#000000'
+        dividerColor: '#000000',
       },
       typography: {
         fontFamily: '"Arial", sans-serif',
@@ -574,24 +574,24 @@ export const themePresets: ThemePreset[] = [
         fontWeight: '400',
         headingFontWeight: '700',
         boldFontWeight: '900',
-        lineHeight: '1.8'
+        lineHeight: '1.8',
       },
       layout: {
         padding: '1.5rem',
         margin: '1rem',
         borderRadius: '0',
         borderWidth: '2px',
-        boxShadow: 'none'
+        boxShadow: 'none',
       },
       accessibility: {
         highContrast: true,
         reducedMotion: true,
-        fontSize: 'large'
+        fontSize: 'large',
       },
       animations: {
-        transitionDuration: '0ms' // アニメーション無効
-      }
-    }
+        transitionDuration: '0ms', // アニメーション無効
+      },
+    },
   },
 
   {
@@ -611,7 +611,7 @@ export const themePresets: ThemePreset[] = [
         headingColor: '#3E2723',
         subtextColor: '#5D4037',
         mutedTextColor: '#795548',
-        dividerColor: '#BCAAA4'
+        dividerColor: '#BCAAA4',
       },
       typography: {
         fontFamily: '"Georgia", "Times New Roman", serif',
@@ -620,22 +620,22 @@ export const themePresets: ThemePreset[] = [
         smallFontSize: '1rem',
         fontWeight: '400',
         headingFontWeight: '600',
-        lineHeight: '1.8'
+        lineHeight: '1.8',
       },
       layout: {
         padding: '1.25rem',
         margin: '0.75rem',
         borderRadius: '0.25rem',
         borderWidth: '1px',
-        boxShadow: '0 1px 2px 0 rgba(62, 39, 35, 0.1)'
+        boxShadow: '0 1px 2px 0 rgba(62, 39, 35, 0.1)',
       },
       accessibility: {
         reducedMotion: true,
-        fontSize: 'medium'
+        fontSize: 'medium',
       },
       animations: {
-        transitionDuration: '100ms'
-      }
-    }
-  }
+        transitionDuration: '100ms',
+      },
+    },
+  },
 ];

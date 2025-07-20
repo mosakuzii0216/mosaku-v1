@@ -71,11 +71,7 @@ export class TagService {
     });
   }
 
-  async update(
-    id: string,
-    updateTagDto: UpdateTagDto,
-    supabaseUserId: string,
-  ) {
+  async update(id: string, updateTagDto: UpdateTagDto, supabaseUserId: string) {
     const user = await this.prisma.user.findUnique({
       where: { supabaseId: supabaseUserId },
     });

@@ -39,6 +39,13 @@ export class MemoService {
             tag: true,
           },
         },
+        theme: {
+          select: {
+            id: true,
+            name: true,
+            styles: true,
+          },
+        },
       },
       orderBy: {
         updatedAt: 'desc',
@@ -61,6 +68,13 @@ export class MemoService {
         memoTags: {
           include: {
             tag: true,
+          },
+        },
+        theme: {
+          select: {
+            id: true,
+            name: true,
+            styles: true,
           },
         },
       },
@@ -86,10 +100,27 @@ export class MemoService {
       throw new NotFoundException('User not found');
     }
 
+    const createData: any = {
+      title: createMemoDto.title,
+      content: createMemoDto.content,
+      userId: user.id,
+    };
+
+    // テーマIDが指定されている場合は関連付け
+    if (createMemoDto.themeId) {
+      createData.themeId = createMemoDto.themeId;
+    }
+
     return this.prisma.memo.create({
-      data: {
-        ...createMemoDto,
-        userId: user.id,
+      data: createData,
+      include: {
+        theme: {
+          select: {
+            id: true,
+            name: true,
+            styles: true,
+          },
+        },
       },
     });
   }
@@ -122,6 +153,15 @@ export class MemoService {
     return this.prisma.memo.update({
       where: { id },
       data: updateMemoDto,
+      include: {
+        theme: {
+          select: {
+            id: true,
+            name: true,
+            styles: true,
+          },
+        },
+      },
     });
   }
 
@@ -197,6 +237,13 @@ export class MemoService {
         memoTags: {
           include: {
             tag: true,
+          },
+        },
+        theme: {
+          select: {
+            id: true,
+            name: true,
+            styles: true,
           },
         },
       },

@@ -56,7 +56,10 @@ export class AuthController {
 
   @Post('sync-user-with-invite')
   @UseGuards(SupabaseGuard)
-  async syncUserWithInvite(@Request() req: any, @Body() body: { name?: string; invitationCode: string }) {
+  async syncUserWithInvite(
+    @Request() req: any,
+    @Body() body: { name?: string; invitationCode: string },
+  ) {
     const supabaseUser = req.user;
     const { name, invitationCode } = body;
 
@@ -79,7 +82,8 @@ export class AuthController {
       data: {
         supabaseId: supabaseUser.id,
         email: supabaseUser.email,
-        name: name || supabaseUser.user_metadata?.full_name || supabaseUser.email,
+        name:
+          name || supabaseUser.user_metadata?.full_name || supabaseUser.email,
         role: isAdmin ? 'ADMIN' : 'FREE',
       },
     });
@@ -108,7 +112,7 @@ export class AuthController {
     // 既存ユーザーの管理者権限を確認・更新
     const adminEmail = process.env.ADMIN_EMAIL;
     const shouldBeAdmin = adminEmail && user.email === adminEmail;
-    
+
     if (shouldBeAdmin && user.role !== 'ADMIN') {
       user = await this.prisma.user.update({
         where: { id: user.id },
@@ -244,11 +248,11 @@ export class AuthController {
   @UseGuards(SupabaseGuard)
   async updateAdminRole(@Request() req: any) {
     const supabaseUser = req.user;
-    
+
     // 管理者メールアドレスかどうかをチェック
     const adminEmail = process.env.ADMIN_EMAIL;
     const shouldBeAdmin = adminEmail && supabaseUser.email === adminEmail;
-    
+
     if (!shouldBeAdmin) {
       throw new BadRequestException('This email is not authorized as admin');
     }

@@ -1,4 +1,4 @@
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '@prisma/client';
 import { themePresets } from '../src/data/theme-presets';
 
 const prisma = new PrismaClient();

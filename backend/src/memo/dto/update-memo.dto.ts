@@ -9,4 +9,8 @@ export class UpdateMemoDto {
   @IsString()
   @IsOptional()
   content?: string;
+
+  @IsString()
+  @IsOptional()
+  themeId?: string; // テーマID（オプショナル）
 }

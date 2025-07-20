@@ -43,7 +43,7 @@ export class InvitationController {
   ) {
     // Get local user data to check role
     const localUser = await this.getLocalUser(req.user);
-    
+
     // Only admin users can create invitations
     if (localUser.role !== 'ADMIN') {
       throw new BadRequestException('Only admin users can create invitations');
@@ -65,7 +65,7 @@ export class InvitationController {
   async getInvitations(@Request() req: any) {
     // Get local user data to check role
     const localUser = await this.getLocalUser(req.user);
-    
+
     // Only admin users can view invitations
     if (localUser.role !== 'ADMIN') {
       throw new BadRequestException('Only admin users can view invitations');
@@ -79,7 +79,7 @@ export class InvitationController {
   async deleteInvitation(@Param('id') id: string, @Request() req: any) {
     // Get local user data to check role
     const localUser = await this.getLocalUser(req.user);
-    
+
     // Only admin users can delete invitations
     if (localUser.role !== 'ADMIN') {
       throw new BadRequestException('Only admin users can delete invitations');
