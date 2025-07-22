@@ -96,52 +96,93 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
       return;
     }
 
-    if (isCreate) {
-      const result = await new Promise<Memo>((resolve, reject) => {
-        createMemo.mutate({
-          title: title.trim() || '無題',
-          content: content.trim(),
-          themeId: selectedTheme?.id || null,
-        }, {
-          onSuccess: resolve,
-          onError: reject,
+    try {
+      if (isCreate) {
+        const result = await new Promise<Memo>((resolve, reject) => {
+          createMemo.mutate({
+            title: title.trim() || '無題',
+            content: content.trim(),
+            themeId: selectedTheme?.id || null,
+          }, {
+            onSuccess: resolve,
+            onError: reject,
+          });
         });
-      });
-      
-      // 新規作成後にタグを割り当て
-      if (selectedTagIds.length > 0) {
-        assignTags({ memoId: result.id, data: { tagIds: selectedTagIds } });
-      }
-    } else if (memo && hasChanges) {
-      updateMemo.mutate({
-        id: memo.id,
-        data: {
+        
+        // 新規作成後にタグを割り当て
+        if (selectedTagIds.length > 0) {
+          assignTags({ memoId: result.id, data: { tagIds: selectedTagIds } });
+        }
+        
+        // 新規作成完了後、詳細画面に遷移
+        goToDetail(result);
+      } else if (memo && hasChanges) {
+        await new Promise<Memo>((resolve, reject) => {
+          updateMemo.mutate({
+            id: memo.id,
+            data: {
+              title: title.trim() || '無題',
+              content: content.trim(),
+              themeId: selectedTheme?.id || null,
+            },
+          }, {
+            onSuccess: resolve,
+            onError: reject,
+          });
+        });
+        
+        // タグの変更があれば更新
+        const originalTagIds = memo.memoTags?.map(mt => mt.tag.id) || [];
+        const tagsChanged = JSON.stringify(selectedTagIds.sort()) !== JSON.stringify(originalTagIds.sort());
+        if (tagsChanged) {
+          assignTags({ memoId: memo.id, data: { tagIds: selectedTagIds } });
+        }
+        
+        // 更新完了後、詳細画面に戻る
+        goToDetail({
+          ...memo,
           title: title.trim() || '無題',
           content: content.trim(),
           themeId: selectedTheme?.id || null,
-        },
-      });
-      
-      // タグの変更があれば更新
-      const originalTagIds = memo.memoTags?.map(mt => mt.tag.id) || [];
-      const tagsChanged = JSON.stringify(selectedTagIds.sort()) !== JSON.stringify(originalTagIds.sort());
-      if (tagsChanged) {
-        assignTags({ memoId: memo.id, data: { tagIds: selectedTagIds } });
+          theme: selectedTheme ? {
+            id: selectedTheme.id,
+            name: selectedTheme.name,
+            styles: selectedTheme.styles
+          } : null,
+        });
       }
+    } catch (error) {
+      console.error('保存に失敗しました:', error);
+      // エラーハンドリング - ユーザーにエラーを通知
+      alert('保存に失敗しました。もう一度お試しください。');
     }
-  }, [title, content, selectedTagIds, selectedTheme, isCreate, createMemo, memo, hasChanges, updateMemo, assignTags]);
+  }, [title, content, selectedTagIds, selectedTheme, isCreate, createMemo, memo, hasChanges, updateMemo, assignTags, goToDetail]);
 
-
-  // 自動保存（新規作成・編集共通）
+  // キーボードショートカット（Ctrl+S / Cmd+S で保存）
   useEffect(() => {
-    if (hasChanges && (title.trim() || content.trim())) {
-      const timer = setTimeout(() => {
-        handleSave();
-      }, 2000);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+        event.preventDefault();
+        if (hasChanges && (title.trim() || content.trim())) {
+          handleSave();
+        }
+      }
+    };
 
-      return () => clearTimeout(timer);
-    }
-  }, [title, content, hasChanges, handleSave]);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [hasChanges, title, content, handleSave]);
+
+  // 自動保存を無効化（手動保存のみに変更）
+  // useEffect(() => {
+  //   if (hasChanges && (title.trim() || content.trim())) {
+  //     const timer = setTimeout(() => {
+  //       handleSave();
+  //     }, 2000);
+
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [title, content, hasChanges, handleSave]);
 
   const handleCancel = () => {
     if (hasChanges && !window.confirm('変更が保存されていません。破棄しますか？')) {
@@ -171,9 +212,16 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
         <div className="flex items-center space-x-2">
           {hasChanges && (
             <span className="text-sm text-gray-500 dark:text-gray-400">
-              自動保存中...
+              未保存の変更があります
             </span>
           )}
+          <button
+            onClick={handleSave}
+            disabled={!hasChanges || (!title.trim() && !content.trim()) || createMemo.isPending || updateMemo.isPending}
+            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {createMemo.isPending || updateMemo.isPending ? '保存中...' : '保存'}
+          </button>
         </div>
       </div>
 
