@@ -101,7 +101,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
         createMemo.mutate({
           title: title.trim() || '無題',
           content: content.trim(),
-          themeId: selectedTheme?.id,
+          themeId: selectedTheme?.id || null,
         }, {
           onSuccess: resolve,
           onError: reject,
@@ -118,7 +118,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
         data: {
           title: title.trim() || '無題',
           content: content.trim(),
-          themeId: selectedTheme?.id,
+          themeId: selectedTheme?.id || null,
         },
       });
       
@@ -223,93 +223,103 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
             />
           </div>
 
-          {/* テーマ表示・選択エリア */}
-          {(isCreate || selectedTheme) && (
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <label 
-                  className="block text-sm font-medium"
-                  style={{ color: selectedTheme ? 'var(--theme-subtext-color)' : undefined }}
-                >
-                  テーマ
-                </label>
-                {isCreate && (
-                  <button
-                    type="button"
-                    onClick={() => setShowThemeSelector(!showThemeSelector)}
-                    className="text-sm hover:opacity-80"
-                    style={{ 
-                      color: selectedTheme ? 'var(--theme-accent-color)' : undefined,
-                    }}
-                  >
-                    {showThemeSelector ? 'テーマ選択を閉じる' : 'テーマを選択'}
-                  </button>
-                )}
-                {!isCreate && selectedTheme && (
-                  <span 
-                    className="text-xs px-2 py-1 rounded"
-                    style={{
-                      backgroundColor: selectedTheme ? 'var(--theme-accent-color)' : undefined,
-                      color: selectedTheme ? 'var(--theme-bg-color)' : undefined,
-                    }}
-                  >
-                    既存テーマ適用中
-                  </span>
-                )}
-              </div>
+          {/* テーマ選択エリア */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <label 
+                className="block text-sm font-medium"
+                style={{ color: selectedTheme ? 'var(--theme-subtext-color)' : undefined }}
+              >
+                テーマ
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowThemeSelector(!showThemeSelector)}
+                className="text-sm hover:opacity-80"
+                style={{ 
+                  color: selectedTheme ? 'var(--theme-accent-color)' : undefined,
+                }}
+              >
+                {showThemeSelector ? 'テーマ選択を閉じる' : selectedTheme ? 'テーマを変更' : 'テーマを選択'}
+              </button>
+            </div>
               
-              {/* 選択されたテーマの表示 */}
-              {selectedTheme && (
-                <div 
-                  className="mb-3 p-3 rounded-lg"
-                  style={{
-                    backgroundColor: selectedTheme ? 'var(--theme-hover-bg-color)' : undefined,
-                    border: selectedTheme ? `1px solid var(--theme-border-color)` : undefined,
-                    borderRadius: selectedTheme ? 'var(--theme-border-radius)' : undefined,
-                  }}
-                >
-                  <div className="flex items-center justify-between">
+            {/* 選択されたテーマの表示またはテーマなしの表示 */}
+            {selectedTheme ? (
+              <div 
+                className="mb-3 p-3 rounded-lg"
+                style={{
+                  backgroundColor: selectedTheme ? 'var(--theme-hover-bg-color)' : undefined,
+                  border: selectedTheme ? `1px solid var(--theme-border-color)` : undefined,
+                  borderRadius: selectedTheme ? 'var(--theme-border-radius)' : undefined,
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
                     <span 
                       className="text-sm font-medium"
                       style={{ color: selectedTheme ? 'var(--theme-text-color)' : undefined }}
                     >
                       選択中: {selectedTheme.name}
                     </span>
-                    {isCreate && (
-                      <button
-                        onClick={() => setSelectedTheme(null)}
-                        className="text-sm hover:opacity-70"
-                        style={{ color: selectedTheme ? 'var(--theme-subtext-color)' : undefined }}
+                    {!isCreate && (
+                      <span 
+                        className="text-xs px-2 py-1 rounded"
+                        style={{
+                          backgroundColor: selectedTheme ? 'var(--theme-accent-color)' : undefined,
+                          color: selectedTheme ? 'var(--theme-bg-color)' : undefined,
+                        }}
                       >
-                        解除
-                      </button>
+                        変更可能
+                      </span>
                     )}
                   </div>
+                  <button
+                    onClick={() => setSelectedTheme(null)}
+                    className="text-sm hover:opacity-70"
+                    style={{ color: selectedTheme ? 'var(--theme-subtext-color)' : undefined }}
+                  >
+                    解除
+                  </button>
                 </div>
-              )}
+              </div>
+            ) : (
+              <div className="mb-3 p-3 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    テーマが設定されていません
+                  </span>
+                  <button
+                    onClick={() => setShowThemeSelector(true)}
+                    className="text-sm text-blue-500 hover:text-blue-600 dark:text-blue-400"
+                  >
+                    テーマを選択
+                  </button>
+                </div>
+              </div>
+            )}
 
-              {/* テーマ選択UI（新規作成時のみ） */}
-              {isCreate && showThemeSelector && (
-                <div 
-                  className="rounded-lg p-4 max-h-96 overflow-y-auto"
-                  style={{
-                    border: selectedTheme ? `1px solid var(--theme-border-color)` : undefined,
-                    borderRadius: selectedTheme ? 'var(--theme-border-radius)' : undefined,
+            {/* テーマ選択UI */}
+            {showThemeSelector && (
+              <div 
+                className="rounded-lg p-4 max-h-96 overflow-y-auto"
+                style={{
+                  border: selectedTheme ? `1px solid var(--theme-border-color)` : undefined,
+                  borderRadius: selectedTheme ? 'var(--theme-border-radius)' : undefined,
+                }}
+              >
+                <ThemeSelector
+                  selectedThemeId={selectedTheme?.id}
+                  onThemeSelect={(theme) => {
+                    setSelectedTheme(theme);
+                    setShowThemeSelector(false);
                   }}
-                >
-                  <ThemeSelector
-                    selectedThemeId={selectedTheme?.id}
-                    onThemeSelect={(theme) => {
-                      setSelectedTheme(theme);
-                      setShowThemeSelector(false);
-                    }}
-                    showFavorites={true}
-                    className="max-h-80"
-                  />
-                </div>
-              )}
-            </div>
-          )}
+                  showFavorites={true}
+                  className="max-h-80"
+                />
+              </div>
+            )}
+          </div>
           
           {/* コンテンツ入力エリア */}
           <div 
