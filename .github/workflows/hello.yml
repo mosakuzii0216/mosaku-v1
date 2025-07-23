@@ -1,0 +1,35 @@
+name: Hello World
+
+# いつ実行するか：mainブランチにpushされた時
+on:
+  push:
+    branches: [ main ]
+
+# 実行する作業（ジョブ）
+jobs:
+  # ジョブ名：hello
+  hello:
+    # どの環境で実行するか
+    runs-on: ubuntu-latest
+    
+    # 実行する手順（ステップ）
+    steps:
+      # ステップ1：コードをダウンロード
+      - name: コードをチェックアウト
+        uses: actions/checkout@v4
+        
+      # ステップ2：Hello Worldを表示
+      - name: Hello Worldを表示
+        run: echo "Hello World! GitHub Actionsが正常に動いています！"
+        
+      # ステップ3：現在の日時を表示
+      - name: 現在の日時を表示
+        run: date
+        
+      # ステップ4：プロジェクトの情報を表示
+      - name: プロジェクト情報を表示
+        run: |
+          echo "プロジェクト名: mosaku"
+          echo "ブランチ: ${{ github.ref }}"
+          echo "コミットID: ${{ github.sha }}"
+          ls -la
