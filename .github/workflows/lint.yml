@@ -1,0 +1,72 @@
+name: Code Quality Check
+
+# プルリクエスト時とmainへのpush時に実行
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  # フロントエンドのリントチェック
+  frontend-lint:
+    name: フロントエンドリント
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: コードをチェックアウト
+        uses: actions/checkout@v4
+        
+      - name: Node.js セットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          # package-lock.jsonをキャッシュして高速化
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+          
+      - name: フロントエンド依存関係インストール
+        run: |
+          cd frontend
+          npm ci
+          
+      - name: ESLintでコードチェック
+        run: |
+          cd frontend
+          npm run lint
+          
+      - name: TypeScript型チェック
+        run: |
+          cd frontend
+          npx tsc --noEmit
+
+  # バックエンドのリントチェック  
+  backend-lint:
+    name: バックエンドリント
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: コードをチェックアウト
+        uses: actions/checkout@v4
+        
+      - name: Node.js セットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'  
+          cache-dependency-path: backend/package-lock.json
+          
+      - name: バックエンド依存関係インストール
+        run: |
+          cd backend
+          npm ci
+          
+      - name: Prismaクライアント生成
+        run: |
+          cd backend
+          npx prisma generate
+          
+      - name: ESLintでコードチェック
+        run: |
+          cd backend
+          npm run lint
