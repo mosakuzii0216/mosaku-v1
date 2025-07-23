@@ -1,0 +1,110 @@
+name: Automated Tests
+
+# プルリクエスト時とmainへのpush時に実行
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  # バックエンドテスト（データベースが必要）
+  backend-test:
+    name: バックエンドテスト
+    runs-on: ubuntu-latest
+    
+    # PostgreSQLサービスを起動
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mosaku_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - name: コードをチェックアウト
+        uses: actions/checkout@v4
+        
+      - name: Node.js セットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+          
+      - name: バックエンド依存関係インストール
+        run: |
+          cd backend
+          npm ci
+          
+      - name: Prismaクライアント生成
+        run: |
+          cd backend
+          npx prisma generate
+          
+      - name: データベースマイグレーション実行
+        run: |
+          cd backend
+          npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mosaku_test
+          
+      - name: ユニットテスト実行
+        run: |
+          cd backend
+          npm run test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mosaku_test
+          
+      - name: E2Eテスト実行
+        run: |
+          cd backend
+          npm run test:e2e
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mosaku_test
+          
+      - name: テストカバレッジ生成
+        run: |
+          cd backend
+          npm run test:cov
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mosaku_test
+
+  # フロントエンドテスト（まだテストファイルがない場合はスキップ）
+  frontend-test:
+    name: フロントエンドテスト
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: コードをチェックアウト
+        uses: actions/checkout@v4
+        
+      - name: Node.js セットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+          
+      - name: フロントエンド依存関係インストール
+        run: |
+          cd frontend
+          npm ci
+          
+      - name: ビルドテスト（エラーがないか確認）
+        run: |
+          cd frontend
+          npm run build
+          
+      # 将来的にテストフレームワーク追加時
+      # - name: フロントエンドテスト実行
+      #   run: |
+      #     cd frontend
+      #     npm run test
