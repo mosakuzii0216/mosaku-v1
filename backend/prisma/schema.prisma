@@ -21,10 +21,18 @@ enum UserRole {
 
 model User {
   id          String   @id @default(cuid())
-  supabaseId  String   @unique @map("supabase_id")
+  supabaseId  String?  @unique @map("supabase_id") // Supabaseからの移行時のみ使用
   email       String   @unique
+  password    String?  // 新規追加：ハッシュ化されたパスワード
   name        String?
   role        UserRole @default(FREE)
+  
+  // 認証関連フィールド
+  emailVerified        Boolean   @default(false) @map("email_verified")
+  emailVerificationToken String? @map("email_verification_token")
+  resetPasswordToken     String? @map("reset_password_token")
+  resetPasswordExpires   DateTime? @map("reset_password_expires")
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
