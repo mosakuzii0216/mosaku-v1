@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { AuthTokenManager } from '../../utils/auth';
 
 interface InvitationCode {
   id: string;
@@ -26,16 +26,16 @@ export default function InvitationManager() {
 
   const loadInvitations = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const token = AuthTokenManager.getAccessToken();
       
-      if (!session) {
+      if (!token || AuthTokenManager.isTokenExpired(token)) {
         setMessage('認証が必要です');
         return;
       }
 
       const response = await fetch('http://localhost/api/invitation', {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -60,9 +60,9 @@ export default function InvitationManager() {
     setMessage('');
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const token = AuthTokenManager.getAccessToken();
       
-      if (!session) {
+      if (!token || AuthTokenManager.isTokenExpired(token)) {
         setMessage('認証が必要です');
         return;
       }
@@ -71,7 +71,7 @@ export default function InvitationManager() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           maxUses,
@@ -101,9 +101,9 @@ export default function InvitationManager() {
     if (!confirm('この招待コードを削除しますか？')) return;
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const token = AuthTokenManager.getAccessToken();
       
-      if (!session) {
+      if (!token || AuthTokenManager.isTokenExpired(token)) {
         setMessage('認証が必要です');
         return;
       }
@@ -111,7 +111,7 @@ export default function InvitationManager() {
       const response = await fetch(`http://localhost/api/invitation/${id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
 
