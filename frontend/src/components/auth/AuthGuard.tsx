@@ -1,6 +1,4 @@
-import { useEffect, useState } from 'react'
-import { supabase } from '../../lib/supabase'
-import type { User } from '@supabase/supabase-js'
+import { useAuth } from '../../hooks/useAuth'
 import AuthForm from './AuthForm'
 
 interface AuthGuardProps {
@@ -8,29 +6,7 @@ interface AuthGuardProps {
 }
 
 export default function AuthGuard({ children }: AuthGuardProps) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    // 現在のユーザーを取得
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      setLoading(false)
-    }
-
-    getUser()
-
-    // 認証状態の変更を監視
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_, session) => {
-        setUser(session?.user ?? null)
-        setLoading(false)
-      }
-    )
-
-    return () => subscription.unsubscribe()
-  }, [])
+  const { user, loading } = useAuth()
 
   if (loading) {
     return (

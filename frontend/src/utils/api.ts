@@ -1,20 +1,20 @@
 import type { Memo, CreateMemoDto, UpdateMemoDto } from '../types/memo';
 import type { Tag, CreateTagDto, UpdateTagDto, AssignTagsDto, MemoTag } from '../types/tag';
 import type { Theme, ThemeSearchParams, CreateThemeData, UpdateThemeData } from '../types/theme';
-import { supabase } from '../lib/supabase';
+import { AuthTokenManager } from './auth';
 
 const API_BASE_URL = 'http://localhost/api';
 
 class ApiClient {
   private async getAuthHeaders(): Promise<Record<string, string>> {
-    const { data: { session } } = await supabase.auth.getSession();
+    const token = AuthTokenManager.getAccessToken();
     
-    if (!session) {
+    if (!token || AuthTokenManager.isTokenExpired(token)) {
       throw new Error('認証が必要です');
     }
     
     return {
-      'Authorization': `Bearer ${session.access_token}`,
+      'Authorization': `Bearer ${token}`,
     };
   }
 
@@ -90,10 +90,10 @@ class ApiClient {
     // 認証情報を取得（失敗しても続行）
     let authHeaders: Record<string, string> = {};
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      const token = AuthTokenManager.getAccessToken();
+      if (token && !AuthTokenManager.isTokenExpired(token)) {
         authHeaders = {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${token}`,
         };
       }
     } catch {

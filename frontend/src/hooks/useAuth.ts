@@ -1,106 +1,118 @@
 import { useState, useEffect } from 'react'
-import type { User } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
+import { AuthAPI, AuthTokenManager, UserProfile } from '../utils/auth'
 
-export interface UserProfile {
-  id: string
-  supabaseId: string
-  email: string
-  name: string | null
-  role: 'FREE' | 'PREMIUM' | 'ADMIN'
-  createdAt: string
-  updatedAt: string
+export interface AuthState {
+  user: UserProfile | null;
+  loading: boolean;
+  isAuthenticated: boolean;
 }
 
-export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null)
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+export interface AuthActions {
+  login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, name?: string, invitationCode?: string) => Promise<void>;
+  logout: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  refreshUser: () => Promise<void>;
+}
+
+export const useAuth = (): AuthState & AuthActions => {
+  const [user, setUser] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      
-      if (user) {
-        await fetchUserProfile(user)
-      }
-      
-      setLoading(false)
-    }
-
-    getUser()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_, session) => {
-        setUser(session?.user ?? null)
-        
-        if (session?.user) {
-          await fetchUserProfile(session.user)
-        } else {
-          setUserProfile(null)
-        }
-        
-        setLoading(false)
-      }
-    )
-
-    return () => subscription.unsubscribe()
+    initializeAuth()
   }, [])
 
-  const fetchUserProfile = async (authUser: User) => {
+  const initializeAuth = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
-
-      // まずユーザープロフィールを取得を試行
-      let response = await fetch('http://localhost/api/auth/me', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        }
-      })
-
-      // ユーザーが存在しない場合は同期を実行
-      if (!response.ok && response.status === 404) {
-        await fetch('http://localhost/api/auth/sync-user', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            name: authUser.user_metadata?.full_name || authUser.email
-          })
-        })
-        
-        // 同期後に再度プロフィールを取得
-        response = await fetch('http://localhost/api/auth/me', {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`
-          }
-        })
-      }
-
-      if (response.ok) {
-        const profile = await response.json()
-        setUserProfile(profile)
+      if (AuthTokenManager.isAuthenticated()) {
+        const userProfile = await AuthAPI.getCurrentUser()
+        setUser(userProfile)
       }
     } catch (error) {
-      console.error('プロフィール取得エラー:', error)
+      console.error('Failed to initialize auth:', error)
+      AuthTokenManager.removeTokens()
+    } finally {
+      setLoading(false)
     }
   }
 
-  const signOut = async () => {
-    await supabase.auth.signOut()
-    setUser(null)
-    setUserProfile(null)
+  const login = async (email: string, password: string): Promise<void> => {
+    try {
+      const response = await AuthAPI.login(email, password)
+      setUser(response.user)
+    } catch (error) {
+      throw error
+    }
+  }
+
+  const register = async (
+    email: string,
+    password: string,
+    name?: string,
+    invitationCode?: string
+  ): Promise<void> => {
+    try {
+      await AuthAPI.register(email, password, name, invitationCode)
+      // Registration successful, but user needs to login
+    } catch (error) {
+      throw error
+    }
+  }
+
+  const logout = async (): Promise<void> => {
+    try {
+      await AuthAPI.logout()
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      setUser(null)
+      AuthTokenManager.removeTokens()
+    }
+  }
+
+  const resetPassword = async (email: string): Promise<void> => {
+    try {
+      await AuthAPI.resetPassword(email)
+    } catch (error) {
+      throw error
+    }
+  }
+
+  const changePassword = async (
+    currentPassword: string,
+    newPassword: string
+  ): Promise<void> => {
+    try {
+      await AuthAPI.changePassword(currentPassword, newPassword)
+    } catch (error) {
+      throw error
+    }
+  }
+
+  const refreshUser = async (): Promise<void> => {
+    try {
+      if (AuthTokenManager.isAuthenticated()) {
+        const userProfile = await AuthAPI.getCurrentUser()
+        setUser(userProfile)
+      }
+    } catch (error) {
+      console.error('Failed to refresh user:', error)
+      setUser(null)
+      AuthTokenManager.removeTokens()
+    }
   }
 
   return {
     user,
-    userProfile,
     loading,
-    signOut,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user && AuthTokenManager.isAuthenticated(),
+    login,
+    register,
+    logout,
+    resetPassword,
+    changePassword,
+    refreshUser,
   }
 }

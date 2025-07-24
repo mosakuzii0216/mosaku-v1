@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
-import OAuthWithInviteForm from './OAuthWithInviteForm'
+import { useAuth } from '../../hooks/useAuth'
 
 export default function AuthForm() {
   const [searchParams] = useSearchParams()
@@ -11,8 +10,9 @@ export default function AuthForm() {
   const [name, setName] = useState('')
   const [invitationCode, setInvitationCode] = useState('')
   const [message, setMessage] = useState('')
-  const [showResendConfirmation, setShowResendConfirmation] = useState(false)
-  const [mode, setMode] = useState<'login' | 'signup' | 'resetPassword' | 'oauth-google' | 'oauth-github'>('login')
+  const [mode, setMode] = useState<'login' | 'signup' | 'resetPassword'>('login')
+
+  const { login, register, resetPassword } = useAuth()
 
   useEffect(() => {
     const error = searchParams.get('error')
@@ -22,65 +22,6 @@ export default function AuthForm() {
     }
   }, [searchParams])
 
-
-  const handleGoogleLogin = async () => {
-    setLoading(true)
-    setMessage('')
-    
-    try {
-      const redirectUrl = window.location.port 
-        ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}/auth/callback`
-        : `${window.location.origin}/auth/callback`;
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUrl
-        }
-      });
-
-      if (error) throw error;
-    } catch (error: unknown) {
-      console.error('Google認証エラー:', error);
-      setMessage(error instanceof Error ? error.message : 'Authentication failed');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleGitHubLogin = async () => {
-    setLoading(true)
-    setMessage('')
-    
-    try {
-      const redirectUrl = window.location.port 
-        ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}/auth/callback`
-        : `${window.location.origin}/auth/callback`;
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: {
-          redirectTo: redirectUrl
-        }
-      });
-
-      if (error) throw error;
-    } catch (error: unknown) {
-      console.error('GitHub認証エラー:', error);
-      setMessage(error instanceof Error ? error.message : 'Authentication failed');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleOAuthWithInvite = (provider: 'google' | 'github') => {
-    if (provider === 'google') {
-      setMode('oauth-google')
-    } else {
-      setMode('oauth-github')
-    }
-  }
-
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -88,72 +29,22 @@ export default function AuthForm() {
     
     try {
       if (mode === 'signup') {
-        const response = await fetch('http://localhost/api/auth/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email,
-            password,
-            name: name || undefined,
-            invitationCode
-          })
-        })
-        
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.message || 'Registration failed')
-        }
-        
-        const data = await response.json()
-        setMessage(data.message || 'Registration successful! Please check your email for verification.')
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        })
-        
-        if (error) throw error
+        await register(email, password, name || undefined, invitationCode)
+        setMessage('Registration successful! You can now login with your credentials.')
+        setMode('login')
+        // Clear form fields
+        setEmail('')
+        setPassword('')
+        setName('')
+        setInvitationCode('')
+      } else if (mode === 'login') {
+        await login(email, password)
+        // Login successful, useAuth will handle state update
       }
     } catch (error: unknown) {
       console.error('認証エラー:', error)
       const errorMessage = error instanceof Error ? error.message : 'An error occurred'
       setMessage(errorMessage)
-      
-      // メール認証が必要な場合は再送信オプションを表示
-      if (errorMessage.includes('Email not confirmed')) {
-        setShowResendConfirmation(true)
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleResendConfirmation = async () => {
-    setLoading(true)
-    setMessage('')
-    
-    try {
-      const response = await fetch('http://localhost/api/auth/resend-confirmation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email })
-      })
-      
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Failed to resend confirmation email')
-      }
-      
-      const data = await response.json()
-      setMessage(data.message)
-      setShowResendConfirmation(false)
-    } catch (error: unknown) {
-      console.error('確認メール再送信エラー:', error)
-      setMessage(error instanceof Error ? error.message : 'Failed to resend confirmation email')
     } finally {
       setLoading(false)
     }
@@ -169,35 +60,14 @@ export default function AuthForm() {
     setMessage('')
     
     try {
-      const response = await fetch('http://localhost/api/auth/reset-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email })
-      })
-      
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Failed to send password reset email')
-      }
-      
-      const data = await response.json()
-      setMessage(data.message)
+      await resetPassword(email)
+      setMessage('パスワードリセットメールを送信しました。メールをご確認ください。')
     } catch (error: unknown) {
       console.error('パスワードリセットエラー:', error)
       setMessage(error instanceof Error ? error.message : 'Failed to send password reset email')
     } finally {
       setLoading(false)
     }
-  }
-
-  if (mode === 'oauth-google') {
-    return <OAuthWithInviteForm provider="google" onBack={() => setMode('login')} />
-  }
-
-  if (mode === 'oauth-github') {
-    return <OAuthWithInviteForm provider="github" onBack={() => setMode('login')} />
   }
 
   return (
@@ -208,22 +78,11 @@ export default function AuthForm() {
       
       {message && (
         <div className={`mb-4 p-3 rounded-lg text-sm ${
-          message.includes('successful') || message.includes('check your email') || message.includes('sent successfully')
+          message.includes('successful') || message.includes('送信しました')
             ? 'bg-green-100 text-green-700' 
             : 'bg-red-100 text-red-700'
         }`}>
           {message}
-          {showResendConfirmation && (
-            <div className="mt-2">
-              <button
-                onClick={handleResendConfirmation}
-                disabled={loading}
-                className="text-blue-600 hover:text-blue-800 underline text-sm"
-              >
-                確認メールを再送信
-              </button>
-            </div>
-          )}
         </div>
       )}
       
@@ -350,7 +209,6 @@ export default function AuthForm() {
               setPassword('')
               setName('')
               setInvitationCode('')
-              setShowResendConfirmation(false)
             }}
             className="text-blue-500 hover:text-blue-600 text-sm"
           >
@@ -365,7 +223,6 @@ export default function AuthForm() {
               setPassword('')
               setName('')
               setInvitationCode('')
-              setShowResendConfirmation(false)
             }}
             className="text-blue-500 hover:text-blue-600 text-sm"
           >
@@ -373,37 +230,6 @@ export default function AuthForm() {
           </button>
         )}
       </div>
-      
-      {mode !== 'resetPassword' && (
-        <>
-          <div className="relative mb-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">または</span>
-            </div>
-          </div>
-          
-          <div className="space-y-3">
-            <button
-              onClick={mode === 'signup' ? () => handleOAuthWithInvite('google') : handleGoogleLogin}
-              disabled={loading}
-              className="w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
-            >
-              {loading ? 'ログイン中...' : (mode === 'signup' ? 'Googleで新規登録' : 'Googleでログイン')}
-            </button>
-            
-            <button
-              onClick={mode === 'signup' ? () => handleOAuthWithInvite('github') : handleGitHubLogin}
-              disabled={loading}
-              className="w-full bg-gray-800 hover:bg-gray-900 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
-            >
-              {loading ? 'ログイン中...' : (mode === 'signup' ? 'GitHubで新規登録' : 'GitHubでログイン')}
-            </button>
-          </div>
-        </>
-      )}
     </div>
   )
 }
