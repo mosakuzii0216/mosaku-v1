@@ -13,7 +13,7 @@ import {
 import { InvitationService } from './invitation.service';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
 import { VerifyInvitationDto } from './dto/verify-invitation.dto';
-import { SupabaseGuard } from '../auth/supabase.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('invitation')
@@ -23,9 +23,9 @@ export class InvitationController {
     private readonly prisma: PrismaService,
   ) {}
 
-  private async getLocalUser(supabaseUser: any) {
+  private async getLocalUser(jwtUser: any) {
     const user = await this.prisma.user.findUnique({
-      where: { supabaseId: supabaseUser.id },
+      where: { id: jwtUser.id },
     });
 
     if (!user) {
@@ -36,7 +36,7 @@ export class InvitationController {
   }
 
   @Post()
-  @UseGuards(SupabaseGuard)
+  @UseGuards(JwtAuthGuard)
   async createInvitation(
     @Body() createInvitationDto: CreateInvitationDto,
     @Request() req: any,
@@ -61,7 +61,7 @@ export class InvitationController {
   }
 
   @Get()
-  @UseGuards(SupabaseGuard)
+  @UseGuards(JwtAuthGuard)
   async getInvitations(@Request() req: any) {
     // Get local user data to check role
     const localUser = await this.getLocalUser(req.user);
@@ -75,7 +75,7 @@ export class InvitationController {
   }
 
   @Delete(':id')
-  @UseGuards(SupabaseGuard)
+  @UseGuards(JwtAuthGuard)
   async deleteInvitation(@Param('id') id: string, @Request() req: any) {
     // Get local user data to check role
     const localUser = await this.getLocalUser(req.user);

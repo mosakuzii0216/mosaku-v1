@@ -16,10 +16,10 @@ import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { SearchTagDto } from './dto/search-tag.dto';
 import { AssignTagsDto } from './dto/assign-tags.dto';
-import { SupabaseGuard } from '../auth/supabase.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('tags')
-@UseGuards(SupabaseGuard)
+@UseGuards(JwtAuthGuard)
 export class TagController {
   constructor(private readonly tagService: TagService) {}
 

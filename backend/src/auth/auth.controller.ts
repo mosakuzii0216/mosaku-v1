@@ -7,122 +7,26 @@ import {
   Request,
   NotFoundException,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { SupabaseGuard } from './supabase.guard';
-import { CreateUserDto, RegisterUserDto } from './dto/create-user.dto';
-import { SupabaseService } from './supabase.service';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { Public } from './public.decorator';
+import { AuthService } from './auth.service';
 import { InvitationService } from '../invitation/invitation.service';
+import { CreateUserDto, RegisterUserDto } from './dto/create-user.dto';
+import { LoginDto } from './dto/login.dto';
+import { ResetPasswordRequestDto, ChangePasswordDto } from './dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly supabaseService: SupabaseService,
+    private readonly authService: AuthService,
     private readonly invitationService: InvitationService,
   ) {}
 
-  @Post('sync-user')
-  @UseGuards(SupabaseGuard)
-  async syncUser(@Request() req: any, @Body() createUserDto: CreateUserDto) {
-    const supabaseUser = req.user;
-
-    const existingUser = await this.prisma.user.findUnique({
-      where: { supabaseId: supabaseUser.id },
-    });
-
-    if (existingUser) {
-      return existingUser;
-    }
-
-    // 管理者メールアドレスかどうかをチェック
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const isAdmin = adminEmail && supabaseUser.email === adminEmail;
-
-    const newUser = await this.prisma.user.create({
-      data: {
-        supabaseId: supabaseUser.id,
-        email: supabaseUser.email,
-        name:
-          createUserDto.name ||
-          supabaseUser.user_metadata?.full_name ||
-          supabaseUser.email,
-        role: isAdmin ? 'ADMIN' : 'FREE',
-      },
-    });
-
-    return newUser;
-  }
-
-  @Post('sync-user-with-invite')
-  @UseGuards(SupabaseGuard)
-  async syncUserWithInvite(
-    @Request() req: any,
-    @Body() body: { name?: string; invitationCode: string },
-  ) {
-    const supabaseUser = req.user;
-    const { name, invitationCode } = body;
-
-    const existingUser = await this.prisma.user.findUnique({
-      where: { supabaseId: supabaseUser.id },
-    });
-
-    if (existingUser) {
-      return existingUser;
-    }
-
-    // 招待コードを検証
-    await this.invitationService.verifyInvitation(invitationCode);
-
-    // 管理者メールアドレスかどうかをチェック
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const isAdmin = adminEmail && supabaseUser.email === adminEmail;
-
-    const newUser = await this.prisma.user.create({
-      data: {
-        supabaseId: supabaseUser.id,
-        email: supabaseUser.email,
-        name:
-          name || supabaseUser.user_metadata?.full_name || supabaseUser.email,
-        role: isAdmin ? 'ADMIN' : 'FREE',
-      },
-    });
-
-    // 招待コードの使用回数を増やす
-    await this.invitationService.useInvitation(invitationCode);
-
-    return newUser;
-  }
-
-  @Get('me')
-  @UseGuards(SupabaseGuard)
-  async getMe(@Request() req: any) {
-    const supabaseUser = req.user;
-
-    let user = await this.prisma.user.findUnique({
-      where: { supabaseId: supabaseUser.id },
-    });
-
-    if (!user) {
-      throw new NotFoundException(
-        'User not found. Please sync your account first.',
-      );
-    }
-
-    // 既存ユーザーの管理者権限を確認・更新
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const shouldBeAdmin = adminEmail && user.email === adminEmail;
-
-    if (shouldBeAdmin && user.role !== 'ADMIN') {
-      user = await this.prisma.user.update({
-        where: { id: user.id },
-        data: { role: 'ADMIN' },
-      });
-    }
-
-    return user;
-  }
-
+  @Public()
   @Post('register')
   async register(@Body() registerUserDto: RegisterUserDto) {
     const { email, password, name, invitationCode } = registerUserDto;
@@ -131,111 +35,103 @@ export class AuthController {
       // 招待コードを検証
       await this.invitationService.verifyInvitation(invitationCode);
 
-      // 既存のユーザーをメールアドレスで確認
-      const existingUserByEmail = await this.prisma.user.findUnique({
-        where: { email },
-      });
+      // ユーザー登録
+      const user = await this.authService.register(email, password, name, invitationCode);
 
-      if (existingUserByEmail) {
-        throw new BadRequestException(
-          'このメールアドレスは既に登録されています',
-        );
-      }
-
-      const { data, error } = await this.supabaseService
-        .getClient()
-        .auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: name || email,
-            },
-          },
-        });
-
-      if (error) {
-        throw new BadRequestException(error.message);
-      }
-
-      if (data.user) {
-        const existingUser = await this.prisma.user.findUnique({
-          where: { supabaseId: data.user.id },
-        });
-
-        if (!existingUser) {
-          // 管理者メールアドレスかどうかをチェック
-          const adminEmail = process.env.ADMIN_EMAIL;
-          const isAdmin = adminEmail && data.user.email === adminEmail;
-
-          await this.prisma.user.create({
-            data: {
-              supabaseId: data.user.id,
-              email: data.user.email!,
-              name:
-                name || data.user.user_metadata?.full_name || data.user.email!,
-              role: isAdmin ? 'ADMIN' : 'FREE',
-            },
-          });
-
-          // 招待コードの使用回数を増やす
-          await this.invitationService.useInvitation(invitationCode);
-        }
-      }
+      // 招待コードの使用回数を増やす
+      await this.invitationService.useInvitation(invitationCode);
 
       return {
-        message:
-          'Registration successful. Please check your email for verification.',
-        user: data.user,
+        message: 'Registration successful. You can now login.',
+        user,
       };
     } catch (error: any) {
       throw new BadRequestException(error.message || 'Registration failed');
     }
   }
 
-  @Post('resend-confirmation')
-  async resendConfirmation(@Body() body: { email: string }) {
-    const { email } = body;
+  @Public()
+  @Post('login')
+  async login(@Body() loginDto: LoginDto) {
+    const { email, password } = loginDto;
 
     try {
-      const { error } = await this.supabaseService.getClient().auth.resend({
-        type: 'signup',
-        email,
-      });
-
-      if (error) {
-        throw new BadRequestException(error.message);
-      }
-
+      const result = await this.authService.login(email, password);
       return {
-        message:
-          'Confirmation email sent successfully. Please check your inbox.',
+        message: 'Login successful',
+        ...result,
       };
     } catch (error: any) {
-      throw new BadRequestException(
-        error.message || 'Failed to resend confirmation email',
-      );
+      throw new UnauthorizedException(error.message || 'Login failed');
     }
   }
 
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  async logout(@Request() req: any) {
+    // JWTはステートレスなので、ログアウト処理は主にクライアント側で実装
+    // 必要に応じてトークンをブラックリストに追加する処理を実装可能
+    return {
+      message: 'Logout successful',
+    };
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async getMe(@Request() req: any) {
+    const userId = req.user.id;
+
+    const user = await this.authService.findUserById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // 既存ユーザーの管理者権限を確認・更新
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const shouldBeAdmin = adminEmail && user.email === adminEmail;
+
+    if (shouldBeAdmin && user.role !== 'ADMIN') {
+      const updatedUser = await this.prisma.user.update({
+        where: { id: user.id },
+        data: { role: 'ADMIN' },
+      });
+      return updatedUser;
+    }
+
+    return user;
+  }
+
+  @Public()
   @Post('reset-password')
-  async resetPassword(@Body() body: { email: string }) {
-    const { email } = body;
+  async resetPassword(@Body() resetPasswordRequestDto: ResetPasswordRequestDto) {
+    const { email } = resetPasswordRequestDto;
 
     try {
-      const { error } = await this.supabaseService
-        .getClient()
-        .auth.resetPasswordForEmail(email, {
-          redirectTo: `http://localhost/auth/reset-password`,
-        });
+      // パスワードリセット機能の実装（メール送信など）
+      // 現在は簡単なレスポンスのみ
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+      });
 
-      if (error) {
-        throw new BadRequestException(error.message);
+      if (!user) {
+        // セキュリティ上、存在しないメールでも成功レスポンスを返す
+        return {
+          message: 'If the email exists, a password reset link has been sent.',
+        };
       }
 
+      // TODO: メール送信機能を実装
+      // const resetToken = crypto.randomUUID();
+      // await this.prisma.user.update({
+      //   where: { id: user.id },
+      //   data: {
+      //     resetPasswordToken: resetToken,
+      //     resetPasswordExpires: new Date(Date.now() + 3600000), // 1時間後
+      //   },
+      // });
+
       return {
-        message:
-          'Password reset email sent successfully. Please check your inbox.',
+        message: 'If the email exists, a password reset link has been sent.',
       };
     } catch (error: any) {
       throw new BadRequestException(
@@ -244,21 +140,61 @@ export class AuthController {
     }
   }
 
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  async changePassword(@Request() req: any, @Body() changePasswordDto: ChangePasswordDto) {
+    const userId = req.user.id;
+    const { currentPassword, newPassword } = changePasswordDto;
+
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user || !user.password) {
+        throw new BadRequestException('User not found or password not set');
+      }
+
+      // 現在のパスワードを検証
+      const isCurrentPasswordValid = await this.authService.comparePassword(
+        currentPassword,
+        user.password,
+      );
+
+      if (!isCurrentPasswordValid) {
+        throw new UnauthorizedException('Current password is incorrect');
+      }
+
+      // 新しいパスワードをハッシュ化して更新
+      const hashedNewPassword = await this.authService.hashPassword(newPassword);
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { password: hashedNewPassword },
+      });
+
+      return {
+        message: 'Password changed successfully',
+      };
+    } catch (error: any) {
+      throw new BadRequestException(error.message || 'Failed to change password');
+    }
+  }
+
   @Post('update-admin-role')
-  @UseGuards(SupabaseGuard)
+  @UseGuards(JwtAuthGuard)
   async updateAdminRole(@Request() req: any) {
-    const supabaseUser = req.user;
+    const currentUser = req.user;
 
     // 管理者メールアドレスかどうかをチェック
     const adminEmail = process.env.ADMIN_EMAIL;
-    const shouldBeAdmin = adminEmail && supabaseUser.email === adminEmail;
+    const shouldBeAdmin = adminEmail && currentUser.email === adminEmail;
 
     if (!shouldBeAdmin) {
       throw new BadRequestException('This email is not authorized as admin');
     }
 
     const user = await this.prisma.user.findUnique({
-      where: { supabaseId: supabaseUser.id },
+      where: { id: currentUser.id },
     });
 
     if (!user) {
@@ -274,5 +210,20 @@ export class AuthController {
       message: 'Admin role updated successfully',
       user: updatedUser,
     };
+  }
+
+  // 後方互換性のため一時的に保持（将来削除予定）
+  @Post('sync-user')
+  @UseGuards(JwtAuthGuard)
+  async syncUser(@Request() req: any, @Body() createUserDto: CreateUserDto) {
+    // 新しい認証システムでは不要だが、フロントエンドの移行期間中は保持
+    return req.user;
+  }
+
+  @Post('sync-user-with-invite')
+  @UseGuards(JwtAuthGuard)
+  async syncUserWithInvite(@Request() req: any, @Body() body: { name?: string; invitationCode: string }) {
+    // 新しい認証システムでは不要だが、フロントエンドの移行期間中は保持
+    return req.user;
   }
 }

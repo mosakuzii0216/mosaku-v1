@@ -2,13 +2,12 @@ import { Module } from '@nestjs/common';
 import { InvitationController } from './invitation.controller';
 import { InvitationService } from './invitation.service';
 import { PrismaModule } from '../prisma/prisma.module';
-import { SupabaseService } from '../auth/supabase.service';
-import { SupabaseGuard } from '../auth/supabase.guard';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, AuthModule],
   controllers: [InvitationController],
-  providers: [InvitationService, SupabaseService, SupabaseGuard],
+  providers: [InvitationService],
   exports: [InvitationService],
 })
 export class InvitationModule {}

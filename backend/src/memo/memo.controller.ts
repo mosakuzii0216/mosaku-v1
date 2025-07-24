@@ -15,10 +15,10 @@ import { MemoService } from './memo.service';
 import { CreateMemoDto } from './dto/create-memo.dto';
 import { UpdateMemoDto } from './dto/update-memo.dto';
 import { SearchMemoDto } from './dto/search-memo.dto';
-import { SupabaseGuard } from '../auth/supabase.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('memos')
-@UseGuards(SupabaseGuard)
+@UseGuards(JwtAuthGuard)
 export class MemoController {
   constructor(private readonly memoService: MemoService) {}
 

@@ -12,6 +12,8 @@ import {
   ValidationPipe,
   UsePipes,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Public } from '../auth/public.decorator';
 import { ThemeService } from './theme.service';
 import { CreateThemeDto } from './dto/create-theme.dto';
 import { UpdateThemeDto } from './dto/update-theme.dto';
@@ -26,6 +28,7 @@ export class ThemeController {
    * テーマ一覧を取得
    * GET /theme
    */
+  @Public()
   @Get()
   @UsePipes(new ValidationPipe({ transform: true }))
   async findAll(@Query() searchDto: SearchThemeDto, @Request() req: any) {
@@ -37,6 +40,7 @@ export class ThemeController {
    * 特定のテーマを取得
    * GET /theme/:id
    */
+  @Public()
   @Get(':id')
   async findOne(@Param('id') id: string, @Request() req: any) {
     const userId = req.user?.id;
@@ -48,7 +52,7 @@ export class ThemeController {
    * POST /theme
    */
   @Post()
-  @UseGuards(/* AuthGuard */) // 認証ガードを追加予定
+  @UseGuards(JwtAuthGuard)
   @UsePipes(new ValidationPipe())
   async create(@Body() createThemeDto: CreateThemeDto, @Request() req: any) {
     const userId = req.user.id; // 認証されたユーザーID
@@ -60,7 +64,7 @@ export class ThemeController {
    * PUT /theme/:id
    */
   @Put(':id')
-  @UseGuards(/* AuthGuard */) // 認証ガードを追加予定
+  @UseGuards(JwtAuthGuard)
   @UsePipes(new ValidationPipe())
   async update(
     @Param('id') id: string,
@@ -76,7 +80,7 @@ export class ThemeController {
    * DELETE /theme/:id
    */
   @Delete(':id')
-  @UseGuards(/* AuthGuard */) // 認証ガードを追加予定
+  @UseGuards(JwtAuthGuard)
   async remove(@Param('id') id: string, @Request() req: any) {
     const userId = req.user.id;
     return this.themeService.remove(id, userId);
@@ -87,7 +91,7 @@ export class ThemeController {
    * POST /theme/:id/favorite
    */
   @Post(':id/favorite')
-  @UseGuards(/* AuthGuard */) // 認証ガードを追加予定
+  @UseGuards(JwtAuthGuard)
   async addToFavorites(@Param('id') themeId: string, @Request() req: any) {
     const userId = req.user.id;
     return this.themeService.addToFavorites(themeId, userId);
@@ -98,7 +102,7 @@ export class ThemeController {
    * DELETE /theme/:id/favorite
    */
   @Delete(':id/favorite')
-  @UseGuards(/* AuthGuard */) // 認証ガードを追加予定
+  @UseGuards(JwtAuthGuard)
   async removeFromFavorites(@Param('id') themeId: string, @Request() req: any) {
     const userId = req.user.id;
     return this.themeService.removeFromFavorites(themeId, userId);
@@ -109,7 +113,7 @@ export class ThemeController {
    * GET /theme/favorites/me
    */
   @Get('favorites/me')
-  @UseGuards(/* AuthGuard */) // 認証ガードを追加予定
+  @UseGuards(JwtAuthGuard)
   async getUserFavorites(@Request() req: any) {
     const userId = req.user.id;
     return this.themeService.getUserFavorites(userId);
@@ -119,6 +123,7 @@ export class ThemeController {
    * システムテーマ一覧を取得（認証不要）
    * GET /theme/system/list
    */
+  @Public()
   @Get('system/list')
   async getSystemThemes(@Request() req: any) {
     const userId = req.user?.id;
@@ -130,6 +135,7 @@ export class ThemeController {
    * 公開テーマ一覧を取得（認証不要）
    * GET /theme/public/list
    */
+  @Public()
   @Get('public/list')
   async getPublicThemes(@Request() req: any) {
     const userId = req.user?.id;
@@ -141,6 +147,7 @@ export class ThemeController {
    * カテゴリ別テーマ一覧を取得
    * GET /theme/category/:category
    */
+  @Public()
   @Get('category/:category')
   async getThemesByCategory(
     @Param('category') category: string,
