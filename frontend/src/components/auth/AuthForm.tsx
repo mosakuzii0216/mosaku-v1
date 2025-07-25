@@ -27,8 +27,11 @@ export default function AuthForm() {
     setLoading(true)
     setMessage('')
     
+    console.log('Debug: Current mode:', mode); // デバッグログ追加
+    
     try {
       if (mode === 'signup') {
+        console.log('Debug: Calling register'); // デバッグログ追加
         await register(email, password, name || undefined, invitationCode)
         setMessage('Registration successful! You can now login with your credentials.')
         setMode('login')
@@ -38,6 +41,7 @@ export default function AuthForm() {
         setName('')
         setInvitationCode('')
       } else if (mode === 'login') {
+        console.log('Debug: Calling login'); // デバッグログ追加
         await login(email, password)
         // Login successful, useAuth will handle state update
       }

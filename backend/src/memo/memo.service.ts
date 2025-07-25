@@ -11,16 +11,8 @@ import { UpdateMemoDto } from './dto/update-memo.dto';
 export class MemoService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(supabaseUserId: string, tagIds?: string[]) {
-    const user = await this.prisma.user.findUnique({
-      where: { supabaseId: supabaseUserId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    const whereClause: any = { userId: user.id };
+  async findAll(userId: string, tagIds?: string[]) {
+    const whereClause: any = { userId };
 
     // Filter by tags if provided
     if (tagIds && tagIds.length > 0) {
@@ -53,15 +45,7 @@ export class MemoService {
     });
   }
 
-  async findOne(id: string, supabaseUserId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { supabaseId: supabaseUserId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
+  async findOne(id: string, userId: string) {
     const memo = await this.prisma.memo.findUnique({
       where: { id },
       include: {
@@ -84,26 +68,18 @@ export class MemoService {
       throw new NotFoundException(`Memo with ID ${id} not found`);
     }
 
-    if (memo.userId !== user.id) {
+    if (memo.userId !== userId) {
       throw new ForbiddenException('You can only access your own memos');
     }
 
     return memo;
   }
 
-  async create(createMemoDto: CreateMemoDto, supabaseUserId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { supabaseId: supabaseUserId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
+  async create(createMemoDto: CreateMemoDto, userId: string) {
     const createData: any = {
       title: createMemoDto.title,
       content: createMemoDto.content,
-      userId: user.id,
+      userId,
     };
 
     // テーマIDが指定されている場合は関連付け
@@ -128,16 +104,8 @@ export class MemoService {
   async update(
     id: string,
     updateMemoDto: UpdateMemoDto,
-    supabaseUserId: string,
+    userId: string,
   ) {
-    const user = await this.prisma.user.findUnique({
-      where: { supabaseId: supabaseUserId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
     const memo = await this.prisma.memo.findUnique({
       where: { id },
     });
@@ -146,7 +114,7 @@ export class MemoService {
       throw new NotFoundException(`Memo with ID ${id} not found`);
     }
 
-    if (memo.userId !== user.id) {
+    if (memo.userId !== userId) {
       throw new ForbiddenException('You can only update your own memos');
     }
 
@@ -165,15 +133,7 @@ export class MemoService {
     });
   }
 
-  async remove(id: string, supabaseUserId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { supabaseId: supabaseUserId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
+  async remove(id: string, userId: string) {
     const memo = await this.prisma.memo.findUnique({
       where: { id },
     });
@@ -182,7 +142,7 @@ export class MemoService {
       throw new NotFoundException(`Memo with ID ${id} not found`);
     }
 
-    if (memo.userId !== user.id) {
+    if (memo.userId !== userId) {
       throw new ForbiddenException('You can only delete your own memos');
     }
 
@@ -191,21 +151,13 @@ export class MemoService {
     });
   }
 
-  async search(query: string, supabaseUserId: string, tagIds?: string[]) {
-    const user = await this.prisma.user.findUnique({
-      where: { supabaseId: supabaseUserId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
+  async search(query: string, userId: string, tagIds?: string[]) {
     if (!query) {
-      return this.findAll(supabaseUserId, tagIds);
+      return this.findAll(userId, tagIds);
     }
 
     const whereClause: any = {
-      userId: user.id,
+      userId,
       OR: [
         {
           title: {

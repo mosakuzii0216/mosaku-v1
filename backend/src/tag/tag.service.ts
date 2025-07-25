@@ -13,32 +13,16 @@ import { AssignTagsDto } from './dto/assign-tags.dto';
 export class TagService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(supabaseUserId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { supabaseId: supabaseUserId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
+  async findAll(userId: string) {
     return this.prisma.tag.findMany({
-      where: { userId: user.id },
+      where: { userId },
       orderBy: {
         name: 'asc',
       },
     });
   }
 
-  async findOne(id: string, supabaseUserId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { supabaseId: supabaseUserId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
+  async findOne(id: string, userId: string) {
     const tag = await this.prisma.tag.findUnique({
       where: { id },
     });
@@ -47,39 +31,23 @@ export class TagService {
       throw new NotFoundException(`Tag with ID ${id} not found`);
     }
 
-    if (tag.userId !== user.id) {
+    if (tag.userId !== userId) {
       throw new ForbiddenException('You can only access your own tags');
     }
 
     return tag;
   }
 
-  async create(createTagDto: CreateTagDto, supabaseUserId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { supabaseId: supabaseUserId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
+  async create(createTagDto: CreateTagDto, userId: string) {
     return this.prisma.tag.create({
       data: {
         ...createTagDto,
-        userId: user.id,
+        userId,
       },
     });
   }
 
-  async update(id: string, updateTagDto: UpdateTagDto, supabaseUserId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { supabaseId: supabaseUserId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
+  async update(id: string, updateTagDto: UpdateTagDto, userId: string) {
     const tag = await this.prisma.tag.findUnique({
       where: { id },
     });
@@ -88,7 +56,7 @@ export class TagService {
       throw new NotFoundException(`Tag with ID ${id} not found`);
     }
 
-    if (tag.userId !== user.id) {
+    if (tag.userId !== userId) {
       throw new ForbiddenException('You can only update your own tags');
     }
 
@@ -98,15 +66,7 @@ export class TagService {
     });
   }
 
-  async remove(id: string, supabaseUserId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { supabaseId: supabaseUserId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
+  async remove(id: string, userId: string) {
     const tag = await this.prisma.tag.findUnique({
       where: { id },
     });
@@ -115,7 +75,7 @@ export class TagService {
       throw new NotFoundException(`Tag with ID ${id} not found`);
     }
 
-    if (tag.userId !== user.id) {
+    if (tag.userId !== userId) {
       throw new ForbiddenException('You can only delete your own tags');
     }
 
@@ -124,22 +84,14 @@ export class TagService {
     });
   }
 
-  async search(query: string, supabaseUserId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { supabaseId: supabaseUserId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
+  async search(query: string, userId: string) {
     if (!query) {
-      return this.findAll(supabaseUserId);
+      return this.findAll(userId);
     }
 
     return this.prisma.tag.findMany({
       where: {
-        userId: user.id,
+        userId,
         name: {
           contains: query,
           mode: 'insensitive',
@@ -154,16 +106,8 @@ export class TagService {
   async assignTagsToMemo(
     memoId: string,
     assignTagsDto: AssignTagsDto,
-    supabaseUserId: string,
+    userId: string,
   ) {
-    const user = await this.prisma.user.findUnique({
-      where: { supabaseId: supabaseUserId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
     // Verify memo ownership
     const memo = await this.prisma.memo.findUnique({
       where: { id: memoId },
@@ -173,7 +117,7 @@ export class TagService {
       throw new NotFoundException(`Memo with ID ${memoId} not found`);
     }
 
-    if (memo.userId !== user.id) {
+    if (memo.userId !== userId) {
       throw new ForbiddenException('You can only modify your own memos');
     }
 
@@ -181,7 +125,7 @@ export class TagService {
     const tags = await this.prisma.tag.findMany({
       where: {
         id: { in: assignTagsDto.tagIds },
-        userId: user.id,
+        userId,
       },
     });
 
@@ -215,15 +159,7 @@ export class TagService {
     });
   }
 
-  async getMemoTags(memoId: string, supabaseUserId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { supabaseId: supabaseUserId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
+  async getMemoTags(memoId: string, userId: string) {
     // Verify memo ownership
     const memo = await this.prisma.memo.findUnique({
       where: { id: memoId },
@@ -233,7 +169,7 @@ export class TagService {
       throw new NotFoundException(`Memo with ID ${memoId} not found`);
     }
 
-    if (memo.userId !== user.id) {
+    if (memo.userId !== userId) {
       throw new ForbiddenException('You can only access your own memos');
     }
 
