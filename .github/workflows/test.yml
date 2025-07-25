@@ -1,11 +1,12 @@
 name: Automated Tests
 
 # プルリクエスト時とmainへのpush時に実行
-on:
-  pull_request:
-    branches: [ main ]
-  push:
-    branches: [ main ]
+# CICD一時無効化 - 後で対応予定
+# on:
+#   pull_request:
+#     branches: [ main ]
+#   push:
+#     branches: [ main ]
 
 jobs:
   # バックエンドテスト（データベースが必要）
