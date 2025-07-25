@@ -67,7 +67,7 @@ export class AuthController {
   }
 
   @Post('logout')
-  @UseGuards(JwtAuthGuard)
+  @Public()
   async logout(@Request() req: any) {
     // JWTはステートレスなので、ログアウト処理は主にクライアント側で実装
     // 必要に応じてトークンをブラックリストに追加する処理を実装可能

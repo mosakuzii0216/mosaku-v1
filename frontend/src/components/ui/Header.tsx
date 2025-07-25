@@ -1,5 +1,5 @@
 import { useMemoStore } from '../../stores/useMemoStore';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -9,7 +9,9 @@ interface HeaderProps {
 
 export const Header = ({ onCreateClick }: HeaderProps) => {
   const { currentView, goToList, goToTags } = useMemoStore();
-  const { userProfile, signOut } = useAuth();
+  const { user, logout } = useAuth();
+  
+  // console.log('Header rendered, user:', user, 'logout function:', typeof logout);
 
   return (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
@@ -53,12 +55,12 @@ export const Header = ({ onCreateClick }: HeaderProps) => {
       
       <div className="flex items-center space-x-3">
         <ThemeToggle />
-        {userProfile && (
+        {user && (
           <span className="text-sm text-gray-600 dark:text-gray-300">
-            {userProfile.name || userProfile.email} ({userProfile.role})
+            {user.name || user.email} ({user.role})
           </span>
         )}
-        {userProfile?.role === 'ADMIN' && (
+        {user?.role === 'ADMIN' && (
           <Link
             to="/admin/invitations"
             className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center"
@@ -75,7 +77,7 @@ export const Header = ({ onCreateClick }: HeaderProps) => {
           + 新規作成
         </button>
         <button
-          onClick={signOut}
+          onClick={logout}
           className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
         >
           ログアウト

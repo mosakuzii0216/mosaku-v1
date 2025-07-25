@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from './contexts/AuthContext';
 import { useMemoStore } from './stores/useMemoStore';
 import { useWindowSize } from './hooks/useWindowSize';
 import { MobileLayout } from './components/layouts/MobileLayout';
@@ -40,22 +41,24 @@ function AppContent() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <Routes>
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/auth/reset-password" element={<PasswordReset />} />
-          <Route path="/admin/invitations" element={
-            <AuthGuard>
-              <InvitationManager />
-            </AuthGuard>
-          } />
-          <Route path="/*" element={
-            <AuthGuard>
-              <AppContent />
-            </AuthGuard>
-          } />
-        </Routes>
-      </Router>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/auth/reset-password" element={<PasswordReset />} />
+            <Route path="/admin/invitations" element={
+              <AuthGuard>
+                <InvitationManager />
+              </AuthGuard>
+            } />
+            <Route path="/*" element={
+              <AuthGuard>
+                <AppContent />
+              </AuthGuard>
+            } />
+          </Routes>
+        </Router>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

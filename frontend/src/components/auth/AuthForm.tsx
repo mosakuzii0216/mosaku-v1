@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useAuth } from '../../hooks/useAuth'
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function AuthForm() {
   const [searchParams] = useSearchParams()
