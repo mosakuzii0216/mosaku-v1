@@ -5,12 +5,14 @@ import {
   Get,
   UseGuards,
   Request,
+  Response,
   NotFoundException,
   BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { GoogleAuthGuard } from './google-auth.guard';
 import { Public } from './public.decorator';
 import { AuthService } from './auth.service';
 import { InvitationService } from '../invitation/invitation.service';
@@ -225,5 +227,29 @@ export class AuthController {
   async syncUserWithInvite(@Request() req: any, @Body() body: { name?: string; invitationCode: string }) {
     // 新しい認証システムでは不要だが、フロントエンドの移行期間中は保持
     return req.user;
+  }
+
+  // Google OAuth エンドポイント
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  async googleAuth(@Request() req: any) {
+    // Google認証画面にリダイレクト
+  }
+
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  async googleAuthRedirect(@Request() req: any, @Response() res: any) {
+    try {
+      const result = await this.authService.googleLogin(req.user);
+      
+      // フロントエンドにトークンを渡すため、URLパラメータとしてリダイレクト
+      const redirectUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?token=${result.accessToken}&user=${encodeURIComponent(JSON.stringify(result.user))}`;
+      
+      return res.redirect(redirectUrl);
+    } catch (error: any) {
+      console.error('Google auth error:', error);
+      const errorUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?error=auth_failed`;
+      return res.redirect(errorUrl);
+    }
   }
 }

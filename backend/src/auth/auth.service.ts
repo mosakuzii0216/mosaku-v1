@@ -137,4 +137,52 @@ export class AuthService {
     const { password: _, ...result } = user;
     return result;
   }
+
+  async googleLogin(googleUser: any): Promise<AuthTokens & { user: any }> {
+    // Google IDまたはメールアドレスでユーザーを検索
+    let user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: googleUser.email },
+          { supabaseId: googleUser.googleId }, // 既存のsupabaseIdフィールドをgoogleIdとして利用
+        ],
+      },
+    });
+
+    if (user) {
+      // 既存ユーザーの場合、Google IDと名前を更新
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          supabaseId: googleUser.googleId, // Google IDを保存
+          name: googleUser.name,
+        },
+      });
+    } else {
+      // 新規ユーザーの場合
+      const adminEmail = process.env.ADMIN_EMAIL;
+      const isAdmin = adminEmail && googleUser.email === adminEmail;
+
+      user = await this.prisma.user.create({
+        data: {
+          supabaseId: googleUser.googleId, // Google IDを保存
+          email: googleUser.email,
+          name: googleUser.name,
+          role: isAdmin ? 'ADMIN' : 'FREE',
+          emailVerified: true, // Google認証済みなのでメール確認済みとする
+        },
+      });
+    }
+
+    // JWTトークンを生成
+    const tokens = await this.generateTokens(user.id, user.email, user.role);
+
+    // パスワードを除外して返す
+    const { password: _, ...userResult } = user;
+
+    return {
+      ...tokens,
+      user: userResult,
+    };
+  }
 }

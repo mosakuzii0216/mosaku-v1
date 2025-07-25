@@ -5,7 +5,9 @@ import { SupabaseService } from './supabase.service';
 import { SupabaseGuard } from './supabase.guard';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
+import { GoogleStrategy } from './google.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { GoogleAuthGuard } from './google-auth.guard';
 import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { InvitationService } from '../invitation/invitation.service';
@@ -25,9 +27,11 @@ import { InvitationService } from '../invitation/invitation.service';
     SupabaseGuard,
     AuthService,
     JwtStrategy,
+    GoogleStrategy,
     JwtAuthGuard,
+    GoogleAuthGuard,
     InvitationService,
   ],
-  exports: [SupabaseService, SupabaseGuard, AuthService, JwtAuthGuard],
+  exports: [SupabaseService, SupabaseGuard, AuthService, JwtAuthGuard, GoogleAuthGuard],
 })
 export class AuthModule {}
