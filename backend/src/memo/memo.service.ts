@@ -101,11 +101,7 @@ export class MemoService {
     });
   }
 
-  async update(
-    id: string,
-    updateMemoDto: UpdateMemoDto,
-    userId: string,
-  ) {
+  async update(id: string, updateMemoDto: UpdateMemoDto, userId: string) {
     const memo = await this.prisma.memo.findUnique({
       where: { id },
     });

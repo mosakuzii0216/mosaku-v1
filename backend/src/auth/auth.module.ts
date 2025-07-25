@@ -32,6 +32,12 @@ import { InvitationService } from '../invitation/invitation.service';
     GoogleAuthGuard,
     InvitationService,
   ],
-  exports: [SupabaseService, SupabaseGuard, AuthService, JwtAuthGuard, GoogleAuthGuard],
+  exports: [
+    SupabaseService,
+    SupabaseGuard,
+    AuthService,
+    JwtAuthGuard,
+    GoogleAuthGuard,
+  ],
 })
 export class AuthModule {}

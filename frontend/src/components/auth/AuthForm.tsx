@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { GoogleLoginButton } from '../ui/GoogleLoginButton'
 
 export default function AuthForm() {
   const [searchParams] = useSearchParams()
@@ -201,6 +202,22 @@ export default function AuthForm() {
             </div>
           )}
         </form>
+      )}
+      
+      {/* Google OAuth divider and button */}
+      {mode !== 'resetPassword' && (
+        <>
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">または</span>
+            </div>
+          </div>
+          
+          <GoogleLoginButton className="mb-4" />
+        </>
       )}
       
       <div className="text-center mb-4">

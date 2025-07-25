@@ -18,7 +18,10 @@ import { AuthService } from './auth.service';
 import { InvitationService } from '../invitation/invitation.service';
 import { CreateUserDto, RegisterUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
-import { ResetPasswordRequestDto, ChangePasswordDto } from './dto/reset-password.dto';
+import {
+  ResetPasswordRequestDto,
+  ChangePasswordDto,
+} from './dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -38,7 +41,12 @@ export class AuthController {
       await this.invitationService.verifyInvitation(invitationCode);
 
       // ユーザー登録
-      const user = await this.authService.register(email, password, name, invitationCode);
+      const user = await this.authService.register(
+        email,
+        password,
+        name,
+        invitationCode,
+      );
 
       // 招待コードの使用回数を増やす
       await this.invitationService.useInvitation(invitationCode);
@@ -105,7 +113,9 @@ export class AuthController {
 
   @Public()
   @Post('reset-password')
-  async resetPassword(@Body() resetPasswordRequestDto: ResetPasswordRequestDto) {
+  async resetPassword(
+    @Body() resetPasswordRequestDto: ResetPasswordRequestDto,
+  ) {
     const { email } = resetPasswordRequestDto;
 
     try {
@@ -144,7 +154,10 @@ export class AuthController {
 
   @Post('change-password')
   @UseGuards(JwtAuthGuard)
-  async changePassword(@Request() req: any, @Body() changePasswordDto: ChangePasswordDto) {
+  async changePassword(
+    @Request() req: any,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
     const userId = req.user.id;
     const { currentPassword, newPassword } = changePasswordDto;
 
@@ -168,7 +181,8 @@ export class AuthController {
       }
 
       // 新しいパスワードをハッシュ化して更新
-      const hashedNewPassword = await this.authService.hashPassword(newPassword);
+      const hashedNewPassword =
+        await this.authService.hashPassword(newPassword);
       await this.prisma.user.update({
         where: { id: userId },
         data: { password: hashedNewPassword },
@@ -178,7 +192,9 @@ export class AuthController {
         message: 'Password changed successfully',
       };
     } catch (error: any) {
-      throw new BadRequestException(error.message || 'Failed to change password');
+      throw new BadRequestException(
+        error.message || 'Failed to change password',
+      );
     }
   }
 
@@ -224,7 +240,10 @@ export class AuthController {
 
   @Post('sync-user-with-invite')
   @UseGuards(JwtAuthGuard)
-  async syncUserWithInvite(@Request() req: any, @Body() body: { name?: string; invitationCode: string }) {
+  async syncUserWithInvite(
+    @Request() req: any,
+    @Body() body: { name?: string; invitationCode: string },
+  ) {
     // 新しい認証システムでは不要だが、フロントエンドの移行期間中は保持
     return req.user;
   }
@@ -241,10 +260,10 @@ export class AuthController {
   async googleAuthRedirect(@Request() req: any, @Response() res: any) {
     try {
       const result = await this.authService.googleLogin(req.user);
-      
+
       // フロントエンドにトークンを渡すため、URLパラメータとしてリダイレクト
       const redirectUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?token=${result.accessToken}&user=${encodeURIComponent(JSON.stringify(result.user))}`;
-      
+
       return res.redirect(redirectUrl);
     } catch (error: any) {
       console.error('Google auth error:', error);

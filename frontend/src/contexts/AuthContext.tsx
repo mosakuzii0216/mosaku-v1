@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { AuthAPI, AuthTokenManager, UserProfile } from '../utils/auth'
+import { GoogleAuthUtils } from '../utils/googleAuth'
 
 export interface AuthState {
   user: UserProfile | null;
@@ -10,6 +11,7 @@ export interface AuthState {
 export interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name?: string, invitationCode?: string) => Promise<void>;
+  googleLogin: () => void;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
@@ -34,6 +36,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const initializeAuth = async () => {
     try {
+      // まずGoogle OAuth認証のコールバックをチェック
+      const authCallback = GoogleAuthUtils.parseAuthCallback()
+      
+      if (authCallback.error) {
+        console.error('Google auth error:', authCallback.error)
+        GoogleAuthUtils.clearAuthParams()
+        setLoading(false)
+        return
+      }
+      
+      if (authCallback.token && authCallback.user) {
+        // Google認証成功
+        AuthTokenManager.setAccessToken(authCallback.token)
+        setUser(authCallback.user)
+        GoogleAuthUtils.clearAuthParams()
+        setLoading(false)
+        return
+      }
+
+      // 既存のJWT認証をチェック
       if (AuthTokenManager.isAuthenticated()) {
         const userProfile = await AuthAPI.getCurrentUser()
         setUser(userProfile)
@@ -68,6 +90,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       throw error
     }
   }
+
 
   const logout = async (): Promise<void> => {
     // 即座にローカル状態をクリア（UI更新を優先）
@@ -115,12 +138,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  const googleLogin = (): void => {
+    try {
+      GoogleAuthUtils.startGoogleAuth()
+    } catch (error) {
+      console.error('Failed to start Google auth:', error)
+    }
+  }
+
   const value: AuthContextType = {
     user,
     loading,
     isAuthenticated: !!user && AuthTokenManager.isAuthenticated(),
     login,
     register,
+    googleLogin,
     logout,
     resetPassword,
     changePassword,

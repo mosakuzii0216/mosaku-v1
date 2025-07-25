@@ -1,10 +1,14 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 
 export interface JwtPayload {
-  sub: string;  // user.id
+  sub: string; // user.id
   email: string;
   role: 'FREE' | 'PREMIUM' | 'ADMIN';
   iat?: number;
@@ -33,7 +37,11 @@ export class AuthService {
     return bcrypt.compare(password, hash);
   }
 
-  async generateTokens(userId: string, email: string, role: 'FREE' | 'PREMIUM' | 'ADMIN'): Promise<AuthTokens> {
+  async generateTokens(
+    userId: string,
+    email: string,
+    role: 'FREE' | 'PREMIUM' | 'ADMIN',
+  ): Promise<AuthTokens> {
     const payload: JwtPayload = {
       sub: userId,
       email,
@@ -82,7 +90,12 @@ export class AuthService {
     return result;
   }
 
-  async register(email: string, password: string, name?: string, invitationCode?: string): Promise<any> {
+  async register(
+    email: string,
+    password: string,
+    name?: string,
+    invitationCode?: string,
+  ): Promise<any> {
     // 既存ユーザーチェック
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
@@ -114,7 +127,10 @@ export class AuthService {
     return result;
   }
 
-  async login(email: string, password: string): Promise<AuthTokens & { user: any }> {
+  async login(
+    email: string,
+    password: string,
+  ): Promise<AuthTokens & { user: any }> {
     const user = await this.validateUser(email, password);
     const tokens = await this.generateTokens(user.id, user.email, user.role);
 
