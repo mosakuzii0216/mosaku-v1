@@ -187,6 +187,28 @@ export class AuthAPI {
 
     return response.json();
   }
+
+  static async googleRegisterWithInvitation(
+    googleUser: any,
+    invitationCode: string
+  ): Promise<LoginResponse> {
+    const response = await fetch(`${this.BASE_URL}/auth/google/register-with-invitation`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ googleUser, invitationCode }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Google registration failed');
+    }
+
+    const data = await response.json();
+    AuthTokenManager.setAccessToken(data.accessToken);
+    return data;
+  }
 }
 
 export { AuthTokenManager };

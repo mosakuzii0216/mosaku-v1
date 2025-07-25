@@ -12,6 +12,7 @@ export interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name?: string, invitationCode?: string) => Promise<void>;
   googleLogin: () => void;
+  googleRegisterWithInvitation: (googleUser: any, invitationCode: string) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
@@ -41,6 +42,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (authCallback.error) {
         console.error('Google auth error:', authCallback.error)
+        
+        // 招待コードが必要な場合の処理
+        if (authCallback.error === 'invitation_required' && authCallback.googleUser) {
+          // Google user情報をsessionStorageに保存（招待コード入力で使用）
+          sessionStorage.setItem('pendingGoogleUser', JSON.stringify(authCallback.googleUser))
+        }
+        
         GoogleAuthUtils.clearAuthParams()
         setLoading(false)
         return
@@ -146,6 +154,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  const googleRegisterWithInvitation = async (googleUser: any, invitationCode: string): Promise<void> => {
+    try {
+      const response = await AuthAPI.googleRegisterWithInvitation(googleUser, invitationCode)
+      AuthTokenManager.setAccessToken(response.accessToken)
+      setUser(response.user)
+      // 成功したらpending user情報をクリア
+      sessionStorage.removeItem('pendingGoogleUser')
+    } catch (error) {
+      throw error
+    }
+  }
+
   const value: AuthContextType = {
     user,
     loading,
@@ -153,6 +173,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     googleLogin,
+    googleRegisterWithInvitation,
     logout,
     resetPassword,
     changePassword,

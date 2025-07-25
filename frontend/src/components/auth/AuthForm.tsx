@@ -11,12 +11,32 @@ export default function AuthForm() {
   const [name, setName] = useState('')
   const [invitationCode, setInvitationCode] = useState('')
   const [message, setMessage] = useState('')
-  const [mode, setMode] = useState<'login' | 'signup' | 'resetPassword'>('login')
+  const [mode, setMode] = useState<'login' | 'signup' | 'resetPassword' | 'googleInvite'>('login')
+  const [pendingGoogleUser, setPendingGoogleUser] = useState<any>(null)
 
-  const { login, register, resetPassword } = useAuth()
+  const { login, register, resetPassword, googleRegisterWithInvitation } = useAuth()
 
   useEffect(() => {
     const error = searchParams.get('error')
+    if (error === 'invitation_required') {
+      // sessionStorageからpendingGoogleUserを取得
+      const storedGoogleUser = sessionStorage.getItem('pendingGoogleUser')
+      if (storedGoogleUser) {
+        try {
+          const googleUser = JSON.parse(storedGoogleUser)
+          setPendingGoogleUser(googleUser)
+          setMessage(`Google認証は成功しましたが、新規ユーザー登録には招待コードが必要です。`)
+          setMode('googleInvite')
+        } catch (error) {
+          console.error('Failed to parse pending Google user:', error)
+          setMessage('認証処理でエラーが発生しました。再度お試しください。')
+        }
+      } else {
+        setMessage('新規ユーザーの場合は招待コードが必要です。新規登録を選択してください。')
+        setMode('signup')
+      }
+    }
+    
     if (error === 'invite_required') {
       setMessage('新規ユーザーの場合は招待コードが必要です。新規登録を選択してください。')
       setMode('signup')
@@ -75,10 +95,35 @@ export default function AuthForm() {
     }
   }
 
+  const handleGoogleRegistration = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!pendingGoogleUser || !invitationCode) {
+      setMessage('招待コードを入力してください')
+      return
+    }
+    
+    setLoading(true)
+    setMessage('')
+    
+    try {
+      await googleRegisterWithInvitation(pendingGoogleUser, invitationCode)
+      // 成功時は認証コンテキストが自動的にユーザー状態を更新する
+    } catch (error: unknown) {
+      console.error('Google登録エラー:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Google registration failed'
+      setMessage(errorMessage)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-center">
-        {mode === 'signup' ? '新規登録' : mode === 'resetPassword' ? 'パスワードリセット' : 'ログイン'}
+        {mode === 'signup' ? '新規登録' : 
+         mode === 'resetPassword' ? 'パスワードリセット' : 
+         mode === 'googleInvite' ? 'Google アカウント登録' : 
+         'ログイン'}
       </h2>
       
       {message && (
@@ -91,7 +136,44 @@ export default function AuthForm() {
         </div>
       )}
       
-      {mode === 'resetPassword' ? (
+      {mode === 'googleInvite' ? (
+        // Google OAuth + 招待コード登録フォーム
+        <form onSubmit={handleGoogleRegistration} className="space-y-4 mb-6">
+          {pendingGoogleUser && (
+            <div className="bg-blue-50 p-3 rounded-lg mb-4">
+              <p className="text-sm text-blue-700">
+                <strong>Google アカウント:</strong> {pendingGoogleUser.email}
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                このアカウントで登録するには招待コードが必要です
+              </p>
+            </div>
+          )}
+          
+          <div>
+            <label htmlFor="invitationCode" className="block text-sm font-medium text-gray-700 mb-1">
+              招待コード（必須）
+            </label>
+            <input
+              type="text"
+              id="invitationCode"
+              value={invitationCode}
+              onChange={(e) => setInvitationCode(e.target.value)}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="招待コードを入力してください"
+            />
+          </div>
+          
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
+          >
+            {loading ? '登録中...' : 'Google アカウントで登録'}
+          </button>
+        </form>
+      ) : mode === 'resetPassword' ? (
         <form onSubmit={(e) => {
           e.preventDefault()
           handleForgotPassword()
@@ -205,7 +287,7 @@ export default function AuthForm() {
       )}
       
       {/* Google OAuth divider and button */}
-      {mode !== 'resetPassword' && (
+      {mode !== 'resetPassword' && mode !== 'googleInvite' && (
         <>
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
@@ -221,7 +303,40 @@ export default function AuthForm() {
       )}
       
       <div className="text-center mb-4">
-        {mode === 'resetPassword' ? (
+        {mode === 'googleInvite' ? (
+          <div className="space-y-2">
+            <button
+              onClick={() => {
+                setMode('login')
+                setMessage('')
+                setEmail('')
+                setPassword('')
+                setName('')
+                setInvitationCode('')
+                setPendingGoogleUser(null)
+                sessionStorage.removeItem('pendingGoogleUser')
+              }}
+              className="text-blue-500 hover:text-blue-600 text-sm block w-full"
+            >
+              ログインページに戻る
+            </button>
+            <button
+              onClick={() => {
+                setMode('signup')
+                setMessage('')
+                setEmail('')
+                setPassword('')
+                setName('')
+                setInvitationCode('')
+                setPendingGoogleUser(null)
+                sessionStorage.removeItem('pendingGoogleUser')
+              }}
+              className="text-gray-500 hover:text-gray-600 text-sm block w-full"
+            >
+              メール/パスワードで新規登録
+            </button>
+          </div>
+        ) : mode === 'resetPassword' ? (
           <button
             onClick={() => {
               setMode('login')

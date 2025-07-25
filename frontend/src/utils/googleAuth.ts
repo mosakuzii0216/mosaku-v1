@@ -18,15 +18,24 @@ export class GoogleAuthUtils {
   /**
    * URLからGoogle認証の結果を解析する
    */
-  static parseAuthCallback(): { token?: string; user?: any; error?: string } {
+  static parseAuthCallback(): { token?: string; user?: any; error?: string; googleUser?: any } {
     const urlParams = new URLSearchParams(window.location.search);
     
     const token = urlParams.get('token');
     const userParam = urlParams.get('user');
     const error = urlParams.get('error');
+    const googleUserParam = urlParams.get('google_user');
 
     if (error) {
-      return { error };
+      let googleUser = undefined;
+      if (googleUserParam) {
+        try {
+          googleUser = JSON.parse(decodeURIComponent(googleUserParam));
+        } catch (parseError) {
+          console.error('Failed to parse google user data:', parseError);
+        }
+      }
+      return { error, googleUser };
     }
 
     if (token && userParam) {
@@ -50,6 +59,7 @@ export class GoogleAuthUtils {
     url.searchParams.delete('token');
     url.searchParams.delete('user');
     url.searchParams.delete('error');
+    url.searchParams.delete('google_user');
     
     // パラメータが変更された場合のみURLを更新
     if (url.search !== window.location.search) {

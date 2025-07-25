@@ -267,8 +267,37 @@ export class AuthController {
       return res.redirect(redirectUrl);
     } catch (error: any) {
       console.error('Google auth error:', error);
+
+      // 新規ユーザーで招待コードが必要な場合
+      if (error.message.includes('invitation code')) {
+        const redirectUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?error=invitation_required&google_user=${encodeURIComponent(JSON.stringify(req.user))}`;
+        return res.redirect(redirectUrl);
+      }
+
       const errorUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?error=auth_failed`;
       return res.redirect(errorUrl);
+    }
+  }
+
+  @Public()
+  @Post('google/register-with-invitation')
+  async googleRegisterWithInvitation(
+    @Body() body: { googleUser: any; invitationCode: string },
+  ) {
+    const { googleUser, invitationCode } = body;
+
+    try {
+      const result = await this.authService.googleRegisterWithInvitation(
+        googleUser,
+        invitationCode,
+      );
+
+      return {
+        message: 'Registration successful',
+        ...result,
+      };
+    } catch (error: any) {
+      throw new BadRequestException(error.message || 'Registration failed');
     }
   }
 }
