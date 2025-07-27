@@ -76,6 +76,10 @@ export class GitHubAuthUtils {
     const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
     const baseUrl = import.meta.env.VITE_APP_URL || 'http://localhost';
     
+    console.log('Debug: VITE_GITHUB_CLIENT_ID =', clientId);
+    console.log('Debug: VITE_APP_URL =', baseUrl);
+    console.log('Debug: All env vars =', import.meta.env);
+    
     if (!clientId) {
       throw new Error('GitHub Client ID is not configured');
     }

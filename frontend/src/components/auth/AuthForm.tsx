@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { GoogleLoginButton } from '../ui/GoogleLoginButton'
+import { GitHubLoginButton } from '../ui/GitHubLoginButton'
 
 export default function AuthForm() {
   const [searchParams] = useSearchParams()
@@ -11,10 +12,11 @@ export default function AuthForm() {
   const [name, setName] = useState('')
   const [invitationCode, setInvitationCode] = useState('')
   const [message, setMessage] = useState('')
-  const [mode, setMode] = useState<'login' | 'signup' | 'resetPassword' | 'googleInvite'>('login')
+  const [mode, setMode] = useState<'login' | 'signup' | 'resetPassword' | 'googleInvite' | 'githubInvite'>('login')
   const [pendingGoogleUser, setPendingGoogleUser] = useState<any>(null)
+  const [pendingGitHubUser, setPendingGitHubUser] = useState<any>(null)
 
-  const { login, register, resetPassword, googleRegisterWithInvitation } = useAuth()
+  const { login, register, resetPassword, googleRegisterWithInvitation, githubRegisterWithInvitation } = useAuth()
 
   useEffect(() => {
     const error = searchParams.get('error')
@@ -31,7 +33,23 @@ export default function AuthForm() {
           console.error('Failed to parse pending Google user:', error)
           setMessage('認証処理でエラーが発生しました。再度お試しください。')
         }
-      } else {
+      }
+      
+      // sessionStorageからpendingGitHubUserを取得
+      const storedGitHubUser = sessionStorage.getItem('pendingGitHubUser')
+      if (storedGitHubUser) {
+        try {
+          const githubUser = JSON.parse(storedGitHubUser)
+          setPendingGitHubUser(githubUser)
+          setMessage(`GitHub認証は成功しましたが、新規ユーザー登録には招待コードが必要です。`)
+          setMode('githubInvite')
+        } catch (error) {
+          console.error('Failed to parse pending GitHub user:', error)
+          setMessage('認証処理でエラーが発生しました。再度お試しください。')
+        }
+      }
+      
+      if (!storedGoogleUser && !storedGitHubUser) {
         setMessage('新規ユーザーの場合は招待コードが必要です。新規登録を選択してください。')
         setMode('signup')
       }
@@ -117,12 +135,35 @@ export default function AuthForm() {
     }
   }
 
+  const handleGitHubRegistration = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!pendingGitHubUser || !invitationCode) {
+      setMessage('招待コードを入力してください')
+      return
+    }
+    
+    setLoading(true)
+    setMessage('')
+    
+    try {
+      await githubRegisterWithInvitation(pendingGitHubUser, invitationCode)
+      // 成功時は認証コンテキストが自動的にユーザー状態を更新する
+    } catch (error: unknown) {
+      console.error('GitHub登録エラー:', error)
+      const errorMessage = error instanceof Error ? error.message : 'GitHub registration failed'
+      setMessage(errorMessage)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-center">
         {mode === 'signup' ? '新規登録' : 
          mode === 'resetPassword' ? 'パスワードリセット' : 
          mode === 'googleInvite' ? 'Google アカウント登録' : 
+         mode === 'githubInvite' ? 'GitHub アカウント登録' : 
          'ログイン'}
       </h2>
       
@@ -171,6 +212,43 @@ export default function AuthForm() {
             className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
           >
             {loading ? '登録中...' : 'Google アカウントで登録'}
+          </button>
+        </form>
+      ) : mode === 'githubInvite' ? (
+        // GitHub OAuth + 招待コード登録フォーム
+        <form onSubmit={handleGitHubRegistration} className="space-y-4 mb-6">
+          {pendingGitHubUser && (
+            <div className="bg-gray-50 p-3 rounded-lg mb-4">
+              <p className="text-sm text-gray-700">
+                <strong>GitHub アカウント:</strong> {pendingGitHubUser.email}
+              </p>
+              <p className="text-xs text-gray-600 mt-1">
+                このアカウントで登録するには招待コードが必要です
+              </p>
+            </div>
+          )}
+          
+          <div>
+            <label htmlFor="invitationCode" className="block text-sm font-medium text-gray-700 mb-1">
+              招待コード（必須）
+            </label>
+            <input
+              type="text"
+              id="invitationCode"
+              value={invitationCode}
+              onChange={(e) => setInvitationCode(e.target.value)}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="招待コードを入力してください"
+            />
+          </div>
+          
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-gray-900 hover:bg-gray-800 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
+          >
+            {loading ? '登録中...' : 'GitHub アカウントで登録'}
           </button>
         </form>
       ) : mode === 'resetPassword' ? (
@@ -286,8 +364,8 @@ export default function AuthForm() {
         </form>
       )}
       
-      {/* Google OAuth divider and button */}
-      {mode !== 'resetPassword' && mode !== 'googleInvite' && (
+      {/* OAuth divider and buttons */}
+      {mode !== 'resetPassword' && mode !== 'googleInvite' && mode !== 'githubInvite' && (
         <>
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
@@ -298,7 +376,10 @@ export default function AuthForm() {
             </div>
           </div>
           
-          <GoogleLoginButton className="mb-4" />
+          <div className="space-y-3">
+            <GoogleLoginButton />
+            <GitHubLoginButton />
+          </div>
         </>
       )}
       
@@ -330,6 +411,39 @@ export default function AuthForm() {
                 setInvitationCode('')
                 setPendingGoogleUser(null)
                 sessionStorage.removeItem('pendingGoogleUser')
+              }}
+              className="text-gray-500 hover:text-gray-600 text-sm block w-full"
+            >
+              メール/パスワードで新規登録
+            </button>
+          </div>
+        ) : mode === 'githubInvite' ? (
+          <div className="space-y-2">
+            <button
+              onClick={() => {
+                setMode('login')
+                setMessage('')
+                setEmail('')
+                setPassword('')
+                setName('')
+                setInvitationCode('')
+                setPendingGitHubUser(null)
+                sessionStorage.removeItem('pendingGitHubUser')
+              }}
+              className="text-blue-500 hover:text-blue-600 text-sm block w-full"
+            >
+              ログインページに戻る
+            </button>
+            <button
+              onClick={() => {
+                setMode('signup')
+                setMessage('')
+                setEmail('')
+                setPassword('')
+                setName('')
+                setInvitationCode('')
+                setPendingGitHubUser(null)
+                sessionStorage.removeItem('pendingGitHubUser')
               }}
               className="text-gray-500 hover:text-gray-600 text-sm block w-full"
             >
