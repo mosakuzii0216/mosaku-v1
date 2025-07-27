@@ -6,8 +6,10 @@ import { SupabaseGuard } from './supabase.guard';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { GoogleStrategy } from './google.strategy';
+import { GitHubStrategy } from './github.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { GoogleAuthGuard } from './google-auth.guard';
+import { GitHubAuthGuard } from './github-auth.guard';
 import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { InvitationService } from '../invitation/invitation.service';
@@ -28,8 +30,10 @@ import { InvitationService } from '../invitation/invitation.service';
     AuthService,
     JwtStrategy,
     GoogleStrategy,
+    GitHubStrategy,
     JwtAuthGuard,
     GoogleAuthGuard,
+    GitHubAuthGuard,
     InvitationService,
   ],
   exports: [
@@ -38,6 +42,7 @@ import { InvitationService } from '../invitation/invitation.service';
     AuthService,
     JwtAuthGuard,
     GoogleAuthGuard,
+    GitHubAuthGuard,
   ],
 })
 export class AuthModule {}

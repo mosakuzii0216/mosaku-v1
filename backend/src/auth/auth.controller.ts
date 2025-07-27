@@ -13,6 +13,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { GoogleAuthGuard } from './google-auth.guard';
+import { GitHubAuthGuard } from './github-auth.guard';
 import { Public } from './public.decorator';
 import { AuthService } from './auth.service';
 import { InvitationService } from '../invitation/invitation.service';
@@ -289,6 +290,59 @@ export class AuthController {
     try {
       const result = await this.authService.googleRegisterWithInvitation(
         googleUser,
+        invitationCode,
+      );
+
+      return {
+        message: 'Registration successful',
+        ...result,
+      };
+    } catch (error: any) {
+      throw new BadRequestException(error.message || 'Registration failed');
+    }
+  }
+
+  // GitHub OAuth エンドポイント
+  @Get('github')
+  @UseGuards(GitHubAuthGuard)
+  async githubAuth(@Request() req: any) {
+    // GitHub認証画面にリダイレクト
+  }
+
+  @Get('github/callback')
+  @UseGuards(GitHubAuthGuard)
+  async githubAuthRedirect(@Request() req: any, @Response() res: any) {
+    try {
+      const result = await this.authService.githubLogin(req.user);
+
+      // フロントエンドにトークンを渡すため、URLパラメータとしてリダイレクト
+      const redirectUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?token=${result.accessToken}&user=${encodeURIComponent(JSON.stringify(result.user))}`;
+
+      return res.redirect(redirectUrl);
+    } catch (error: any) {
+      console.error('GitHub auth error:', error);
+
+      // 新規ユーザーで招待コードが必要な場合
+      if (error.message.includes('invitation code')) {
+        const redirectUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?error=invitation_required&github_user=${encodeURIComponent(JSON.stringify(req.user))}`;
+        return res.redirect(redirectUrl);
+      }
+
+      const errorUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?error=auth_failed`;
+      return res.redirect(errorUrl);
+    }
+  }
+
+  @Public()
+  @Post('github/register-with-invitation')
+  async githubRegisterWithInvitation(
+    @Body() body: { githubUser: any; invitationCode: string },
+  ) {
+    const { githubUser, invitationCode } = body;
+
+    try {
+      const result = await this.authService.githubRegisterWithInvitation(
+        githubUser,
         invitationCode,
       );
 

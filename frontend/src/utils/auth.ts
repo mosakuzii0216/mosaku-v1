@@ -209,6 +209,28 @@ export class AuthAPI {
     AuthTokenManager.setAccessToken(data.accessToken);
     return data;
   }
+
+  static async githubRegisterWithInvitation(
+    githubUser: any,
+    invitationCode: string
+  ): Promise<LoginResponse> {
+    const response = await fetch(`${this.BASE_URL}/auth/github/register-with-invitation`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ githubUser, invitationCode }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'GitHub registration failed');
+    }
+
+    const data = await response.json();
+    AuthTokenManager.setAccessToken(data.accessToken);
+    return data;
+  }
 }
 
 export { AuthTokenManager };

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { AuthAPI, AuthTokenManager, UserProfile } from '../utils/auth'
-import { GoogleAuthUtils } from '../utils/googleAuth'
+import { GoogleAuthUtils, GitHubAuthUtils } from '../utils/oauthAuth'
 
 export interface AuthState {
   user: UserProfile | null;
@@ -13,6 +13,8 @@ export interface AuthActions {
   register: (email: string, password: string, name?: string, invitationCode?: string) => Promise<void>;
   googleLogin: () => void;
   googleRegisterWithInvitation: (googleUser: any, invitationCode: string) => Promise<void>;
+  githubLogin: () => void;
+  githubRegisterWithInvitation: (githubUser: any, invitationCode: string) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
@@ -38,15 +40,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const initializeAuth = async () => {
     try {
       // まずGoogle OAuth認証のコールバックをチェック
-      const authCallback = GoogleAuthUtils.parseAuthCallback()
+      const googleAuthCallback = GoogleAuthUtils.parseAuthCallback()
       
-      if (authCallback.error) {
-        console.error('Google auth error:', authCallback.error)
+      if (googleAuthCallback.error) {
+        console.error('Google auth error:', googleAuthCallback.error)
         
         // 招待コードが必要な場合の処理
-        if (authCallback.error === 'invitation_required' && authCallback.googleUser) {
+        if (googleAuthCallback.error === 'invitation_required' && googleAuthCallback.googleUser) {
           // Google user情報をsessionStorageに保存（招待コード入力で使用）
-          sessionStorage.setItem('pendingGoogleUser', JSON.stringify(authCallback.googleUser))
+          sessionStorage.setItem('pendingGoogleUser', JSON.stringify(googleAuthCallback.googleUser))
         }
         
         GoogleAuthUtils.clearAuthParams()
@@ -54,11 +56,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return
       }
       
-      if (authCallback.token && authCallback.user) {
+      if (googleAuthCallback.token && googleAuthCallback.user) {
         // Google認証成功
-        AuthTokenManager.setAccessToken(authCallback.token)
-        setUser(authCallback.user)
+        AuthTokenManager.setAccessToken(googleAuthCallback.token)
+        setUser(googleAuthCallback.user)
         GoogleAuthUtils.clearAuthParams()
+        setLoading(false)
+        return
+      }
+
+      // GitHub OAuth認証のコールバックをチェック
+      const githubAuthCallback = GitHubAuthUtils.parseAuthCallback()
+      
+      if (githubAuthCallback.error) {
+        console.error('GitHub auth error:', githubAuthCallback.error)
+        
+        // 招待コードが必要な場合の処理
+        if (githubAuthCallback.error === 'invitation_required' && githubAuthCallback.githubUser) {
+          // GitHub user情報をsessionStorageに保存（招待コード入力で使用）
+          sessionStorage.setItem('pendingGitHubUser', JSON.stringify(githubAuthCallback.githubUser))
+        }
+        
+        GitHubAuthUtils.clearAuthParams()
+        setLoading(false)
+        return
+      }
+      
+      if (githubAuthCallback.token && githubAuthCallback.user) {
+        // GitHub認証成功
+        AuthTokenManager.setAccessToken(githubAuthCallback.token)
+        setUser(githubAuthCallback.user)
+        GitHubAuthUtils.clearAuthParams()
         setLoading(false)
         return
       }
@@ -166,6 +194,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  const githubLogin = (): void => {
+    try {
+      GitHubAuthUtils.startGitHubAuth()
+    } catch (error) {
+      console.error('Failed to start GitHub auth:', error)
+    }
+  }
+
+  const githubRegisterWithInvitation = async (githubUser: any, invitationCode: string): Promise<void> => {
+    try {
+      const response = await AuthAPI.githubRegisterWithInvitation(githubUser, invitationCode)
+      AuthTokenManager.setAccessToken(response.accessToken)
+      setUser(response.user)
+      // 成功したらpending user情報をクリア
+      sessionStorage.removeItem('pendingGitHubUser')
+    } catch (error) {
+      throw error
+    }
+  }
+
   const value: AuthContextType = {
     user,
     loading,
@@ -174,6 +222,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     googleLogin,
     googleRegisterWithInvitation,
+    githubLogin,
+    githubRegisterWithInvitation,
     logout,
     resetPassword,
     changePassword,
