@@ -76,10 +76,6 @@ export class GitHubAuthUtils {
     const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
     const baseUrl = import.meta.env.VITE_APP_URL || 'http://localhost';
     
-    console.log('Debug: VITE_GITHUB_CLIENT_ID =', clientId);
-    console.log('Debug: VITE_APP_URL =', baseUrl);
-    console.log('Debug: All env vars =', import.meta.env);
-    
     if (!clientId) {
       throw new Error('GitHub Client ID is not configured');
     }
@@ -134,6 +130,76 @@ export class GitHubAuthUtils {
     url.searchParams.delete('user');
     url.searchParams.delete('error');
     url.searchParams.delete('github_user');
+    
+    // パラメータが変更された場合のみURLを更新
+    if (url.search !== window.location.search) {
+      window.history.replaceState({}, '', url.toString());
+    }
+  }
+}
+
+export class XAuthUtils {
+  /**
+   * X OAuth認証を開始する
+   */
+  static startXAuth(): void {
+    const consumerKey = import.meta.env.VITE_X_CONSUMER_KEY;
+    const baseUrl = import.meta.env.VITE_APP_URL || 'http://localhost';
+    
+    if (!consumerKey) {
+      throw new Error('X Consumer Key is not configured');
+    }
+
+    // バックエンドのX認証エンドポイントにリダイレクト
+    const xAuthUrl = `${baseUrl}/api/auth/x`;
+    window.location.href = xAuthUrl;
+  }
+
+  /**
+   * URLからX認証の結果を解析する
+   */
+  static parseAuthCallback(): { token?: string; user?: any; error?: string; xUser?: any } {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    const token = urlParams.get('token');
+    const userParam = urlParams.get('user');
+    const error = urlParams.get('error');
+    const xUserParam = urlParams.get('x_user');
+
+    if (error) {
+      let xUser = undefined;
+      if (xUserParam) {
+        try {
+          xUser = JSON.parse(decodeURIComponent(xUserParam));
+        } catch (parseError) {
+          console.error('Failed to parse x user data:', parseError);
+        }
+      }
+      return { error, xUser };
+    }
+
+    if (token && userParam) {
+      try {
+        const user = JSON.parse(decodeURIComponent(userParam));
+        return { token, user };
+      } catch (parseError) {
+        console.error('Failed to parse user data:', parseError);
+        return { error: 'Failed to parse authentication data' };
+      }
+    }
+
+    return {};
+  }
+
+  /**
+   * URLからX認証パラメータをクリアする
+   */
+  static clearAuthParams(): void {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('token');
+    url.searchParams.delete('user');
+    url.searchParams.delete('error');
+    url.searchParams.delete('x_user');
     
     // パラメータが変更された場合のみURLを更新
     if (url.search !== window.location.search) {

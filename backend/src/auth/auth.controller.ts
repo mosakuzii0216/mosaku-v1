@@ -14,6 +14,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { GoogleAuthGuard } from './google-auth.guard';
 import { GitHubAuthGuard } from './github-auth.guard';
+import { XAuthGuard } from './x-auth.guard';
 import { Public } from './public.decorator';
 import { AuthService } from './auth.service';
 import { InvitationService } from '../invitation/invitation.service';
@@ -343,6 +344,59 @@ export class AuthController {
     try {
       const result = await this.authService.githubRegisterWithInvitation(
         githubUser,
+        invitationCode,
+      );
+
+      return {
+        message: 'Registration successful',
+        ...result,
+      };
+    } catch (error: any) {
+      throw new BadRequestException(error.message || 'Registration failed');
+    }
+  }
+
+  // X OAuth エンドポイント
+  @Get('x')
+  @UseGuards(XAuthGuard)
+  async xAuth(@Request() req: any) {
+    // X認証画面にリダイレクト
+  }
+
+  @Get('x/callback')
+  @UseGuards(XAuthGuard)
+  async xAuthRedirect(@Request() req: any, @Response() res: any) {
+    try {
+      const result = await this.authService.xLogin(req.user);
+
+      // フロントエンドにトークンを渡すため、URLパラメータとしてリダイレクト
+      const redirectUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?token=${result.accessToken}&user=${encodeURIComponent(JSON.stringify(result.user))}`;
+
+      return res.redirect(redirectUrl);
+    } catch (error: any) {
+      console.error('X auth error:', error);
+
+      // 新規ユーザーで招待コードが必要な場合
+      if (error.message.includes('invitation code')) {
+        const redirectUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?error=invitation_required&x_user=${encodeURIComponent(JSON.stringify(req.user))}`;
+        return res.redirect(redirectUrl);
+      }
+
+      const errorUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?error=auth_failed`;
+      return res.redirect(errorUrl);
+    }
+  }
+
+  @Public()
+  @Post('x/register-with-invitation')
+  async xRegisterWithInvitation(
+    @Body() body: { xUser: any; invitationCode: string },
+  ) {
+    const { xUser, invitationCode } = body;
+
+    try {
+      const result = await this.authService.xRegisterWithInvitation(
+        xUser,
         invitationCode,
       );
 

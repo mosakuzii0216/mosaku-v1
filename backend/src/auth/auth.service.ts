@@ -369,4 +369,112 @@ export class AuthService {
       user: userResult,
     };
   }
+
+  async xLogin(xUser: any): Promise<AuthTokens & { user: any }> {
+    // X IDまたはメールアドレスでユーザーを検索
+    let user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: xUser.email },
+          { supabaseId: xUser.xId }, // 既存のsupabaseIdフィールドをxIdとして利用
+        ],
+      },
+    });
+
+    if (user) {
+      // 既存ユーザーの場合、X IDと名前を更新
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          supabaseId: xUser.xId, // X IDを保存
+          name: xUser.name,
+        },
+      });
+    } else {
+      // 新規ユーザーの場合は招待コードなしでは登録できない
+      throw new BadRequestException(
+        'New user registration requires invitation code. Please use the registration with invitation code.',
+      );
+    }
+
+    // JWTトークンを生成
+    const tokens = await this.generateTokens(user.id, user.email, user.role);
+
+    // パスワードを除外して返す
+    const { password: _, ...userResult } = user;
+
+    return {
+      ...tokens,
+      user: userResult,
+    };
+  }
+
+  async xRegisterWithInvitation(
+    xUser: any,
+    invitationCode: string,
+  ): Promise<AuthTokens & { user: any }> {
+    // 既存ユーザーチェック
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: xUser.email }, { supabaseId: xUser.xId }],
+      },
+    });
+
+    if (existingUser) {
+      throw new BadRequestException('User already exists');
+    }
+
+    // 招待コードの検証
+    const invitation = await this.prisma.invitationCode.findUnique({
+      where: { code: invitationCode },
+    });
+
+    if (!invitation) {
+      throw new BadRequestException('Invalid invitation code');
+    }
+
+    if (invitation.expiresAt && invitation.expiresAt < new Date()) {
+      throw new BadRequestException('Invitation code has expired');
+    }
+
+    if (invitation.maxUses && invitation.usedCount >= invitation.maxUses) {
+      throw new BadRequestException('Invitation code has reached maximum uses');
+    }
+
+    // 管理者メールチェック
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const isAdmin = adminEmail && xUser.email === adminEmail;
+
+    // 新規ユーザー作成
+    const user = await this.prisma.user.create({
+      data: {
+        supabaseId: xUser.xId,
+        email: xUser.email,
+        name: xUser.name,
+        role: isAdmin ? 'ADMIN' : 'FREE',
+        emailVerified: true,
+      },
+    });
+
+    // 招待コードの使用回数を更新
+    await this.prisma.invitationCode.update({
+      where: { code: invitationCode },
+      data: {
+        usedCount: {
+          increment: 1,
+        },
+      },
+    });
+
+    // JWTトークンを生成
+    const tokens = await this.generateTokens(user.id, user.email, user.role);
+
+    // パスワードを除外して返す
+    const { password: _, ...userResult } = user;
+
+    return {
+      ...tokens,
+      user: userResult,
+    };
+  }
 }

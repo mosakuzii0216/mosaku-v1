@@ -7,9 +7,11 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { GoogleStrategy } from './google.strategy';
 import { GitHubStrategy } from './github.strategy';
+import { XStrategy } from './x.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { GoogleAuthGuard } from './google-auth.guard';
 import { GitHubAuthGuard } from './github-auth.guard';
+import { XAuthGuard } from './x-auth.guard';
 import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { InvitationService } from '../invitation/invitation.service';
@@ -31,9 +33,11 @@ import { InvitationService } from '../invitation/invitation.service';
     JwtStrategy,
     GoogleStrategy,
     GitHubStrategy,
+    XStrategy,
     JwtAuthGuard,
     GoogleAuthGuard,
     GitHubAuthGuard,
+    XAuthGuard,
     InvitationService,
   ],
   exports: [
@@ -43,6 +47,7 @@ import { InvitationService } from '../invitation/invitation.service';
     JwtAuthGuard,
     GoogleAuthGuard,
     GitHubAuthGuard,
+    XAuthGuard,
   ],
 })
 export class AuthModule {}

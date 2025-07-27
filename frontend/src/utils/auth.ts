@@ -231,6 +231,28 @@ export class AuthAPI {
     AuthTokenManager.setAccessToken(data.accessToken);
     return data;
   }
+
+  static async xRegisterWithInvitation(
+    xUser: any,
+    invitationCode: string
+  ): Promise<LoginResponse> {
+    const response = await fetch(`${this.BASE_URL}/auth/x/register-with-invitation`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ xUser, invitationCode }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'X registration failed');
+    }
+
+    const data = await response.json();
+    AuthTokenManager.setAccessToken(data.accessToken);
+    return data;
+  }
 }
 
 export { AuthTokenManager };

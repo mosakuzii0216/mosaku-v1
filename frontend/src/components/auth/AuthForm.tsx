@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { GoogleLoginButton } from '../ui/GoogleLoginButton'
 import { GitHubLoginButton } from '../ui/GitHubLoginButton'
+import { XLoginButton } from '../ui/XLoginButton'
 
 export default function AuthForm() {
   const [searchParams] = useSearchParams()
@@ -379,6 +380,7 @@ export default function AuthForm() {
           <div className="space-y-3">
             <GoogleLoginButton />
             <GitHubLoginButton />
+            <XLoginButton />
           </div>
         </>
       )}

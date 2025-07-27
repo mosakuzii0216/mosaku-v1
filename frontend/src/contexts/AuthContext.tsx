@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { AuthAPI, AuthTokenManager, UserProfile } from '../utils/auth'
-import { GoogleAuthUtils, GitHubAuthUtils } from '../utils/oauthAuth'
+import { GoogleAuthUtils, GitHubAuthUtils, XAuthUtils } from '../utils/oauthAuth'
 
 export interface AuthState {
   user: UserProfile | null;
@@ -15,6 +15,8 @@ export interface AuthActions {
   googleRegisterWithInvitation: (googleUser: any, invitationCode: string) => Promise<void>;
   githubLogin: () => void;
   githubRegisterWithInvitation: (githubUser: any, invitationCode: string) => Promise<void>;
+  xLogin: () => void;
+  xRegisterWithInvitation: (xUser: any, invitationCode: string) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
@@ -87,6 +89,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         AuthTokenManager.setAccessToken(githubAuthCallback.token)
         setUser(githubAuthCallback.user)
         GitHubAuthUtils.clearAuthParams()
+        setLoading(false)
+        return
+      }
+
+      // X OAuth認証のコールバックをチェック
+      const xAuthCallback = XAuthUtils.parseAuthCallback()
+      
+      if (xAuthCallback.error) {
+        console.error('X auth error:', xAuthCallback.error)
+        
+        // 招待コードが必要な場合の処理
+        if (xAuthCallback.error === 'invitation_required' && xAuthCallback.xUser) {
+          // X user情報をsessionStorageに保存（招待コード入力で使用）
+          sessionStorage.setItem('pendingXUser', JSON.stringify(xAuthCallback.xUser))
+        }
+        
+        XAuthUtils.clearAuthParams()
+        setLoading(false)
+        return
+      }
+      
+      if (xAuthCallback.token && xAuthCallback.user) {
+        // X認証成功
+        AuthTokenManager.setAccessToken(xAuthCallback.token)
+        setUser(xAuthCallback.user)
+        XAuthUtils.clearAuthParams()
         setLoading(false)
         return
       }
@@ -214,6 +242,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  const xLogin = (): void => {
+    try {
+      XAuthUtils.startXAuth()
+    } catch (error) {
+      console.error('Failed to start X auth:', error)
+    }
+  }
+
+  const xRegisterWithInvitation = async (xUser: any, invitationCode: string): Promise<void> => {
+    try {
+      const response = await AuthAPI.xRegisterWithInvitation(xUser, invitationCode)
+      AuthTokenManager.setAccessToken(response.accessToken)
+      setUser(response.user)
+      // 成功したらpending user情報をクリア
+      sessionStorage.removeItem('pendingXUser')
+    } catch (error) {
+      throw error
+    }
+  }
+
   const value: AuthContextType = {
     user,
     loading,
@@ -224,6 +272,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     googleRegisterWithInvitation,
     githubLogin,
     githubRegisterWithInvitation,
+    xLogin,
+    xRegisterWithInvitation,
     logout,
     resetPassword,
     changePassword,
