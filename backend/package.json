@@ -21,7 +21,9 @@
     "seed:themes": "ts-node -r tsconfig-paths/register prisma/seed-themes.ts",
     "migration:apply": "npx prisma migrate dev",
     "migration:deploy": "npx prisma migrate deploy",
-    "generate:theme-migration": "npx tsx scripts/generate-theme-migration.ts"
+    "generate:theme-migration": "npx tsx scripts/generate-theme-migration.ts",
+    "generate:css-theme-migration": "npx tsx scripts/generate-css-theme-migration.ts",
+    "generate:missing-css": "npx tsx scripts/generate-missing-css.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
