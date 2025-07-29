@@ -1,10 +1,9 @@
 name: Hello World
 
 # いつ実行するか：mainブランチにpushされた時
-# CICD一時無効化 - 後で対応予定
-# on:
-#   push:
-#     branches: [ main ]
+on:
+  push:
+    branches: [ main ]
 
 # 実行する作業（ジョブ）
 jobs:
