@@ -371,11 +371,15 @@ export class AuthService {
   }
 
   async xLogin(xUser: any): Promise<AuthTokens & { user: any }> {
+    // X OAuth の場合、emailが提供されないことがあるため、フォールバックメールを生成
+    const userEmail = xUser.email || `${xUser.username}@x.placeholder.local`;
+    
     // X IDまたはメールアドレスでユーザーを検索
     let user = await this.prisma.user.findFirst({
       where: {
         OR: [
-          { email: xUser.email },
+          ...(xUser.email ? [{ email: xUser.email }] : []), // 実際のemailがある場合のみ検索条件に追加
+          { email: userEmail }, // フォールバックメールでも検索
           { supabaseId: xUser.xId }, // 既存のsupabaseIdフィールドをxIdとして利用
         ],
       },
@@ -441,6 +445,9 @@ export class AuthService {
       throw new BadRequestException('Invitation code has reached maximum uses');
     }
 
+    // X OAuth の場合、emailが提供されないことがあるため、フォールバックメールを生成
+    const userEmail = xUser.email || `${xUser.username}@x.placeholder.local`;
+    
     // 管理者メールチェック
     const adminEmail = process.env.ADMIN_EMAIL;
     const isAdmin = adminEmail && xUser.email === adminEmail;
@@ -449,10 +456,10 @@ export class AuthService {
     const user = await this.prisma.user.create({
       data: {
         supabaseId: xUser.xId,
-        email: xUser.email,
+        email: userEmail,
         name: xUser.name,
         role: isAdmin ? 'ADMIN' : 'FREE',
-        emailVerified: true,
+        emailVerified: xUser.email ? true : false, // 実際のメールがある場合のみverified
       },
     });
 

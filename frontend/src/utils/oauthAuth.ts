@@ -26,6 +26,11 @@ export class GoogleAuthUtils {
     const error = urlParams.get('error');
     const googleUserParam = urlParams.get('google_user');
 
+    // Google固有のパラメータがない場合は、Google認証ではないと判断
+    if (!googleUserParam && error) {
+      return {};
+    }
+
     if (error) {
       let googleUser = undefined;
       if (googleUserParam) {
@@ -96,6 +101,11 @@ export class GitHubAuthUtils {
     const error = urlParams.get('error');
     const githubUserParam = urlParams.get('github_user');
 
+    // GitHub固有のパラメータがない場合は、GitHub認証ではないと判断
+    if (!githubUserParam && error) {
+      return {};
+    }
+
     if (error) {
       let githubUser = undefined;
       if (githubUserParam) {
@@ -165,6 +175,11 @@ export class XAuthUtils {
     const userParam = urlParams.get('user');
     const error = urlParams.get('error');
     const xUserParam = urlParams.get('x_user');
+
+    // X固有のパラメータがない場合は、X認証ではないと判断
+    if (!xUserParam && error) {
+      return {};
+    }
 
     if (error) {
       let xUser = undefined;

@@ -41,27 +41,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const initializeAuth = async () => {
     try {
-      // まずGoogle OAuth認証のコールバックをチェック
+      // Google OAuth認証のコールバックをチェック
       const googleAuthCallback = GoogleAuthUtils.parseAuthCallback()
       
-      if (googleAuthCallback.error) {
-        console.error('Google auth error:', googleAuthCallback.error)
-        
-        // 招待コードが必要な場合の処理
-        if (googleAuthCallback.error === 'invitation_required' && googleAuthCallback.googleUser) {
-          // Google user情報をsessionStorageに保存（招待コード入力で使用）
-          sessionStorage.setItem('pendingGoogleUser', JSON.stringify(googleAuthCallback.googleUser))
+      if (googleAuthCallback.error || (googleAuthCallback.token && googleAuthCallback.user)) {
+        if (googleAuthCallback.error) {
+          console.error('Google auth error:', googleAuthCallback.error)
+          
+          // 招待コードが必要な場合の処理
+          if (googleAuthCallback.error === 'invitation_required' && googleAuthCallback.googleUser) {
+            // Google user情報をsessionStorageに保存（招待コード入力で使用）
+            sessionStorage.setItem('pendingGoogleUser', JSON.stringify(googleAuthCallback.googleUser))
+          }
+        } else if (googleAuthCallback.token && googleAuthCallback.user) {
+          // Google認証成功
+          AuthTokenManager.setAccessToken(googleAuthCallback.token)
+          setUser(googleAuthCallback.user)
         }
         
-        GoogleAuthUtils.clearAuthParams()
-        setLoading(false)
-        return
-      }
-      
-      if (googleAuthCallback.token && googleAuthCallback.user) {
-        // Google認証成功
-        AuthTokenManager.setAccessToken(googleAuthCallback.token)
-        setUser(googleAuthCallback.user)
         GoogleAuthUtils.clearAuthParams()
         setLoading(false)
         return
@@ -70,24 +67,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // GitHub OAuth認証のコールバックをチェック
       const githubAuthCallback = GitHubAuthUtils.parseAuthCallback()
       
-      if (githubAuthCallback.error) {
-        console.error('GitHub auth error:', githubAuthCallback.error)
-        
-        // 招待コードが必要な場合の処理
-        if (githubAuthCallback.error === 'invitation_required' && githubAuthCallback.githubUser) {
-          // GitHub user情報をsessionStorageに保存（招待コード入力で使用）
-          sessionStorage.setItem('pendingGitHubUser', JSON.stringify(githubAuthCallback.githubUser))
+      if (githubAuthCallback.error || (githubAuthCallback.token && githubAuthCallback.user)) {
+        if (githubAuthCallback.error) {
+          console.error('GitHub auth error:', githubAuthCallback.error)
+          
+          // 招待コードが必要な場合の処理
+          if (githubAuthCallback.error === 'invitation_required' && githubAuthCallback.githubUser) {
+            // GitHub user情報をsessionStorageに保存（招待コード入力で使用）
+            sessionStorage.setItem('pendingGitHubUser', JSON.stringify(githubAuthCallback.githubUser))
+          }
+        } else if (githubAuthCallback.token && githubAuthCallback.user) {
+          // GitHub認証成功
+          AuthTokenManager.setAccessToken(githubAuthCallback.token)
+          setUser(githubAuthCallback.user)
         }
         
-        GitHubAuthUtils.clearAuthParams()
-        setLoading(false)
-        return
-      }
-      
-      if (githubAuthCallback.token && githubAuthCallback.user) {
-        // GitHub認証成功
-        AuthTokenManager.setAccessToken(githubAuthCallback.token)
-        setUser(githubAuthCallback.user)
         GitHubAuthUtils.clearAuthParams()
         setLoading(false)
         return
@@ -96,24 +90,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // X OAuth認証のコールバックをチェック
       const xAuthCallback = XAuthUtils.parseAuthCallback()
       
-      if (xAuthCallback.error) {
-        console.error('X auth error:', xAuthCallback.error)
-        
-        // 招待コードが必要な場合の処理
-        if (xAuthCallback.error === 'invitation_required' && xAuthCallback.xUser) {
-          // X user情報をsessionStorageに保存（招待コード入力で使用）
-          sessionStorage.setItem('pendingXUser', JSON.stringify(xAuthCallback.xUser))
+      if (xAuthCallback.error || (xAuthCallback.token && xAuthCallback.user)) {
+        if (xAuthCallback.error) {
+          console.error('X auth error:', xAuthCallback.error)
+          
+          // 招待コードが必要な場合の処理
+          if (xAuthCallback.error === 'invitation_required' && xAuthCallback.xUser) {
+            // X user情報をsessionStorageに保存（招待コード入力で使用）
+            sessionStorage.setItem('pendingXUser', JSON.stringify(xAuthCallback.xUser))
+          }
+        } else if (xAuthCallback.token && xAuthCallback.user) {
+          // X認証成功
+          AuthTokenManager.setAccessToken(xAuthCallback.token)
+          setUser(xAuthCallback.user)
         }
         
-        XAuthUtils.clearAuthParams()
-        setLoading(false)
-        return
-      }
-      
-      if (xAuthCallback.token && xAuthCallback.user) {
-        // X認証成功
-        AuthTokenManager.setAccessToken(xAuthCallback.token)
-        setUser(xAuthCallback.user)
         XAuthUtils.clearAuthParams()
         setLoading(false)
         return
