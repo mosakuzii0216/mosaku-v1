@@ -5,6 +5,12 @@ const prisma = new PrismaClient();
 
 /**
  * テーマのシードデータを投入する
+ * 
+ * 注意: このファイルは後方互換性のために残していますが、
+ * 推奨される方法はPrisma migrationを使用することです:
+ * 
+ * 推奨: npm run migration:apply
+ * 代替: npm run seed:themes
  */
 async function seedThemes() {
   console.log('🎨 テーマのシードデータを投入中...');
