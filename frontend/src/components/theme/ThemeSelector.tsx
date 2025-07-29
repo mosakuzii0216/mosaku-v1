@@ -40,7 +40,15 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   const filteredThemes = useMemo(() => {
     const allThemes = [...systemThemes, ...publicThemes];
     
-    return allThemes.filter(theme => {
+    // 重複IDを排除（最初に見つかったものを使用）
+    const uniqueThemes = allThemes.reduce((acc, theme) => {
+      if (!acc.find(t => t.id === theme.id)) {
+        acc.push(theme);
+      }
+      return acc;
+    }, [] as Theme[]);
+    
+    return uniqueThemes.filter(theme => {
       // カテゴリフィルター
       if (selectedCategory !== 'all') {
         // システムテーマの場合、プリセットデータから推測

@@ -55,13 +55,17 @@ export interface ThemeAnimations {
 }
 
 export interface ThemeStyles {
-  colors: ThemeColors;
-  typography: ThemeTypography;
-  layout: ThemeLayout;
+  colors?: ThemeColors;
+  typography?: ThemeTypography;
+  layout?: ThemeLayout;
   accessibility?: ThemeAccessibility;
   animations?: ThemeAnimations;
   customProperties?: Record<string, string>;
   version: string;
+  
+  // CSS参照型テーマの場合
+  type?: 'css-based' | 'object-based';
+  cssContent?: string;
 }
 
 export interface Theme {

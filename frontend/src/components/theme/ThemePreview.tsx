@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Theme } from '../../types/theme';
+import { getThemeVariables } from '../../utils/cssThemeUtils';
 
 interface ThemePreviewProps {
   theme: Theme;
@@ -18,20 +19,39 @@ export const ThemePreview: React.FC<ThemePreviewProps> = ({
   onFavoriteToggle,
   className = '',
 }) => {
-  const { styles } = theme;
+  // CSS参照型と既存形式の両方に対応
+  let themeVars;
+  try {
+    themeVars = getThemeVariables(theme);
+  } catch (error) {
+    console.error('テーマ変数の解析エラー:', theme.id, error);
+    // フォールバック値を設定
+    themeVars = {
+      backgroundColor: '#FFFFFF',
+      textColor: '#1F2937',
+      accentColor: '#3B82F6',
+      borderColor: '#E5E7EB',
+      headingColor: '#111827',
+      subtextColor: '#6B7280',
+      fontFamily: '"Inter", system-ui, sans-serif',
+      fontSize: '1rem',
+      borderRadius: '0.5rem',
+      padding: '1rem',
+    };
+  }
 
   // CSS変数を動的に生成
   const cssVariables = {
-    '--preview-bg': styles.colors.backgroundColor,
-    '--preview-text': styles.colors.textColor,
-    '--preview-accent': styles.colors.accentColor,
-    '--preview-border': styles.colors.borderColor,
-    '--preview-heading': styles.colors.headingColor,
-    '--preview-subtext': styles.colors.subtextColor,
-    '--preview-font-family': styles.typography.fontFamily,
-    '--preview-font-size': styles.typography.fontSize,
-    '--preview-border-radius': styles.layout.borderRadius,
-    '--preview-padding': styles.layout.padding,
+    '--preview-bg': themeVars.backgroundColor || '#FFFFFF',
+    '--preview-text': themeVars.textColor || '#1F2937',
+    '--preview-accent': themeVars.accentColor || '#3B82F6',
+    '--preview-border': themeVars.borderColor || '#E5E7EB',
+    '--preview-heading': themeVars.headingColor || '#111827',
+    '--preview-subtext': themeVars.subtextColor || '#6B7280',
+    '--preview-font-family': themeVars.fontFamily || '"Inter", system-ui, sans-serif',
+    '--preview-font-size': themeVars.fontSize || '1rem',
+    '--preview-border-radius': themeVars.borderRadius || '0.5rem',
+    '--preview-padding': themeVars.padding || '1rem',
   } as React.CSSProperties;
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
