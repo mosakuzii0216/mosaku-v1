@@ -250,7 +250,7 @@ export default function AuthForm() {
             disabled={loading}
             className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
           >
-            {loading ? '登録中...' : 'Google アカウントで登録'}
+            {loading ? '登録中...' : 'Googleで登録'}
           </button>
         </form>
       ) : mode === 'githubInvite' ? (
@@ -287,7 +287,7 @@ export default function AuthForm() {
             disabled={loading}
             className="w-full bg-gray-900 hover:bg-gray-800 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
           >
-            {loading ? '登録中...' : 'GitHub アカウントで登録'}
+            {loading ? '登録中...' : 'GitHubで登録'}
           </button>
         </form>
       ) : mode === 'xInvite' ? (
@@ -324,7 +324,7 @@ export default function AuthForm() {
             disabled={loading}
             className="w-full bg-black hover:bg-gray-900 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
           >
-            {loading ? '登録中...' : 'X アカウントで登録'}
+            {loading ? '登録中...' : 'Xで登録'}
           </button>
         </form>
       ) : mode === 'resetPassword' ? (
@@ -453,9 +453,9 @@ export default function AuthForm() {
           </div>
           
           <div className="space-y-3">
-            <GoogleLoginButton />
-            <GitHubLoginButton />
-            <XLoginButton />
+            <GoogleLoginButton mode={mode === 'signup' ? 'signup' : 'login'} />
+            <GitHubLoginButton mode={mode === 'signup' ? 'signup' : 'login'} />
+            <XLoginButton mode={mode === 'signup' ? 'signup' : 'login'} />
           </div>
         </>
       )}

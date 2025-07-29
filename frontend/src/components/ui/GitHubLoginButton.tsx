@@ -3,11 +3,13 @@ import { useAuth } from '../../contexts/AuthContext'
 interface GitHubLoginButtonProps {
   className?: string
   children?: React.ReactNode
+  mode?: 'login' | 'signup'
 }
 
 export const GitHubLoginButton: React.FC<GitHubLoginButtonProps> = ({ 
   className = '', 
-  children 
+  children,
+  mode = 'login'
 }) => {
   const { githubLogin } = useAuth()
 
@@ -37,7 +39,7 @@ export const GitHubLoginButton: React.FC<GitHubLoginButtonProps> = ({
           clipRule="evenodd"
         />
       </svg>
-      {children || 'GitHubでログイン'}
+      {children || (mode === 'signup' ? 'GitHubで登録' : 'GitHubでログイン')}
     </button>
   )
 }
