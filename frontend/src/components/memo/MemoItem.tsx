@@ -1,6 +1,7 @@
 import type { Memo } from '../../types/memo';
 import { useMemoStore } from '../../stores/useMemoStore';
 import { TagChip } from '../tag/TagChip';
+import { getThemeVariables } from '../../utils/cssThemeUtils';
 
 interface MemoItemProps {
   memo: Memo;
@@ -44,13 +45,27 @@ export const MemoItem = ({ memo }: MemoItemProps) => {
         </h3>
         <div className="flex items-center space-x-2">
           {/* テーマインジケーター */}
-          {memo.theme && (
-            <div
-              className="w-3 h-3 rounded-full border border-gray-300"
-              style={{ backgroundColor: memo.theme.styles.colors.accentColor }}
-              title={`テーマ: ${memo.theme.name}`}
-            />
-          )}
+          {memo.theme && (() => {
+            try {
+              const themeVars = getThemeVariables(memo.theme);
+              return (
+                <div
+                  className="w-3 h-3 rounded-full border border-gray-300"
+                  style={{ backgroundColor: themeVars.accentColor || '#3B82F6' }}
+                  title={`テーマ: ${memo.theme.name}`}
+                />
+              );
+            } catch (error) {
+              console.warn('テーマ変数の取得に失敗:', memo.theme.id, error);
+              return (
+                <div
+                  className="w-3 h-3 rounded-full border border-gray-300"
+                  style={{ backgroundColor: '#3B82F6' }}
+                  title={`テーマ: ${memo.theme.name}`}
+                />
+              );
+            }
+          })()}
           <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
             {formatDate(memo.updatedAt)}
           </span>
