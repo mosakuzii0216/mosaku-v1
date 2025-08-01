@@ -1,0 +1,83 @@
+/* セピア護眼 - 目の疲れを軽減するセピア調テーマ */
+
+:root {
+  /* Colors */
+  --theme-bg-color: #F4F1E8;
+  --theme-text-color: #3E2723;
+  --theme-border-color: #D7CCC8;
+  --theme-hover-bg-color: #EFEBE9;
+  --theme-accent-color: #8D6E63;
+  --theme-heading-color: #3E2723;
+  --theme-subtext-color: #5D4037;
+  --theme-muted-text-color: #795548;
+  --theme-divider-color: #BCAAA4;
+
+  /* Typography */
+  --theme-font-family: "Georgia", "Times New Roman", serif;
+  --theme-font-size: 1.125rem;
+  --theme-heading-font-size: 1.625rem;
+  --theme-small-font-size: 1rem;
+  --theme-font-weight: 400;
+  --theme-heading-font-weight: 600;
+  --theme-line-height: 1.8;
+
+  /* Layout */
+  --theme-padding: 1.25rem;
+  --theme-margin: 0.75rem;
+  --theme-border-radius: 0.25rem;
+  --theme-border-width: 1px;
+  --theme-box-shadow: 0 1px 2px 0 rgba(62, 39, 35, 0.1);
+
+  /* Animations */
+  --theme-transition-duration: 100ms;
+
+}
+
+/* メモコンテナ */
+.memo-container {
+  background-color: var(--theme-bg-color);
+  color: var(--theme-text-color);
+  border: var(--theme-border-width) solid var(--theme-border-color);
+  border-radius: var(--theme-border-radius);
+  padding: var(--theme-padding);
+  margin: var(--theme-margin);
+  box-shadow: var(--theme-box-shadow);
+  font-family: var(--theme-font-family);
+  font-size: var(--theme-font-size);
+  line-height: var(--theme-line-height);
+  transition: background-color var(--theme-transition-duration);
+}
+
+.memo-container:hover {
+  background-color: var(--theme-hover-bg-color);
+}
+
+/* 見出し */
+.memo-title, h1, h2, h3, h4, h5, h6 {
+  color: var(--theme-heading-color);
+  font-size: var(--theme-heading-font-size);
+  font-weight: var(--theme-heading-font-weight);
+  font-family: var(--theme-font-family);
+}
+
+/* アクセント要素 */
+.memo-accent, .button-primary, .link-primary {
+  color: var(--theme-accent-color);
+  border-color: var(--theme-accent-color);
+}
+
+/* サブテキスト */
+.memo-subtext, .text-secondary {
+  color: var(--theme-subtext-color);
+  font-size: var(--theme-small-font-size);
+}
+
+/* ミュートテキスト */
+.memo-muted, .text-muted {
+  color: var(--theme-muted-text-color);
+}
+
+/* 区切り線 */
+.memo-divider, .divider, hr {
+  border-color: var(--theme-divider-color);
+}

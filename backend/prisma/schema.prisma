@@ -111,8 +111,14 @@ model Theme {
   isSystem    Boolean  @default(false)
   isPublic    Boolean  @default(false)
   
-  // スタイル設定（JSON形式）
-  styles      Json
+  // 後方互換性のためstylesカラムを残す（NULL許可）
+  styles      Json?
+  
+  // CSSファイルパス（相対パス）
+  cssFilePath String?  @map("css_file_path") @db.VarChar(255)
+  
+  // メタデータ（JSON形式）
+  metadata    Json?    @default("{}")
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

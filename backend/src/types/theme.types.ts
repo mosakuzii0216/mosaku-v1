@@ -116,7 +116,9 @@ export interface ThemePreset {
     | 'study'
     | 'seasonal'
     | 'accessibility';
-  styles: ThemeStyles;
+  styles?: ThemeStyles; // 後方互換性のため残す
+  cssFilePath?: string; // CSSファイルパス
+  metadata?: Record<string, any>; // メタデータ
   isSystem: boolean;
   isPublic: boolean;
 }

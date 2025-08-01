@@ -23,6 +23,7 @@
     "migration:deploy": "npx prisma migrate deploy",
     "generate:theme-migration": "npx tsx scripts/generate-theme-migration.ts",
     "generate:css-theme-migration": "npx tsx scripts/generate-css-theme-migration.ts",
+    "generate:css-file-theme-migration": "npx tsx scripts/generate-css-file-theme-migration.ts",
     "generate:missing-css": "npx tsx scripts/generate-missing-css.ts"
   },
   "dependencies": {

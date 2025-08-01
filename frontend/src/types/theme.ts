@@ -74,7 +74,9 @@ export interface Theme {
   description: string | null;
   isSystem: boolean;
   isPublic: boolean;
-  styles: ThemeStyles;
+  cssFilePath: string; // CSSファイルのパス
+  metadata?: Record<string, any>; // メタデータ（アクセシビリティ設定など）
+  styles?: ThemeStyles; // 後方互換性のため残す
   createdAt: string;
   updatedAt: string;
   createdById: string | null;
