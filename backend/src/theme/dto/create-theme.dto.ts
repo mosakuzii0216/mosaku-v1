@@ -25,6 +25,15 @@ export class CreateThemeDto {
   isPublic?: boolean = false;
 
   @IsObject()
-  @IsNotEmpty()
-  styles: any; // ThemeStyles型だが、JSONのためanyで受け取り
+  @IsOptional()
+  styles?: any; // ThemeStyles型だが、JSONのためanyで受け取り（CSSファイル使用時は不要）
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  cssFilePath?: string; // CSSファイルパス
+
+  @IsObject()
+  @IsOptional()
+  metadata?: any; // メタデータ（JSON）
 }

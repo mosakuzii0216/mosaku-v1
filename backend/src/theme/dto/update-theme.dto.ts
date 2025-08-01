@@ -26,4 +26,13 @@ export class UpdateThemeDto {
   @IsObject()
   @IsOptional()
   styles?: any; // ThemeStyles型だが、JSONのためanyで受け取り
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  cssFilePath?: string; // CSSファイルパス
+
+  @IsObject()
+  @IsOptional()
+  metadata?: any; // メタデータ（JSON）
 }

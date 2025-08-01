@@ -154,18 +154,20 @@ export class ThemeService {
    * 新しいテーマを作成
    */
   async create(createThemeDto: CreateThemeDto, userId: string) {
-    // スタイルデータの基本検証
-    if (!createThemeDto.styles || typeof createThemeDto.styles !== 'object') {
-      throw new BadRequestException('有効なスタイルデータが必要です');
+    // CSS file path または styles のどちらかが必要
+    if (!createThemeDto.cssFilePath && (!createThemeDto.styles || typeof createThemeDto.styles !== 'object')) {
+      throw new BadRequestException('CSSファイルパスまたは有効なスタイルデータが必要です');
     }
 
-    // 必須スタイルフィールドの検証
-    const requiredFields = ['colors', 'typography', 'layout'];
-    for (const field of requiredFields) {
-      if (!createThemeDto.styles[field]) {
-        throw new BadRequestException(
-          `スタイル設定に${field}が含まれている必要があります`,
-        );
+    // stylesがある場合は必須フィールドの検証
+    if (createThemeDto.styles) {
+      const requiredFields = ['colors', 'typography', 'layout'];
+      for (const field of requiredFields) {
+        if (!createThemeDto.styles[field]) {
+          throw new BadRequestException(
+            `スタイル設定に${field}が含まれている必要があります`,
+          );
+        }
       }
     }
 
@@ -175,7 +177,9 @@ export class ThemeService {
         description: createThemeDto.description,
         isSystem: false, // ユーザー作成テーマ
         isPublic: createThemeDto.isPublic || false,
-        styles: createThemeDto.styles,
+        styles: createThemeDto.styles || null,
+        cssFilePath: createThemeDto.cssFilePath || null,
+        metadata: createThemeDto.metadata || {},
         createdById: userId,
       },
       include: {
@@ -223,6 +227,8 @@ export class ThemeService {
           isPublic: updateThemeDto.isPublic,
         }),
         ...(updateThemeDto.styles && { styles: updateThemeDto.styles }),
+        ...(updateThemeDto.cssFilePath && { cssFilePath: updateThemeDto.cssFilePath }),
+        ...(updateThemeDto.metadata && { metadata: updateThemeDto.metadata }),
       },
       include: {
         createdBy: {
