@@ -1,10 +1,16 @@
 import type { Theme, ThemeStyles, ThemeCSSVariables } from '../types/theme';
+import { cssFileLoader } from './cssFileLoader';
 
 /**
- * テーマスタイルをCSS変数に変換する
+ * テーマスタイルをCSS変数に変換する（後方互換性のため）
  */
 export const convertThemeToCSS = (theme: Theme): ThemeCSSVariables => {
   const { styles } = theme;
+  
+  // CSSファイルベースのテーマの場合は空のオブジェクトを返す
+  if (!styles) {
+    return {} as ThemeCSSVariables;
+  }
   
   const cssVariables: ThemeCSSVariables = {
     // 基本色
@@ -61,20 +67,29 @@ export const convertThemeToCSS = (theme: Theme): ThemeCSSVariables => {
 /**
  * テーマをDOM要素に適用する
  */
-export const applyThemeToElement = (element: HTMLElement, theme: Theme): void => {
-  const cssVariables = convertThemeToCSS(theme);
+export const applyThemeToElement = async (element: HTMLElement, theme: Theme): Promise<void> => {
+  // CSSファイルベースのテーマの場合
+  if (theme.cssFilePath && !theme.styles) {
+    await cssFileLoader.loadAndApplyCSS(theme.cssFilePath, theme.id);
+    return;
+  }
   
-  Object.entries(cssVariables).forEach(([property, value]) => {
-    element.style.setProperty(property, value);
-  });
+  // 従来のstylesオブジェクトベースのテーマの場合（後方互換性）
+  if (theme.styles) {
+    const cssVariables = convertThemeToCSS(theme);
+    
+    Object.entries(cssVariables).forEach(([property, value]) => {
+      element.style.setProperty(property, value);
+    });
+  }
 };
 
 /**
  * テーマをルート要素に適用する
  */
-export const applyThemeToRoot = (theme: Theme): void => {
+export const applyThemeToRoot = async (theme: Theme): Promise<void> => {
   const root = document.documentElement;
-  applyThemeToElement(root, theme);
+  await applyThemeToElement(root, theme);
 };
 
 /**

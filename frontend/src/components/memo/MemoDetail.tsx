@@ -30,7 +30,7 @@ export const MemoDetail = ({ memo }: MemoDetailProps) => {
         usageCount: 0,
         isFavorited: false,
       };
-      applyThemeToElement(container, fullTheme);
+      applyThemeToElement(container, fullTheme).catch(console.error);
     }
     
     return () => {

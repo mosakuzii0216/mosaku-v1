@@ -61,7 +61,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
         usageCount: selectedTheme.usageCount || 0,
         isFavorited: selectedTheme.isFavorited ?? false,
       };
-      applyThemeToElement(container, fullTheme);
+      applyThemeToElement(container, fullTheme).catch(console.error);
     } else if (container) {
       removeThemeFromElement(container);
     }
