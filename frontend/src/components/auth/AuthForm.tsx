@@ -29,7 +29,7 @@ export default function AuthForm() {
         try {
           const googleUser = JSON.parse(storedGoogleUser)
           setPendingGoogleUser(googleUser)
-          setMessage(`Google認証は成功しましたが、新規ユーザー登録には招待コードが必要です。`)
+          setMessage(`ユーザー登録には招待コードが必要です。`)
           setMode('googleInvite')
         } catch (error) {
           console.error('Failed to parse pending Google user:', error)
@@ -43,7 +43,7 @@ export default function AuthForm() {
         try {
           const githubUser = JSON.parse(storedGitHubUser)
           setPendingGitHubUser(githubUser)
-          setMessage(`GitHub認証は成功しましたが、新規ユーザー登録には招待コードが必要です。`)
+          setMessage(`ユーザー登録には招待コードが必要です。`)
           setMode('githubInvite')
         } catch (error) {
           console.error('Failed to parse pending GitHub user:', error)
@@ -57,7 +57,7 @@ export default function AuthForm() {
         try {
           const xUser = JSON.parse(storedXUser)
           setPendingXUser(xUser)
-          setMessage(`X認証は成功しましたが、新規ユーザー登録には招待コードが必要です。`)
+          setMessage(`ユーザー登録には招待コードが必要です。`)
           setMode('xInvite')
         } catch (error) {
           console.error('Failed to parse pending X user:', error)
@@ -81,12 +81,9 @@ export default function AuthForm() {
     e.preventDefault()
     setLoading(true)
     setMessage('')
-    
-    console.log('Debug: Current mode:', mode); // デバッグログ追加
-    
+        
     try {
       if (mode === 'signup') {
-        console.log('Debug: Calling register'); // デバッグログ追加
         await register(email, password, name || undefined, invitationCode)
         setMessage('Registration successful! You can now login with your credentials.')
         setMode('login')
@@ -96,12 +93,10 @@ export default function AuthForm() {
         setName('')
         setInvitationCode('')
       } else if (mode === 'login') {
-        console.log('Debug: Calling login'); // デバッグログ追加
         await login(email, password)
         // Login successful, useAuth will handle state update
       }
     } catch (error: unknown) {
-      console.error('認証エラー:', error)
       const errorMessage = error instanceof Error ? error.message : 'An error occurred'
       setMessage(errorMessage)
     } finally {
