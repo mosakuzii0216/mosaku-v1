@@ -23,11 +23,7 @@ export const Header = ({ onCreateClick }: HeaderProps) => {
           >
             ←
           </button>
-        )}
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-          メモアプリ
-        </h1>
-        
+        )}        
         {/* ナビゲーションボタン */}
         <div className="ml-6 flex items-center space-x-2">
           <button
