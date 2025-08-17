@@ -173,17 +173,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [hasChanges, title, content, handleSave]);
 
-  // 自動保存を無効化（手動保存のみに変更）
-  // useEffect(() => {
-  //   if (hasChanges && (title.trim() || content.trim())) {
-  //     const timer = setTimeout(() => {
-  //       handleSave();
-  //     }, 2000);
-
-  //     return () => clearTimeout(timer);
-  //   }
-  // }, [title, content, hasChanges, handleSave]);
-
   const handleCancel = () => {
     if (hasChanges && !window.confirm('変更が保存されていません。破棄しますか？')) {
       return;
