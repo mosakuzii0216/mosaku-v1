@@ -237,7 +237,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
               onChange={(e) => setTitle(e.target.value)}
               className="text-2xl font-bold border-none outline-none placeholder-gray-400 dark:placeholder-gray-500 bg-transparent w-full"
               style={{
-                // color: selectedTheme ? 'var(--theme-heading-color)' : undefined,
+                color: 'gray',
                 fontFamily: selectedTheme ? 'var(--theme-heading-font-family, var(--theme-font-family))' : undefined,
                 fontSize: selectedTheme ? 'var(--theme-heading-font-size)' : undefined,
                 fontWeight: selectedTheme ? 'var(--theme-heading-font-weight)' : undefined,
