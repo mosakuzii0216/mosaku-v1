@@ -61,18 +61,13 @@ export const useAuth = (): AuthState & AuthActions => {
     }
   }
 
-  const logout = async (): Promise<void> => {
-    console.log('Logout function called')
-    
+  const logout = async (): Promise<void> => {    
     // 即座にローカル状態をクリア（UI更新を優先）
     setUser(null)
-    AuthTokenManager.removeTokens()
-    console.log('Local state cleared')
-    
+    AuthTokenManager.removeTokens()    
     try {
       // バックエンドへのログアウト通知は非同期で実行
       await AuthAPI.logout()
-      console.log('Backend logout successful')
     } catch (error) {
       console.error('Logout error:', error)
       // エラーが発生してもローカル状態は既にクリアされているのでそのまま続行
