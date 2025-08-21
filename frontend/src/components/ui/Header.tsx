@@ -11,8 +11,6 @@ export const Header = ({ onCreateClick }: HeaderProps) => {
   const { currentView, goToList, goToTags } = useMemoStore();
   const { user, logout } = useAuth();
   
-  // console.log('Header rendered, user:', user, 'logout function:', typeof logout);
-
   return (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
       <div className="flex items-center">
