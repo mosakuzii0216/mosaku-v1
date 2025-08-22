@@ -34,8 +34,11 @@ export const DesktopLayout = () => {
         return selectedMemo ? (
           <MemoDetail memo={selectedMemo} />
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-            メモを選択してください
+          <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
+            <p>メモを選択してください</p>
+            <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
+              新規作成: {/Mac|iPod|iPhone|iPad/.test(window.navigator.platform) ? 'Cmd + Option' : 'Ctrl + Alt'} + N
+            </p>
           </div>
         );
       
@@ -56,8 +59,11 @@ export const DesktopLayout = () => {
       
       default:
         return (
-          <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-            メモを選択してください
+          <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
+            <p>メモを選択してください</p>
+            <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
+              新規作成: {/Mac|iPod|iPhone|iPad/.test(window.navigator.platform) ? 'Cmd + Option' : 'Ctrl + Alt'} + N
+            </p>
           </div>
         );
     }
