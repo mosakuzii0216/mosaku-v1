@@ -7,6 +7,20 @@ import { MemoDetail } from '../memo/MemoDetail';
 import { MemoEditor } from '../memo/MemoEditor';
 import { TagManager } from '../tag/TagManager';
 
+const EmptyMemoView = () => {
+  const isMac = /Mac|iPod|iPhone|iPad/.test(window.navigator.platform);
+  const shortcutKey = isMac ? 'Cmd + Option' : 'Ctrl + Alt';
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
+      <p>メモを選択してください</p>
+      <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
+        新規作成: {shortcutKey} + N
+      </p>
+    </div>
+  );
+};
+
 export const DesktopLayout = () => {
   const { currentView, selectedMemo, goToCreate } = useMemoStore();
   useAppInit(); // アプリ初期化（タグロード等）
@@ -31,16 +45,7 @@ export const DesktopLayout = () => {
   const renderMainContent = () => {
     switch (currentView) {
       case 'detail':
-        return selectedMemo ? (
-          <MemoDetail memo={selectedMemo} />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
-            <p>メモを選択してください</p>
-            <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
-              新規作成: {/Mac|iPod|iPhone|iPad/.test(window.navigator.platform) ? 'Cmd + Option' : 'Ctrl + Alt'} + N
-            </p>
-          </div>
-        );
+        return selectedMemo ? <MemoDetail memo={selectedMemo} /> : <EmptyMemoView />;
       
       case 'edit':
         return selectedMemo ? (
@@ -58,14 +63,7 @@ export const DesktopLayout = () => {
         return <TagManager />;
       
       default:
-        return (
-          <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
-            <p>メモを選択してください</p>
-            <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
-              新規作成: {/Mac|iPod|iPhone|iPad/.test(window.navigator.platform) ? 'Cmd + Option' : 'Ctrl + Alt'} + N
-            </p>
-          </div>
-        );
+        return <EmptyMemoView />;
     }
   };
 
