@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { GoogleLoginButton } from '../ui/GoogleLoginButton'
 import { GitHubLoginButton } from '../ui/GitHubLoginButton'
 import { XLoginButton } from '../ui/XLoginButton'
+import { OAuthInviteForm } from './OAuthInviteForm'
 
 export default function AuthForm() {
   const [searchParams] = useSearchParams()
@@ -124,71 +125,44 @@ export default function AuthForm() {
     }
   }
 
-  const handleGoogleRegistration = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!pendingGoogleUser || !invitationCode) {
-      setMessage('招待コードを入力してください')
-      return
-    }
-    
-    setLoading(true)
-    setMessage('')
-    
-    try {
-      await googleRegisterWithInvitation(pendingGoogleUser, invitationCode)
-      // 成功時は認証コンテキストが自動的にユーザー状態を更新する
-    } catch (error: unknown) {
-      console.error('Google登録エラー:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Google registration failed'
-      setMessage(errorMessage)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const handleOAuthRegistration = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  const handleGitHubRegistration = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!pendingGitHubUser || !invitationCode) {
-      setMessage('招待コードを入力してください')
-      return
-    }
-    
-    setLoading(true)
-    setMessage('')
-    
-    try {
-      await githubRegisterWithInvitation(pendingGitHubUser, invitationCode)
-      // 成功時は認証コンテキストが自動的にユーザー状態を更新する
-    } catch (error: unknown) {
-      console.error('GitHub登録エラー:', error)
-      const errorMessage = error instanceof Error ? error.message : 'GitHub registration failed'
-      setMessage(errorMessage)
-    } finally {
-      setLoading(false)
-    }
-  }
+    let userToRegister;
+    let registerFunction;
 
-  const handleXRegistration = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!pendingXUser || !invitationCode) {
-      setMessage('招待コードを入力してください')
-      return
+    if (mode === 'googleInvite') {
+      userToRegister = pendingGoogleUser;
+      registerFunction = googleRegisterWithInvitation;
+    } else if (mode === 'githubInvite') {
+      userToRegister = pendingGitHubUser;
+      registerFunction = githubRegisterWithInvitation;
+    } else if (mode === 'xInvite') {
+      userToRegister = pendingXUser;
+      registerFunction = xRegisterWithInvitation;
+    } else {
+      return; // Should not happen
     }
-    
-    setLoading(true)
-    setMessage('')
-    
+
+    if (!userToRegister || !invitationCode) {
+      setMessage('招待コードを入力してください');
+      return;
+    }
+
+    setLoading(true);
+    setMessage('');
+
     try {
-      await xRegisterWithInvitation(pendingXUser, invitationCode)
-      // 成功時は認証コンテキストが自動的にユーザー状態を更新する
+      await registerFunction(userToRegister, invitationCode);
+      // Success is handled by AuthContext
     } catch (error: unknown) {
-      console.error('X登録エラー:', error)
-      const errorMessage = error instanceof Error ? error.message : 'X registration failed'
-      setMessage(errorMessage)
+      console.error(`${mode}登録エラー:`, error);
+      const errorMessage = error instanceof Error ? error.message : `${mode} registration failed`;
+      setMessage(errorMessage);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
@@ -212,116 +186,32 @@ export default function AuthForm() {
       )}
       
       {mode === 'googleInvite' ? (
-        // Google OAuth + 招待コード登録フォーム
-        <form onSubmit={handleGoogleRegistration} className="space-y-4 mb-6">
-          {pendingGoogleUser && (
-            <div className="bg-blue-50 p-3 rounded-lg mb-4">
-              <p className="text-sm text-blue-700">
-                <strong>Google アカウント:</strong> {pendingGoogleUser.email}
-              </p>
-              <p className="text-xs text-blue-600 mt-1">
-                このアカウントで登録するには招待コードが必要です
-              </p>
-            </div>
-          )}
-          
-          <div>
-            <label htmlFor="invitationCode" className="block text-sm font-medium text-gray-700 mb-1">
-              招待コード（必須）
-            </label>
-            <input
-              type="text"
-              id="invitationCode"
-              value={invitationCode}
-              onChange={(e) => setInvitationCode(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="招待コードを入力してください"
-            />
-          </div>
-          
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
-          >
-            {loading ? '登録中...' : 'Googleで登録'}
-          </button>
-        </form>
+        <OAuthInviteForm
+          providerName="Google"
+          pendingUser={pendingGoogleUser}
+          invitationCode={invitationCode}
+          setInvitationCode={setInvitationCode}
+          onSubmit={handleOAuthRegistration}
+          loading={loading}
+        />
       ) : mode === 'githubInvite' ? (
-        // GitHub OAuth + 招待コード登録フォーム
-        <form onSubmit={handleGitHubRegistration} className="space-y-4 mb-6">
-          {pendingGitHubUser && (
-            <div className="bg-gray-50 p-3 rounded-lg mb-4">
-              <p className="text-sm text-gray-700">
-                <strong>GitHub アカウント:</strong> {pendingGitHubUser.email}
-              </p>
-              <p className="text-xs text-gray-600 mt-1">
-                このアカウントで登録するには招待コードが必要です
-              </p>
-            </div>
-          )}
-          
-          <div>
-            <label htmlFor="invitationCode" className="block text-sm font-medium text-gray-700 mb-1">
-              招待コード（必須）
-            </label>
-            <input
-              type="text"
-              id="invitationCode"
-              value={invitationCode}
-              onChange={(e) => setInvitationCode(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="招待コードを入力してください"
-            />
-          </div>
-          
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-gray-900 hover:bg-gray-800 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
-          >
-            {loading ? '登録中...' : 'GitHubで登録'}
-          </button>
-        </form>
+        <OAuthInviteForm
+          providerName="GitHub"
+          pendingUser={pendingGitHubUser}
+          invitationCode={invitationCode}
+          setInvitationCode={setInvitationCode}
+          onSubmit={handleOAuthRegistration}
+          loading={loading}
+        />
       ) : mode === 'xInvite' ? (
-        // X OAuth + 招待コード登録フォーム
-        <form onSubmit={handleXRegistration} className="space-y-4 mb-6">
-          {pendingXUser && (
-            <div className="bg-black p-3 rounded-lg mb-4">
-              <p className="text-sm text-white">
-                <strong>X アカウント:</strong> {pendingXUser.email || pendingXUser.username}
-              </p>
-              <p className="text-xs text-gray-300 mt-1">
-                このアカウントで登録するには招待コードが必要です
-              </p>
-            </div>
-          )}
-          
-          <div>
-            <label htmlFor="invitationCode" className="block text-sm font-medium text-gray-700 mb-1">
-              招待コード（必須）
-            </label>
-            <input
-              type="text"
-              id="invitationCode"
-              value={invitationCode}
-              onChange={(e) => setInvitationCode(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="招待コードを入力してください"
-            />
-          </div>
-          
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-black hover:bg-gray-900 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
-          >
-            {loading ? '登録中...' : 'Xで登録'}
-          </button>
-        </form>
+        <OAuthInviteForm
+          providerName="X"
+          pendingUser={pendingXUser}
+          invitationCode={invitationCode}
+          setInvitationCode={setInvitationCode}
+          onSubmit={handleOAuthRegistration}
+          loading={loading}
+        />
       ) : mode === 'resetPassword' ? (
         <form onSubmit={(e) => {
           e.preventDefault()
