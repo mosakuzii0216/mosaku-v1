@@ -100,7 +100,7 @@ export const MemoDetail = ({ memo }: MemoDetailProps) => {
           }}
         >
           <h1 
-            className="text-2xl font-bold mb-2"
+            className="text-2xl font-bold mb-2 dark:text-white"
             style={{
               color: memo.theme ? 'var(--theme-heading-color)' : undefined,
               fontFamily: memo.theme ? 'var(--theme-heading-font-family, var(--theme-font-family))' : undefined,
@@ -127,7 +127,7 @@ export const MemoDetail = ({ memo }: MemoDetailProps) => {
           )}
           
           <div 
-            className="text-sm mb-6"
+            className="text-sm mb-6 dark:text-white"
             style={{ color: memo.theme ? 'var(--theme-subtext-color)' : undefined }}
           >
             作成: {formatDate(memo.createdAt)}
@@ -146,7 +146,7 @@ export const MemoDetail = ({ memo }: MemoDetailProps) => {
             }}
           >
             <div 
-              className="leading-relaxed"
+              className="leading-relaxed dark:text-white"
               style={{
                 color: memo.theme ? 'var(--theme-text-color)' : undefined,
               }}
