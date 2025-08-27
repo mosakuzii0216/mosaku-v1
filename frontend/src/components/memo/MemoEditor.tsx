@@ -235,9 +235,9 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
               placeholder="タイトル"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="text-2xl font-bold border-none outline-none placeholder-gray-400 dark:placeholder-gray-500 bg-transparent w-full"
+              className="text-2xl font-bold border-none outline-none placeholder-gray-400 dark:text-white bg-transparent w-full"
               style={{
-                color: 'gray',
+                color: selectedTheme ? 'var(--theme-heading-color)' : undefined,
                 fontFamily: selectedTheme ? 'var(--theme-heading-font-family, var(--theme-font-family))' : undefined,
                 fontSize: selectedTheme ? 'var(--theme-heading-font-size)' : undefined,
                 fontWeight: selectedTheme ? 'var(--theme-heading-font-weight)' : undefined,
@@ -248,7 +248,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
           {/* タグ選択エリア */}
           <div className="mb-4">
             <label 
-              className="block text-sm font-medium mb-2"
+              className="block text-sm font-medium mb-2 dark:text-white"
               style={{ color: selectedTheme ? 'var(--theme-subtext-color)' : undefined }}
             >
               タグ
@@ -264,7 +264,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
               <label 
-                className="block text-sm font-medium"
+                className="block text-sm font-medium dark:text-white"
                 style={{ color: selectedTheme ? 'var(--theme-subtext-color)' : undefined }}
               >
                 テーマ
@@ -272,7 +272,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
               <button
                 type="button"
                 onClick={() => setShowThemeSelector(!showThemeSelector)}
-                className="text-sm hover:opacity-80"
+                className="text-sm hover:opacity-80 dark:text-white"
                 style={{ 
                   color: selectedTheme ? 'var(--theme-accent-color)' : undefined,
                 }}
