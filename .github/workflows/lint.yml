@@ -1,6 +1,5 @@
 name: Code Quality Check
 
-# プルリクエスト時とmainへのpush時に実行
 on:
   pull_request:
     branches: [ main ]
@@ -8,65 +7,38 @@ on:
     branches: [ main ]
 
 jobs:
-  # フロントエンドのリントチェック
   frontend-lint:
     name: フロントエンドリント
     runs-on: ubuntu-latest
-    
     steps:
-      - name: コードをチェックアウト
-        uses: actions/checkout@v4
-        
-      - name: Node.js セットアップ
-        uses: actions/setup-node@v4
+      - name: Setup Node.js and install dependencies
+        uses: ./.github/actions/setup-node
         with:
-          node-version: '18'
-          # package-lock.jsonをキャッシュして高速化
-          cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
-          
-      - name: フロントエンド依存関係インストール
-        run: |
-          cd frontend
-          npm ci
-          
-      - name: ESLintでコードチェック
-        run: |
-          cd frontend
-          npm run lint
-          
-      - name: TypeScript型チェック
-        run: |
-          cd frontend
-          npx tsc --noEmit
+          working-directory: frontend
 
-  # バックエンドのリントチェック  
+      - name: ESLintでコードチェック
+        run: npm run lint
+        working-directory: frontend
+
+      - name: TypeScript型チェック
+        run: npx tsc --noEmit
+        working-directory: frontend
+
   backend-lint:
     name: バックエンドリント
     runs-on: ubuntu-latest
-    
     steps:
-      - name: コードをチェックアウト
-        uses: actions/checkout@v4
-        
-      - name: Node.js セットアップ
-        uses: actions/setup-node@v4
+      - name: Setup Node.js and install dependencies
+        uses: ./.github/actions/setup-node
         with:
-          node-version: '18'
-          cache: 'npm'  
           cache-dependency-path: backend/package-lock.json
-          
-      - name: バックエンド依存関係インストール
-        run: |
-          cd backend
-          npm ci
-          
+          working-directory: backend
+
       - name: Prismaクライアント生成
-        run: |
-          cd backend
-          npx prisma generate
-          
+        run: npx prisma generate
+        working-directory: backend
+
       - name: ESLintでコードチェック
-        run: |
-          cd backend
-          npm run lint
+        run: npm run lint
+        working-directory: backend
