@@ -102,7 +102,7 @@ export const MemoDetail = ({ memo }: MemoDetailProps) => {
           <h1 
             className="text-2xl font-bold mb-2 dark:text-white"
             style={{
-              color: memo.theme ? 'var(--theme-heading-color)' : undefined,
+              // color: memo.theme ? 'var(--theme-heading-color)' : undefined, まだテーマ機能が確定してないからコメントアウト
               fontFamily: memo.theme ? 'var(--theme-heading-font-family, var(--theme-font-family))' : undefined,
               fontSize: memo.theme ? 'var(--theme-heading-font-size)' : undefined,
               fontWeight: memo.theme ? 'var(--theme-heading-font-weight)' : undefined,
@@ -113,7 +113,7 @@ export const MemoDetail = ({ memo }: MemoDetailProps) => {
           
           {/* テーマ情報表示 */}
           {memo.theme && (
-            <div className="mb-3 pb-3 border-b" style={{ borderColor: 'var(--theme-border-color)' }}>
+            <div className="mb-3 pb-3 border-b dark:text-white" style={{ borderColor: 'var(--theme-border-color)' }}>
               <span 
                 className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
                 style={{
@@ -128,7 +128,7 @@ export const MemoDetail = ({ memo }: MemoDetailProps) => {
           
           <div 
             className="text-sm mb-6 dark:text-white"
-            style={{ color: memo.theme ? 'var(--theme-subtext-color)' : undefined }}
+            // style={{ color: memo.theme ? 'var(--theme-subtext-color)' : undefined }} まだテーマ機能が確定してないからコメントアウト
           >
             作成: {formatDate(memo.createdAt)}
             {memo.updatedAt !== memo.createdAt && (
@@ -139,9 +139,9 @@ export const MemoDetail = ({ memo }: MemoDetailProps) => {
           </div>
 
           <div 
-            className="prose prose-sm sm:prose-base lg:prose-lg xl:prose-xl max-w-none"
+            className="prose prose-sm sm:prose-base lg:prose-lg xl:prose-xl max-w-none dark:text-white"
             style={{
-              color: memo.theme ? 'var(--theme-text-color)' : undefined,
+              // color: memo.theme ? 'var(--theme-text-color)' : undefined, まだテーマ機能が確定してないからコメントアウト
               lineHeight: memo.theme ? 'var(--theme-line-height)' : undefined,
             }}
           >

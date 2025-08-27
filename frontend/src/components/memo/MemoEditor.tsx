@@ -237,7 +237,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
               onChange={(e) => setTitle(e.target.value)}
               className="text-2xl font-bold border-none outline-none placeholder-gray-400 dark:text-white bg-transparent w-full"
               style={{
-                color: selectedTheme ? 'var(--theme-heading-color)' : undefined,
+                // color: selectedTheme ? 'var(--theme-heading-color)' : undefined, まだテーマ機能が確定してないからコメントアウト
                 fontFamily: selectedTheme ? 'var(--theme-heading-font-family, var(--theme-font-family))' : undefined,
                 fontSize: selectedTheme ? 'var(--theme-heading-font-size)' : undefined,
                 fontWeight: selectedTheme ? 'var(--theme-heading-font-weight)' : undefined,
@@ -249,7 +249,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
           <div className="mb-4">
             <label 
               className="block text-sm font-medium mb-2 dark:text-white"
-              style={{ color: selectedTheme ? 'var(--theme-subtext-color)' : undefined }}
+              // style={{ color: selectedTheme ? 'var(--theme-subtext-color)' : undefined }} まだテーマ機能が確定してないからコメントアウト
             >
               タグ
             </label>
@@ -265,7 +265,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
             <div className="flex items-center justify-between mb-2">
               <label 
                 className="block text-sm font-medium dark:text-white"
-                style={{ color: selectedTheme ? 'var(--theme-subtext-color)' : undefined }}
+                // style={{ color: selectedTheme ? 'var(--theme-subtext-color)' : undefined }} まだテーマ機能が確定してないからコメントアウト
               >
                 テーマ
               </label>
@@ -274,7 +274,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
                 onClick={() => setShowThemeSelector(!showThemeSelector)}
                 className="text-sm hover:opacity-80 dark:text-white"
                 style={{ 
-                  color: selectedTheme ? 'var(--theme-accent-color)' : undefined,
+                  // color: selectedTheme ? 'var(--theme-accent-color)' : undefined, まだテーマ機能が確定してないからコメントアウト
                 }}
               >
                 {showThemeSelector ? 'テーマ選択を閉じる' : selectedTheme ? 'テーマを変更' : 'テーマを選択'}
@@ -291,7 +291,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
                   borderRadius: selectedTheme ? 'var(--theme-border-radius)' : undefined,
                 }}
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between dark:text-white">
                   <div className="flex items-center space-x-2">
                     <span 
                       className="text-sm font-medium"
