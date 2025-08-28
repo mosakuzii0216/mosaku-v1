@@ -8,7 +8,7 @@ interface MemoItemProps {
 }
 
 export const MemoItem = ({ memo }: MemoItemProps) => {
-  const { goToDetail } = useMemoStore();
+  const { goToEdit } = useMemoStore();
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -36,7 +36,9 @@ export const MemoItem = ({ memo }: MemoItemProps) => {
 
   return (
     <div
-      onClick={() => goToDetail(memo)}
+      // メモクリックしたら即編集画面に移動するように修正
+      // onClick={() => goToDetail(memo)}
+      onClick={() => goToEdit(memo)}
       className="p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
     >
       <div className="flex justify-between items-start mb-2">
