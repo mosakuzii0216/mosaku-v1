@@ -33,9 +33,10 @@ interface MemoStore {
   goToEdit: (memo: Memo) => void;
   goToCreate: () => void;
   goToTags: () => void;
+  logCurrent: () => void;
 }
 
-export const useMemoStore = create<MemoStore>((set) => ({
+export const useMemoStore = create<MemoStore>((set, get) => ({
   // 初期状態
   memos: [],
   selectedMemo: null,
@@ -85,6 +86,11 @@ export const useMemoStore = create<MemoStore>((set) => ({
     selectedMemo: memo, 
     isEditing: false 
   }),
+
+  logCurrent: () => {
+    const current = get()
+    console.log('Current Memo Store State:', current)
+  },
   
   goToEdit: (memo) => set({ 
     currentView: 'edit', 
