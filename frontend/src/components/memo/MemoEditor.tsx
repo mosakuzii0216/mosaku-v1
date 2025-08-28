@@ -185,8 +185,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
     }
   };
 
-
-
   return (
     <div className="flex flex-col h-full">
       {/* ヘッダー */}
@@ -384,7 +382,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
               />
             </div>
           </div>
-          
         </div>
       </div>
     </div>
