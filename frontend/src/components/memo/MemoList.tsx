@@ -1,7 +1,7 @@
 import { useMemoStore } from '../../stores/useMemoStore';
 import { useMemos } from '../../hooks/useMemoQueries';
 import { MemoItem } from './MemoItem';
-import { MemoSearch } from './MemoSearch';
+// import { MemoSearch } from './MemoSearch';
 
 export const MemoList = () => {
   const { memos, searchQuery } = useMemoStore();

@@ -63,59 +63,44 @@ export const useSearchMemos = (query: string) => {
 export const useCreateMemo = () => {
   const queryClient = useQueryClient();
   const { addMemo, goToDetail } = useMemoStore();
-  
-  const mutation = useMutation({
+
+  return useMutation({
     mutationFn: (data: CreateMemoDto) => apiClient.createMemo(data),
-  });
-
-  useEffect(() => {
-    if (mutation.isSuccess && mutation.data) {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['memos'] });
-      addMemo(mutation.data);
-      goToDetail(mutation.data);
-    }
-  }, [mutation.isSuccess, mutation.data, queryClient, addMemo, goToDetail]);
-
-  return mutation;
+      addMemo(data);
+      goToDetail(data);
+    },
+  });
 };
 
 // メモ更新
 export const useUpdateMemo = () => {
   const queryClient = useQueryClient();
   const { updateMemo } = useMemoStore();
-  
-  const mutation = useMutation({
+
+  return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateMemoDto }) =>
       apiClient.updateMemo(id, data),
-  });
-
-  useEffect(() => {
-    if (mutation.isSuccess && mutation.data) {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['memos'] });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memo(mutation.data.id) });
-      updateMemo(mutation.data);
-    }
-  }, [mutation.isSuccess, mutation.data, queryClient, updateMemo]);
-
-  return mutation;
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memo(data.id) });
+      updateMemo(data);
+    },
+  });
 };
 
 // メモ削除
 export const useDeleteMemo = () => {
   const queryClient = useQueryClient();
   const { deleteMemo, goToList } = useMemoStore();
-  
-  const mutation = useMutation({
+
+  return useMutation({
     mutationFn: (id: string) => apiClient.deleteMemo(id),
-  });
-
-  useEffect(() => {
-    if (mutation.isSuccess && mutation.variables) {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['memos'] });
-      deleteMemo(mutation.variables);
+      deleteMemo(variables);
       goToList();
-    }
-  }, [mutation.isSuccess, mutation.variables, queryClient, deleteMemo, goToList]);
-
-  return mutation;
+    },
+  });
 };
