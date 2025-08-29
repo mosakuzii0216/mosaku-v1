@@ -5,7 +5,7 @@ import type { CreateTagDto, UpdateTagDto, AssignTagsDto } from '../types/tag';
 
 export const useTagQueries = () => {
   const queryClient = useQueryClient();
-  const { setTags, addTag, updateTag, deleteTag } = useTagStore();
+  const { addTag, updateTag, deleteTag } = useTagStore();
 
   // タグ一覧取得
   const tagsQuery = useQuery({

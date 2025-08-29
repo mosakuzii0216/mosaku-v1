@@ -68,7 +68,8 @@ export const TagSelector: React.FC<TagSelectorProps> = ({
       setSearchQuery('');
       setIsOpen(false);
     } catch (error) {
-      alert(`タグの作成に失敗しました: ${error.message || error}`);
+      const message = error instanceof Error ? error.message : String(error);
+      alert(`タグの作成に失敗しました: ${message}`);
     }
   };
 

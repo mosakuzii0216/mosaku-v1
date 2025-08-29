@@ -3,7 +3,7 @@ import { useTagQueries } from '../../hooks/useTagQueries';
 import { useTagStore } from '../../stores/useTagStore';
 import { TagForm } from './TagForm';
 import { TagChip } from './TagChip';
-import type { Tag } from '../../types/tag';
+import type { Tag, CreateTagDto, UpdateTagDto } from '../../types/tag';
 
 export const TagManager: React.FC = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -35,30 +35,32 @@ export const TagManager: React.FC = () => {
 
   const filteredTags = getFilteredTags();
 
-  const handleCreateTag = async (data: { name: string; color: string }) => {
+  const handleCreateTag = async (data: CreateTagDto | UpdateTagDto) => {
     try {
-      await createTag(data);
+      await createTag(data as CreateTagDto);
       setShowCreateForm(false);
     } catch (error) {
       let errorMessage = 'タグの作成に失敗しました';
-      if (error.message.includes('401') || error.message.includes('認証')) {
-        errorMessage = '認証エラーが発生しました。再度ログインしてください。';
-      } else {
-        errorMessage = `タグの作成に失敗しました: ${error.message || error}`;
+      if (error instanceof Error) {
+        if (error.message.includes('401') || error.message.includes('認証')) {
+          errorMessage = '認証エラーが発生しました。再度ログインしてください。';
+        } else {
+          errorMessage = `タグの作成に失敗しました: ${error.message}`;
+        }
       }
-      
       alert(errorMessage);
     }
   };
 
-  const handleUpdateTag = async (data: { name?: string; color?: string }) => {
+  const handleUpdateTag = async (data: CreateTagDto | UpdateTagDto) => {
     if (!editingTag) return;
     
     try {
-      await updateTag({ id: editingTag.id, data });
+      await updateTag({ id: editingTag.id, data: data as UpdateTagDto });
       setEditingTag(null);
     } catch (error) {
-      alert(`タグの更新に失敗しました: ${error.message || error}`);
+      const message = error instanceof Error ? error.message : String(error);
+      alert(`タグの更新に失敗しました: ${message}`);
     }
   };
 
