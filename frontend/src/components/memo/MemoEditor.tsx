@@ -28,17 +28,16 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
   const [selectedTheme, setSelectedTheme] = useState<Theme | null>(
     memo?.theme ? {
       ...memo.theme,
-      description: memo.theme.description || null,
-      isSystem: true,
-      isPublic: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      description: null,
+      isSystem: false,
+      isPublic: false,
+      cssFilePath: '',
+      createdAt: memo.createdAt,
+      updatedAt: memo.updatedAt,
       createdById: null,
-      createdBy: null,
       favoriteCount: 0,
       usageCount: 0,
-      isFavorited: false,
-    } as Theme : null
+    } : null
   );
   const [showThemeSelector, setShowThemeSelector] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -47,12 +46,12 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
   useEffect(() => {
     const container = document.getElementById(`memo-editor-${memo?.id || 'new'}`);
     if (container && selectedTheme) {
-      // Pick型またはテーマオブジェクトを完全なTheme型に変換
-      const fullTheme = {
+      const fullTheme: Theme = {
         ...selectedTheme,
         description: selectedTheme.description || null,
         isSystem: selectedTheme.isSystem ?? true,
         isPublic: selectedTheme.isPublic ?? true,
+        cssFilePath: selectedTheme.cssFilePath || '',
         createdAt: selectedTheme.createdAt || new Date().toISOString(),
         updatedAt: selectedTheme.updatedAt || new Date().toISOString(),
         createdById: selectedTheme.createdById || null,
@@ -102,7 +101,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
           createMemo.mutate({
             title: title.trim() || '無題',
             content: content.trim(),
-            themeId: selectedTheme?.id || null,
+            themeId: selectedTheme?.id,
           }, {
             onSuccess: resolve,
             onError: reject,
@@ -123,7 +122,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
             data: {
               title: title.trim() || '無題',
               content: content.trim(),
-              themeId: selectedTheme?.id || null,
+              themeId: selectedTheme?.id,
             },
           }, {
             onSuccess: resolve,

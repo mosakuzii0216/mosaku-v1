@@ -22,6 +22,7 @@ export const MemoDetail = ({ memo }: MemoDetailProps) => {
         description: null,
         isSystem: true,
         isPublic: true,
+        cssFilePath: '', // cssFilePathを追加
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         createdById: null,

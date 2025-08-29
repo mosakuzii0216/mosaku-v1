@@ -4,7 +4,7 @@ import { MemoItem } from './MemoItem';
 // import { MemoSearch } from './MemoSearch';
 
 export const MemoList = () => {
-  const { memos, searchQuery } = useMemoStore();
+  const { memos } = useMemoStore();
   const { isLoading, error } = useMemos();
 
   if (isLoading) {
