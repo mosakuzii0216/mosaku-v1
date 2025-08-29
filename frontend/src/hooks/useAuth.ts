@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { AuthAPI, AuthTokenManager, UserProfile } from '../utils/auth'
+import { AuthAPI, AuthTokenManager } from '../utils/auth'
+import type { UserProfile } from '../utils/auth'
 
 export interface AuthState {
   user: UserProfile | null;

@@ -73,13 +73,13 @@ export class AuthAPI {
     options: RequestInit = {}
   ): Promise<Response> {
     const token = AuthTokenManager.getAccessToken();
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
+    const headers = new Headers(options.headers);
+
+    // Content-Typeをセット。既存の値は上書きされる。
+    headers.set('Content-Type', 'application/json');
 
     if (token && !AuthTokenManager.isTokenExpired(token)) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers.set('Authorization', `Bearer ${token}`);
     }
 
     return fetch(`${this.BASE_URL}${endpoint}`, {

@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { AuthAPI, AuthTokenManager, UserProfile } from '../utils/auth'
+import React, { createContext, useContext, useState, useEffect } from 'react'
+import type { ReactNode } from 'react'
+import { AuthAPI, AuthTokenManager } from '../utils/auth'
+import type { UserProfile } from '../utils/auth'
 import { GoogleAuthUtils, GitHubAuthUtils, XAuthUtils } from '../utils/oauthAuth'
 
 export interface AuthState {
