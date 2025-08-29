@@ -108,38 +108,7 @@ function getDefaultVariables(): ParsedCSSVariables {
   };
 }
 
-/**
- * DOM から現在のCSS変数値を取得
- */
-function getCSSVariablesFromDOM(): ParsedCSSVariables {
-  const computedStyle = getComputedStyle(document.documentElement);
-  
-  return {
-    backgroundColor: computedStyle.getPropertyValue('--theme-bg-color').trim() || '#FFFFFF',
-    textColor: computedStyle.getPropertyValue('--theme-text-color').trim() || '#1F2937',
-    borderColor: computedStyle.getPropertyValue('--theme-border-color').trim() || '#E5E7EB',
-    hoverBackgroundColor: computedStyle.getPropertyValue('--theme-hover-bg-color').trim() || '#F3F4F6',
-    accentColor: computedStyle.getPropertyValue('--theme-accent-color').trim() || '#3B82F6',
-    headingColor: computedStyle.getPropertyValue('--theme-heading-color').trim() || '#111827',
-    subtextColor: computedStyle.getPropertyValue('--theme-subtext-color').trim() || '#6B7280',
-    mutedTextColor: computedStyle.getPropertyValue('--theme-muted-text-color').trim() || '#9CA3AF',
-    dividerColor: computedStyle.getPropertyValue('--theme-divider-color').trim() || '#E5E7EB',
-    fontFamily: computedStyle.getPropertyValue('--theme-font-family').trim() || '"Inter", system-ui, sans-serif',
-    fontSize: computedStyle.getPropertyValue('--theme-font-size').trim() || '1rem',
-    headingFontSize: computedStyle.getPropertyValue('--theme-heading-font-size').trim() || '1.5rem',
-    smallFontSize: computedStyle.getPropertyValue('--theme-small-font-size').trim() || '0.875rem',
-    fontWeight: computedStyle.getPropertyValue('--theme-font-weight').trim() || '400',
-    headingFontWeight: computedStyle.getPropertyValue('--theme-heading-font-weight').trim() || '600',
-    lineHeight: computedStyle.getPropertyValue('--theme-line-height').trim() || '1.5',
-    padding: computedStyle.getPropertyValue('--theme-padding').trim() || '1rem',
-    margin: computedStyle.getPropertyValue('--theme-margin').trim() || '0.5rem',
-    borderRadius: computedStyle.getPropertyValue('--theme-border-radius').trim() || '0.5rem',
-    borderWidth: computedStyle.getPropertyValue('--theme-border-width').trim() || '1px',
-    boxShadow: computedStyle.getPropertyValue('--theme-box-shadow').trim() || '0 1px 3px rgba(0, 0, 0, 0.1)',
-    transitionDuration: computedStyle.getPropertyValue('--theme-transition-duration').trim() || '200ms',
-    hoverTransition: computedStyle.getPropertyValue('--theme-hover-transition').trim() || 'all 200ms ease',
-  };
-}
+
 
 /**
  * テーマからCSS変数を取得（既存形式とCSS参照型の両方に対応）

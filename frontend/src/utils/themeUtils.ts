@@ -1,4 +1,4 @@
-import type { Theme, ThemeStyles, ThemeCSSVariables } from '../types/theme';
+import type { Theme, ThemeStyles, ThemeCSSVariables, ThemeColors, ThemeTypography, ThemeLayout } from '../types/theme';
 import { cssFileLoader } from './cssFileLoader';
 
 /**
@@ -7,51 +7,50 @@ import { cssFileLoader } from './cssFileLoader';
 export const convertThemeToCSS = (theme: Theme): ThemeCSSVariables => {
   const { styles } = theme;
   
-  // CSSファイルベースのテーマの場合は空のオブジェクトを返す
   if (!styles) {
     return {} as ThemeCSSVariables;
   }
   
-  const cssVariables: ThemeCSSVariables = {
+  const cssVariables: Partial<ThemeCSSVariables> = {
     // 基本色
-    '--theme-bg-color': styles.colors.backgroundColor,
-    '--theme-text-color': styles.colors.textColor,
-    '--theme-border-color': styles.colors.borderColor,
-    '--theme-accent-color': styles.colors.accentColor,
-    '--theme-hover-bg-color': styles.colors.hoverBackgroundColor,
+    '--theme-bg-color': styles.colors?.backgroundColor,
+    '--theme-text-color': styles.colors?.textColor,
+    '--theme-border-color': styles.colors?.borderColor,
+    '--theme-accent-color': styles.colors?.accentColor,
+    '--theme-hover-bg-color': styles.colors?.hoverBackgroundColor,
     
     // テキスト階層色
-    '--theme-heading-color': styles.colors.headingColor,
-    '--theme-subtext-color': styles.colors.subtextColor,
-    '--theme-muted-text-color': styles.colors.mutedTextColor,
+    '--theme-heading-color': styles.colors?.headingColor,
+    '--theme-subtext-color': styles.colors?.subtextColor,
+    '--theme-muted-text-color': styles.colors?.mutedTextColor,
     
     // タイポグラフィ
-    '--theme-font-family': styles.typography.fontFamily,
-    '--theme-font-size': styles.typography.fontSize,
-    '--theme-font-weight': styles.typography.fontWeight,
-    '--theme-line-height': styles.typography.lineHeight,
+    '--theme-font-family': styles.typography?.fontFamily,
+    '--theme-font-size': styles.typography?.fontSize,
+    '--theme-font-weight': styles.typography?.fontWeight,
+    '--theme-line-height': styles.typography?.lineHeight,
     
     // レイアウト
-    '--theme-padding': styles.layout.padding,
-    '--theme-margin': styles.layout.margin,
-    '--theme-border-radius': styles.layout.borderRadius,
+    '--theme-padding': styles.layout?.padding,
+    '--theme-margin': styles.layout?.margin,
+    '--theme-border-radius': styles.layout?.borderRadius,
     
     // オプショナルな色
-    ...(styles.colors.dividerColor && { '--theme-divider-color': styles.colors.dividerColor }),
-    ...(styles.colors.successColor && { '--theme-success-color': styles.colors.successColor }),
-    ...(styles.colors.warningColor && { '--theme-warning-color': styles.colors.warningColor }),
-    ...(styles.colors.errorColor && { '--theme-error-color': styles.colors.errorColor }),
+    ...(styles.colors?.dividerColor && { '--theme-divider-color': styles.colors.dividerColor }),
+    ...(styles.colors?.successColor && { '--theme-success-color': styles.colors.successColor }),
+    ...(styles.colors?.warningColor && { '--theme-warning-color': styles.colors.warningColor }),
+    ...(styles.colors?.errorColor && { '--theme-error-color': styles.colors.errorColor }),
     
     // オプショナルなタイポグラフィ
-    ...(styles.typography.headingFontFamily && { '--theme-heading-font-family': styles.typography.headingFontFamily }),
-    ...(styles.typography.headingFontSize && { '--theme-heading-font-size': styles.typography.headingFontSize }),
-    ...(styles.typography.headingFontWeight && { '--theme-heading-font-weight': styles.typography.headingFontWeight }),
-    ...(styles.typography.smallFontSize && { '--theme-small-font-size': styles.typography.smallFontSize }),
+    ...(styles.typography?.headingFontFamily && { '--theme-heading-font-family': styles.typography.headingFontFamily }),
+    ...(styles.typography?.headingFontSize && { '--theme-heading-font-size': styles.typography.headingFontSize }),
+    ...(styles.typography?.headingFontWeight && { '--theme-heading-font-weight': styles.typography.headingFontWeight }),
+    ...(styles.typography?.smallFontSize && { '--theme-small-font-size': styles.typography.smallFontSize }),
     
     // オプショナルなレイアウト
-    ...(styles.layout.borderWidth && { '--theme-border-width': styles.layout.borderWidth }),
-    ...(styles.layout.boxShadow && { '--theme-box-shadow': styles.layout.boxShadow }),
-    ...(styles.layout.maxWidth && { '--theme-max-width': styles.layout.maxWidth }),
+    ...(styles.layout?.borderWidth && { '--theme-border-width': styles.layout.borderWidth }),
+    ...(styles.layout?.boxShadow && { '--theme-box-shadow': styles.layout.boxShadow }),
+    ...(styles.layout?.maxWidth && { '--theme-max-width': styles.layout.maxWidth }),
     
     // アニメーション
     ...(styles.animations?.transitionDuration && { '--theme-transition-duration': styles.animations.transitionDuration }),
@@ -61,7 +60,10 @@ export const convertThemeToCSS = (theme: Theme): ThemeCSSVariables => {
     ...(styles.customProperties && styles.customProperties),
   };
 
-  return cssVariables;
+  // undefinedのプロパティをフィルタリング
+  return Object.fromEntries(
+    Object.entries(cssVariables).filter(([, value]) => value !== undefined && value !== null)
+  ) as ThemeCSSVariables;
 };
 
 /**
@@ -141,14 +143,10 @@ export const isValidTheme = (theme: any): theme is Theme => {
     theme &&
     typeof theme === 'object' &&
     theme.id &&
-    theme.styles &&
-    theme.styles.colors &&
-    theme.styles.typography &&
-    theme.styles.layout &&
-    theme.styles.colors.backgroundColor &&
-    theme.styles.colors.textColor &&
-    theme.styles.typography.fontFamily &&
-    theme.styles.typography.fontSize
+    theme.styles?.colors?.backgroundColor &&
+    theme.styles?.colors?.textColor &&
+    theme.styles?.typography?.fontFamily &&
+    theme.styles?.typography?.fontSize
   );
 };
 
@@ -156,37 +154,65 @@ export const isValidTheme = (theme: any): theme is Theme => {
  * テーマスタイルの一部を上書きする
  */
 export const mergeThemeStyles = (baseTheme: Theme, overrides: Partial<ThemeStyles>): Theme => {
-  return {
-    ...baseTheme,
-    styles: {
-      ...baseTheme.styles,
-      ...overrides,
-      colors: {
-        ...baseTheme.styles.colors,
-        ...(overrides.colors && overrides.colors),
-      },
-      typography: {
-        ...baseTheme.styles.typography,
-        ...(overrides.typography && overrides.typography),
-      },
-      layout: {
-        ...baseTheme.styles.layout,
-        ...(overrides.layout && overrides.layout),
-      },
-      accessibility: {
-        ...baseTheme.styles.accessibility,
-        ...(overrides.accessibility && overrides.accessibility),
-      },
-      animations: {
-        ...baseTheme.styles.animations,
-        ...(overrides.animations && overrides.animations),
-      },
-      customProperties: {
-        ...baseTheme.styles.customProperties,
-        ...(overrides.customProperties && overrides.customProperties),
-      },
+  const baseStyles = baseTheme.styles;
+
+  // 各セクションのデフォルト値を定義（必須プロパティを網羅）
+  const defaultColors: ThemeColors = {
+    backgroundColor: '#ffffff',
+    textColor: '#000000',
+    borderColor: '#cccccc',
+    hoverBackgroundColor: '#f0f0f0',
+    accentColor: '#007bff',
+    headingColor: '#000000',
+    subtextColor: '#555555',
+    mutedTextColor: '#888888',
+  };
+  const defaultTypography: ThemeTypography = {
+    fontFamily: 'sans-serif',
+    fontSize: '16px',
+    fontWeight: '400',
+    lineHeight: '1.5',
+  };
+  const defaultLayout: ThemeLayout = {
+    padding: '1rem',
+    margin: '1rem',
+    borderRadius: '0.25rem',
+  };
+
+  const mergedStyles: ThemeStyles = {
+    version: overrides.version || baseStyles?.version || '1.0.0',
+    type: overrides.type || baseStyles?.type,
+    cssContent: overrides.cssContent || baseStyles?.cssContent,
+    colors: {
+      ...defaultColors,
+      ...baseStyles?.colors,
+      ...overrides.colors,
+    },
+    typography: {
+      ...defaultTypography,
+      ...baseStyles?.typography,
+      ...overrides.typography,
+    },
+    layout: {
+      ...defaultLayout,
+      ...baseStyles?.layout,
+      ...overrides.layout,
+    },
+    accessibility: {
+      ...baseStyles?.accessibility,
+      ...overrides.accessibility,
+    },
+    animations: {
+      ...baseStyles?.animations,
+      ...overrides.animations,
+    },
+    customProperties: {
+      ...baseStyles?.customProperties,
+      ...overrides.customProperties,
     },
   };
+
+  return { ...baseTheme, styles: mergedStyles };
 };
 
 /**
@@ -225,7 +251,10 @@ export const calculateContrastRatio = (color1: string, color2: string): number =
  * テーマがアクセシブルかチェックする
  */
 export const isAccessibleTheme = (theme: Theme): boolean => {
-  const { colors } = theme.styles;
+  const colors = theme.styles?.colors;
+  if (!colors?.backgroundColor || !colors.textColor) {
+    return false; // 色が定義されていなければアクセシブルではないと判断
+  }
   
   // 背景色とテキスト色のコントラスト比をチェック
   const contrastRatio = calculateContrastRatio(colors.backgroundColor, colors.textColor);
@@ -238,7 +267,10 @@ export const isAccessibleTheme = (theme: Theme): boolean => {
  * ダークテーマかどうかを判定する
  */
 export const isDarkTheme = (theme: Theme): boolean => {
-  const bgColor = theme.styles.colors.backgroundColor;
+  const bgColor = theme.styles?.colors?.backgroundColor;
+  if (!bgColor) {
+    return false; // 色がなければダークテーマではないと判断
+  }
   
   // 背景色の明度を計算して、50%未満ならダークテーマと判定
   const hex = bgColor.replace('#', '');
