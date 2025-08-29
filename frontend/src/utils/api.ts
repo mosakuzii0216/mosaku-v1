@@ -38,7 +38,8 @@ class ApiClient {
     try {
       response = await fetch(url, config);
     } catch (networkError) {
-      throw new Error(`ネットワークエラー: ${networkError.message}`);
+      const message = networkError instanceof Error ? networkError.message : String(networkError);
+      throw new Error(`ネットワークエラー: ${message}`);
     }
 
     if (!response.ok) {
@@ -70,7 +71,8 @@ class ApiClient {
     try {
       response = await fetch(url, config);
     } catch (networkError) {
-      throw new Error(`ネットワークエラー: ${networkError.message}`);
+      const message = networkError instanceof Error ? networkError.message : String(networkError);
+      throw new Error(`ネットワークエラー: ${message}`);
     }
 
     if (!response.ok) {
@@ -113,7 +115,8 @@ class ApiClient {
     try {
       response = await fetch(url, config);
     } catch (networkError) {
-      throw new Error(`ネットワークエラー: ${networkError.message}`);
+      const message = networkError instanceof Error ? networkError.message : String(networkError);
+      throw new Error(`ネットワークエラー: ${message}`);
     }
 
     if (!response.ok) {
