@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['vite.svg'],
       manifest: {
-        name: 'もさく',
-        short_name: 'もさく',
-        description: '思考を繋げるメモアプリ',
+        name: '',
+        short_name: '',
+        description: '',
         theme_color: '#ffffff',
         icons: [
           {
