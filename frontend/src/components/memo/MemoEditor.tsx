@@ -114,7 +114,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
         }
         
         // 新規作成完了後、詳細画面に遷移
-        goToDetail(result);
+        // goToDetail(result);
       } else if (memo && hasChanges) {
         await new Promise<Memo>((resolve, reject) => {
           updateMemo.mutate({
@@ -138,17 +138,17 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
         }
         
         // 更新完了後、詳細画面に戻る
-        goToDetail({
-          ...memo,
-          title: title.trim() || '無題',
-          content: content.trim(),
-          themeId: selectedTheme?.id || null,
-          theme: selectedTheme ? {
-            id: selectedTheme.id,
-            name: selectedTheme.name,
-            styles: selectedTheme.styles
-          } : null,
-        });
+        // goToDetail({
+        //   ...memo,
+        //   title: title.trim() || '無題',
+        //   content: content.trim(),
+        //   themeId: selectedTheme?.id || null,
+        //   theme: selectedTheme ? {
+        //     id: selectedTheme.id,
+        //     name: selectedTheme.name,
+        //     styles: selectedTheme.styles
+        //   } : null,
+        // });
       }
     } catch (error) {
       console.error('保存に失敗しました:', error);
