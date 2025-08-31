@@ -42,6 +42,30 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
   const [showThemeSelector, setShowThemeSelector] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
+  // memo prop の変更を検知してエディタの状態を更新する
+  useEffect(() => {
+    // isCreateモードでない、かつ、表示対象のメモが変更された場合に状態をリセット
+    if (!isCreate && memo) {
+      setTitle(memo.title || '');
+      setContent(memo.content || '');
+      setSelectedTagIds(memo.memoTags?.map(mt => mt.tag.id) || []);
+      setSelectedTheme(memo.theme ? {
+        ...memo.theme,
+        description: null,
+        isSystem: false,
+        isPublic: false,
+        cssFilePath: '',
+        createdAt: memo.createdAt,
+        updatedAt: memo.updatedAt,
+        createdById: null,
+        favoriteCount: 0,
+        usageCount: 0,
+      } : null);
+      // 新しいメモに切り替わったので、変更状態をリセット
+      setHasChanges(false); 
+    }
+  }, [memo, isCreate]);
+
   // テーマの適用
   useEffect(() => {
     const container = document.getElementById(`memo-editor-${memo?.id || 'new'}`);
