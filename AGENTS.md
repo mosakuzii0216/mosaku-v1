@@ -8,10 +8,15 @@
 
 ## Build, Test, and Development Commands
 - Run full stack (Docker): `docker-compose up` → UI `http://localhost`, API `http://localhost:3000`.
-- Backend dev: `cd backend && npm i && npm run start:dev` (watch mode).
-- Backend tests: `npm run test`, `npm run test:e2e`, coverage `npm run test:cov`.
+- Monorepo root (npm workspaces):
+  - Install all: `npm install`
+  - Build all: `npm run build`
+  - Lint all: `npm run lint`
+  - Test backend: `npm run test` (frontend has no tests by default)
+  - Dev (both): `npm run dev` (backend + frontend並行起動)
+- Backend only: `cd backend && npm i && npm run start:dev`; tests: `npm run test`, e2e: `npm run test:e2e`.
 - Prisma ops: `npm run migration:apply`, `npm run migration:deploy`, `npx prisma studio`.
-- Frontend dev: `cd frontend && npm i && npm run dev` (Vite at `:5173`). Build: `npm run build`; preview: `npm run preview`.
+- Frontend only: `cd frontend && npm i && npm run dev` (Vite at `:5173`). Build: `npm run build`; preview: `npm run preview`.
 
 ## Coding Style & Naming Conventions
 - Formatting: Prettier; linting: ESLint. Run `npm run lint` in each package.
