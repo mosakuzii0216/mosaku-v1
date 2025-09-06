@@ -19,7 +19,8 @@ interface ThemeWithCSS {
 }
 
 function readCSSFile(cssFileName: string): string {
-  const cssPath = join(__dirname, '..', 'src', 'themes', 'css', cssFileName);
+  // Read from unified asset location: frontend/public/themes
+  const cssPath = join(__dirname, '..', '..', 'frontend', 'public', 'themes', cssFileName);
   
   if (!existsSync(cssPath)) {
     console.warn(`⚠️  CSSファイルが見つかりません: ${cssPath}`);
