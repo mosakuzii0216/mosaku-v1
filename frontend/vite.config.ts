@@ -6,34 +6,60 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      injectRegister: 'auto',
       registerType: 'autoUpdate',
-      includeAssets: ['vite.svg'],
-      devOptions: {enabled: true},
+      includeAssets: ['vite.svg', 'themes/*.css', 'apple-touch-icon.png'],
+      devOptions: { enabled: true },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}', 'themes/*.css'],
+        navigateFallback: '/index.html',
+        runtimeCaching: [
+          {
+            urlPattern: /\/api\//,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              networkTimeoutSeconds: 3,
+            },
+          },
+          {
+            urlPattern: /\/themes\/.+\.css$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'theme-css',
+            },
+          },
+        ],
+      },
       manifest: {
-        name: '',
-        short_name: '',
-        description: '',
+        name: 'Mosaku',
+        short_name: 'Mosaku',
+        description: 'メモ管理アプリ',
+        start_url: '/',
+        scope: '/',
+        display: 'standalone',
+        background_color: '#ffffff',
         theme_color: '#ffffff',
         icons: [
           {
             src: 'icon-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'icon-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
           },
           {
             src: 'icon-512x512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
-          }
-        ]
-      }
-    })
+          },
+          {
+            src: 'icon-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable',
+          },
+        ],
+      },
+    }),
   ],
   server: {
     host: true, // Dockerコンテナの外部からアクセスを許可
