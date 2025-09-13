@@ -17,6 +17,10 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
           working-directory: frontend
 
+      - name: Prettier format check
+        run: npm run format:check
+        working-directory: frontend
+
       - name: ESLintでコードチェック
         run: npm run lint
         working-directory: frontend
@@ -34,6 +38,10 @@ jobs:
         with:
           cache-dependency-path: backend/package-lock.json
           working-directory: backend
+
+      - name: Prettier format check
+        run: npm run format:check
+        working-directory: backend
 
       - name: Prismaクライアント生成
         run: npx prisma generate
