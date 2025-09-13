@@ -12,7 +12,8 @@
   "scripts": {
     "build": "npm run -w backend build && npm run -w frontend build",
     "lint": "npm run -w backend lint && npm run -w frontend lint",
-    "format": "npm run -w backend format && npm run -w frontend lint -- --fix",
+    "lint:fix": "npm run -w backend lint:fix && npm run -w frontend lint:fix",
+    "format": "npm run -w backend format && npm run -w frontend format",
     "test": "npm run -w backend test && npm run -w backend test:e2e && npm run -w backend test:cov && npm run -w frontend --if-present test",
     "dev": "npm run -w backend start:dev & npm run -w frontend dev"
   }
