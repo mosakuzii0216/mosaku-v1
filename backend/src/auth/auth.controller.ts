@@ -12,6 +12,9 @@ import {
 } from '@nestjs/common';
 import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import type { AuthenticatedRequest } from './types';
+import { GoogleRegisterWithInvitationDto } from './dto/google-register-with-invitation.dto';
+import { GithubRegisterWithInvitationDto } from './dto/github-register-with-invitation.dto';
+import { XRegisterWithInvitationDto } from './dto/x-register-with-invitation.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { GoogleAuthGuard } from './google-auth.guard';
@@ -285,9 +288,7 @@ export class AuthController {
 
   @Public()
   @Post('google/register-with-invitation')
-  async googleRegisterWithInvitation(
-    @Body() body: { googleUser: any; invitationCode: string },
-  ) {
+  async googleRegisterWithInvitation(@Body() body: GoogleRegisterWithInvitationDto) {
     const { googleUser, invitationCode } = body;
 
     try {
@@ -338,9 +339,7 @@ export class AuthController {
 
   @Public()
   @Post('github/register-with-invitation')
-  async githubRegisterWithInvitation(
-    @Body() body: { githubUser: any; invitationCode: string },
-  ) {
+  async githubRegisterWithInvitation(@Body() body: GithubRegisterWithInvitationDto) {
     const { githubUser, invitationCode } = body;
 
     try {
@@ -391,9 +390,7 @@ export class AuthController {
 
   @Public()
   @Post('x/register-with-invitation')
-  async xRegisterWithInvitation(
-    @Body() body: { xUser: any; invitationCode: string },
-  ) {
+  async xRegisterWithInvitation(@Body() body: XRegisterWithInvitationDto) {
     const { xUser, invitationCode } = body;
 
     try {

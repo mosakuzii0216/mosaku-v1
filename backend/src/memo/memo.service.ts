@@ -1,18 +1,15 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMemoDto } from './dto/create-memo.dto';
 import { UpdateMemoDto } from './dto/update-memo.dto';
+import type { Prisma } from '@prisma/client';
 
 @Injectable()
 export class MemoService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(userId: string, tagIds?: string[]) {
-    const whereClause: any = { userId };
+    const whereClause: Prisma.MemoWhereInput = { userId };
 
     // Filter by tags if provided
     if (tagIds && tagIds.length > 0) {
@@ -76,7 +73,7 @@ export class MemoService {
   }
 
   async create(createMemoDto: CreateMemoDto, userId: string) {
-    const createData: any = {
+    const createData: Prisma.MemoUncheckedCreateInput = {
       title: createMemoDto.title,
       content: createMemoDto.content,
       userId,
@@ -152,7 +149,7 @@ export class MemoService {
       return this.findAll(userId, tagIds);
     }
 
-    const whereClause: any = {
+    const whereClause: Prisma.MemoWhereInput = {
       userId,
       OR: [
         {

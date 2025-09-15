@@ -1,10 +1,6 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import type { Prisma } from '@prisma/client';
 import { CreateThemeDto } from './dto/create-theme.dto';
 import { UpdateThemeDto } from './dto/update-theme.dto';
 import { SearchThemeDto } from './dto/search-theme.dto';
@@ -20,7 +16,7 @@ export class ThemeService {
     const { query, category, isSystem, isPublic, favoritesOnly } = searchDto;
 
     // 基本検索条件
-    const where: any = {};
+    const where: Prisma.ThemeWhereInput = {};
 
     // テキスト検索
     if (query) {
