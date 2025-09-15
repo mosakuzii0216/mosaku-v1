@@ -28,8 +28,12 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // グローバルバリデーションパイプ
-  app.useGlobalPipes(new ValidationPipe());
+  // グローバルバリデーションパイプ（DTO変換・不要プロパティ除去）
+  app.useGlobalPipes(new ValidationPipe({
+    transform: true,
+    whitelist: true,
+    forbidNonWhitelisted: false,
+  }));
 
   await app.listen(process.env.PORT ?? 3000);
 }

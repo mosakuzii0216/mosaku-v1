@@ -1,17 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-  Request,
-  ValidationPipe,
-  UsePipes,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { ThemeService } from './theme.service';
@@ -19,6 +6,7 @@ import { CreateThemeDto } from './dto/create-theme.dto';
 import { UpdateThemeDto } from './dto/update-theme.dto';
 import { SearchThemeDto } from './dto/search-theme.dto';
 import { FavoriteThemeDto } from './dto/favorite-theme.dto';
+import type { AuthenticatedRequest, MaybeAuthRequest } from '../auth/types';
 
 @Controller('theme')
 export class ThemeController {
@@ -30,9 +18,8 @@ export class ThemeController {
    */
   @Public()
   @Get()
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async findAll(@Query() searchDto: SearchThemeDto, @Request() req: any) {
-    const userId = req.user?.id; // 認証されている場合のユーザーID
+  async findAll(@Query() searchDto: SearchThemeDto, @Request() req: MaybeAuthRequest) {
+    const userId = req.user?.id;
     return this.themeService.findMany(searchDto, userId);
   }
 
@@ -42,7 +29,7 @@ export class ThemeController {
    */
   @Public()
   @Get(':id')
-  async findOne(@Param('id') id: string, @Request() req: any) {
+  async findOne(@Param('id') id: string, @Request() req: MaybeAuthRequest) {
     const userId = req.user?.id;
     return this.themeService.findOne(id, userId);
   }
@@ -53,8 +40,7 @@ export class ThemeController {
    */
   @Post()
   @UseGuards(JwtAuthGuard)
-  @UsePipes(new ValidationPipe())
-  async create(@Body() createThemeDto: CreateThemeDto, @Request() req: any) {
+  async create(@Body() createThemeDto: CreateThemeDto, @Request() req: AuthenticatedRequest) {
     const userId = req.user.id; // 認証されたユーザーID
     return this.themeService.create(createThemeDto, userId);
   }
@@ -65,11 +51,10 @@ export class ThemeController {
    */
   @Put(':id')
   @UseGuards(JwtAuthGuard)
-  @UsePipes(new ValidationPipe())
   async update(
     @Param('id') id: string,
     @Body() updateThemeDto: UpdateThemeDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     const userId = req.user.id;
     return this.themeService.update(id, updateThemeDto, userId);
@@ -81,7 +66,7 @@ export class ThemeController {
    */
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
-  async remove(@Param('id') id: string, @Request() req: any) {
+  async remove(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
     const userId = req.user.id;
     return this.themeService.remove(id, userId);
   }
@@ -92,7 +77,7 @@ export class ThemeController {
    */
   @Post(':id/favorite')
   @UseGuards(JwtAuthGuard)
-  async addToFavorites(@Param('id') themeId: string, @Request() req: any) {
+  async addToFavorites(@Param('id') themeId: string, @Request() req: AuthenticatedRequest) {
     const userId = req.user.id;
     return this.themeService.addToFavorites(themeId, userId);
   }
@@ -103,7 +88,7 @@ export class ThemeController {
    */
   @Delete(':id/favorite')
   @UseGuards(JwtAuthGuard)
-  async removeFromFavorites(@Param('id') themeId: string, @Request() req: any) {
+  async removeFromFavorites(@Param('id') themeId: string, @Request() req: AuthenticatedRequest) {
     const userId = req.user.id;
     return this.themeService.removeFromFavorites(themeId, userId);
   }
@@ -114,7 +99,7 @@ export class ThemeController {
    */
   @Get('favorites/me')
   @UseGuards(JwtAuthGuard)
-  async getUserFavorites(@Request() req: any) {
+  async getUserFavorites(@Request() req: AuthenticatedRequest) {
     const userId = req.user.id;
     return this.themeService.getUserFavorites(userId);
   }
@@ -125,7 +110,7 @@ export class ThemeController {
    */
   @Public()
   @Get('system/list')
-  async getSystemThemes(@Request() req: any) {
+  async getSystemThemes(@Request() req: MaybeAuthRequest) {
     const userId = req.user?.id;
     const searchDto: SearchThemeDto = { isSystem: true };
     return this.themeService.findMany(searchDto, userId);
@@ -137,7 +122,7 @@ export class ThemeController {
    */
   @Public()
   @Get('public/list')
-  async getPublicThemes(@Request() req: any) {
+  async getPublicThemes(@Request() req: MaybeAuthRequest) {
     const userId = req.user?.id;
     const searchDto: SearchThemeDto = { isPublic: true };
     return this.themeService.findMany(searchDto, userId);
@@ -151,7 +136,7 @@ export class ThemeController {
   @Get('category/:category')
   async getThemesByCategory(
     @Param('category') category: string,
-    @Request() req: any,
+    @Request() req: MaybeAuthRequest,
   ) {
     const userId = req.user?.id;
     const searchDto: SearchThemeDto = { category };
