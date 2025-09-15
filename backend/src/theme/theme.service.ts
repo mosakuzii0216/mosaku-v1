@@ -4,14 +4,14 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateThemeDto } from './dto/create-theme.dto';
 import { UpdateThemeDto } from './dto/update-theme.dto';
 import { SearchThemeDto } from './dto/search-theme.dto';
 
 @Injectable()
 export class ThemeService {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: PrismaService) {}
 
   /**
    * テーマ一覧を取得（検索・フィルタリング対応）
