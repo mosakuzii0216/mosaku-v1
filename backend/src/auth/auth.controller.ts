@@ -10,6 +10,8 @@ import {
   BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
+import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
+import type { AuthenticatedRequest } from './types';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { GoogleAuthGuard } from './google-auth.guard';
@@ -80,7 +82,7 @@ export class AuthController {
 
   @Post('logout')
   @Public()
-  async logout(@Request() req: any) {
+  async logout(@Request() _req: ExpressRequest) {
     // JWTはステートレスなので、ログアウト処理は主にクライアント側で実装
     // 必要に応じてトークンをブラックリストに追加する処理を実装可能
     return {
@@ -90,7 +92,7 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async getMe(@Request() req: any) {
+  async getMe(@Request() req: AuthenticatedRequest) {
     const userId = req.user.id;
 
     const user = await this.authService.findUserById(userId);
@@ -157,7 +159,7 @@ export class AuthController {
   @Post('change-password')
   @UseGuards(JwtAuthGuard)
   async changePassword(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
     const userId = req.user.id;
@@ -202,7 +204,7 @@ export class AuthController {
 
   @Post('update-admin-role')
   @UseGuards(JwtAuthGuard)
-  async updateAdminRole(@Request() req: any) {
+  async updateAdminRole(@Request() req: AuthenticatedRequest) {
     const currentUser = req.user;
 
     // 管理者メールアドレスかどうかをチェック
@@ -235,7 +237,7 @@ export class AuthController {
   // 後方互換性のため一時的に保持（将来削除予定）
   @Post('sync-user')
   @UseGuards(JwtAuthGuard)
-  async syncUser(@Request() req: any, @Body() createUserDto: CreateUserDto) {
+  async syncUser(@Request() req: AuthenticatedRequest, @Body() createUserDto: CreateUserDto) {
     // 新しい認証システムでは不要だが、フロントエンドの移行期間中は保持
     return req.user;
   }
@@ -243,7 +245,7 @@ export class AuthController {
   @Post('sync-user-with-invite')
   @UseGuards(JwtAuthGuard)
   async syncUserWithInvite(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Body() body: { name?: string; invitationCode: string },
   ) {
     // 新しい認証システムでは不要だが、フロントエンドの移行期間中は保持
@@ -253,13 +255,13 @@ export class AuthController {
   // Google OAuth エンドポイント
   @Get('google')
   @UseGuards(GoogleAuthGuard)
-  async googleAuth(@Request() req: any) {
+  async googleAuth(@Request() _req: ExpressRequest) {
     // Google認証画面にリダイレクト
   }
 
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
-  async googleAuthRedirect(@Request() req: any, @Response() res: any) {
+  async googleAuthRedirect(@Request() req: ExpressRequest, @Response() res: ExpressResponse) {
     try {
       const result = await this.authService.googleLogin(req.user);
 
@@ -306,13 +308,13 @@ export class AuthController {
   // GitHub OAuth エンドポイント
   @Get('github')
   @UseGuards(GitHubAuthGuard)
-  async githubAuth(@Request() req: any) {
+  async githubAuth(@Request() _req: ExpressRequest) {
     // GitHub認証画面にリダイレクト
   }
 
   @Get('github/callback')
   @UseGuards(GitHubAuthGuard)
-  async githubAuthRedirect(@Request() req: any, @Response() res: any) {
+  async githubAuthRedirect(@Request() req: ExpressRequest, @Response() res: ExpressResponse) {
     try {
       const result = await this.authService.githubLogin(req.user);
 
@@ -359,13 +361,13 @@ export class AuthController {
   // X OAuth エンドポイント
   @Get('x')
   @UseGuards(XAuthGuard)
-  async xAuth(@Request() req: any) {
+  async xAuth(@Request() _req: ExpressRequest) {
     // X認証画面にリダイレクト
   }
 
   @Get('x/callback')
   @UseGuards(XAuthGuard)
-  async xAuthRedirect(@Request() req: any, @Response() res: any) {
+  async xAuthRedirect(@Request() req: ExpressRequest, @Response() res: ExpressResponse) {
     try {
       const result = await this.authService.xLogin(req.user);
 
