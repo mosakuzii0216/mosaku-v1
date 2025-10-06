@@ -38,6 +38,36 @@ export class AuthController {
     private readonly invitationService: InvitationService,
   ) {}
 
+  /**
+   * OAuth認証コールバック共通処理
+   */
+  private async handleOAuthCallback(
+    authMethod: (user: any) => Promise<any>,
+    req: ExpressRequest,
+    res: ExpressResponse,
+    providerName: string
+  ): Promise<void> {
+    try {
+      const result = await authMethod(req.user);
+
+      // フロントエンドにトークンを渡すため、URLパラメータとしてリダイレクト
+      const redirectUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?token=${result.accessToken}&user=${encodeURIComponent(JSON.stringify(result.user))}`;
+
+      return res.redirect(redirectUrl);
+    } catch (error: any) {
+      console.error(`${providerName} auth error:`, error);
+
+      // 新規ユーザーで招待コードが必要な場合
+      if (error.message.includes('invitation code')) {
+        const redirectUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?error=invitation_required&${providerName.toLowerCase()}_user=${encodeURIComponent(JSON.stringify(req.user))}`;
+        return res.redirect(redirectUrl);
+      }
+
+      const errorUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?error=auth_failed`;
+      return res.redirect(errorUrl);
+    }
+  }
+
   @Public()
   @Post('register')
   async register(@Body() registerUserDto: RegisterUserDto) {
@@ -265,25 +295,12 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
   async googleAuthRedirect(@Request() req: ExpressRequest, @Response() res: ExpressResponse) {
-    try {
-      const result = await this.authService.googleLogin(req.user);
-
-      // フロントエンドにトークンを渡すため、URLパラメータとしてリダイレクト
-      const redirectUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?token=${result.accessToken}&user=${encodeURIComponent(JSON.stringify(result.user))}`;
-
-      return res.redirect(redirectUrl);
-    } catch (error: any) {
-      console.error('Google auth error:', error);
-
-      // 新規ユーザーで招待コードが必要な場合
-      if (error.message.includes('invitation code')) {
-        const redirectUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?error=invitation_required&google_user=${encodeURIComponent(JSON.stringify(req.user))}`;
-        return res.redirect(redirectUrl);
-      }
-
-      const errorUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?error=auth_failed`;
-      return res.redirect(errorUrl);
-    }
+    return this.handleOAuthCallback(
+      (user) => this.authService.googleLogin(user),
+      req,
+      res,
+      'Google'
+    );
   }
 
   @Public()
@@ -316,25 +333,12 @@ export class AuthController {
   @Get('github/callback')
   @UseGuards(GitHubAuthGuard)
   async githubAuthRedirect(@Request() req: ExpressRequest, @Response() res: ExpressResponse) {
-    try {
-      const result = await this.authService.githubLogin(req.user);
-
-      // フロントエンドにトークンを渡すため、URLパラメータとしてリダイレクト
-      const redirectUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?token=${result.accessToken}&user=${encodeURIComponent(JSON.stringify(result.user))}`;
-
-      return res.redirect(redirectUrl);
-    } catch (error: any) {
-      console.error('GitHub auth error:', error);
-
-      // 新規ユーザーで招待コードが必要な場合
-      if (error.message.includes('invitation code')) {
-        const redirectUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?error=invitation_required&github_user=${encodeURIComponent(JSON.stringify(req.user))}`;
-        return res.redirect(redirectUrl);
-      }
-
-      const errorUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?error=auth_failed`;
-      return res.redirect(errorUrl);
-    }
+    return this.handleOAuthCallback(
+      (user) => this.authService.githubLogin(user),
+      req,
+      res,
+      'GitHub'
+    );
   }
 
   @Public()
@@ -367,25 +371,12 @@ export class AuthController {
   @Get('x/callback')
   @UseGuards(XAuthGuard)
   async xAuthRedirect(@Request() req: ExpressRequest, @Response() res: ExpressResponse) {
-    try {
-      const result = await this.authService.xLogin(req.user);
-
-      // フロントエンドにトークンを渡すため、URLパラメータとしてリダイレクト
-      const redirectUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?token=${result.accessToken}&user=${encodeURIComponent(JSON.stringify(result.user))}`;
-
-      return res.redirect(redirectUrl);
-    } catch (error: any) {
-      console.error('X auth error:', error);
-
-      // 新規ユーザーで招待コードが必要な場合
-      if (error.message.includes('invitation code')) {
-        const redirectUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?error=invitation_required&x_user=${encodeURIComponent(JSON.stringify(req.user))}`;
-        return res.redirect(redirectUrl);
-      }
-
-      const errorUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?error=auth_failed`;
-      return res.redirect(errorUrl);
-    }
+    return this.handleOAuthCallback(
+      (user) => this.authService.xLogin(user),
+      req,
+      res,
+      'X'
+    );
   }
 
   @Public()
