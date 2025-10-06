@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { SupabaseService } from './supabase.service';
-import { SupabaseGuard } from './supabase.guard';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { GoogleStrategy } from './google.strategy';
@@ -27,8 +25,6 @@ import { InvitationService } from '../invitation/invitation.service';
   ],
   controllers: [AuthController],
   providers: [
-    SupabaseService,
-    SupabaseGuard,
     AuthService,
     JwtStrategy,
     GoogleStrategy,
@@ -41,8 +37,6 @@ import { InvitationService } from '../invitation/invitation.service';
     InvitationService,
   ],
   exports: [
-    SupabaseService,
-    SupabaseGuard,
     AuthService,
     JwtAuthGuard,
     GoogleAuthGuard,

@@ -160,7 +160,7 @@ export class AuthService {
       where: {
         OR: [
           { email: googleUser.email },
-          { supabaseId: googleUser.googleId }, // 既存のsupabaseIdフィールドをgoogleIdとして利用
+          { oauthId: googleUser.googleId }, // 既存のoauthIdフィールドをgoogleIdとして利用
         ],
       },
     });
@@ -170,7 +170,7 @@ export class AuthService {
       user = await this.prisma.user.update({
         where: { id: user.id },
         data: {
-          supabaseId: googleUser.googleId, // Google IDを保存
+          oauthId: googleUser.googleId, // Google IDを保存
           name: googleUser.name,
         },
       });
@@ -200,7 +200,7 @@ export class AuthService {
     // 既存ユーザーチェック
     const existingUser = await this.prisma.user.findFirst({
       where: {
-        OR: [{ email: googleUser.email }, { supabaseId: googleUser.googleId }],
+        OR: [{ email: googleUser.email }, { oauthId: googleUser.googleId }],
       },
     });
 
@@ -232,7 +232,7 @@ export class AuthService {
     // 新規ユーザー作成
     const user = await this.prisma.user.create({
       data: {
-        supabaseId: googleUser.googleId,
+        oauthId: googleUser.googleId,
         email: googleUser.email,
         name: googleUser.name,
         role: isAdmin ? 'ADMIN' : 'FREE',
@@ -268,7 +268,7 @@ export class AuthService {
       where: {
         OR: [
           { email: githubUser.email },
-          { supabaseId: githubUser.githubId }, // 既存のsupabaseIdフィールドをgithubIdとして利用
+          { oauthId: githubUser.githubId }, // 既存のoauthIdフィールドをgithubIdとして利用
         ],
       },
     });
@@ -278,7 +278,7 @@ export class AuthService {
       user = await this.prisma.user.update({
         where: { id: user.id },
         data: {
-          supabaseId: githubUser.githubId, // GitHub IDを保存
+          oauthId: githubUser.githubId, // GitHub IDを保存
           name: githubUser.name,
         },
       });
@@ -308,7 +308,7 @@ export class AuthService {
     // 既存ユーザーチェック
     const existingUser = await this.prisma.user.findFirst({
       where: {
-        OR: [{ email: githubUser.email }, { supabaseId: githubUser.githubId }],
+        OR: [{ email: githubUser.email }, { oauthId: githubUser.githubId }],
       },
     });
 
@@ -340,7 +340,7 @@ export class AuthService {
     // 新規ユーザー作成
     const user = await this.prisma.user.create({
       data: {
-        supabaseId: githubUser.githubId,
+        oauthId: githubUser.githubId,
         email: githubUser.email,
         name: githubUser.name,
         role: isAdmin ? 'ADMIN' : 'FREE',
@@ -380,7 +380,7 @@ export class AuthService {
         OR: [
           ...(xUser.email ? [{ email: xUser.email }] : []), // 実際のemailがある場合のみ検索条件に追加
           { email: userEmail }, // フォールバックメールでも検索
-          { supabaseId: xUser.xId }, // 既存のsupabaseIdフィールドをxIdとして利用
+          { oauthId: xUser.xId }, // 既存のoauthIdフィールドをxIdとして利用
         ],
       },
     });
@@ -390,7 +390,7 @@ export class AuthService {
       user = await this.prisma.user.update({
         where: { id: user.id },
         data: {
-          supabaseId: xUser.xId, // X IDを保存
+          oauthId: xUser.xId, // X IDを保存
           name: xUser.name,
         },
       });
@@ -420,7 +420,7 @@ export class AuthService {
     // 既存ユーザーチェック
     const existingUser = await this.prisma.user.findFirst({
       where: {
-        OR: [{ email: xUser.email }, { supabaseId: xUser.xId }],
+        OR: [{ email: xUser.email }, { oauthId: xUser.xId }],
       },
     });
 
@@ -455,7 +455,7 @@ export class AuthService {
     // 新規ユーザー作成
     const user = await this.prisma.user.create({
       data: {
-        supabaseId: xUser.xId,
+        oauthId: xUser.xId,
         email: userEmail,
         name: xUser.name,
         role: isAdmin ? 'ADMIN' : 'FREE',

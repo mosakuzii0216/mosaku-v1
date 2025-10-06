@@ -21,7 +21,7 @@ enum UserRole {
 
 model User {
   id          String   @id @default(cuid())
-  supabaseId  String?  @unique @map("supabase_id") // Supabaseからの移行時のみ使用
+  oauthId     String?  @unique @map("oauth_id") // OAuth プロバイダーID (Google/GitHub/X)
   email       String   @unique
   password    String?  // 新規追加：ハッシュ化されたパスワード
   name        String?
