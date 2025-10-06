@@ -1,17 +1,21 @@
 import {
   Injectable,
+  ConflictException,
   NotFoundException,
   ForbiddenException,
-  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuthorizationService } from '../common/services/authorization.service';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { AssignTagsDto } from './dto/assign-tags.dto';
 
 @Injectable()
 export class TagService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly authorizationService: AuthorizationService
+  ) {}
 
   async findAll(userId: string) {
     return this.prisma.tag.findMany({
@@ -27,15 +31,7 @@ export class TagService {
       where: { id },
     });
 
-    if (!tag) {
-      throw new NotFoundException(`Tag with ID ${id} not found`);
-    }
-
-    if (tag.userId !== userId) {
-      throw new ForbiddenException('You can only access your own tags');
-    }
-
-    return tag;
+    return this.authorizationService.validateOwnership(tag, userId, 'Tag');
   }
 
   async create(createTagDto: CreateTagDto, userId: string) {
@@ -52,13 +48,7 @@ export class TagService {
       where: { id },
     });
 
-    if (!tag) {
-      throw new NotFoundException(`Tag with ID ${id} not found`);
-    }
-
-    if (tag.userId !== userId) {
-      throw new ForbiddenException('You can only update your own tags');
-    }
+    this.authorizationService.validateOwnership(tag, userId, 'Tag');
 
     return this.prisma.tag.update({
       where: { id },
@@ -71,13 +61,7 @@ export class TagService {
       where: { id },
     });
 
-    if (!tag) {
-      throw new NotFoundException(`Tag with ID ${id} not found`);
-    }
-
-    if (tag.userId !== userId) {
-      throw new ForbiddenException('You can only delete your own tags');
-    }
+    this.authorizationService.validateOwnership(tag, userId, 'Tag');
 
     return this.prisma.tag.delete({
       where: { id },

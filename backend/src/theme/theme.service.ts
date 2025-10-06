@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuthorizationService } from '../common/services/authorization.service';
 import type { Prisma } from '@prisma/client';
 import { CreateThemeDto } from './dto/create-theme.dto';
 import { UpdateThemeDto } from './dto/update-theme.dto';
@@ -7,7 +8,21 @@ import { SearchThemeDto } from './dto/search-theme.dto';
 
 @Injectable()
 export class ThemeService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly authorizationService: AuthorizationService
+  ) {}
+
+  /**
+   * テーマの編集権限を検証（システムテーマと所有者チェック）
+   */
+  private validateThemeOwnership(theme: any, userId: string, action: string): void {
+    this.authorizationService.validateExistence(theme, 'テーマ');
+    
+    if (theme.isSystem || theme.createdById !== userId) {
+      throw new ForbiddenException(`このテーマを${action}する権限がありません`);
+    }
+  }
 
   /**
    * テーマ一覧を取得（検索・フィルタリング対応）
@@ -196,14 +211,7 @@ export class ThemeService {
       where: { id },
     });
 
-    if (!theme) {
-      throw new NotFoundException('テーマが見つかりません');
-    }
-
-    // 権限チェック：システムテーマまたは他人のテーマは更新不可
-    if (theme.isSystem || theme.createdById !== userId) {
-      throw new ForbiddenException('このテーマを更新する権限がありません');
-    }
+    this.validateThemeOwnership(theme, userId, '更新');
 
     // スタイルデータの検証（更新時）
     if (updateThemeDto.styles) {
@@ -249,17 +257,10 @@ export class ThemeService {
       },
     });
 
-    if (!theme) {
-      throw new NotFoundException('テーマが見つかりません');
-    }
-
-    // 権限チェック：システムテーマまたは他人のテーマは削除不可
-    if (theme.isSystem || theme.createdById !== userId) {
-      throw new ForbiddenException('このテーマを削除する権限がありません');
-    }
+    this.validateThemeOwnership(theme, userId, '削除');
 
     // 使用中のテーマは削除不可
-    if (theme._count.memos > 0) {
+    if (theme!._count.memos > 0) {
       throw new BadRequestException('使用中のテーマは削除できません');
     }
 

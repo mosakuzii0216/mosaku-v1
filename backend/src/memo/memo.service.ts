@@ -1,12 +1,16 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuthorizationService } from '../common/services/authorization.service';
 import { CreateMemoDto } from './dto/create-memo.dto';
 import { UpdateMemoDto } from './dto/update-memo.dto';
 import type { Prisma } from '@prisma/client';
 
 @Injectable()
 export class MemoService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly authorizationService: AuthorizationService
+  ) {}
 
   async findAll(userId: string, tagIds?: string[]) {
     const whereClause: Prisma.MemoWhereInput = { userId };
@@ -61,15 +65,7 @@ export class MemoService {
       },
     });
 
-    if (!memo) {
-      throw new NotFoundException(`Memo with ID ${id} not found`);
-    }
-
-    if (memo.userId !== userId) {
-      throw new ForbiddenException('You can only access your own memos');
-    }
-
-    return memo;
+    return this.authorizationService.validateOwnership(memo, userId, 'Memo');
   }
 
   async create(createMemoDto: CreateMemoDto, userId: string) {
@@ -103,13 +99,7 @@ export class MemoService {
       where: { id },
     });
 
-    if (!memo) {
-      throw new NotFoundException(`Memo with ID ${id} not found`);
-    }
-
-    if (memo.userId !== userId) {
-      throw new ForbiddenException('You can only update your own memos');
-    }
+    this.authorizationService.validateOwnership(memo, userId, 'Memo');
 
     return this.prisma.memo.update({
       where: { id },
@@ -131,13 +121,7 @@ export class MemoService {
       where: { id },
     });
 
-    if (!memo) {
-      throw new NotFoundException(`Memo with ID ${id} not found`);
-    }
-
-    if (memo.userId !== userId) {
-      throw new ForbiddenException('You can only delete your own memos');
-    }
+    this.authorizationService.validateOwnership(memo, userId, 'Memo');
 
     return this.prisma.memo.delete({
       where: { id },
