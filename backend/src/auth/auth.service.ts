@@ -6,6 +6,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { BaseOAuthUser, OAuthProvider } from './types/oauth.types';
 
 export interface JwtPayload {
   sub: string; // user.id
@@ -154,24 +155,45 @@ export class AuthService {
     return result;
   }
 
-  async googleLogin(googleUser: any): Promise<AuthTokens & { user: any }> {
-    // Google IDまたはメールアドレスでユーザーを検索
+  /**
+   * パスワードフィールドを除外するユーティリティメソッド
+   */
+  private excludePassword<T extends { password?: string | null }>(user: T): Omit<T, 'password'> {
+    const { password: _, ...result } = user;
+    return result;
+  }
+
+  /**
+   * 管理者権限チェック
+   */
+  private isAdminEmail(email?: string): boolean {
+    return email ? email === process.env.ADMIN_EMAIL : false;
+  }
+
+  /**
+   * 共通 OAuth ログイン処理
+   */
+  private async handleOAuthLogin(
+    oauthUser: BaseOAuthUser,
+    providerId: string
+  ): Promise<AuthTokens & { user: any }> {
+    // OAuth IDまたはメールアドレスでユーザーを検索
     let user = await this.prisma.user.findFirst({
       where: {
         OR: [
-          { email: googleUser.email },
-          { oauthId: googleUser.googleId }, // 既存のoauthIdフィールドをgoogleIdとして利用
+          ...(oauthUser.email ? [{ email: oauthUser.email }] : []),
+          { oauthId: providerId },
         ],
       },
     });
 
     if (user) {
-      // 既存ユーザーの場合、Google IDと名前を更新
+      // 既存ユーザーの場合、OAuth IDと名前を更新
       user = await this.prisma.user.update({
         where: { id: user.id },
         data: {
-          oauthId: googleUser.googleId, // Google IDを保存
-          name: googleUser.name,
+          oauthId: providerId,
+          name: oauthUser.name,
         },
       });
     } else {
@@ -184,304 +206,174 @@ export class AuthService {
     // JWTトークンを生成
     const tokens = await this.generateTokens(user.id, user.email, user.role);
 
-    // パスワードを除外して返す
-    const { password: _, ...userResult } = user;
+    return {
+      ...tokens,
+      user: this.excludePassword(user),
+    };
+  }
+
+  /**
+   * 共通 OAuth 招待コード付き登録処理
+   */
+  private async handleOAuthRegistrationWithInvitation(
+    oauthUser: BaseOAuthUser,
+    providerId: string,
+    invitationCode: string,
+    fallbackEmail?: string
+  ): Promise<AuthTokens & { user: any }> {
+    // 招待コードの検証
+    const invitation = await this.prisma.invitationCode.findUnique({
+      where: { code: invitationCode },
+    });
+
+    if (!invitation) {
+      throw new BadRequestException('Invalid invitation code');
+    }
+
+    if (invitation.expiresAt && new Date() > invitation.expiresAt) {
+      throw new BadRequestException('Invitation code has expired');
+    }
+
+    if (invitation.usedCount >= invitation.maxUses) {
+      throw new BadRequestException('Invitation code has been fully used');
+    }
+
+    // 既存ユーザーチェック
+    const userEmail = oauthUser.email || fallbackEmail;
+    if (!userEmail) {
+      throw new BadRequestException('Email address is required for registration');
+    }
+
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: userEmail },
+          { oauthId: providerId },
+        ],
+      },
+    });
+
+    if (existingUser) {
+      throw new BadRequestException('User already exists with this email or OAuth account');
+    }
+
+    // 管理者権限チェック
+    const isAdmin = this.isAdminEmail(userEmail);
+
+    // 新規ユーザー作成
+    const user = await this.prisma.user.create({
+      data: {
+        oauthId: providerId,
+        email: userEmail,
+        name: oauthUser.name,
+        role: isAdmin ? 'ADMIN' : 'FREE',
+        emailVerified: !!oauthUser.email, // 実際のメールがある場合のみverified
+      },
+    });
+
+    // 招待コード使用回数を更新
+    await this.prisma.invitationCode.update({
+      where: { id: invitation.id },
+      data: { usedCount: invitation.usedCount + 1 },
+    });
+
+    // JWTトークンを生成
+    const tokens = await this.generateTokens(user.id, user.email, user.role);
 
     return {
       ...tokens,
-      user: userResult,
+      user: this.excludePassword(user),
     };
+  }
+
+  async googleLogin(googleUser: any): Promise<AuthTokens & { user: any }> {
+    const normalizedUser: BaseOAuthUser = {
+      id: googleUser.googleId,
+      email: googleUser.email,
+      name: googleUser.name,
+      provider: 'google',
+    };
+
+    return this.handleOAuthLogin(normalizedUser, googleUser.googleId);
   }
 
   async googleRegisterWithInvitation(
     googleUser: any,
     invitationCode: string,
   ): Promise<AuthTokens & { user: any }> {
-    // 既存ユーザーチェック
-    const existingUser = await this.prisma.user.findFirst({
-      where: {
-        OR: [{ email: googleUser.email }, { oauthId: googleUser.googleId }],
-      },
-    });
-
-    if (existingUser) {
-      throw new BadRequestException('User already exists');
-    }
-
-    // 招待コードの検証
-    const invitation = await this.prisma.invitationCode.findUnique({
-      where: { code: invitationCode },
-    });
-
-    if (!invitation) {
-      throw new BadRequestException('Invalid invitation code');
-    }
-
-    if (invitation.expiresAt && invitation.expiresAt < new Date()) {
-      throw new BadRequestException('Invitation code has expired');
-    }
-
-    if (invitation.maxUses && invitation.usedCount >= invitation.maxUses) {
-      throw new BadRequestException('Invitation code has reached maximum uses');
-    }
-
-    // 管理者メールチェック
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const isAdmin = adminEmail && googleUser.email === adminEmail;
-
-    // 新規ユーザー作成
-    const user = await this.prisma.user.create({
-      data: {
-        oauthId: googleUser.googleId,
-        email: googleUser.email,
-        name: googleUser.name,
-        role: isAdmin ? 'ADMIN' : 'FREE',
-        emailVerified: true,
-      },
-    });
-
-    // 招待コードの使用回数を更新
-    await this.prisma.invitationCode.update({
-      where: { code: invitationCode },
-      data: {
-        usedCount: {
-          increment: 1,
-        },
-      },
-    });
-
-    // JWTトークンを生成
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
-
-    // パスワードを除外して返す
-    const { password: _, ...userResult } = user;
-
-    return {
-      ...tokens,
-      user: userResult,
+    const normalizedUser: BaseOAuthUser = {
+      id: googleUser.googleId,
+      email: googleUser.email,
+      name: googleUser.name,
+      provider: 'google',
     };
+
+    return this.handleOAuthRegistrationWithInvitation(
+      normalizedUser,
+      googleUser.googleId,
+      invitationCode
+    );
   }
 
   async githubLogin(githubUser: any): Promise<AuthTokens & { user: any }> {
-    // GitHub IDまたはメールアドレスでユーザーを検索
-    let user = await this.prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: githubUser.email },
-          { oauthId: githubUser.githubId }, // 既存のoauthIdフィールドをgithubIdとして利用
-        ],
-      },
-    });
-
-    if (user) {
-      // 既存ユーザーの場合、GitHub IDと名前を更新
-      user = await this.prisma.user.update({
-        where: { id: user.id },
-        data: {
-          oauthId: githubUser.githubId, // GitHub IDを保存
-          name: githubUser.name,
-        },
-      });
-    } else {
-      // 新規ユーザーの場合は招待コードなしでは登録できない
-      throw new BadRequestException(
-        'New user registration requires invitation code. Please use the registration with invitation code.',
-      );
-    }
-
-    // JWTトークンを生成
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
-
-    // パスワードを除外して返す
-    const { password: _, ...userResult } = user;
-
-    return {
-      ...tokens,
-      user: userResult,
+    const normalizedUser: BaseOAuthUser = {
+      id: githubUser.githubId,
+      email: githubUser.email,
+      name: githubUser.name,
+      provider: 'github',
     };
+
+    return this.handleOAuthLogin(normalizedUser, githubUser.githubId);
   }
 
   async githubRegisterWithInvitation(
     githubUser: any,
     invitationCode: string,
   ): Promise<AuthTokens & { user: any }> {
-    // 既存ユーザーチェック
-    const existingUser = await this.prisma.user.findFirst({
-      where: {
-        OR: [{ email: githubUser.email }, { oauthId: githubUser.githubId }],
-      },
-    });
-
-    if (existingUser) {
-      throw new BadRequestException('User already exists');
-    }
-
-    // 招待コードの検証
-    const invitation = await this.prisma.invitationCode.findUnique({
-      where: { code: invitationCode },
-    });
-
-    if (!invitation) {
-      throw new BadRequestException('Invalid invitation code');
-    }
-
-    if (invitation.expiresAt && invitation.expiresAt < new Date()) {
-      throw new BadRequestException('Invitation code has expired');
-    }
-
-    if (invitation.maxUses && invitation.usedCount >= invitation.maxUses) {
-      throw new BadRequestException('Invitation code has reached maximum uses');
-    }
-
-    // 管理者メールチェック
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const isAdmin = adminEmail && githubUser.email === adminEmail;
-
-    // 新規ユーザー作成
-    const user = await this.prisma.user.create({
-      data: {
-        oauthId: githubUser.githubId,
-        email: githubUser.email,
-        name: githubUser.name,
-        role: isAdmin ? 'ADMIN' : 'FREE',
-        emailVerified: true,
-      },
-    });
-
-    // 招待コードの使用回数を更新
-    await this.prisma.invitationCode.update({
-      where: { code: invitationCode },
-      data: {
-        usedCount: {
-          increment: 1,
-        },
-      },
-    });
-
-    // JWTトークンを生成
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
-
-    // パスワードを除外して返す
-    const { password: _, ...userResult } = user;
-
-    return {
-      ...tokens,
-      user: userResult,
+    const normalizedUser: BaseOAuthUser = {
+      id: githubUser.githubId,
+      email: githubUser.email,
+      name: githubUser.name,
+      provider: 'github',
     };
+
+    return this.handleOAuthRegistrationWithInvitation(
+      normalizedUser,
+      githubUser.githubId,
+      invitationCode
+    );
   }
 
   async xLogin(xUser: any): Promise<AuthTokens & { user: any }> {
-    // X OAuth の場合、emailが提供されないことがあるため、フォールバックメールを生成
-    const userEmail = xUser.email || `${xUser.username}@x.placeholder.local`;
-    
-    // X IDまたはメールアドレスでユーザーを検索
-    let user = await this.prisma.user.findFirst({
-      where: {
-        OR: [
-          ...(xUser.email ? [{ email: xUser.email }] : []), // 実際のemailがある場合のみ検索条件に追加
-          { email: userEmail }, // フォールバックメールでも検索
-          { oauthId: xUser.xId }, // 既存のoauthIdフィールドをxIdとして利用
-        ],
-      },
-    });
-
-    if (user) {
-      // 既存ユーザーの場合、X IDと名前を更新
-      user = await this.prisma.user.update({
-        where: { id: user.id },
-        data: {
-          oauthId: xUser.xId, // X IDを保存
-          name: xUser.name,
-        },
-      });
-    } else {
-      // 新規ユーザーの場合は招待コードなしでは登録できない
-      throw new BadRequestException(
-        'New user registration requires invitation code. Please use the registration with invitation code.',
-      );
-    }
-
-    // JWTトークンを生成
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
-
-    // パスワードを除外して返す
-    const { password: _, ...userResult } = user;
-
-    return {
-      ...tokens,
-      user: userResult,
+    const normalizedUser: BaseOAuthUser = {
+      id: xUser.xId,
+      email: xUser.email,
+      name: xUser.name,
+      provider: 'x',
     };
+
+    return this.handleOAuthLogin(normalizedUser, xUser.xId);
   }
 
   async xRegisterWithInvitation(
     xUser: any,
     invitationCode: string,
   ): Promise<AuthTokens & { user: any }> {
-    // 既存ユーザーチェック
-    const existingUser = await this.prisma.user.findFirst({
-      where: {
-        OR: [{ email: xUser.email }, { oauthId: xUser.xId }],
-      },
-    });
-
-    if (existingUser) {
-      throw new BadRequestException('User already exists');
-    }
-
-    // 招待コードの検証
-    const invitation = await this.prisma.invitationCode.findUnique({
-      where: { code: invitationCode },
-    });
-
-    if (!invitation) {
-      throw new BadRequestException('Invalid invitation code');
-    }
-
-    if (invitation.expiresAt && invitation.expiresAt < new Date()) {
-      throw new BadRequestException('Invitation code has expired');
-    }
-
-    if (invitation.maxUses && invitation.usedCount >= invitation.maxUses) {
-      throw new BadRequestException('Invitation code has reached maximum uses');
-    }
-
     // X OAuth の場合、emailが提供されないことがあるため、フォールバックメールを生成
-    const userEmail = xUser.email || `${xUser.username}@x.placeholder.local`;
+    const fallbackEmail = `${xUser.username}@x.placeholder.local`;
     
-    // 管理者メールチェック
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const isAdmin = adminEmail && xUser.email === adminEmail;
-
-    // 新規ユーザー作成
-    const user = await this.prisma.user.create({
-      data: {
-        oauthId: xUser.xId,
-        email: userEmail,
-        name: xUser.name,
-        role: isAdmin ? 'ADMIN' : 'FREE',
-        emailVerified: xUser.email ? true : false, // 実際のメールがある場合のみverified
-      },
-    });
-
-    // 招待コードの使用回数を更新
-    await this.prisma.invitationCode.update({
-      where: { code: invitationCode },
-      data: {
-        usedCount: {
-          increment: 1,
-        },
-      },
-    });
-
-    // JWTトークンを生成
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
-
-    // パスワードを除外して返す
-    const { password: _, ...userResult } = user;
-
-    return {
-      ...tokens,
-      user: userResult,
+    const normalizedUser: BaseOAuthUser = {
+      id: xUser.xId,
+      email: xUser.email,
+      name: xUser.name,
+      provider: 'x',
     };
+
+    return this.handleOAuthRegistrationWithInvitation(
+      normalizedUser,
+      xUser.xId,
+      invitationCode,
+      fallbackEmail
+    );
   }
 }
