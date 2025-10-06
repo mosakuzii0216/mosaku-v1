@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import type { AuthenticatedRequest } from './types';
+import { ConfigService } from '../config/config.service';
 import { GoogleRegisterWithInvitationDto } from './dto/google-register-with-invitation.dto';
 import { GithubRegisterWithInvitationDto } from './dto/github-register-with-invitation.dto';
 import { XRegisterWithInvitationDto } from './dto/x-register-with-invitation.dto';
@@ -36,6 +37,7 @@ export class AuthController {
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
     private readonly invitationService: InvitationService,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -51,7 +53,7 @@ export class AuthController {
       const result = await authMethod(req.user);
 
       // フロントエンドにトークンを渡すため、URLパラメータとしてリダイレクト
-      const redirectUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?token=${result.accessToken}&user=${encodeURIComponent(JSON.stringify(result.user))}`;
+      const redirectUrl = this.configService.generateSuccessRedirectUrl(result.accessToken, result.user);
 
       return res.redirect(redirectUrl);
     } catch (error: any) {
@@ -59,11 +61,11 @@ export class AuthController {
 
       // 新規ユーザーで招待コードが必要な場合
       if (error.message.includes('invitation code')) {
-        const redirectUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?error=invitation_required&${providerName.toLowerCase()}_user=${encodeURIComponent(JSON.stringify(req.user))}`;
+        const redirectUrl = this.configService.generateInvitationRequiredUrl(providerName, req.user);
         return res.redirect(redirectUrl);
       }
 
-      const errorUrl = `${process.env.VITE_APP_URL || 'http://localhost'}?error=auth_failed`;
+      const errorUrl = this.configService.generateAuthFailedUrl();
       return res.redirect(errorUrl);
     }
   }
@@ -134,7 +136,7 @@ export class AuthController {
     }
 
     // 既存ユーザーの管理者権限を確認・更新
-    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminEmail = this.configService.adminEmail;
     const shouldBeAdmin = adminEmail && user.email === adminEmail;
 
     if (shouldBeAdmin && user.role !== 'ADMIN') {
@@ -241,8 +243,7 @@ export class AuthController {
     const currentUser = req.user;
 
     // 管理者メールアドレスかどうかをチェック
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const shouldBeAdmin = adminEmail && currentUser.email === adminEmail;
+    const shouldBeAdmin = this.configService.isAdminEmail(currentUser.email);
 
     if (!shouldBeAdmin) {
       throw new BadRequestException('This email is not authorized as admin');

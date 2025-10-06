@@ -2,13 +2,15 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import * as session from 'express-session';
+import { ConfigService } from './config/config.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
 
   // Session設定（X OAuth用）
   app.use(session({
-    secret: process.env.SESSION_SECRET || 'your-session-secret-change-this-in-production',
+    secret: configService.sessionSecret,
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -35,6 +37,6 @@ async function bootstrap() {
     forbidNonWhitelisted: false,
   }));
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(configService.port);
 }
 bootstrap();

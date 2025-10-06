@@ -5,9 +5,11 @@ import { PrismaModule } from './prisma/prisma.module';
 import { InvitationModule } from './invitation/invitation.module';
 import { TagModule } from './tag/tag.module';
 import { ThemeModule } from './theme/theme.module';
+import { ConfigModule } from './config/config.module';
 
 @Module({
   imports: [
+    ConfigModule,
     MemoModule,
     AuthModule,
     PrismaModule,

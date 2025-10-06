@@ -7,6 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { BaseOAuthUser, OAuthProvider } from './types/oauth.types';
+import { ConfigService } from '../config/config.service';
 
 export interface JwtPayload {
   sub: string; // user.id
@@ -28,6 +29,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async hashPassword(password: string): Promise<string> {
@@ -108,8 +110,7 @@ export class AuthService {
     const hashedPassword = await this.hashPassword(password);
 
     // 管理者メールチェック
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const isAdmin = adminEmail && email === adminEmail;
+    const isAdmin = this.configService.isAdminEmail(email);
 
     // ユーザー作成
     const user = await this.prisma.user.create({
@@ -163,7 +164,7 @@ export class AuthService {
    * 管理者権限チェック
    */
   private isAdminEmail(email?: string): boolean {
-    return email ? email === process.env.ADMIN_EMAIL : false;
+    return this.configService.isAdminEmail(email);
   }
 
   /**

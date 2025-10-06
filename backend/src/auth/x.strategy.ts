@@ -2,14 +2,18 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, IStrategyOption } from 'passport-twitter';
 import { AuthService } from './auth.service';
+import { ConfigService } from '../config/config.service';
 
 @Injectable()
 export class XStrategy extends PassportStrategy(Strategy, 'x') {
-  constructor(private readonly authService: AuthService) {
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {
     super({
-      consumerKey: process.env.X_CONSUMER_KEY!,
-      consumerSecret: process.env.X_CONSUMER_SECRET!,
-      callbackURL: process.env.X_REDIRECT_URI!,
+      consumerKey: configService.xConsumerKey,
+      consumerSecret: configService.xConsumerSecret,
+      callbackURL: configService.xRedirectUri,
       includeEmail: true,
     } as IStrategyOption);
   }
