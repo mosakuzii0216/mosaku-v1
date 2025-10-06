@@ -73,8 +73,7 @@ export class AuthService {
     }
 
     // パスワードを除外して返す
-    const { password: _, ...result } = user;
-    return result;
+    return this.excludePassword(user);
   }
 
   async validateJwtPayload(payload: JwtPayload): Promise<any> {
@@ -87,8 +86,7 @@ export class AuthService {
     }
 
     // パスワードを除外して返す
-    const { password: _, ...result } = user;
-    return result;
+    return this.excludePassword(user);
   }
 
   async register(
@@ -124,8 +122,7 @@ export class AuthService {
     });
 
     // パスワードを除外して返す
-    const { password: _, ...result } = user;
-    return result;
+    return this.excludePassword(user);
   }
 
   async login(
@@ -151,8 +148,7 @@ export class AuthService {
     }
 
     // パスワードを除外して返す
-    const { password: _, ...result } = user;
-    return result;
+    return this.excludePassword(user);
   }
 
   /**
