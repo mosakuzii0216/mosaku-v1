@@ -38,6 +38,7 @@ model User {
   
   memos             Memo[]
   tags              Tag[]
+  notebooks         Notebook[]
   createdInviteCodes InvitationCode[]
   createdThemes     Theme[]
   favoriteThemes    UserFavoriteTheme[]
@@ -57,10 +58,30 @@ model Memo {
   
   themeId   String?  @map("theme_id")
   theme     Theme?   @relation(fields: [themeId], references: [id], onDelete: SetNull)
+
+  notebookId  String?   @map("notebook_id")
+  notebook    Notebook? @relation(fields: [notebookId], references: [id], onDelete: SetNull)
   
   memoTags  MemoTag[]
   
   @@map("memos")
+}
+
+model Notebook {
+  id            String    @id @default(cuid())
+  notebook_name String    @db.VarChar(100)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  userId        String    @map("user_id")
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  themeId       String?   @map("theme_id")
+  theme         Theme?   @relation(fields: [themeId], references: [id], onDelete: SetNull)
+
+  memos         Memo[]
+
+  @@map("notebooks")
 }
 
 model InvitationCode {
@@ -129,6 +150,7 @@ model Theme {
   
   // リレーション
   memos           Memo[]
+  notebooks       Notebook[]
   userFavorites   UserFavoriteTheme[]
   
   @@map("themes")
