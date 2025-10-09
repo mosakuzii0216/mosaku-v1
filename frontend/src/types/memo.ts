@@ -25,3 +25,5 @@ export interface UpdateMemoDto {
 }
 
 export type ViewType = 'list' | 'detail' | 'edit' | 'create' | 'tags';
+
+export type ObjectType = 'memo' | 'notebook' | 'tag' | 'theme';

@@ -22,7 +22,7 @@ const EmptyMemoView = () => {
 };
 
 export const DesktopLayout = () => {
-  const { currentView, selectedMemo, goToCreate } = useMemoStore();
+  const { currentObject, currentView, selectedMemo, goToCreate } = useMemoStore();
   useAppInit(); // アプリ初期化（タグロード等）
 
   // ショートカットキーのハンドリング
@@ -43,25 +43,48 @@ export const DesktopLayout = () => {
   }, [goToCreate]);
 
   const renderMainContent = () => {
-    switch (currentView) {
-      case 'detail':
-        return selectedMemo ? <MemoDetail memo={selectedMemo} /> : <EmptyMemoView />;
-      
-      case 'edit':
-        return selectedMemo ? (
-          <MemoEditor memo={selectedMemo} />
-        ) : (
+    // objectとviewの組み合わせで画面を切り替え
+    switch (currentObject) {
+      case 'memo':
+        switch (currentView) {
+          case 'detail':
+            return selectedMemo ? <MemoDetail memo={selectedMemo} /> : <EmptyMemoView />;
+
+          case 'edit':
+            return selectedMemo ? (
+              <MemoEditor memo={selectedMemo} />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                メモが選択されていません
+              </div>
+            );
+
+          case 'create':
+            return <MemoEditor isCreate />;
+
+          default:
+            return <EmptyMemoView />;
+        }
+
+      case 'tag':
+        return <TagManager />;
+
+      case 'notebook':
+        // TODO: ノートブック管理画面を実装
+        return (
           <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-            メモが選択されていません
+            ノートブック管理（未実装）
           </div>
         );
-      
-      case 'create':
-        return <MemoEditor isCreate />;
-      
-      case 'tags':
-        return <TagManager />;
-      
+
+      case 'theme':
+        // TODO: テーマ管理画面を実装
+        return (
+          <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+            テーマ管理（未実装）
+          </div>
+        );
+
       default:
         return <EmptyMemoView />;
     }
@@ -72,13 +95,13 @@ export const DesktopLayout = () => {
       <Header onCreateClick={goToCreate} />
       
       <main className="flex-1 flex overflow-hidden">
-        {/* 左サイドバー - メモ一覧 (タグ管理時は非表示) */}
-        {currentView !== 'tags' && (
+        {/* 左サイドバー - メモ一覧 (memoオブジェクト時のみ表示) */}
+        {currentObject === 'memo' && (
           <div className="w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col">
             <MemoList />
           </div>
         )}
-        
+
         {/* 右メインエリア - メモ詳細/編集 */}
         <div className="flex-1 flex flex-col">
           {renderMainContent()}

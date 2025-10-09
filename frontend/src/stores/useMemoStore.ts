@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Memo, ViewType } from '../types/memo';
+import type { Memo, ViewType, ObjectType } from '../types/memo';
 
 interface MemoStore {
   // データ
@@ -8,6 +8,7 @@ interface MemoStore {
   
   // UI状態
   isMobile: boolean;
+  currentObject: ObjectType;
   currentView: ViewType;
   isEditing: boolean;
   searchQuery: string;
@@ -17,6 +18,7 @@ interface MemoStore {
   setMemos: (memos: Memo[]) => void;
   selectMemo: (memo: Memo | null) => void;
   setIsMobile: (isMobile: boolean) => void;
+  setCurrentObject: (object: ObjectType) => void;
   setCurrentView: (view: ViewType) => void;
   setIsEditing: (isEditing: boolean) => void;
   setSearchQuery: (query: string) => void;
@@ -41,6 +43,7 @@ export const useMemoStore = create<MemoStore>((set, get) => ({
   memos: [],
   selectedMemo: null,
   isMobile: false,
+  currentObject: 'memo',
   currentView: 'list',
   isEditing: false,
   searchQuery: '',
@@ -50,6 +53,7 @@ export const useMemoStore = create<MemoStore>((set, get) => ({
   setMemos: (memos) => set({ memos }),
   selectMemo: (memo) => set({ selectedMemo: memo }),
   setIsMobile: (isMobile) => set({ isMobile }),
+  setCurrentObject: (object) => set({ currentObject: object }),
   setCurrentView: (view) => set({ currentView: view }),
   setIsEditing: (isEditing) => set({ isEditing }),
   setSearchQuery: (query) => set({ searchQuery: query }),
@@ -75,38 +79,43 @@ export const useMemoStore = create<MemoStore>((set, get) => ({
   })),
   
   // Navigation helpers
-  goToList: () => set({ 
-    currentView: 'list', 
-    selectedMemo: null, 
-    isEditing: false 
+  goToList: () => set({
+    currentObject: 'memo',
+    currentView: 'list',
+    selectedMemo: null,
+    isEditing: false
   }),
-  
-  goToDetail: (memo) => set({ 
-    currentView: 'detail', 
-    selectedMemo: memo, 
-    isEditing: false 
+
+  goToDetail: (memo) => set({
+    currentObject: 'memo',
+    currentView: 'detail',
+    selectedMemo: memo,
+    isEditing: false
   }),
 
   logCurrent: () => {
     const current = get()
     console.log('Current Memo Store State:', current)
   },
-  
-  goToEdit: (memo) => set({ 
-    currentView: 'edit', 
-    selectedMemo: memo, 
-    isEditing: true 
+
+  goToEdit: (memo) => set({
+    currentObject: 'memo',
+    currentView: 'edit',
+    selectedMemo: memo,
+    isEditing: true
   }),
-  
-  goToCreate: () => set({ 
-    currentView: 'create', 
-    selectedMemo: null, 
-    isEditing: true 
+
+  goToCreate: () => set({
+    currentObject: 'memo',
+    currentView: 'create',
+    selectedMemo: null,
+    isEditing: true
   }),
-  
-  goToTags: () => set({ 
-    currentView: 'tags', 
-    selectedMemo: null, 
-    isEditing: false 
+
+  goToTags: () => set({
+    currentObject: 'tag',
+    currentView: 'list',
+    selectedMemo: null,
+    isEditing: false
   }),
 }));
