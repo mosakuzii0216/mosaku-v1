@@ -8,7 +8,7 @@ import { MemoEditor } from '../memo/MemoEditor';
 import { TagManager } from '../tag/TagManager';
 
 export const MobileLayout = () => {
-  const { currentView, selectedMemo, goToCreate } = useMemoStore();
+  const { currentView, selectedMemo, goToMemoCreate } = useMemoStore();
   useAppInit(); // アプリ初期化（タグロード等）
 
   // ショートカットキーのハンドリング
@@ -18,7 +18,7 @@ export const MobileLayout = () => {
       // 物理キーコードである e.code で判定する
       if ((e.ctrlKey || e.metaKey) && e.altKey && e.code === 'KeyN') {
         e.preventDefault();
-        goToCreate();
+        goToMemoCreate();
       }
     };
 
@@ -26,7 +26,7 @@ export const MobileLayout = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [goToCreate]);
+  }, [goToMemoCreate]);
 
   const renderContent = () => {
     switch (currentView) {
@@ -70,7 +70,7 @@ export const MobileLayout = () => {
 
   return (
     <div className="h-screen flex flex-col bg-white dark:bg-gray-900">
-      <Header onCreateClick={goToCreate} />
+      <Header onMemoCreateClick={goToMemoCreate} />
       <main className="flex-1 overflow-hidden">
         {renderContent()}
       </main>

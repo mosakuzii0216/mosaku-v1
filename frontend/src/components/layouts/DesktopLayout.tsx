@@ -22,7 +22,7 @@ const EmptyMemoView = () => {
 };
 
 export const DesktopLayout = () => {
-  const { currentObject, currentView, selectedMemo, goToCreate } = useMemoStore();
+  const { currentObject, currentView, selectedMemo, goToMemoCreate } = useMemoStore();
   useAppInit(); // アプリ初期化（タグロード等）
 
   // ショートカットキーのハンドリング
@@ -32,7 +32,7 @@ export const DesktopLayout = () => {
       // 物理キーコードである e.code で判定する
       if ((e.ctrlKey || e.metaKey) && e.altKey && e.code === 'KeyN') {
         e.preventDefault();
-        goToCreate();
+        goToMemoCreate();
       }
     };
 
@@ -40,7 +40,7 @@ export const DesktopLayout = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [goToCreate]);
+  }, [goToMemoCreate]);
 
   const renderMainContent = () => {
     // objectとviewの組み合わせで画面を切り替え
@@ -92,7 +92,7 @@ export const DesktopLayout = () => {
 
   return (
     <div className="h-screen flex flex-col bg-white dark:bg-gray-900">
-      <Header onCreateClick={goToCreate} />
+      <Header onMemoCreateClick={goToMemoCreate} />
       
       <main className="flex-1 flex overflow-hidden">
         {/* 左サイドバー - メモ一覧 (memoオブジェクト時のみ表示) */}

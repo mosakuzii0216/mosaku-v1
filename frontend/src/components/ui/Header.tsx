@@ -4,10 +4,10 @@ import { Link } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
 
 interface HeaderProps {
-  onCreateClick: () => void;
+  onMemoCreateClick: () => void;
 }
 
-export const Header = ({ onCreateClick }: HeaderProps) => {
+export const Header = ({ onMemoCreateClick }: HeaderProps) => {
   const { currentView, goToList, goToTags } = useMemoStore();
   const { user, logout } = useAuth();
   
@@ -71,7 +71,7 @@ export const Header = ({ onCreateClick }: HeaderProps) => {
           ノートブック作成
         </button>
         <button
-          onClick={onCreateClick}
+          onClick={onMemoCreateClick}
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
         >
           + 新規作成
