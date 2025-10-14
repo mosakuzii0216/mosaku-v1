@@ -22,7 +22,7 @@ const EmptyMemoView = () => {
 };
 
 export const DesktopLayout = () => {
-  const { currentObject, currentView, selectedMemo, goToMemoCreate } = useMemoStore();
+  const { currentObject, currentView, selectedMemo, goToMemoCreate, goToNotebookCreate } = useMemoStore();
   useAppInit(); // アプリ初期化（タグロード等）
 
   // ショートカットキーのハンドリング
@@ -71,6 +71,7 @@ export const DesktopLayout = () => {
 
       case 'notebook':
         // TODO: ノートブック管理画面を実装
+        console.log(currentView, currentObject);
         return (
           <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
             ノートブック管理（未実装）
@@ -92,7 +93,7 @@ export const DesktopLayout = () => {
 
   return (
     <div className="h-screen flex flex-col bg-white dark:bg-gray-900">
-      <Header onMemoCreateClick={goToMemoCreate} />
+      <Header onMemoCreateClick={goToMemoCreate} onNotebookCreateClick={goToNotebookCreate} />
       
       <main className="flex-1 flex overflow-hidden">
         {/* 左サイドバー - メモ一覧 (memoオブジェクト時のみ表示) */}

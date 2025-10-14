@@ -5,12 +5,13 @@ import { ThemeToggle } from './ThemeToggle';
 
 interface HeaderProps {
   onMemoCreateClick: () => void;
+  onNotebookCreateClick: () => void;
 }
 
-export const Header = ({ onMemoCreateClick }: HeaderProps) => {
-  const { currentView, goToList, goToTags } = useMemoStore();
+export const Header = ({ onMemoCreateClick, onNotebookCreateClick }: HeaderProps) => {
+  const { currentView, currentObject, goToList, goToTags } = useMemoStore();
   const { user, logout } = useAuth();
-  
+  console.log(currentView, currentObject)
   return (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
       <div className="flex items-center">
@@ -65,7 +66,7 @@ export const Header = ({ onMemoCreateClick }: HeaderProps) => {
           </Link>
         )}
         <button
-          onClick={() => {console.log('notebook create button clicked')}}
+          onClick={onNotebookCreateClick}
           className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
         >
           ノートブック作成

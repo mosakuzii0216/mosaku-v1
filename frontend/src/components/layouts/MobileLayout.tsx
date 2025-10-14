@@ -8,7 +8,7 @@ import { MemoEditor } from '../memo/MemoEditor';
 import { TagManager } from '../tag/TagManager';
 
 export const MobileLayout = () => {
-  const { currentView, selectedMemo, goToMemoCreate } = useMemoStore();
+  const { currentView, selectedMemo, goToMemoCreate, goToNotebookCreate } = useMemoStore();
   useAppInit(); // アプリ初期化（タグロード等）
 
   // ショートカットキーのハンドリング
@@ -70,7 +70,7 @@ export const MobileLayout = () => {
 
   return (
     <div className="h-screen flex flex-col bg-white dark:bg-gray-900">
-      <Header onMemoCreateClick={goToMemoCreate} />
+      <Header onMemoCreateClick={goToMemoCreate} onNotebookCreateClick={goToNotebookCreate} />
       <main className="flex-1 overflow-hidden">
         {renderContent()}
       </main>
