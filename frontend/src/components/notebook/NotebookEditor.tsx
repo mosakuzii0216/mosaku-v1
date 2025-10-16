@@ -1,12 +1,15 @@
-import { RichTextEditor } from '../editor/RichTextEditor';
+import { useState } from 'react';
 import { useMemoStore } from '../../stores/useMemoStore';
+import { TagSelector } from '../tag/TagSelector';
+import { RichTextEditor } from '../editor/RichTextEditor';
 
 interface NotebookEditorProps {
 	isCreate?: boolean;
 }
 
 export const NotebookEditor = ({ isCreate = false }: NotebookEditorProps) => {
-	const { goToList } = useMemoStore();
+	const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+	const [content, setContent] = useState<string>('');
 
 	return (
 		<div className="flex flex-col h-full">
@@ -43,6 +46,23 @@ export const NotebookEditor = ({ isCreate = false }: NotebookEditorProps) => {
 						</select>
 					</div>
 					{/* TODO:テーマ選択UI */}
+					{/* タグ選択UI */}
+					<div className="mb-4">
+						<label className="block text-sm font-medium mb-2 dark:text-white">タグ</label>
+						<TagSelector
+							selectedTagIds={selectedTagIds}
+							onTagsChange={setSelectedTagIds}
+							className="w-full"
+						/>
+					</div>
+
+					{/* コンテンツ入力エリア TODO:テーマ反映、placeholderを定義しても現れない */}
+					{/*.ノートブックの内容をいきなりメモみたいに書けるようにして良いのか？→良い。どういう雰囲気なのか書きながらユーザが感じ取れるから */}
+					<div className="relative flex-1 flex flex-col">
+						<div className="flex-1">
+							<RichTextEditor content={content} onChange={setContent} className="h-full" />
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
