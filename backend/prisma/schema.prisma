@@ -70,6 +70,7 @@ model Memo {
 model Notebook {
   id            String    @id @default(cuid())
   notebook_name String    @db.VarChar(100)
+  content       String    @db.Text
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
