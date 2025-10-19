@@ -6,6 +6,7 @@ import { InvitationModule } from './invitation/invitation.module';
 import { TagModule } from './tag/tag.module';
 import { ThemeModule } from './theme/theme.module';
 import { ConfigModule } from './config/config.module';
+import { NotebookModule } from './notebook/notebook.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ConfigModule } from './config/config.module';
     InvitationModule,
     TagModule,
     ThemeModule,
+    NotebookModule,
   ],
 })
 export class AppModule {}
