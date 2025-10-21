@@ -4,9 +4,9 @@ export class CreateNotebookDto {
 	@IsString()
 	@IsOptional()
 	@MaxLength(100)
-	name?: string | null;
+	name?: string;
 
 	@IsString()
 	@IsOptional()
-	themeId?: string | null;
+	themeId?: string;
 }

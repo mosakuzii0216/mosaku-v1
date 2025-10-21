@@ -4,9 +4,9 @@ export class UpdateNotebookDto {
 	@IsString()
 	@IsOptional()
 	@MaxLength(100)
-	name?: string | null;
+	name?: string;
 
 	@IsString()
 	@IsOptional()
-	themeId?: string | null;
+	themeId?: string;
 }

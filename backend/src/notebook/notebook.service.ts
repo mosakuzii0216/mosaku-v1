@@ -37,9 +37,9 @@ export class NotebookService {
 	// 作成(DTO.name -> noteobok_name にマッピング注意)
 	create(dto: CreateNotebookDto, userId: string) {
 		const data: Prisma.NotebookCreateInput = {
-			notebook_name: dto.name ?? null, // DBのカラム名
-			userId,
-			themeId: dto.themeId ?? null, // 任意項目は存在するときだけ渡す
+			notebook_name: dto.name, // DBのカラム名
+			user: { connect: { id: userId } },
+			theme: { connect: { id: dto.themeId } }, // 任意項目は存在するときだけ渡す
 		};
 		return this.prisma.notebook.create({
 			data,
