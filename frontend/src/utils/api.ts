@@ -354,12 +354,12 @@ class ApiClient {
 		return res.map((r) => this.normalizeNotebook(r));
 	}
 
-	async getNotebook(id: string): Promise {
+	async getNotebook(id: string): Promise<Notebook> {
 		const res = await this.request<any>(`/notebooks/${id}`);
 		return this.normalizeNotebook(res);
 	}
 
-	async createNotebook(data: CreateNbDto): Promise {
+	async createNotebook(data: CreateNotebookDto): Promise<Notebook> {
 		const res = await this.request<any>('/notebooks', {
 			method: 'POST',
 			body: JSON.stringify(data),
@@ -367,7 +367,7 @@ class ApiClient {
 		return this.normalizeNotebook(res);
 	}
 
-	async updateNotebook(id: string, data: UpdateNbDto): Promise {
+	async updateNotebook(id: string, data: UpdateNotebookDto): Promise<Notebook> {
 		const res = await this.request<any>(`/notebooks/${id}`, {
 			method: 'PATCH',
 			body: JSON.stringify(data),
@@ -375,7 +375,7 @@ class ApiClient {
 		return this.normalizeNotebook(res);
 	}
 
-	async deleteNotebook(id: string): Promise {
+	async deleteNotebook(id: string): Promise<void> {
 		await this.request(`/notebooks/${id}`, { method: 'DELETE' });
 	}
 }
