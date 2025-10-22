@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { AuthorizationService } from 'src/common/services/authorization.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateNotebookDto } from './dto/create-notebook.dto/create-notebook.dto';
-import type { Prisma } from '@prisma/client';
 import { UpdateNotebookDto } from './dto/update-notebook.dto/update-notebook.dto';
+import type { Prisma } from '@prisma/client';
 
 @Injectable()
 export class NotebookService {
@@ -39,7 +39,7 @@ export class NotebookService {
 		const data: Prisma.NotebookCreateInput = {
 			notebook_name: dto.name, // DBのカラム名
 			user: { connect: { id: userId } },
-			theme: { connect: { id: dto.themeId } }, // 任意項目は存在するときだけ渡す
+			...(dto.themeId ? { theme: { connect: { id: dto.themeId } } } : {}),
 		};
 		return this.prisma.notebook.create({
 			data,
@@ -57,7 +57,9 @@ export class NotebookService {
 
 		const data: Prisma.NotebookUpdateInput = {
 			...(dto.name ? { notebook_name: dto.name } : {}),
-			...(dto.themeId !== undefined ? { themeId: dto.themeId } : {}),
+			...(dto.themeId
+				? { theme: { connect: { id: dto.themeId } } }
+				: { theme: { disconnect: true } }),
 		};
 		return this.prisma.notebook.update({
 			where: { id },
