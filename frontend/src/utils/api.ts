@@ -1,345 +1,383 @@
 import type { Memo, CreateMemoDto, UpdateMemoDto } from '../types/memo';
 import type { Tag, CreateTagDto, UpdateTagDto, AssignTagsDto, MemoTag } from '../types/tag';
 import type { Theme, ThemeSearchParams, CreateThemeData, UpdateThemeData } from '../types/theme';
+import type { Notebook, CreateNotebookDto, UpdateNotebookDto } from '../types/notebook';
 import { AuthTokenManager } from './auth';
 
 const API_BASE_URL = 'http://localhost/api';
 
 class ApiClient {
-  private async getAuthHeaders(): Promise<Record<string, string>> {
-    const token = AuthTokenManager.getAccessToken();
-    
-    if (!token || AuthTokenManager.isTokenExpired(token)) {
-      throw new Error('認証が必要です');
-    }
-    
-    return {
-      'Authorization': `Bearer ${token}`,
-    };
-  }
+	private async getAuthHeaders(): Promise<Record<string, string>> {
+		const token = AuthTokenManager.getAccessToken();
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`;
-    const authHeaders = await this.getAuthHeaders();
-    
-    const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeaders,
-        ...options.headers,
-      },
-      ...options,
-    };
+		if (!token || AuthTokenManager.isTokenExpired(token)) {
+			throw new Error('認証が必要です');
+		}
 
-    let response: Response;
-    try {
-      response = await fetch(url, config);
-    } catch (networkError) {
-      const message = networkError instanceof Error ? networkError.message : String(networkError);
-      throw new Error(`ネットワークエラー: ${message}`);
-    }
+		return {
+			Authorization: `Bearer ${token}`,
+		};
+	}
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('認証エラー: ログインし直してください');
-      }
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+	private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+		const url = `${API_BASE_URL}${endpoint}`;
+		const authHeaders = await this.getAuthHeaders();
 
-    return response.json();
-  }
+		const config: RequestInit = {
+			headers: {
+				'Content-Type': 'application/json',
+				...authHeaders,
+				...options.headers,
+			},
+			...options,
+		};
 
-  // 認証不要のリクエスト（テーマ用）
-  private async requestPublic<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`;
-    
-    const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    };
+		let response: Response;
+		try {
+			response = await fetch(url, config);
+		} catch (networkError) {
+			const message = networkError instanceof Error ? networkError.message : String(networkError);
+			throw new Error(`ネットワークエラー: ${message}`);
+		}
 
-    let response: Response;
-    try {
-      response = await fetch(url, config);
-    } catch (networkError) {
-      const message = networkError instanceof Error ? networkError.message : String(networkError);
-      throw new Error(`ネットワークエラー: ${message}`);
-    }
+		if (!response.ok) {
+			if (response.status === 401) {
+				throw new Error('認証エラー: ログインし直してください');
+			}
+			throw new Error(`HTTP error! status: ${response.status}`);
+		}
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+		return response.json();
+	}
 
-    return response.json();
-  }
+	// 認証不要のリクエスト（テーマ用）
+	private async requestPublic<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+		const url = `${API_BASE_URL}${endpoint}`;
 
-  // 認証が可能な場合のみ認証ヘッダーを追加するリクエスト
-  private async requestWithOptionalAuth<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`;
-    
-    // 認証情報を取得（失敗しても続行）
-    let authHeaders: Record<string, string> = {};
-    try {
-      const token = AuthTokenManager.getAccessToken();
-      if (token && !AuthTokenManager.isTokenExpired(token)) {
-        authHeaders = {
-          'Authorization': `Bearer ${token}`,
-        };
-      }
-    } catch {
-      // 認証失敗時は無認証でリクエスト
-    }
-    
-    const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeaders,
-        ...options.headers,
-      },
-      ...options,
-    };
+		const config: RequestInit = {
+			headers: {
+				'Content-Type': 'application/json',
+				...options.headers,
+			},
+			...options,
+		};
 
-    let response: Response;
-    try {
-      response = await fetch(url, config);
-    } catch (networkError) {
-      const message = networkError instanceof Error ? networkError.message : String(networkError);
-      throw new Error(`ネットワークエラー: ${message}`);
-    }
+		let response: Response;
+		try {
+			response = await fetch(url, config);
+		} catch (networkError) {
+			const message = networkError instanceof Error ? networkError.message : String(networkError);
+			throw new Error(`ネットワークエラー: ${message}`);
+		}
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+		if (!response.ok) {
+			throw new Error(`HTTP error! status: ${response.status}`);
+		}
 
-    return response.json();
-  }
+		return response.json();
+	}
 
-  // メモ一覧取得
-  async getMemos(tagIds?: string[]): Promise<Memo[]> {
-    const params = new URLSearchParams();
-    if (tagIds && tagIds.length > 0) {
-      tagIds.forEach(tagId => params.append('tagIds', tagId));
-    }
-    const queryString = params.toString();
-    return this.request<Memo[]>(`/memos${queryString ? `?${queryString}` : ''}`);
-  }
+	// 認証が可能な場合のみ認証ヘッダーを追加するリクエスト
+	private async requestWithOptionalAuth<T>(
+		endpoint: string,
+		options: RequestInit = {},
+	): Promise<T> {
+		const url = `${API_BASE_URL}${endpoint}`;
 
-  // 特定メモ取得
-  async getMemo(id: string): Promise<Memo> {
-    return this.request<Memo>(`/memos/${id}`);
-  }
+		// 認証情報を取得（失敗しても続行）
+		let authHeaders: Record<string, string> = {};
+		try {
+			const token = AuthTokenManager.getAccessToken();
+			if (token && !AuthTokenManager.isTokenExpired(token)) {
+				authHeaders = {
+					Authorization: `Bearer ${token}`,
+				};
+			}
+		} catch {
+			// 認証失敗時は無認証でリクエスト
+		}
 
-  // メモ作成
-  async createMemo(data: CreateMemoDto): Promise<Memo> {
-    return this.request<Memo>('/memos', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
+		const config: RequestInit = {
+			headers: {
+				'Content-Type': 'application/json',
+				...authHeaders,
+				...options.headers,
+			},
+			...options,
+		};
 
-  // メモ更新
-  async updateMemo(id: string, data: UpdateMemoDto): Promise<Memo> {
-    return this.request<Memo>(`/memos/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    });
-  }
+		let response: Response;
+		try {
+			response = await fetch(url, config);
+		} catch (networkError) {
+			const message = networkError instanceof Error ? networkError.message : String(networkError);
+			throw new Error(`ネットワークエラー: ${message}`);
+		}
 
-  // メモ削除
-  async deleteMemo(id: string): Promise<void> {
-    await this.request(`/memos/${id}`, {
-      method: 'DELETE',
-    });
-  }
+		if (!response.ok) {
+			throw new Error(`HTTP error! status: ${response.status}`);
+		}
 
-  // メモ検索
-  async searchMemos(query: string, tagIds?: string[]): Promise<Memo[]> {
-    const params = new URLSearchParams();
-    if (query) {
-      params.append('q', query);
-    }
-    if (tagIds && tagIds.length > 0) {
-      tagIds.forEach(tagId => params.append('tagIds', tagId));
-    }
-    return this.request<Memo[]>(`/memos/search?${params.toString()}`);
-  }
+		return response.json();
+	}
 
-  // タグ一覧取得
-  async getTags(): Promise<Tag[]> {
-    return this.request<Tag[]>('/tags');
-  }
+	// メモ一覧取得
+	async getMemos(tagIds?: string[]): Promise<Memo[]> {
+		const params = new URLSearchParams();
+		if (tagIds && tagIds.length > 0) {
+			tagIds.forEach((tagId) => params.append('tagIds', tagId));
+		}
+		const queryString = params.toString();
+		return this.request<Memo[]>(`/memos${queryString ? `?${queryString}` : ''}`);
+	}
 
-  // 特定タグ取得
-  async getTag(id: string): Promise<Tag> {
-    return this.request<Tag>(`/tags/${id}`);
-  }
+	// 特定メモ取得
+	async getMemo(id: string): Promise<Memo> {
+		return this.request<Memo>(`/memos/${id}`);
+	}
 
-  // タグ作成
-  async createTag(data: CreateTagDto): Promise<Tag> {
-    return this.request<Tag>('/tags', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
+	// メモ作成
+	async createMemo(data: CreateMemoDto): Promise<Memo> {
+		return this.request<Memo>('/memos', {
+			method: 'POST',
+			body: JSON.stringify(data),
+		});
+	}
 
-  // タグ更新
-  async updateTag(id: string, data: UpdateTagDto): Promise<Tag> {
-    return this.request<Tag>(`/tags/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    });
-  }
+	// メモ更新
+	async updateMemo(id: string, data: UpdateMemoDto): Promise<Memo> {
+		return this.request<Memo>(`/memos/${id}`, {
+			method: 'PATCH',
+			body: JSON.stringify(data),
+		});
+	}
 
-  // タグ削除
-  async deleteTag(id: string): Promise<void> {
-    await this.request(`/tags/${id}`, {
-      method: 'DELETE',
-    });
-  }
+	// メモ削除
+	async deleteMemo(id: string): Promise<void> {
+		await this.request(`/memos/${id}`, {
+			method: 'DELETE',
+		});
+	}
 
-  // タグ検索
-  async searchTags(query: string): Promise<Tag[]> {
-    const params = new URLSearchParams();
-    if (query) {
-      params.append('q', query);
-    }
-    return this.request<Tag[]>(`/tags/search?${params.toString()}`);
-  }
+	// メモ検索
+	async searchMemos(query: string, tagIds?: string[]): Promise<Memo[]> {
+		const params = new URLSearchParams();
+		if (query) {
+			params.append('q', query);
+		}
+		if (tagIds && tagIds.length > 0) {
+			tagIds.forEach((tagId) => params.append('tagIds', tagId));
+		}
+		return this.request<Memo[]>(`/memos/search?${params.toString()}`);
+	}
 
-  // メモにタグを割り当て
-  async assignTagsToMemo(memoId: string, data: AssignTagsDto): Promise<Memo> {
-    return this.request<Memo>(`/tags/memo/${memoId}/assign`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
+	// タグ一覧取得
+	async getTags(): Promise<Tag[]> {
+		return this.request<Tag[]>('/tags');
+	}
 
-  // メモのタグ取得
-  async getMemoTags(memoId: string): Promise<MemoTag[]> {
-    return this.request<MemoTag[]>(`/tags/memo/${memoId}`);
-  }
+	// 特定タグ取得
+	async getTag(id: string): Promise<Tag> {
+		return this.request<Tag>(`/tags/${id}`);
+	}
 
-  // 招待コード検証（認証不要）
-  async verifyInvitationCode(code: string): Promise<any> {
-    const url = `${API_BASE_URL}/invitation/verify`;
-    
-    const config: RequestInit = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ code }),
-    };
+	// タグ作成
+	async createTag(data: CreateTagDto): Promise<Tag> {
+		return this.request<Tag>('/tags', {
+			method: 'POST',
+			body: JSON.stringify(data),
+		});
+	}
 
-    const response = await fetch(url, config);
+	// タグ更新
+	async updateTag(id: string, data: UpdateTagDto): Promise<Tag> {
+		return this.request<Tag>(`/tags/${id}`, {
+			method: 'PATCH',
+			body: JSON.stringify(data),
+		});
+	}
 
-    if (!response.ok) {
-      let errorMessage = 'Invalid invitation code';
-      try {
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          const error = await response.json();
-          errorMessage = error.message || errorMessage;
-        } else {
-          errorMessage = `API Error: ${response.status} ${response.statusText}`;
-        }
-      } catch (parseError) {
-        errorMessage = `Network Error: ${response.status} ${response.statusText}`;
-      }
-      throw new Error(errorMessage);
-    }
+	// タグ削除
+	async deleteTag(id: string): Promise<void> {
+		await this.request(`/tags/${id}`, {
+			method: 'DELETE',
+		});
+	}
 
-    return response.json();
-  }
+	// タグ検索
+	async searchTags(query: string): Promise<Tag[]> {
+		const params = new URLSearchParams();
+		if (query) {
+			params.append('q', query);
+		}
+		return this.request<Tag[]>(`/tags/search?${params.toString()}`);
+	}
 
-  // ========== テーマ関連API ==========
+	// メモにタグを割り当て
+	async assignTagsToMemo(memoId: string, data: AssignTagsDto): Promise<Memo> {
+		return this.request<Memo>(`/tags/memo/${memoId}/assign`, {
+			method: 'POST',
+			body: JSON.stringify(data),
+		});
+	}
 
-  // テーマ一覧取得（検索・フィルタリング対応）
-  async getThemes(params?: ThemeSearchParams): Promise<Theme[]> {
-    const searchParams = new URLSearchParams();
-    if (params?.query) searchParams.append('query', params.query);
-    if (params?.category) searchParams.append('category', params.category);
-    if (params?.isSystem !== undefined) searchParams.append('isSystem', params.isSystem.toString());
-    if (params?.isPublic !== undefined) searchParams.append('isPublic', params.isPublic.toString());
-    if (params?.favoritesOnly !== undefined) searchParams.append('favoritesOnly', params.favoritesOnly.toString());
-    
-    const queryString = searchParams.toString();
-    return this.requestWithOptionalAuth<Theme[]>(`/theme${queryString ? `?${queryString}` : ''}`);
-  }
+	// メモのタグ取得
+	async getMemoTags(memoId: string): Promise<MemoTag[]> {
+		return this.request<MemoTag[]>(`/tags/memo/${memoId}`);
+	}
 
-  // システムテーマ一覧取得（認証不要）
-  async getSystemThemes(): Promise<Theme[]> {
-    return this.requestPublic<Theme[]>('/theme/system/list');
-  }
+	// 招待コード検証（認証不要）
+	async verifyInvitationCode(code: string): Promise<any> {
+		const url = `${API_BASE_URL}/invitation/verify`;
 
-  // 公開テーマ一覧取得（認証不要）
-  async getPublicThemes(): Promise<Theme[]> {
-    return this.requestWithOptionalAuth<Theme[]>('/theme/public/list');
-  }
+		const config: RequestInit = {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({ code }),
+		};
 
-  // カテゴリ別テーマ一覧取得
-  async getThemesByCategory(category: string): Promise<Theme[]> {
-    return this.requestWithOptionalAuth<Theme[]>(`/theme/category/${category}`);
-  }
+		const response = await fetch(url, config);
 
-  // 特定テーマ取得
-  async getTheme(id: string): Promise<Theme> {
-    return this.requestWithOptionalAuth<Theme>(`/theme/${id}`);
-  }
+		if (!response.ok) {
+			let errorMessage = 'Invalid invitation code';
+			try {
+				const contentType = response.headers.get('content-type');
+				if (contentType && contentType.includes('application/json')) {
+					const error = await response.json();
+					errorMessage = error.message || errorMessage;
+				} else {
+					errorMessage = `API Error: ${response.status} ${response.statusText}`;
+				}
+			} catch (parseError) {
+				errorMessage = `Network Error: ${response.status} ${response.statusText}`;
+			}
+			throw new Error(errorMessage);
+		}
 
-  // テーマ作成（管理者のみ）
-  async createTheme(data: CreateThemeData): Promise<Theme> {
-    return this.request<Theme>('/theme', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
+		return response.json();
+	}
 
-  // テーマ更新（管理者のみ）
-  async updateTheme(id: string, data: UpdateThemeData): Promise<Theme> {
-    return this.request<Theme>(`/theme/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
+	// ========== テーマ関連API ==========
 
-  // テーマ削除（管理者のみ）
-  async deleteTheme(id: string): Promise<void> {
-    await this.request(`/theme/${id}`, {
-      method: 'DELETE',
-    });
-  }
+	// テーマ一覧取得（検索・フィルタリング対応）
+	async getThemes(params?: ThemeSearchParams): Promise<Theme[]> {
+		const searchParams = new URLSearchParams();
+		if (params?.query) searchParams.append('query', params.query);
+		if (params?.category) searchParams.append('category', params.category);
+		if (params?.isSystem !== undefined) searchParams.append('isSystem', params.isSystem.toString());
+		if (params?.isPublic !== undefined) searchParams.append('isPublic', params.isPublic.toString());
+		if (params?.favoritesOnly !== undefined)
+			searchParams.append('favoritesOnly', params.favoritesOnly.toString());
 
-  // テーマをお気に入りに追加
-  async addToFavoriteThemes(themeId: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>(`/theme/${themeId}/favorite`, {
-      method: 'POST',
-    });
-  }
+		const queryString = searchParams.toString();
+		return this.requestWithOptionalAuth<Theme[]>(`/theme${queryString ? `?${queryString}` : ''}`);
+	}
 
-  // テーマをお気に入りから削除
-  async removeFromFavoriteThemes(themeId: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>(`/theme/${themeId}/favorite`, {
-      method: 'DELETE',
-    });
-  }
+	// システムテーマ一覧取得（認証不要）
+	async getSystemThemes(): Promise<Theme[]> {
+		return this.requestPublic<Theme[]>('/theme/system/list');
+	}
 
-  // ユーザーのお気に入りテーマ一覧取得
-  async getFavoriteThemes(): Promise<Theme[]> {
-    return this.request<Theme[]>('/theme/favorites/me');
-  }
+	// 公開テーマ一覧取得（認証不要）
+	async getPublicThemes(): Promise<Theme[]> {
+		return this.requestWithOptionalAuth<Theme[]>('/theme/public/list');
+	}
+
+	// カテゴリ別テーマ一覧取得
+	async getThemesByCategory(category: string): Promise<Theme[]> {
+		return this.requestWithOptionalAuth<Theme[]>(`/theme/category/${category}`);
+	}
+
+	// 特定テーマ取得
+	async getTheme(id: string): Promise<Theme> {
+		return this.requestWithOptionalAuth<Theme>(`/theme/${id}`);
+	}
+
+	// テーマ作成（管理者のみ）
+	async createTheme(data: CreateThemeData): Promise<Theme> {
+		return this.request<Theme>('/theme', {
+			method: 'POST',
+			body: JSON.stringify(data),
+		});
+	}
+
+	// テーマ更新（管理者のみ）
+	async updateTheme(id: string, data: UpdateThemeData): Promise<Theme> {
+		return this.request<Theme>(`/theme/${id}`, {
+			method: 'PUT',
+			body: JSON.stringify(data),
+		});
+	}
+
+	// テーマ削除（管理者のみ）
+	async deleteTheme(id: string): Promise<void> {
+		await this.request(`/theme/${id}`, {
+			method: 'DELETE',
+		});
+	}
+
+	// テーマをお気に入りに追加
+	async addToFavoriteThemes(themeId: string): Promise<{ message: string }> {
+		return this.request<{ message: string }>(`/theme/${themeId}/favorite`, {
+			method: 'POST',
+		});
+	}
+
+	// テーマをお気に入りから削除
+	async removeFromFavoriteThemes(themeId: string): Promise<{ message: string }> {
+		return this.request<{ message: string }>(`/theme/${themeId}/favorite`, {
+			method: 'DELETE',
+		});
+	}
+
+	// ユーザーのお気に入りテーマ一覧取得
+	async getFavoriteThemes(): Promise<Theme[]> {
+		return this.request<Theme[]>('/theme/favorites/me');
+	}
+
+	private normalizeNotebook(raw: any): Notebook {
+		return {
+			id: raw.id,
+			name: raw.notebook_name ?? null, // ← ここで正規化
+			content: raw.content ?? null,
+			createdAt: raw.createdAt,
+			updatedAt: raw.updatedAt,
+			themeId: raw.themeId ?? null,
+			theme: raw.theme ?? null,
+		};
+	}
+
+	async getNotebooks(): Promise<Notebook[]> {
+		const res = await this.request<any[]>('/notebooks');
+		return res.map((r) => this.normalizeNotebook(r));
+	}
+
+	async getNotebook(id: string): Promise {
+		const res = await this.request<any>(`/notebooks/${id}`);
+		return this.normalizeNotebook(res);
+	}
+
+	async createNotebook(data: CreateNbDto): Promise {
+		const res = await this.request<any>('/notebooks', {
+			method: 'POST',
+			body: JSON.stringify(data),
+		});
+		return this.normalizeNotebook(res);
+	}
+
+	async updateNotebook(id: string, data: UpdateNbDto): Promise {
+		const res = await this.request<any>(`/notebooks/${id}`, {
+			method: 'PATCH',
+			body: JSON.stringify(data),
+		});
+		return this.normalizeNotebook(res);
+	}
+
+	async deleteNotebook(id: string): Promise {
+		await this.request(`/notebooks/${id}`, { method: 'DELETE' });
+	}
 }
 
 export const apiClient = new ApiClient();
