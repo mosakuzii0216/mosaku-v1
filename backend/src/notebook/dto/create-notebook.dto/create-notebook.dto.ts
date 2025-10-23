@@ -9,4 +9,8 @@ export class CreateNotebookDto {
 	@IsString()
 	@IsOptional()
 	themeId?: string | null;
+
+	@IsString()
+	@IsOptional()
+	content?: string | null;
 }

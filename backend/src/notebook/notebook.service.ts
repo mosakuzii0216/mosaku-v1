@@ -40,6 +40,7 @@ export class NotebookService {
 			notebook_name: dto.name, // DBのカラム名
 			user: { connect: { id: userId } },
 			...(dto.themeId ? { theme: { connect: { id: dto.themeId } } } : {}),
+			...(dto.content !== undefined ? { content: dto.content } : {}),
 		};
 		return this.prisma.notebook.create({
 			data,
@@ -60,6 +61,7 @@ export class NotebookService {
 			...(dto.themeId
 				? { theme: { connect: { id: dto.themeId } } }
 				: { theme: { disconnect: true } }),
+			...(dto.content !== undefined ? { content: dto.content } : {}),
 		};
 		return this.prisma.notebook.update({
 			where: { id },

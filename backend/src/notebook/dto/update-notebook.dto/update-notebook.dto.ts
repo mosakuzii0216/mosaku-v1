@@ -9,4 +9,8 @@ export class UpdateNotebookDto {
 	@IsString()
 	@IsOptional()
 	themeId?: string | null;
+
+	@IsString()
+	@IsOptional()
+	content?: string | null;
 }
