@@ -15,7 +15,7 @@ import { CreateNotebookDto } from './dto/create-notebook.dto/create-notebook.dto
 import { AuthenticatedRequest } from 'src/auth/types';
 import { UpdateNotebookDto } from './dto/update-notebook.dto/update-notebook.dto';
 
-@Controller('notebook')
+@Controller('notebooks')
 @UseGuards(JwtAuthGuard)
 export class NotebookController {
 	constructor(private readonly notebookService: NotebookService) {}
