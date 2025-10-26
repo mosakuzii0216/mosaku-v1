@@ -67,8 +67,8 @@ export const NotebookEditor = ({ isCreate = false }: NotebookEditorProps) => {
 					<div className="mb-4">
 						<select className="border-none outline-none dark:text-white bg-transparent w-full">
 							<option value="default">デフォルト</option>
-							<option value="dark">ダーク</option>
-							<option value="light">ライト</option>
+							{/* <option value="dark">ダーク</option>
+							<option value="light">ライト</option> */}
 						</select>
 					</div>
 					{/* タグ選択UI */}
