@@ -1,1 +1,27 @@
+/* ao: 見出しとアクセントだけ最小適用 */
 
+:root {
+  --theme-text-color: #0F2A43;   /* 任意: 既存参照の互換用 */
+  --theme-heading-color: #1C5DB6;
+  --theme-accent-color: #2F80ED;
+  --theme-bg-color: #F5FAFF;     /* 背景: ほんのり青みのある白 */
+}
+
+/* 背景色（わかりやすさのため最小適用） */
+body { background-color: var(--theme-bg-color) !important; }
+
+/* 見出し（タイトル含む）: Tailwindのtext-*指定より優先するため!important */
+h1, h2, h3, h4, h5, h6,
+.memo-title {
+  color: var(--theme-heading-color) !important;
+}
+
+/* アクセント（リンク/主要ボタン） */
+/* 必要になったらアクセントも有効化（現状は最小変更でコメントアウト） */
+/*
+.link-primary,
+.button-primary {
+  color: var(--theme-accent-color) !important;
+  border-color: var(--theme-accent-color) !important;
+}
+*/
