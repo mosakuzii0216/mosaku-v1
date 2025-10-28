@@ -5,9 +5,9 @@ import { ThemeController } from './theme.controller';
 import { ThemeService } from './theme.service';
 
 @Module({
-  imports: [PrismaModule, CommonModule],
-  controllers: [ThemeController],
-  providers: [ThemeService],
-  exports: [ThemeService],
+	imports: [PrismaModule, CommonModule],
+	controllers: [ThemeController],
+	providers: [ThemeService],
+	exports: [ThemeService],
 })
 export class ThemeModule {}

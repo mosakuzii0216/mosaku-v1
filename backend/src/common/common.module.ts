@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuthorizationService } from './services/authorization.service';
 
 @Module({
-  providers: [AuthorizationService],
-  exports: [AuthorizationService],
+	providers: [AuthorizationService],
+	exports: [AuthorizationService],
 })
 export class CommonModule {}

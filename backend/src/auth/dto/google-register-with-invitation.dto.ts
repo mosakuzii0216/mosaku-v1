@@ -1,11 +1,10 @@
-import { IsNotEmpty, IsObject, IsString } from 'class-validator'
+import { IsNotEmpty, IsObject, IsString } from 'class-validator';
 
 export class GoogleRegisterWithInvitationDto {
-  @IsObject()
-  googleUser!: Record<string, unknown>
+	@IsObject()
+	googleUser!: Record<string, unknown>;
 
-  @IsString()
-  @IsNotEmpty()
-  invitationCode!: string
+	@IsString()
+	@IsNotEmpty()
+	invitationCode!: string;
 }
-

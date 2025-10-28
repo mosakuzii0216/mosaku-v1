@@ -16,36 +16,30 @@ import { ConfigService } from '../config/config.service';
 import { InvitationService } from '../invitation/invitation.service';
 
 @Module({
-  imports: [
-    PrismaModule,
-    PassportModule,
-    JwtModule.registerAsync({
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.jwtSecret,
-        signOptions: { expiresIn: '24h' },
-      }),
-    }),
-  ],
-  controllers: [AuthController],
-  providers: [
-    AuthService,
-    JwtStrategy,
-    GoogleStrategy,
-    GitHubStrategy,
-    XStrategy,
-    JwtAuthGuard,
-    GoogleAuthGuard,
-    GitHubAuthGuard,
-    XAuthGuard,
-    InvitationService,
-  ],
-  exports: [
-    AuthService,
-    JwtAuthGuard,
-    GoogleAuthGuard,
-    GitHubAuthGuard,
-    XAuthGuard,
-  ],
+	imports: [
+		PrismaModule,
+		PassportModule,
+		JwtModule.registerAsync({
+			inject: [ConfigService],
+			useFactory: (configService: ConfigService) => ({
+				secret: configService.jwtSecret,
+				signOptions: { expiresIn: '24h' },
+			}),
+		}),
+	],
+	controllers: [AuthController],
+	providers: [
+		AuthService,
+		JwtStrategy,
+		GoogleStrategy,
+		GitHubStrategy,
+		XStrategy,
+		JwtAuthGuard,
+		GoogleAuthGuard,
+		GitHubAuthGuard,
+		XAuthGuard,
+		InvitationService,
+	],
+	exports: [AuthService, JwtAuthGuard, GoogleAuthGuard, GitHubAuthGuard, XAuthGuard],
 })
 export class AuthModule {}

@@ -1,18 +1,17 @@
-import type { Request as ExpressRequest } from 'express'
+import type { Request as ExpressRequest } from 'express';
 
-export type UserRole = 'FREE' | 'PREMIUM' | 'ADMIN'
+export type UserRole = 'FREE' | 'PREMIUM' | 'ADMIN';
 
 export interface JwtUser {
-  id: string
-  email: string
-  role: UserRole
+	id: string;
+	email: string;
+	role: UserRole;
 }
 
 export interface AuthenticatedRequest extends ExpressRequest {
-  user: JwtUser
+	user: JwtUser;
 }
 
 export interface MaybeAuthRequest extends ExpressRequest {
-  user?: JwtUser
+	user?: JwtUser;
 }
-

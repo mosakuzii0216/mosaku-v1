@@ -9,15 +9,15 @@ import { ConfigModule } from './config/config.module';
 import { NotebookModule } from './notebook/notebook.module';
 
 @Module({
-  imports: [
-    ConfigModule,
-    MemoModule,
-    AuthModule,
-    PrismaModule,
-    InvitationModule,
-    TagModule,
-    ThemeModule,
-    NotebookModule,
-  ],
+	imports: [
+		ConfigModule,
+		MemoModule,
+		AuthModule,
+		PrismaModule,
+		InvitationModule,
+		TagModule,
+		ThemeModule,
+		NotebookModule,
+	],
 })
 export class AppModule {}

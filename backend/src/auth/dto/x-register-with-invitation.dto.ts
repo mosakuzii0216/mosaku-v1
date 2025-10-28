@@ -1,11 +1,10 @@
-import { IsNotEmpty, IsObject, IsString } from 'class-validator'
+import { IsNotEmpty, IsObject, IsString } from 'class-validator';
 
 export class XRegisterWithInvitationDto {
-  @IsObject()
-  xUser!: Record<string, unknown>
+	@IsObject()
+	xUser!: Record<string, unknown>;
 
-  @IsString()
-  @IsNotEmpty()
-  invitationCode!: string
+	@IsString()
+	@IsNotEmpty()
+	invitationCode!: string;
 }
-

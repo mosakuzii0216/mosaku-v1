@@ -6,8 +6,8 @@ import { AuthModule } from '../auth/auth.module';
 import { CommonModule } from '../common/common.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, CommonModule],
-  controllers: [MemoController],
-  providers: [MemoService],
+	imports: [PrismaModule, AuthModule, CommonModule],
+	controllers: [MemoController],
+	providers: [MemoService],
 })
 export class MemoModule {}
