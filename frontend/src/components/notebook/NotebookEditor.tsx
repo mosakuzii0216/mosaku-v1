@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { TagSelector } from '../tag/TagSelector';
 import { RichTextEditor } from '../editor/RichTextEditor';
 import { useCreateNotebook } from '../../hooks/useNotebookQueries';
+import { useSystemThemes, usePublicThemes } from '../../hooks/useThemeQueries';
 
 interface NotebookEditorProps {
 	isCreate?: boolean;
@@ -14,12 +15,24 @@ export const NotebookEditor = ({ isCreate = false }: NotebookEditorProps) => {
 	const [themeId, setThemeId] = useState<string>('default');
 	const createNotebook = useCreateNotebook();
 
+	// DBからテーマ取得（システム + 公開）
+	const { data: systemThemes = [], isLoading: isLoadingSystem } = useSystemThemes();
+	const { data: publicThemes = [], isLoading: isLoadingPublic } = usePublicThemes();
+	const allThemes = useMemo(() => {
+		const merged = [...systemThemes, ...publicThemes];
+		const map = new Map<string, typeof merged[number]>();
+		for (const t of merged) {
+			if (!map.has(t.id)) map.set(t.id, t);
+		}
+		return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+	}, [systemThemes, publicThemes]);
+
 	const handleSave = () => {
 		createNotebook.mutate(
 			{
-				name: name ?? null,
-				content: content ?? null,
-				themeId: themeId ?? null,
+				name: name?.trim() ? name : null,
+				content: content?.trim() ? content : null,
+				themeId: themeId && themeId !== 'default' ? themeId : null,
 			},
 			{
 				onSuccess: () => {
@@ -62,15 +75,26 @@ export const NotebookEditor = ({ isCreate = false }: NotebookEditorProps) => {
 						/>
 					</div>
 
-					{/* テーマ選択エリア TODO:テーマ選択できるように */}
-					{/* <ThemeSelector>を使って実装したい */}
-					<div className="mb-4">
-						<select className="border-none outline-none dark:text-white bg-transparent w-full">
-							<option value="default">デフォルト</option>
-							{/* <option value="dark">ダーク</option>
-							<option value="light">ライト</option> */}
-						</select>
-					</div>
+				{/* テーマ選択（DBから取得したthemesをセレクト表示） */}
+				<div className="mb-4">
+					<label className="block text-sm font-medium mb-2 dark:text-white">テーマ</label>
+					<select
+						value={themeId}
+						onChange={(e) => setThemeId(e.target.value)}
+						className="border rounded px-3 py-2 dark:text-white bg-transparent w-full"
+					>
+						<option value="default">未選択（デフォルト）</option>
+						{(isLoadingSystem || isLoadingPublic) && (
+							<option disabled>読み込み中...</option>
+						)}
+						{!isLoadingSystem && !isLoadingPublic &&
+							allThemes.map((t) => (
+								<option key={t.id} value={t.id}>
+									{t.name}
+								</option>
+							))}
+					</select>
+				</div>
 					{/* タグ選択UI */}
 					<div className="mb-4">
 						<label className="block text-sm font-medium mb-2 dark:text-white">タグ</label>
