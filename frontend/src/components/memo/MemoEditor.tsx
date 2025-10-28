@@ -4,7 +4,8 @@ import { useCreateMemo, useUpdateMemo } from '../../hooks/useMemoQueries';
 import { useTagQueries } from '../../hooks/useTagQueries';
 import { applyThemeToElement, removeThemeFromElement } from '../../utils/themeUtils';
 import { TagSelector } from '../tag/TagSelector';
-import { ThemeSelector } from '../theme/ThemeSelector';
+import { useSystemThemes, usePublicThemes } from '../../hooks/useThemeQueries';
+import { useMemo } from 'react';
 import { RichTextEditor } from '../editor/RichTextEditor';
 import type { Memo } from '../../types/memo';
 import type { Theme } from '../../types/theme';
@@ -41,7 +42,17 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 				}
 			: null,
 	);
-	const [showThemeSelector, setShowThemeSelector] = useState(false);
+// Theme list from DB (system + public)
+const { data: systemThemes = [], isLoading: isLoadingSystem } = useSystemThemes();
+const { data: publicThemes = [], isLoading: isLoadingPublic } = usePublicThemes();
+const allThemes = useMemo(() => {
+  const merged = [...systemThemes, ...publicThemes];
+  const map = new Map<string, Theme>();
+  for (const t of merged) {
+    if (!map.has(t.id)) map.set(t.id, t);
+  }
+  return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+}, [systemThemes, publicThemes]);
 	const [hasChanges, setHasChanges] = useState(false);
 
 	// memo prop の変更を検知してエディタの状態を更新する
@@ -275,30 +286,31 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 
 					{/* テーマ選択エリア */}
 					<div className="mb-4">
-						<div className="flex items-center justify-between mb-2">
-							<label
-								className="block text-sm font-medium dark:text-white"
-								// style={{ color: selectedTheme ? 'var(--theme-subtext-color)' : undefined }} まだテーマ機能が確定してないからコメントアウト
-							>
-								テーマ
-							</label>
-							<button
-								type="button"
-								onClick={() => setShowThemeSelector(!showThemeSelector)}
-								className="text-sm hover:opacity-80 dark:text-white"
-								style={
-									{
-										// color: selectedTheme ? 'var(--theme-accent-color)' : undefined, まだテーマ機能が確定してないからコメントアウト
-									}
-								}
-							>
-								{showThemeSelector
-									? 'テーマ選択を閉じる'
-									: selectedTheme
-										? 'テーマを変更'
-										: 'テーマを選択'}
-							</button>
-						</div>
+            <div className="mb-2">
+              <label className="block text-sm font-medium dark:text-white">テーマ</label>
+              <select
+                value={selectedTheme?.id || 'default'}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === 'default') {
+                    setSelectedTheme(null);
+                  } else {
+                    const t = allThemes.find((th) => th.id === val) || null;
+                    setSelectedTheme(t || null);
+                  }
+                }}
+                className="mt-1 w-full border rounded px-3 py-2 dark:text-white bg-transparent"
+              >
+                <option value="default">未選択（デフォルト）</option>
+                {(isLoadingSystem || isLoadingPublic) && <option disabled>読み込み中...</option>}
+                {!isLoadingSystem && !isLoadingPublic &&
+                  allThemes.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
 
 						{/* 選択されたテーマの表示またはテーマなしの表示 */}
 						{selectedTheme ? (
@@ -345,36 +357,12 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 									<span className="text-sm text-gray-600 dark:text-gray-400">
 										テーマが設定されていません
 									</span>
-									<button
-										onClick={() => setShowThemeSelector(true)}
-										className="text-sm text-blue-500 hover:text-blue-600 dark:text-blue-400"
-									>
-										テーマを選択
-									</button>
+                {/* セレクトで選択してください */}
 								</div>
 							</div>
 						)}
 
-						{/* テーマ選択UI */}
-						{showThemeSelector && (
-							<div
-								className="rounded-lg p-4 max-h-96 overflow-y-auto"
-								style={{
-									border: selectedTheme ? `1px solid var(--theme-border-color)` : undefined,
-									borderRadius: selectedTheme ? 'var(--theme-border-radius)' : undefined,
-								}}
-							>
-								<ThemeSelector
-									selectedThemeId={selectedTheme?.id}
-									onThemeSelect={(theme) => {
-										setSelectedTheme(theme);
-										setShowThemeSelector(false);
-									}}
-									showFavorites={true}
-									className="max-h-80"
-								/>
-							</div>
-						)}
+            {/* 旧ThemeSelectorは削除済み。上の<select>で代替。 */}
 					</div>
 
 					{/* コンテンツ入力エリア */}
