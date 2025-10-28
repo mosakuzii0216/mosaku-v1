@@ -2,13 +2,13 @@ name: Code Quality Check
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   frontend-lint:
-    name: フロントエンドリント
+    name: frontend lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -32,7 +32,7 @@ jobs:
         working-directory: frontend
 
   backend-lint:
-    name: バックエンドリント
+    name: backend lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
