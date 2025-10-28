@@ -350,17 +350,17 @@ class ApiClient {
 	}
 
 	async getNotebooks(): Promise<Notebook[]> {
-    const res = await this.request<any[]>('/notebooks');
+		const res = await this.request<any[]>('/notebooks');
 		return res.map((r) => this.normalizeNotebook(r));
 	}
 
 	async getNotebook(id: string): Promise<Notebook> {
-    const res = await this.request<any>(`/notebooks/${id}`);
+		const res = await this.request<any>(`/notebooks/${id}`);
 		return this.normalizeNotebook(res);
 	}
 
 	async createNotebook(data: CreateNotebookDto): Promise<Notebook> {
-    const res = await this.request<any>('/notebooks', {
+		const res = await this.request<any>('/notebooks', {
 			method: 'POST',
 			body: JSON.stringify(data),
 		});
@@ -368,7 +368,7 @@ class ApiClient {
 	}
 
 	async updateNotebook(id: string, data: UpdateNotebookDto): Promise<Notebook> {
-    const res = await this.request<any>(`/notebooks/${id}`, {
+		const res = await this.request<any>(`/notebooks/${id}`, {
 			method: 'PATCH',
 			body: JSON.stringify(data),
 		});
@@ -376,7 +376,7 @@ class ApiClient {
 	}
 
 	async deleteNotebook(id: string): Promise<void> {
-    await this.request(`/notebooks/${id}`, { method: 'DELETE' });
+		await this.request(`/notebooks/${id}`, { method: 'DELETE' });
 	}
 }
 

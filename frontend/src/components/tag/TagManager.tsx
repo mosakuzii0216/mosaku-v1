@@ -6,193 +6,188 @@ import { TagChip } from './TagChip';
 import type { Tag, CreateTagDto, UpdateTagDto } from '../../types/tag';
 
 export const TagManager: React.FC = () => {
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingTag, setEditingTag] = useState<Tag | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  const { tags, setSearchQuery: setStoreSearchQuery, getFilteredTags } = useTagStore();
-  const {
-    tagsQuery,
-    createTag,
-    updateTag,
-    deleteTag,
-    isCreating,
-    isUpdating,
-    isDeleting,
-  } = useTagQueries();
+	const [showCreateForm, setShowCreateForm] = useState(false);
+	const [editingTag, setEditingTag] = useState<Tag | null>(null);
+	const [searchQuery, setSearchQuery] = useState('');
 
-  // Sync tags data to store
-  useEffect(() => {
-    if (tagsQuery.data) {
-      useTagStore.getState().setTags(tagsQuery.data);
-    }
-  }, [tagsQuery.data]);
+	const { tags, setSearchQuery: setStoreSearchQuery, getFilteredTags } = useTagStore();
+	const { tagsQuery, createTag, updateTag, deleteTag, isCreating, isUpdating, isDeleting } =
+		useTagQueries();
 
-  // Update store search query
-  useEffect(() => {
-    setStoreSearchQuery(searchQuery);
-  }, [searchQuery, setStoreSearchQuery]);
+	// Sync tags data to store
+	useEffect(() => {
+		if (tagsQuery.data) {
+			useTagStore.getState().setTags(tagsQuery.data);
+		}
+	}, [tagsQuery.data]);
 
-  const filteredTags = getFilteredTags();
+	// Update store search query
+	useEffect(() => {
+		setStoreSearchQuery(searchQuery);
+	}, [searchQuery, setStoreSearchQuery]);
 
-  const handleCreateTag = async (data: CreateTagDto | UpdateTagDto) => {
-    try {
-      await createTag(data as CreateTagDto);
-      setShowCreateForm(false);
-    } catch (error) {
-      let errorMessage = 'タグの作成に失敗しました';
-      if (error instanceof Error) {
-        if (error.message.includes('401') || error.message.includes('認証')) {
-          errorMessage = '認証エラーが発生しました。再度ログインしてください。';
-        } else {
-          errorMessage = `タグの作成に失敗しました: ${error.message}`;
-        }
-      }
-      alert(errorMessage);
-    }
-  };
+	const filteredTags = getFilteredTags();
 
-  const handleUpdateTag = async (data: CreateTagDto | UpdateTagDto) => {
-    if (!editingTag) return;
-    
-    try {
-      await updateTag({ id: editingTag.id, data: data as UpdateTagDto });
-      setEditingTag(null);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      alert(`タグの更新に失敗しました: ${message}`);
-    }
-  };
+	const handleCreateTag = async (data: CreateTagDto | UpdateTagDto) => {
+		try {
+			await createTag(data as CreateTagDto);
+			setShowCreateForm(false);
+		} catch (error) {
+			let errorMessage = 'タグの作成に失敗しました';
+			if (error instanceof Error) {
+				if (error.message.includes('401') || error.message.includes('認証')) {
+					errorMessage = '認証エラーが発生しました。再度ログインしてください。';
+				} else {
+					errorMessage = `タグの作成に失敗しました: ${error.message}`;
+				}
+			}
+			alert(errorMessage);
+		}
+	};
 
-  const handleDeleteTag = (tag: Tag) => {
-    if (window.confirm(`「${tag.name}」タグを削除しますか？\n関連するメモからもタグが削除されます。`)) {
-      deleteTag(tag.id);
-    }
-  };
+	const handleUpdateTag = async (data: CreateTagDto | UpdateTagDto) => {
+		if (!editingTag) return;
 
-  const handleEditClick = (tag: Tag) => {
-    setEditingTag(tag);
-    setShowCreateForm(false);
-  };
+		try {
+			await updateTag({ id: editingTag.id, data: data as UpdateTagDto });
+			setEditingTag(null);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			alert(`タグの更新に失敗しました: ${message}`);
+		}
+	};
 
-  const handleCancelEdit = () => {
-    setEditingTag(null);
-    setShowCreateForm(false);
-  };
+	const handleDeleteTag = (tag: Tag) => {
+		if (
+			window.confirm(`「${tag.name}」タグを削除しますか？\n関連するメモからもタグが削除されます。`)
+		) {
+			deleteTag(tag.id);
+		}
+	};
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* ヘッダー */}
-      <div className="border-b border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-900">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">タグ管理</h1>
-          <button
-            onClick={() => {
-              setShowCreateForm(true);
-              setEditingTag(null);
-            }}
-            disabled={isCreating}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md disabled:bg-gray-300 dark:disabled:bg-gray-600 transition-colors"
-          >
-            + 新しいタグ
-          </button>
-        </div>
+	const handleEditClick = (tag: Tag) => {
+		setEditingTag(tag);
+		setShowCreateForm(false);
+	};
 
-        {/* 検索バー */}
-        <div className="mb-4">
-          <input
-            type="text"
-            placeholder="タグを検索..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+	const handleCancelEdit = () => {
+		setEditingTag(null);
+		setShowCreateForm(false);
+	};
 
-        {/* タグ数表示 */}
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          {filteredTags.length} / {tags.length} タグ
-        </div>
-      </div>
+	return (
+		<div className="flex flex-col h-full">
+			{/* ヘッダー */}
+			<div className="border-b border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-900">
+				<div className="flex items-center justify-between mb-4">
+					<h1 className="text-2xl font-bold text-gray-900 dark:text-white">タグ管理</h1>
+					<button
+						onClick={() => {
+							setShowCreateForm(true);
+							setEditingTag(null);
+						}}
+						disabled={isCreating}
+						className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md disabled:bg-gray-300 dark:disabled:bg-gray-600 transition-colors"
+					>
+						+ 新しいタグ
+					</button>
+				</div>
 
-      {/* メインコンテンツ */}
-      <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-4xl mx-auto">
-          {/* タグ作成・編集フォーム */}
-          {(showCreateForm || editingTag) && (
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 shadow-sm">
-              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                {editingTag ? 'タグを編集' : '新しいタグを作成'}
-              </h3>
-              <TagForm
-                tag={editingTag || undefined}
-                onSubmit={editingTag ? handleUpdateTag : handleCreateTag}
-                onCancel={handleCancelEdit}
-                isLoading={isCreating || isUpdating}
-              />
-            </div>
-          )}
+				{/* 検索バー */}
+				<div className="mb-4">
+					<input
+						type="text"
+						placeholder="タグを検索..."
+						value={searchQuery}
+						onChange={(e) => setSearchQuery(e.target.value)}
+						className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+					/>
+				</div>
 
-          {/* タグ一覧 */}
-          {tagsQuery.isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-gray-500 dark:text-gray-400">読み込み中...</div>
-            </div>
-          ) : tagsQuery.error ? (
-            <div className="text-red-500 dark:text-red-400 text-center py-8">
-              <div className="mb-2">タグの読み込みに失敗しました</div>
-              <div className="text-sm text-red-400 dark:text-red-300">
-                エラー: {tagsQuery.error.message || 'Unknown error'}
-              </div>
-              <button 
-                onClick={() => tagsQuery.refetch()}
-                className="mt-2 px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
-              >
-                再試行
-              </button>
-            </div>
-          ) : filteredTags.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              {searchQuery ? '検索結果がありません' : 'タグがありません'}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filteredTags.map((tag) => (
-                <div
-                  key={tag.id}
-                  className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <TagChip tag={tag} />
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        作成日: {new Date(tag.createdAt).toLocaleDateString('ja-JP')}
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleEditClick(tag)}
-                        disabled={isUpdating}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 px-3 py-1 rounded border border-blue-200 dark:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 disabled:opacity-50 transition-colors"
-                      >
-                        編集
-                      </button>
-                      <button
-                        onClick={() => handleDeleteTag(tag)}
-                        disabled={isDeleting}
-                        className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 px-3 py-1 rounded border border-red-200 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900 disabled:opacity-50 transition-colors"
-                      >
-                        削除
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+				{/* タグ数表示 */}
+				<div className="text-sm text-gray-600 dark:text-gray-400">
+					{filteredTags.length} / {tags.length} タグ
+				</div>
+			</div>
+
+			{/* メインコンテンツ */}
+			<div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900">
+				<div className="max-w-4xl mx-auto">
+					{/* タグ作成・編集フォーム */}
+					{(showCreateForm || editingTag) && (
+						<div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 shadow-sm">
+							<h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+								{editingTag ? 'タグを編集' : '新しいタグを作成'}
+							</h3>
+							<TagForm
+								tag={editingTag || undefined}
+								onSubmit={editingTag ? handleUpdateTag : handleCreateTag}
+								onCancel={handleCancelEdit}
+								isLoading={isCreating || isUpdating}
+							/>
+						</div>
+					)}
+
+					{/* タグ一覧 */}
+					{tagsQuery.isLoading ? (
+						<div className="flex items-center justify-center py-8">
+							<div className="text-gray-500 dark:text-gray-400">読み込み中...</div>
+						</div>
+					) : tagsQuery.error ? (
+						<div className="text-red-500 dark:text-red-400 text-center py-8">
+							<div className="mb-2">タグの読み込みに失敗しました</div>
+							<div className="text-sm text-red-400 dark:text-red-300">
+								エラー: {tagsQuery.error.message || 'Unknown error'}
+							</div>
+							<button
+								onClick={() => tagsQuery.refetch()}
+								className="mt-2 px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+							>
+								再試行
+							</button>
+						</div>
+					) : filteredTags.length === 0 ? (
+						<div className="text-center py-8 text-gray-500 dark:text-gray-400">
+							{searchQuery ? '検索結果がありません' : 'タグがありません'}
+						</div>
+					) : (
+						<div className="space-y-3">
+							{filteredTags.map((tag) => (
+								<div
+									key={tag.id}
+									className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
+								>
+									<div className="flex items-center justify-between">
+										<div className="flex items-center gap-3">
+											<TagChip tag={tag} />
+											<div className="text-sm text-gray-500 dark:text-gray-400">
+												作成日: {new Date(tag.createdAt).toLocaleDateString('ja-JP')}
+											</div>
+										</div>
+
+										<div className="flex items-center gap-2">
+											<button
+												onClick={() => handleEditClick(tag)}
+												disabled={isUpdating}
+												className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 px-3 py-1 rounded border border-blue-200 dark:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 disabled:opacity-50 transition-colors"
+											>
+												編集
+											</button>
+											<button
+												onClick={() => handleDeleteTag(tag)}
+												disabled={isDeleting}
+												className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 px-3 py-1 rounded border border-red-200 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900 disabled:opacity-50 transition-colors"
+											>
+												削除
+											</button>
+										</div>
+									</div>
+								</div>
+							))}
+						</div>
+					)}
+				</div>
+			</div>
+		</div>
+	);
 };

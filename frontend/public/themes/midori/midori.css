@@ -1,19 +1,26 @@
 /* midori: 見出しとアクセントだけ最小適用（緑系） */
 
 :root {
-  --theme-text-color: #0D2B1A;     /* 任意: 既存参照の互換用 */
-  --theme-heading-color: #15803D;  /* green-700 */
-  --theme-accent-color: #22C55E;   /* green-500 */
-  --theme-bg-color: #F0FDF4;       /* 背景: ごく薄いグリーン */
+	--theme-text-color: #0d2b1a; /* 任意: 既存参照の互換用 */
+	--theme-heading-color: #15803d; /* green-700 */
+	--theme-accent-color: #22c55e; /* green-500 */
+	--theme-bg-color: #f0fdf4; /* 背景: ごく薄いグリーン */
 }
 
 /* 背景色（わかりやすさのため最小適用） */
-body { background-color: var(--theme-bg-color) !important; }
+body {
+	background-color: var(--theme-bg-color) !important;
+}
 
 /* 見出し（タイトル含む） */
-h1, h2, h3, h4, h5, h6,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
 .memo-title {
-  color: var(--theme-heading-color) !important;
+	color: var(--theme-heading-color) !important;
 }
 
 /* 必要になったらアクセントも有効化（現状は最小変更でコメントアウト） */

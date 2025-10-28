@@ -1,83 +1,94 @@
 /* ヴィンテージ - レトロで温かみのあるヴィンテージテーマ */
 
 :root {
-  /* Colors */
-  --theme-bg-color: #F5F5DC;
-  --theme-text-color: #8B4513;
-  --theme-border-color: #DEB887;
-  --theme-hover-bg-color: #F0E68C;
-  --theme-accent-color: #CD853F;
-  --theme-heading-color: #A0522D;
-  --theme-subtext-color: #D2691E;
-  --theme-muted-text-color: #BC8F8F;
-  --theme-divider-color: #F4A460;
+	/* Colors */
+	--theme-bg-color: #f5f5dc;
+	--theme-text-color: #8b4513;
+	--theme-border-color: #deb887;
+	--theme-hover-bg-color: #f0e68c;
+	--theme-accent-color: #cd853f;
+	--theme-heading-color: #a0522d;
+	--theme-subtext-color: #d2691e;
+	--theme-muted-text-color: #bc8f8f;
+	--theme-divider-color: #f4a460;
 
-  /* Typography */
-  --theme-font-family: "EB Garamond", "Garamond", serif;
-  --theme-font-size: 1.125rem;
-  --theme-heading-font-size: 1.625rem;
-  --theme-small-font-size: 1rem;
-  --theme-font-weight: 400;
-  --theme-heading-font-weight: 600;
-  --theme-line-height: 1.8;
+	/* Typography */
+	--theme-font-family: 'EB Garamond', 'Garamond', serif;
+	--theme-font-size: 1.125rem;
+	--theme-heading-font-size: 1.625rem;
+	--theme-small-font-size: 1rem;
+	--theme-font-weight: 400;
+	--theme-heading-font-weight: 600;
+	--theme-line-height: 1.8;
 
-  /* Layout */
-  --theme-padding: 1.5rem;
-  --theme-margin: 1rem;
-  --theme-border-radius: 0.125rem;
-  --theme-border-width: 1px;
-  --theme-box-shadow: 0 2px 4px 0 rgba(139, 69, 19, 0.1);
+	/* Layout */
+	--theme-padding: 1.5rem;
+	--theme-margin: 1rem;
+	--theme-border-radius: 0.125rem;
+	--theme-border-width: 1px;
+	--theme-box-shadow: 0 2px 4px 0 rgba(139, 69, 19, 0.1);
 
-  /* Animations */
-  --theme-transition-duration: 250ms;
-
+	/* Animations */
+	--theme-transition-duration: 250ms;
 }
 
 /* メモコンテナ */
 .memo-container {
-  background-color: var(--theme-bg-color);
-  color: var(--theme-text-color);
-  border: var(--theme-border-width) solid var(--theme-border-color);
-  border-radius: var(--theme-border-radius);
-  padding: var(--theme-padding);
-  margin: var(--theme-margin);
-  box-shadow: var(--theme-box-shadow);
-  font-family: var(--theme-font-family);
-  font-size: var(--theme-font-size);
-  line-height: var(--theme-line-height);
-  transition: background-color var(--theme-transition-duration);
+	background-color: var(--theme-bg-color);
+	color: var(--theme-text-color);
+	border: var(--theme-border-width) solid var(--theme-border-color);
+	border-radius: var(--theme-border-radius);
+	padding: var(--theme-padding);
+	margin: var(--theme-margin);
+	box-shadow: var(--theme-box-shadow);
+	font-family: var(--theme-font-family);
+	font-size: var(--theme-font-size);
+	line-height: var(--theme-line-height);
+	transition: background-color var(--theme-transition-duration);
 }
 
 .memo-container:hover {
-  background-color: var(--theme-hover-bg-color);
+	background-color: var(--theme-hover-bg-color);
 }
 
 /* 見出し */
-.memo-title, h1, h2, h3, h4, h5, h6 {
-  color: var(--theme-heading-color);
-  font-size: var(--theme-heading-font-size);
-  font-weight: var(--theme-heading-font-weight);
-  font-family: var(--theme-font-family);
+.memo-title,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	color: var(--theme-heading-color);
+	font-size: var(--theme-heading-font-size);
+	font-weight: var(--theme-heading-font-weight);
+	font-family: var(--theme-font-family);
 }
 
 /* アクセント要素 */
-.memo-accent, .button-primary, .link-primary {
-  color: var(--theme-accent-color);
-  border-color: var(--theme-accent-color);
+.memo-accent,
+.button-primary,
+.link-primary {
+	color: var(--theme-accent-color);
+	border-color: var(--theme-accent-color);
 }
 
 /* サブテキスト */
-.memo-subtext, .text-secondary {
-  color: var(--theme-subtext-color);
-  font-size: var(--theme-small-font-size);
+.memo-subtext,
+.text-secondary {
+	color: var(--theme-subtext-color);
+	font-size: var(--theme-small-font-size);
 }
 
 /* ミュートテキスト */
-.memo-muted, .text-muted {
-  color: var(--theme-muted-text-color);
+.memo-muted,
+.text-muted {
+	color: var(--theme-muted-text-color);
 }
 
 /* 区切り線 */
-.memo-divider, .divider, hr {
-  border-color: var(--theme-divider-color);
+.memo-divider,
+.divider,
+hr {
+	border-color: var(--theme-divider-color);
 }

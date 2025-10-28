@@ -1,17 +1,17 @@
-import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function AuthCallback() {
-  const navigate = useNavigate()
+	const navigate = useNavigate();
 
-  useEffect(() => {
-    // OAuth機能を削除したため、認証ページにリダイレクト
-    navigate('/auth')
-  }, [navigate])
+	useEffect(() => {
+		// OAuth機能を削除したため、認証ページにリダイレクト
+		navigate('/auth');
+	}, [navigate]);
 
-  return (
-    <div className="flex justify-center items-center h-screen">
-      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-    </div>
-  )
+	return (
+		<div className="flex justify-center items-center h-screen">
+			<div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+		</div>
+	);
 }

@@ -1,19 +1,26 @@
 /* kuro: 見出しとアクセントだけ最小適用（黒系・ダーク寄りの見出し色） */
 
 :root {
-  --theme-text-color: #111827;      /* slate/gray系の濃い目 */
-  --theme-heading-color: #0F172A;   /* slate-900 */
-  --theme-accent-color: #111827;    /* gray-900 */
-  --theme-bg-color: #F8FAFC;        /* 背景: ごく薄いスレート（可読性配慮） */
+	--theme-text-color: #111827; /* slate/gray系の濃い目 */
+	--theme-heading-color: #0f172a; /* slate-900 */
+	--theme-accent-color: #111827; /* gray-900 */
+	--theme-bg-color: #f8fafc; /* 背景: ごく薄いスレート（可読性配慮） */
 }
 
 /* 背景色（わかりやすさのため最小適用） */
-body { background-color: var(--theme-bg-color) !important; }
+body {
+	background-color: var(--theme-bg-color) !important;
+}
 
 /* 見出し（タイトル含む） */
-h1, h2, h3, h4, h5, h6,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
 .memo-title {
-  color: var(--theme-heading-color) !important;
+	color: var(--theme-heading-color) !important;
 }
 
 /* 必要になったらアクセントも有効化（現状は最小変更でコメントアウト） */

@@ -1,19 +1,26 @@
 /* aka: 見出しとアクセントだけ最小適用（赤系） */
 
 :root {
-  --theme-text-color: #2B0B0B;    /* 任意: 既存参照の互換用 */
-  --theme-heading-color: #C53030; /* red-700 */
-  --theme-accent-color: #EF4444;  /* red-500 */
-  --theme-bg-color: #FEF2F2;      /* 背景: ごく薄い赤み */
+	--theme-text-color: #2b0b0b; /* 任意: 既存参照の互換用 */
+	--theme-heading-color: #c53030; /* red-700 */
+	--theme-accent-color: #ef4444; /* red-500 */
+	--theme-bg-color: #fef2f2; /* 背景: ごく薄い赤み */
 }
 
 /* 背景色（わかりやすさのため最小適用） */
-body { background-color: var(--theme-bg-color) !important; }
+body {
+	background-color: var(--theme-bg-color) !important;
+}
 
 /* 見出し（タイトル含む） */
-h1, h2, h3, h4, h5, h6,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
 .memo-title {
-  color: var(--theme-heading-color) !important;
+	color: var(--theme-heading-color) !important;
 }
 
 /* 必要になったらアクセントも有効化（現状は最小変更でコメントアウト） */
