@@ -22,5 +22,17 @@ export default [
 			'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
 		},
 	},
+	// Node/CommonJS scripts under scripts/**
+	{
+		files: ['scripts/**/*.{js,cjs,mjs}'],
+		languageOptions: {
+			globals: globals.node,
+			sourceType: 'commonjs',
+		},
+		rules: {
+			// Allow require() in CJS utility scripts
+			'@typescript-eslint/no-require-imports': 'off',
+		},
+	},
 	{ ignores: ['dist', 'dev-dist'] },
 ];
