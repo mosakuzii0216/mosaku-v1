@@ -41,13 +41,13 @@ export class AuthController {
 	 * OAuth認証コールバック共通処理
 	 */
 	private async handleOAuthCallback(
-		authMethod: (user: any) => Promise<any>,
+		authMethod: (user: unknown) => Promise<{ accessToken: string; user: unknown }>,
 		req: ExpressRequest,
 		res: ExpressResponse,
 		providerName: string,
 	): Promise<void> {
 		try {
-			const result = await authMethod(req.user);
+			const result = await authMethod((req as any).user as unknown);
 
 			// フロントエンドにトークンを渡すため、URLパラメータとしてリダイレクト
 			const redirectUrl = this.configService.generateSuccessRedirectUrl(
@@ -56,14 +56,15 @@ export class AuthController {
 			);
 
 			return res.redirect(redirectUrl);
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error(`${providerName} auth error:`, error);
 
 			// 新規ユーザーで招待コードが必要な場合
-			if (error.message.includes('invitation code')) {
+			const message = error instanceof Error ? error.message : '';
+			if (message.includes('invitation code')) {
 				const redirectUrl = this.configService.generateInvitationRequiredUrl(
 					providerName,
-					req.user,
+					(req as any).user,
 				);
 				return res.redirect(redirectUrl);
 			}
@@ -92,8 +93,9 @@ export class AuthController {
 				message: 'Registration successful. You can now login.',
 				user,
 			};
-		} catch (error: any) {
-			throw new BadRequestException(error.message || 'Registration failed');
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : 'Registration failed';
+			throw new BadRequestException(message);
 		}
 	}
 
@@ -108,14 +110,15 @@ export class AuthController {
 				message: 'Login successful',
 				...result,
 			};
-		} catch (error: any) {
-			throw new UnauthorizedException(error.message || 'Login failed');
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : 'Login failed';
+			throw new UnauthorizedException(message);
 		}
 	}
 
 	@Post('logout')
 	@Public()
-	async logout(@Request() _req: ExpressRequest) {
+	logout() {
 		// JWTはステートレスなので、ログアウト処理は主にクライアント側で実装
 		// 必要に応じてトークンをブラックリストに追加する処理を実装可能
 		return {
@@ -180,8 +183,10 @@ export class AuthController {
 			return {
 				message: 'If the email exists, a password reset link has been sent.',
 			};
-		} catch (error: any) {
-			throw new BadRequestException(error.message || 'Failed to send password reset email');
+		} catch (error: unknown) {
+			const message =
+				error instanceof Error ? error.message : 'Failed to send password reset email';
+			throw new BadRequestException(message);
 		}
 	}
 
@@ -223,8 +228,9 @@ export class AuthController {
 			return {
 				message: 'Password changed successfully',
 			};
-		} catch (error: any) {
-			throw new BadRequestException(error.message || 'Failed to change password');
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : 'Failed to change password';
+			throw new BadRequestException(message);
 		}
 	}
 
@@ -262,17 +268,14 @@ export class AuthController {
 	// 後方互換性のため一時的に保持（将来削除予定）
 	@Post('sync-user')
 	@UseGuards(JwtAuthGuard)
-	async syncUser(@Request() req: AuthenticatedRequest, @Body() createUserDto: CreateUserDto) {
+	syncUser(@Request() req: AuthenticatedRequest) {
 		// 新しい認証システムでは不要だが、フロントエンドの移行期間中は保持
 		return req.user;
 	}
 
 	@Post('sync-user-with-invite')
 	@UseGuards(JwtAuthGuard)
-	async syncUserWithInvite(
-		@Request() req: AuthenticatedRequest,
-		@Body() body: { name?: string; invitationCode: string },
-	) {
+	syncUserWithInvite(@Request() req: AuthenticatedRequest) {
 		// 新しい認証システムでは不要だが、フロントエンドの移行期間中は保持
 		return req.user;
 	}
@@ -280,7 +283,7 @@ export class AuthController {
 	// Google OAuth エンドポイント
 	@Get('google')
 	@UseGuards(GoogleAuthGuard)
-	async googleAuth(@Request() _req: ExpressRequest) {
+	googleAuth(@Request() _req: ExpressRequest) {
 		// Google認証画面にリダイレクト
 	}
 
@@ -310,15 +313,16 @@ export class AuthController {
 				message: 'Registration successful',
 				...result,
 			};
-		} catch (error: any) {
-			throw new BadRequestException(error.message || 'Registration failed');
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : 'Registration failed';
+			throw new BadRequestException(message);
 		}
 	}
 
 	// GitHub OAuth エンドポイント
 	@Get('github')
 	@UseGuards(GitHubAuthGuard)
-	async githubAuth(@Request() _req: ExpressRequest) {
+	githubAuth(@Request() _req: ExpressRequest) {
 		// GitHub認証画面にリダイレクト
 	}
 
@@ -348,15 +352,16 @@ export class AuthController {
 				message: 'Registration successful',
 				...result,
 			};
-		} catch (error: any) {
-			throw new BadRequestException(error.message || 'Registration failed');
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : 'Registration failed';
+			throw new BadRequestException(message);
 		}
 	}
 
 	// X OAuth エンドポイント
 	@Get('x')
 	@UseGuards(XAuthGuard)
-	async xAuth(@Request() _req: ExpressRequest) {
+	xAuth(@Request() _req: ExpressRequest) {
 		// X認証画面にリダイレクト
 	}
 
@@ -378,8 +383,9 @@ export class AuthController {
 				message: 'Registration successful',
 				...result,
 			};
-		} catch (error: any) {
-			throw new BadRequestException(error.message || 'Registration failed');
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : 'Registration failed';
+			throw new BadRequestException(message);
 		}
 	}
 }
