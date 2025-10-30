@@ -36,7 +36,7 @@ export const MemoItem = ({ memo }: MemoItemProps) => {
 
 	return (
 		<div
-		onClick={() => {
+			onClick={() => {
 				goToEdit(memo);
 				logCurrent();
 			}}
