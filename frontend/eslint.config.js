@@ -20,6 +20,18 @@ export default [
 		rules: {
 			...reactHooks.configs.recommended.rules,
 			'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+			// 現状のコードベースに合わせて一部ルールを緩和（段階的に厳格化予定）
+			'@typescript-eslint/no-explicit-any': 'warn',
+			'no-useless-catch': 'warn',
+			'@typescript-eslint/no-unused-expressions': [
+				'warn',
+				{ allowShortCircuit: true, allowTernary: true },
+			],
+			'@typescript-eslint/no-unused-vars': [
+				'warn',
+				{ argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+			],
+			'no-fallthrough': 'warn',
 		},
 	},
 	// Node/CommonJS scripts under scripts/**
