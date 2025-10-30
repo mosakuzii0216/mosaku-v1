@@ -70,6 +70,8 @@ export const MobileLayout = () => {
 					case 'create':
 						return <MemoEditor isCreate />;
 				}
+				// 内部switchが網羅的でも静的解析ではfallthroughと判断されるため明示的にbreak
+				break;
 			case 'notebook':
 				switch (currentView) {
 					case 'create':
@@ -79,6 +81,8 @@ export const MobileLayout = () => {
 							</div>
 						);
 				}
+				// fallthrough防止のため明示的にbreak
+				break;
 			case 'tag':
 				return <TagManager />;
 

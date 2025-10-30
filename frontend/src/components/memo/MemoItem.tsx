@@ -36,8 +36,9 @@ export const MemoItem = ({ memo }: MemoItemProps) => {
 
 	return (
 		<div
-			onClick={() => {
-				(goToEdit(memo), logCurrent());
+		onClick={() => {
+				goToEdit(memo);
+				logCurrent();
 			}}
 			className="p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
 		>

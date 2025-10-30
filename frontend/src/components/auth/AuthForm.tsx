@@ -18,7 +18,8 @@ export default function AuthForm() {
 	const [message, setMessage] = useState('');
 	const [mode, setMode] = useState<AuthMode>('login');
 
-	const [pendingOAuthUser, setPendingOAuthUser] = useState<any>(null);
+	// OAuthプロバイダから戻る一時ユーザー情報（厳密な型はプロバイダごとに異なるためunknownで保持）
+	const [pendingOAuthUser, setPendingOAuthUser] = useState<unknown>(null);
 
 	const {
 		login,

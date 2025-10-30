@@ -8,7 +8,7 @@ interface NotebookEditorProps {
 	isCreate?: boolean;
 }
 
-export const NotebookEditor = ({ isCreate = false }: NotebookEditorProps) => {
+export const NotebookEditor = (_props: NotebookEditorProps) => {
 	const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 	const [content, setContent] = useState<string>('');
 	const [name, setName] = useState<string>('');

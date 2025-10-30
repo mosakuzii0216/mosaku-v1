@@ -65,8 +65,8 @@ export const useTagQueries = () => {
 		},
 	});
 
-	// タグ検索
-	const searchTagsQuery = (query: string) =>
+	// タグ検索（Hookとして公開）
+	const useSearchTagsQuery = (query: string) =>
 		useQuery({
 			queryKey: ['tags', 'search', query],
 			queryFn: () => apiClient.searchTags(query),
@@ -76,7 +76,7 @@ export const useTagQueries = () => {
 	return {
 		// Queries
 		tagsQuery,
-		searchTagsQuery,
+		useSearchTagsQuery,
 
 		// Mutations
 		createTag: createTagMutation.mutateAsync,

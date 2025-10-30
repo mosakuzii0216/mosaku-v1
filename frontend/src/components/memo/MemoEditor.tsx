@@ -14,7 +14,6 @@ interface MemoEditorProps {
 }
 
 export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
-	const { goToList } = useMemoStore();
 	const createMemo = useCreateMemo();
 	const updateMemo = useUpdateMemo();
 	const { assignTags } = useTagQueries();
