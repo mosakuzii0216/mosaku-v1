@@ -1,11 +1,12 @@
 // @ts-check
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import globals from 'globals'
+import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
-import base from '../eslint.common.mjs'
+import { makeBase } from '../eslint.common.mjs'
 
 export default [
-  ...base,
+  ...makeBase(js, tseslint),
   ...tseslint.configs.recommendedTypeChecked,
   eslintPluginPrettierRecommended,
   {

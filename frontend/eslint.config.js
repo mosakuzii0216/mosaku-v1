@@ -1,10 +1,12 @@
 import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
-import base from '../eslint.common.mjs';
+import js from '@eslint/js';
+import tseslint from 'typescript-eslint';
+import { makeBase } from '../eslint.common.mjs';
 
 export default [
-	...base,
+	...makeBase(js, tseslint),
 	{
 		files: ['**/*.{ts,tsx}'],
 		languageOptions: {
@@ -20,5 +22,5 @@ export default [
 			'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
 		},
 	},
-	{ ignores: ['dist'] },
+	{ ignores: ['dist', 'dev-dist'] },
 ];
