@@ -39,6 +39,9 @@ export class MemoService {
 						styles: true,
 					},
 				},
+				notebook: {
+					select: { id: true, name: true },
+				},
 			},
 			orderBy: {
 				updatedAt: 'desc',
@@ -62,6 +65,9 @@ export class MemoService {
 						styles: true,
 					},
 				},
+				notebook: {
+					select: { id: true, name: true },
+				},
 			},
 		});
 
@@ -80,6 +86,10 @@ export class MemoService {
 			createData.themeId = createMemoDto.themeId;
 		}
 
+		if (createMemoDto.notebookId) {
+			createData.notebookId = createMemoDto.notebookId;
+		}
+
 		return this.prisma.memo.create({
 			data: createData,
 			include: {
@@ -89,6 +99,9 @@ export class MemoService {
 						name: true,
 						styles: true,
 					},
+				},
+				notebook: {
+					select: { id: true, name: true },
 				},
 			},
 		});
@@ -111,6 +124,9 @@ export class MemoService {
 						name: true,
 						styles: true,
 					},
+				},
+				notebook: {
+					select: { id: true, name: true },
 				},
 			},
 		});
