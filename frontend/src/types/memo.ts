@@ -1,5 +1,6 @@
 import type { MemoTag } from './tag';
 import type { Theme } from './theme';
+import type { Notebook } from './notebook';
 
 export interface Memo {
 	id: string;
@@ -10,18 +11,23 @@ export interface Memo {
 	memoTags?: MemoTag[];
 	themeId?: string | null;
 	theme?: Pick<Theme, 'id' | 'name' | 'styles'> | null;
+	// ノートブック関連
+	notebookId?: string | null;
+	notebook?: Pick<Notebook, 'id' | 'name'> | null;
 }
 
 export interface CreateMemoDto {
 	title: string;
 	content: string;
 	themeId?: string;
+	notebookId?: string | null;
 }
 
 export interface UpdateMemoDto {
 	title?: string;
 	content?: string;
 	themeId?: string;
+	notebookId?: string | null;
 }
 
 export type ViewType = 'list' | 'detail' | 'edit' | 'create' | 'tags';
