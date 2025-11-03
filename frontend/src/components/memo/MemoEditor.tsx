@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useMemoStore } from '../../stores/useMemoStore';
 import { useCreateMemo, useUpdateMemo } from '../../hooks/useMemoQueries';
+import { useNotebooks } from '../../hooks/useNotebookQueries';
 import { useTagQueries } from '../../hooks/useTagQueries';
 import { applyThemeToElement, removeThemeFromElement } from '../../utils/themeUtils';
 import { TagSelector } from '../tag/TagSelector';
@@ -22,6 +22,9 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	const [content, setContent] = useState(memo?.content || '');
 	const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
 		memo?.memoTags?.map((mt) => mt.tag.id) || [],
+	);
+	const [selectedNotebookId, setSelectedNotebookId] = useState<string>(
+		memo?.notebookId || '',
 	);
 	const [selectedTheme, setSelectedTheme] = useState<Theme | null>(
 		memo?.theme
@@ -49,6 +52,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 			setTitle(memo.title || '');
 			setContent(memo.content || '');
 			setSelectedTagIds(memo.memoTags?.map((mt) => mt.tag.id) || []);
+			setSelectedNotebookId(memo.notebookId || '');
 			setSelectedTheme(
 				memo.theme
 					? {
@@ -106,15 +110,21 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 		const originalContent = memo?.content || '';
 		const originalTagIds = memo?.memoTags?.map((mt) => mt.tag.id) || [];
 		const originalThemeId = memo?.themeId || null;
+		const originalNotebookId = memo?.notebookId || '';
 
 		const tagsChanged =
 			JSON.stringify(selectedTagIds.sort()) !== JSON.stringify(originalTagIds.sort());
 		const themeChanged = selectedTheme?.id !== originalThemeId;
+		const notebookChanged = selectedNotebookId !== originalNotebookId;
 
 		setHasChanges(
-			title !== originalTitle || content !== originalContent || tagsChanged || themeChanged,
+			title !== originalTitle ||
+			content !== originalContent ||
+			tagsChanged ||
+			themeChanged ||
+			notebookChanged,
 		);
-	}, [title, content, selectedTagIds, selectedTheme, memo]);
+	}, [title, content, selectedTagIds, selectedTheme, selectedNotebookId, memo]);
 
 	const handleSave = useCallback(async () => {
 		if (!title.trim() && !content.trim()) {
@@ -129,6 +139,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 							title: title.trim() || '無題',
 							content: content.trim(),
 							themeId: selectedTheme?.id,
+							notebookId: selectedNotebookId || null,
 						},
 						{
 							onSuccess: resolve,
@@ -150,6 +161,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 								title: title.trim() || '無題',
 								content: content.trim(),
 								themeId: selectedTheme?.id,
+								notebookId: selectedNotebookId || null,
 							},
 						},
 						{
@@ -183,6 +195,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 		hasChanges,
 		updateMemo,
 		assignTags,
+        selectedNotebookId,
 	]);
 
 	// キーボードショートカット（Ctrl+S / Cmd+S で保存）
@@ -256,6 +269,12 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 						/>
 					</div>
 
+					{/* ノートブック選択 */}
+					<div className="mb-4">
+						<label className="block text-sm font-medium mb-2 dark:text-white">ノートブック</label>
+						<NotebookSelect value={selectedNotebookId} onChange={setSelectedNotebookId} />
+					</div>
+
 					{/* タグ選択エリア */}
 					<div className="mb-4">
 						<label
@@ -302,3 +321,30 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 		</div>
 	);
 };
+
+function NotebookSelect({
+    value,
+    onChange,
+}: {
+    value: string;
+    onChange: (v: string) => void;
+}) {
+    const { data: notebooks = [], isLoading } = useNotebooks();
+
+    return (
+        <select
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="border rounded px-3 py-2 dark:text-white bg-transparent w-full"
+        >
+            <option value="">Inbox（未選択）</option>
+            {isLoading && <option disabled>読み込み中...</option>}
+            {!isLoading &&
+                notebooks.map((nb) => (
+                    <option key={nb.id} value={nb.id}>
+                        {nb.name || '(名称未設定)'}
+                    </option>
+                ))}
+        </select>
+    );
+}
