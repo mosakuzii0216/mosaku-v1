@@ -4,7 +4,7 @@ import { MemoItem } from './MemoItem';
 // import { MemoSearch } from './MemoSearch';
 
 export const MemoList = () => {
-	const { memos } = useMemoStore();
+	const { memos, notebookFilter } = useMemoStore();
 	const { isLoading, error } = useMemos();
 
 	if (isLoading) {
@@ -37,6 +37,13 @@ export const MemoList = () => {
 	//     )
 	//   : memos;
 
+	// Notebookフィルタに応じて表示を切り替え
+	const filteredMemos = (() => {
+		if (notebookFilter === 'ALL') return memos;
+		if (notebookFilter === 'INBOX') return memos.filter((m) => !m.notebookId);
+		return memos.filter((m) => m.notebookId === notebookFilter);
+	})();
+
 	return (
 		<div className="flex flex-col h-full">
 			{/* ノートブック機能実装のため一時的に検索機能を無効化 */}
@@ -44,7 +51,7 @@ export const MemoList = () => {
 
 			<div className="flex-1 overflow-y-auto">
 				<div>
-					{memos.map((memo) => (
+					{filteredMemos.map((memo) => (
 						<MemoItem key={memo.id} memo={memo} />
 					))}
 				</div>

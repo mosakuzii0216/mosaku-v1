@@ -14,6 +14,9 @@ interface MemoStore {
 	searchQuery: string;
 	isLoading: boolean;
 
+	// Notebook filter state
+	notebookFilter: 'ALL' | 'INBOX' | string;
+
 	// Actions
 	setMemos: (memos: Memo[]) => void;
 	selectMemo: (memo: Memo | null) => void;
@@ -23,6 +26,7 @@ interface MemoStore {
 	setIsEditing: (isEditing: boolean) => void;
 	setSearchQuery: (query: string) => void;
 	setIsLoading: (isLoading: boolean) => void;
+	setNotebookFilter: (filter: 'ALL' | 'INBOX' | string) => void;
 
 	// CRUD operations
 	addMemo: (memo: Memo) => void;
@@ -35,6 +39,7 @@ interface MemoStore {
 	goToMemoCreate: () => void;
 	goToNotebookCreate: () => void;
 	goToNotebookList: () => void;
+	goToMemosForNotebook: (filter: 'ALL' | 'INBOX' | string) => void;
 	goToTags: () => void;
 	logCurrent: () => void;
 }
@@ -49,6 +54,7 @@ export const useMemoStore = create<MemoStore>((set, get) => ({
 	isEditing: false,
 	searchQuery: '',
 	isLoading: false,
+    notebookFilter: 'ALL',
 
 	// Actions
 	setMemos: (memos) => set({ memos }),
@@ -59,6 +65,7 @@ export const useMemoStore = create<MemoStore>((set, get) => ({
 	setIsEditing: (isEditing) => set({ isEditing }),
 	setSearchQuery: (query) => set({ searchQuery: query }),
 	setIsLoading: (isLoading) => set({ isLoading }),
+	setNotebookFilter: (filter) => set({ notebookFilter: filter }),
 
 	// CRUD operations
 	addMemo: (memo) =>
@@ -122,6 +129,15 @@ export const useMemoStore = create<MemoStore>((set, get) => ({
 			currentView: 'list',
 			selectedMemo: null,
 			isEditing: false,
+		}),
+
+	goToMemosForNotebook: (filter) =>
+		set({
+			currentObject: 'memo',
+			currentView: 'list',
+			selectedMemo: null,
+			isEditing: false,
+			notebookFilter: filter,
 		}),
 
 	goToTags: () =>

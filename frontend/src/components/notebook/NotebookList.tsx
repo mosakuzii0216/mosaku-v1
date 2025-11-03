@@ -1,7 +1,9 @@
 import { useNotebooks } from '../../hooks/useNotebookQueries';
+import { useMemoStore } from '../../stores/useMemoStore';
 
 export const NotebookList = () => {
 	const { data: notebooks = [], isLoading, error } = useNotebooks();
+	const { goToMemosForNotebook } = useMemoStore();
 
 	if (isLoading) {
 		return (
@@ -28,8 +30,20 @@ export const NotebookList = () => {
 		<div className="flex flex-col h-full">
 			<div className="flex-1 overflow-y-auto">
 				<ul>
+					<li
+						className="p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+						onClick={() => goToMemosForNotebook('INBOX')}
+					>
+						<div className="flex items-center justify-between">
+							<div className="font-medium text-gray-900 dark:text-white">Inbox（未選択）</div>
+						</div>
+					</li>
 					{notebooks.map((nb) => (
-						<li key={nb.id} className="p-4 border-b border-gray-100 dark:border-gray-700">
+						<li
+							key={nb.id}
+							className="p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+							onClick={() => goToMemosForNotebook(nb.id)}
+						>
 							<div className="flex items-center justify-between">
 								<div className="font-medium text-gray-900 dark:text-white">
 									{nb.name || '(名称未設定)'}
