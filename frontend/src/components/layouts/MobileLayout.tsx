@@ -6,6 +6,8 @@ import { MemoList } from '../memo/MemoList';
 import { MemoDetail } from '../memo/MemoDetail';
 import { MemoEditor } from '../memo/MemoEditor';
 import { TagManager } from '../tag/TagManager';
+import { NotebookList } from '../notebook/NotebookList';
+import { NotebookEditor } from '../notebook/NotebookEditor';
 
 export const MobileLayout = () => {
 	const { currentObject, currentView, selectedMemo, goToMemoCreate, goToNotebookCreate } =
@@ -74,13 +76,12 @@ export const MobileLayout = () => {
 				break;
 			case 'notebook':
 				switch (currentView) {
+					case 'list':
+						return <NotebookList />;
 					case 'create':
-						return (
-							<div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-								ノートブック作成画面（未実装）
-							</div>
-						);
+						return <NotebookEditor isCreate />;
 				}
+				break;
 				// fallthrough防止のため明示的にbreak
 				break;
 			case 'tag':

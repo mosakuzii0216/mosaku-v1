@@ -23,9 +23,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
 		memo?.memoTags?.map((mt) => mt.tag.id) || [],
 	);
-	const [selectedNotebookId, setSelectedNotebookId] = useState<string>(
-		memo?.notebookId || '',
-	);
+	const [selectedNotebookId, setSelectedNotebookId] = useState<string>(memo?.notebookId || '');
 	const [selectedTheme, setSelectedTheme] = useState<Theme | null>(
 		memo?.theme
 			? {
@@ -119,10 +117,10 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 
 		setHasChanges(
 			title !== originalTitle ||
-			content !== originalContent ||
-			tagsChanged ||
-			themeChanged ||
-			notebookChanged,
+				content !== originalContent ||
+				tagsChanged ||
+				themeChanged ||
+				notebookChanged,
 		);
 	}, [title, content, selectedTagIds, selectedTheme, selectedNotebookId, memo]);
 
@@ -195,7 +193,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 		hasChanges,
 		updateMemo,
 		assignTags,
-        selectedNotebookId,
+		selectedNotebookId,
 	]);
 
 	// キーボードショートカット（Ctrl+S / Cmd+S で保存）
@@ -322,29 +320,23 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	);
 };
 
-function NotebookSelect({
-    value,
-    onChange,
-}: {
-    value: string;
-    onChange: (v: string) => void;
-}) {
-    const { data: notebooks = [], isLoading } = useNotebooks();
+function NotebookSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+	const { data: notebooks = [], isLoading } = useNotebooks();
 
-    return (
-        <select
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="border rounded px-3 py-2 dark:text-white bg-transparent w-full"
-        >
-            <option value="">Inbox（未選択）</option>
-            {isLoading && <option disabled>読み込み中...</option>}
-            {!isLoading &&
-                notebooks.map((nb) => (
-                    <option key={nb.id} value={nb.id}>
-                        {nb.name || '(名称未設定)'}
-                    </option>
-                ))}
-        </select>
-    );
+	return (
+		<select
+			value={value}
+			onChange={(e) => onChange(e.target.value)}
+			className="border rounded px-3 py-2 dark:text-white bg-transparent w-full"
+		>
+			<option value="">Inbox（未選択）</option>
+			{isLoading && <option disabled>読み込み中...</option>}
+			{!isLoading &&
+				notebooks.map((nb) => (
+					<option key={nb.id} value={nb.id}>
+						{nb.name || '(名称未設定)'}
+					</option>
+				))}
+		</select>
+	);
 }

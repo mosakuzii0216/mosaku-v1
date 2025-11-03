@@ -9,7 +9,7 @@ interface HeaderProps {
 }
 
 export const Header = ({ onMemoCreateClick, onNotebookCreateClick }: HeaderProps) => {
-	const { currentView, currentObject, goToList, goToTags } = useMemoStore();
+	const { currentView, currentObject, goToList, goToTags, goToNotebookList } = useMemoStore();
 	const { user, logout } = useAuth();
 	console.log(currentView, currentObject);
 	return (
@@ -28,10 +28,7 @@ export const Header = ({ onMemoCreateClick, onNotebookCreateClick }: HeaderProps
 					<button
 						onClick={goToList}
 						className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-							currentView === 'list' ||
-							currentView === 'detail' ||
-							currentView === 'edit' ||
-							currentView === 'create'
+							currentObject === 'memo'
 								? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
 								: 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
 						}`}
@@ -39,9 +36,19 @@ export const Header = ({ onMemoCreateClick, onNotebookCreateClick }: HeaderProps
 						📝 メモ
 					</button>
 					<button
+						onClick={goToNotebookList}
+						className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+							currentObject === 'notebook'
+								? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
+								: 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+						}`}
+					>
+						📚 ノートブック
+					</button>
+					<button
 						onClick={goToTags}
 						className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-							currentView === 'tags'
+							currentObject === 'tag'
 								? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
 								: 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
 						}`}

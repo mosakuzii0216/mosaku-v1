@@ -7,6 +7,7 @@ import { MemoDetail } from '../memo/MemoDetail';
 import { MemoEditor } from '../memo/MemoEditor';
 import { TagManager } from '../tag/TagManager';
 import { NotebookEditor } from '../notebook/NotebookEditor';
+import { NotebookList } from '../notebook/NotebookList';
 
 const EmptyMemoView = () => {
 	const isMac = /Mac|iPod|iPhone|iPad/.test(window.navigator.platform);
@@ -70,7 +71,14 @@ export const DesktopLayout = () => {
 				return <TagManager />;
 
 			case 'notebook':
-				return <NotebookEditor isCreate />;
+				switch (currentView) {
+					case 'list':
+						return <NotebookList />;
+					case 'create':
+						return <NotebookEditor isCreate />;
+					default:
+						return <NotebookList />;
+				}
 
 			case 'theme':
 				// TODO: テーマ管理画面を実装
