@@ -32,6 +32,14 @@ export const NotebookList = () => {
 				<ul>
 					<li
 						className="p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+						onClick={() => goToMemosForNotebook('ALL')}
+					>
+						<div className="flex items-center justify-between">
+							<div className="font-medium text-gray-900 dark:text-white">すべてのメモ</div>
+						</div>
+					</li>
+					<li
+						className="p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
 						onClick={() => goToMemosForNotebook('INBOX')}
 					>
 						<div className="flex items-center justify-between">
