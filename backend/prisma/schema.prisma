@@ -69,7 +69,7 @@ model Memo {
 
 model Notebook {
   id            String    @id @default(cuid())
-  notebook_name String?   @db.VarChar(100)
+  name          String?   @db.VarChar(100)
   content       String?   @db.Text
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -82,6 +82,8 @@ model Notebook {
 
   memos         Memo[]
 
+  @@index([userId, name])
+  @@index([userId, updatedAt])
   @@map("notebooks")
 }
 
@@ -144,17 +146,34 @@ model Theme {
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   // 作成者（システムテーマの場合はnull）
   createdById String?  @map("created_by_id")
   createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: Cascade)
-  
+
+  // カテゴリ（任意）
+  categoryId  String?   @map("category_id")
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
   // リレーション
   memos           Memo[]
   notebooks       Notebook[]
   userFavorites   UserFavoriteTheme[]
-  
+
+  @@index([categoryId])
   @@map("themes")
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique @db.VarChar(50)
+  slug      String?  @unique @db.VarChar(50)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  themes    Theme[]
+
+  @@map("categories")
 }
 
 model UserFavoriteTheme {
