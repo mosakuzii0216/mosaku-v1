@@ -10,8 +10,14 @@ import { NotebookList } from '../notebook/NotebookList';
 import { NotebookEditor } from '../notebook/NotebookEditor';
 
 export const MobileLayout = () => {
-	const { currentObject, currentView, selectedMemo, goToMemoCreate, goToNotebookCreate } =
-		useMemoStore();
+  const {
+    currentObject,
+    currentView,
+    selectedMemo,
+    goToMemoCreate,
+    goToNotebookCreate,
+    selectedNotebookId,
+  } = useMemoStore();
 	useAppInit(); // アプリ初期化（タグロード等）
 
 	// ショートカットキーのハンドリング
@@ -74,14 +80,16 @@ export const MobileLayout = () => {
 				}
 				// 内部switchが網羅的でも静的解析ではfallthroughと判断されるため明示的にbreak
 				break;
-			case 'notebook':
-				switch (currentView) {
-					case 'list':
-						return <NotebookList />;
-					case 'create':
-						return <NotebookEditor isCreate />;
-				}
-				break;
+      case 'notebook':
+        switch (currentView) {
+          case 'list':
+            return <NotebookList />;
+          case 'create':
+            return <NotebookEditor isCreate />;
+          case 'edit':
+            return <NotebookEditor notebookId={selectedNotebookId ?? undefined} />;
+        }
+        break;
 				// fallthrough防止のため明示的にbreak
 				break;
 			case 'tag':

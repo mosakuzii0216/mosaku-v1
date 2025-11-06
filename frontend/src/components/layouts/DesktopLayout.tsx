@@ -22,8 +22,14 @@ const EmptyMemoView = () => {
 };
 
 export const DesktopLayout = () => {
-	const { currentObject, currentView, selectedMemo, goToMemoCreate, goToNotebookCreate } =
-		useMemoStore();
+  const {
+    currentObject,
+    currentView,
+    selectedMemo,
+    goToMemoCreate,
+    goToNotebookCreate,
+    selectedNotebookId,
+  } = useMemoStore();
 	useAppInit(); // アプリ初期化（タグロード等）
 
 	// ショートカットキーのハンドリング
@@ -70,15 +76,17 @@ export const DesktopLayout = () => {
 			case 'tag':
 				return <TagManager />;
 
-			case 'notebook':
-				switch (currentView) {
-					case 'list':
-						return <NotebookList />;
-					case 'create':
-						return <NotebookEditor isCreate />;
-					default:
-						return <NotebookList />;
-				}
+      case 'notebook':
+        switch (currentView) {
+          case 'list':
+            return <NotebookList />;
+          case 'create':
+            return <NotebookEditor isCreate />;
+          case 'edit':
+            return <NotebookEditor notebookId={selectedNotebookId ?? undefined} />;
+          default:
+            return <NotebookList />;
+        }
 
 			case 'theme':
 				// TODO: テーマ管理画面を実装
