@@ -3,7 +3,7 @@ import { useMemoStore } from '../../stores/useMemoStore';
 
 export const NotebookList = () => {
 	const { data: notebooks = [], isLoading, error } = useNotebooks();
-	const { goToMemosForNotebook } = useMemoStore();
+	const { goToMemosForNotebook, goToNotebookEdit } = useMemoStore();
 
 	if (isLoading) {
 		return (
@@ -52,12 +52,23 @@ export const NotebookList = () => {
 							className="p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
 							onClick={() => goToMemosForNotebook(nb.id)}
 						>
-							<div className="flex items-center justify-between">
+							<div className="flex items-center justify-between gap-3">
 								<div className="font-medium text-gray-900 dark:text-white">
 									{nb.name || '(名称未設定)'}
 								</div>
-								<div className="text-xs text-gray-500 dark:text-gray-400">
-									{new Date(nb.updatedAt).toLocaleString('ja-JP')}
+								<div className="flex items-center gap-3">
+									<div className="text-xs text-gray-500 dark:text-gray-400">
+										{new Date(nb.updatedAt).toLocaleString('ja-JP')}
+									</div>
+									<button
+										onClick={(e) => {
+											e.stopPropagation();
+											goToNotebookEdit(nb.id);
+										}}
+										className="text-xs px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600"
+									>
+										編集
+									</button>
 								</div>
 							</div>
 							{nb.theme && (

@@ -1,19 +1,35 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { TagSelector } from '../tag/TagSelector';
 import { RichTextEditor } from '../editor/RichTextEditor';
-import { useCreateNotebook } from '../../hooks/useNotebookQueries';
+import { useCreateNotebook, useNotebook, useUpdateNotebook } from '../../hooks/useNotebookQueries';
 import { useSystemThemes, usePublicThemes } from '../../hooks/useThemeQueries';
+import { useMemoStore } from '../../stores/useMemoStore';
 
 interface NotebookEditorProps {
 	isCreate?: boolean;
+	notebookId?: string;
 }
 
-export const NotebookEditor = (_props: NotebookEditorProps) => {
+export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) => {
 	const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 	const [content, setContent] = useState<string>('');
 	const [name, setName] = useState<string>('');
 	const [themeId, setThemeId] = useState<string>('default');
 	const createNotebook = useCreateNotebook();
+	const updateNotebook = useUpdateNotebook();
+	const { goToNotebookList } = useMemoStore();
+
+	const isEdit = !isCreate && !!notebookId;
+	const { data: editingNotebook, isLoading: isLoadingNotebook } = useNotebook(notebookId);
+
+	// 編集時、初回ロードでフォームに値をセット
+	useEffect(() => {
+		if (isEdit && editingNotebook) {
+			setName(editingNotebook.name ?? '');
+			setContent(editingNotebook.content ?? '');
+			setThemeId(editingNotebook.themeId ?? editingNotebook.theme?.id ?? 'default');
+		}
+	}, [isEdit, editingNotebook]);
 
 	// DBからテーマ取得（システム + 公開）
 	const { data: systemThemes = [], isLoading: isLoadingSystem } = useSystemThemes();
@@ -28,23 +44,35 @@ export const NotebookEditor = (_props: NotebookEditorProps) => {
 	}, [systemThemes, publicThemes]);
 
 	const handleSave = () => {
-		createNotebook.mutate(
-			{
-				name: name?.trim() ? name : null,
-				content: content?.trim() ? content : null,
-				themeId: themeId && themeId !== 'default' ? themeId : null,
-			},
-			{
+		const payload = {
+			name: name?.trim() ? name : null,
+			content: content?.trim() ? content : null,
+			themeId: themeId && themeId !== 'default' ? themeId : null,
+		};
+
+		if (isEdit && notebookId) {
+			updateNotebook.mutate(
+				{ id: notebookId, data: payload },
+				{
+					onSuccess: () => {
+						goToNotebookList();
+					},
+					onError: (error) => {
+						console.error('error update notebook', error);
+					},
+				}
+			);
+		} else {
+			createNotebook.mutate(payload, {
 				onSuccess: () => {
-					// 成功後の遷移
 					console.log('success create notebook');
+					goToNotebookList();
 				},
 				onError: (error) => {
-					// エラーハンドリング
 					console.error('error create notebook', error);
 				},
-			},
-		);
+			});
+		}
 	};
 
 	return (
@@ -54,10 +82,16 @@ export const NotebookEditor = (_props: NotebookEditorProps) => {
 				<div className="flex items-center space-x-2">
 					<button
 						onClick={handleSave}
-						disabled={createNotebook.isPending}
+						disabled={createNotebook.isPending || updateNotebook.isPending || (isEdit && isLoadingNotebook)}
 						className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 					>
-						{createNotebook.isPending ? '保存中...' : '保存'}
+						{createNotebook.isPending || updateNotebook.isPending ? '保存中...' : isEdit ? '更新' : '保存'}
+					</button>
+					<button
+						onClick={goToNotebookList}
+						className="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+					>
+						キャンセル
 					</button>
 				</div>
 			</div>
@@ -84,14 +118,14 @@ export const NotebookEditor = (_props: NotebookEditorProps) => {
 							className="border rounded px-3 py-2 dark:text-white bg-transparent w-full"
 						>
 							<option value="default">未選択（デフォルト）</option>
-							{(isLoadingSystem || isLoadingPublic) && <option disabled>読み込み中...</option>}
-							{!isLoadingSystem &&
-								!isLoadingPublic &&
-								allThemes.map((t) => (
-									<option key={t.id} value={t.id}>
-										{t.name}
-									</option>
-								))}
+						{(isLoadingSystem || isLoadingPublic) && <option disabled>読み込み中...</option>}
+						{!isLoadingSystem &&
+							!isLoadingPublic &&
+							allThemes.map((t) => (
+								<option key={t.id} value={t.id}>
+									{t.name}
+								</option>
+							))}
 						</select>
 					</div>
 					{/* タグ選択UI */}
