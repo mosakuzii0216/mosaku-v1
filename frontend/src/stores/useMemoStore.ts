@@ -5,6 +5,7 @@ interface MemoStore {
 	// データ
 	memos: Memo[];
 	selectedMemo: Memo | null;
+	selectedNotebookId: string | null;
 
 	// UI状態
 	isMobile: boolean;
@@ -39,6 +40,7 @@ interface MemoStore {
 	goToMemoCreate: () => void;
 	goToNotebookCreate: () => void;
 	goToNotebookList: () => void;
+	goToNotebookEdit: (id: string) => void;
 	goToMemosForNotebook: (filter: 'ALL' | 'INBOX' | string) => void;
 	goToTags: () => void;
 	logCurrent: () => void;
@@ -48,6 +50,7 @@ export const useMemoStore = create<MemoStore>((set, get) => ({
 	// 初期状態
 	memos: [],
 	selectedMemo: null,
+	selectedNotebookId: null,
 	isMobile: false,
 	currentObject: 'memo',
 	currentView: 'list',
@@ -120,6 +123,7 @@ export const useMemoStore = create<MemoStore>((set, get) => ({
 			currentObject: 'notebook',
 			currentView: 'create',
 			selectedMemo: null,
+			selectedNotebookId: null,
 			isEditing: true,
 		}),
 
@@ -128,7 +132,17 @@ export const useMemoStore = create<MemoStore>((set, get) => ({
 			currentObject: 'notebook',
 			currentView: 'list',
 			selectedMemo: null,
+			selectedNotebookId: null,
 			isEditing: false,
+		}),
+
+	goToNotebookEdit: (id) =>
+		set({
+			currentObject: 'notebook',
+			currentView: 'edit',
+			selectedMemo: null,
+			selectedNotebookId: id,
+			isEditing: true,
 		}),
 
 	goToMemosForNotebook: (filter) =>
