@@ -340,7 +340,7 @@ class ApiClient {
 	private normalizeNotebook(raw: any): Notebook {
 		return {
 			id: raw.id,
-			name: raw.notebook_name ?? null, // ← ここで正規化
+			name: raw.name ?? null, // 後方互換: name優先
 			content: raw.content ?? null,
 			createdAt: raw.createdAt,
 			updatedAt: raw.updatedAt,
