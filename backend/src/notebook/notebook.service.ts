@@ -34,10 +34,10 @@ export class NotebookService {
 		return this.authorizationService.validateOwnership(notebook, userId, 'Notebook');
 	}
 
-	// 作成(DTO.name -> noteobok_name にマッピング注意)
+	// 作成
 	create(dto: CreateNotebookDto, userId: string) {
 		const data: Prisma.NotebookCreateInput = {
-			notebook_name: dto.name, // DBのカラム名
+			name: dto.name ?? null,
 			user: { connect: { id: userId } },
 			...(dto.themeId ? { theme: { connect: { id: dto.themeId } } } : {}),
 			...(dto.content !== undefined ? { content: dto.content } : {}),
@@ -57,7 +57,7 @@ export class NotebookService {
 		this.authorizationService.validateOwnership(existing, userId, 'Notebook');
 
 		const data: Prisma.NotebookUpdateInput = {
-			...(dto.name ? { notebook_name: dto.name } : {}),
+			...(dto.name !== undefined ? { name: dto.name } : {}),
 			...(dto.themeId
 				? { theme: { connect: { id: dto.themeId } } }
 				: { theme: { disconnect: true } }),
