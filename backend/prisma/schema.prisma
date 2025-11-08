@@ -81,6 +81,7 @@ model Notebook {
   theme         Theme?   @relation(fields: [themeId], references: [id], onDelete: SetNull)
 
   memos         Memo[]
+  notebookTags  NotebookTag[]
 
   @@index([userId, name])
   @@index([userId, updatedAt])
@@ -112,7 +113,8 @@ model Tag {
   userId    String   @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  memoTags  MemoTag[]
+  memoTags      MemoTag[]
+  notebookTags  NotebookTag[]
   
   @@map("tags")
 }
@@ -126,6 +128,17 @@ model MemoTag {
   
   @@id([memoId, tagId])
   @@map("memo_tags")
+}
+
+model NotebookTag {
+  notebookId String  @map("notebook_id")
+  tagId      String  @map("tag_id")
+
+  notebook   Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([notebookId, tagId])
+  @@map("notebook_tags")
 }
 
 model Theme {
