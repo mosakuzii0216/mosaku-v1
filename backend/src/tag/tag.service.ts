@@ -167,6 +167,8 @@ export class TagService {
 		assignTagsDto: AssignTagsDto,
 		userId: string,
 	) {
+		console.log('[assignTagsToNotebook] Called with:', { notebookId, tagIds: assignTagsDto.tagIds, userId });
+
 		// Verify notebook ownership
 		const notebook = await this.prisma.notebook.findUnique({ where: { id: notebookId } });
 
@@ -186,6 +188,8 @@ export class TagService {
 			},
 		});
 
+		console.log('[assignTagsToNotebook] Found tags:', tags.length, '/', assignTagsDto.tagIds.length);
+
 		if (tags.length !== assignTagsDto.tagIds.length) {
 			throw new ForbiddenException('Some tags do not belong to you');
 		}
@@ -194,9 +198,10 @@ export class TagService {
 		await this.prisma.notebookTag.deleteMany({ where: { notebookId } });
 
 		if (assignTagsDto.tagIds.length > 0) {
-			await this.prisma.notebookTag.createMany({
+			const createResult = await this.prisma.notebookTag.createMany({
 				data: assignTagsDto.tagIds.map((tagId) => ({ notebookId, tagId })),
 			});
+			console.log('[assignTagsToNotebook] Created notebook tags:', createResult.count);
 		}
 
 		return this.prisma.notebook.findUnique({

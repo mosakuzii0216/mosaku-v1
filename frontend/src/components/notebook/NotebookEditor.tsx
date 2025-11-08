@@ -59,15 +59,21 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 			themeId: themeId && themeId !== 'default' ? themeId : null,
 		};
 
+		console.log('[NotebookEditor] handleSave called with selectedTagIds:', selectedTagIds);
+
 		if (isEdit && notebookId) {
 			updateNotebook.mutate(
 				{ id: notebookId, data: payload },
 				{
 					onSuccess: () => {
 						// タグ割り当てを反映
+						console.log('[NotebookEditor] Calling assignTagsToNotebook with:', { notebookId, tagIds: selectedTagIds });
 						apiClient
 							.assignTagsToNotebook(notebookId, { tagIds: selectedTagIds })
-							.then(() => goToNotebookList())
+							.then((result) => {
+								console.log('[NotebookEditor] assignTagsToNotebook succeeded:', result);
+								goToNotebookList();
+							})
 							.catch((e) => {
 								console.error('failed to assign tags to notebook', e);
 								goToNotebookList();
@@ -82,9 +88,13 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 			createNotebook.mutate(payload, {
 				onSuccess: (nb) => {
 					// 作成後にタグ割り当て
+					console.log('[NotebookEditor] Calling assignTagsToNotebook with:', { notebookId: nb.id, tagIds: selectedTagIds });
 					apiClient
 						.assignTagsToNotebook(nb.id, { tagIds: selectedTagIds })
-						.then(() => goToNotebookList())
+						.then((result) => {
+							console.log('[NotebookEditor] assignTagsToNotebook succeeded:', result);
+							goToNotebookList();
+						})
 						.catch((e) => {
 							console.error('failed to assign tags to new notebook', e);
 							goToNotebookList();
