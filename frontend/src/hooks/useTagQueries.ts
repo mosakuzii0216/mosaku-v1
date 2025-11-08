@@ -5,14 +5,16 @@ import type { CreateTagDto, UpdateTagDto, AssignTagsDto } from '../types/tag';
 
 export const useTagQueries = () => {
 	const queryClient = useQueryClient();
-	const { addTag, updateTag, deleteTag } = useTagStore();
+	const { addTag, updateTag, deleteTag, setTags } = useTagStore();
 
 	// タグ一覧取得
 	const tagsQuery = useQuery({
 		queryKey: ['tags'],
 		queryFn: async () => {
 			try {
-				return await apiClient.getTags();
+				const tags = await apiClient.getTags();
+				setTags(tags); // Zustandストアに保存
+				return tags;
 			} catch (error) {
 				console.error('タグ取得エラー:', error);
 				throw error;
