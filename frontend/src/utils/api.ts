@@ -1,5 +1,5 @@
 import type { Memo, CreateMemoDto, UpdateMemoDto } from '../types/memo';
-import type { Tag, CreateTagDto, UpdateTagDto, AssignTagsDto, MemoTag } from '../types/tag';
+import type { Tag, CreateTagDto, UpdateTagDto, AssignTagsDto, MemoTag, NotebookTag } from '../types/tag';
 import type { Theme, ThemeSearchParams, CreateThemeData, UpdateThemeData } from '../types/theme';
 import type { Notebook, CreateNotebookDto, UpdateNotebookDto } from '../types/notebook';
 import { AuthTokenManager } from './auth';
@@ -222,8 +222,21 @@ class ApiClient {
 	}
 
 	// メモのタグ取得
-	async getMemoTags(memoId: string): Promise<MemoTag[]> {
-		return this.request<MemoTag[]>(`/tags/memo/${memoId}`);
+  async getMemoTags(memoId: string): Promise<MemoTag[]> {
+    return this.request<MemoTag[]>(`/tags/memo/${memoId}`);
+  }
+
+	// ノートブックにタグを割り当て
+	async assignTagsToNotebook(notebookId: string, data: AssignTagsDto): Promise<any> {
+		return this.request<any>(`/tags/notebook/${notebookId}/assign`, {
+			method: 'POST',
+			body: JSON.stringify(data),
+		});
+	}
+
+	// ノートブックのタグ取得
+	async getNotebookTags(notebookId: string): Promise<NotebookTag[]> {
+		return this.request<NotebookTag[]>(`/tags/notebook/${notebookId}`);
 	}
 
 	// 招待コード検証（認証不要）

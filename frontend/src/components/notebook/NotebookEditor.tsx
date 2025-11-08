@@ -6,6 +6,7 @@ import { useCreateNotebook, useNotebook, useUpdateNotebook } from '../../hooks/u
 import { useSystemThemes, usePublicThemes } from '../../hooks/useThemeQueries';
 import { useMemoStore } from '../../stores/useMemoStore';
 import { useTagStore } from '../../stores/useTagStore';
+import { apiClient } from '../../utils/api';
 
 interface NotebookEditorProps {
 	isCreate?: boolean;
@@ -25,12 +26,17 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 	const isEdit = !isCreate && !!notebookId;
 	const { data: editingNotebook, isLoading: isLoadingNotebook } = useNotebook(notebookId);
 
-	// 編集時、初回ロードでフォームに値をセット
+	// 編集時、初回ロードでフォームに値をセット & タグ取得
 	useEffect(() => {
 		if (isEdit && editingNotebook) {
 			setName(editingNotebook.name ?? '');
 			setContent(editingNotebook.content ?? '');
 			setThemeId(editingNotebook.themeId ?? editingNotebook.theme?.id ?? 'default');
+			// 既存タグの取得
+			apiClient
+				.getNotebookTags(editingNotebook.id)
+				.then((pairs) => setSelectedTagIds(pairs.map((p) => p.tagId)))
+				.catch((e) => console.error('failed to load notebook tags', e));
 		}
 	}, [isEdit, editingNotebook]);
 
@@ -58,7 +64,14 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 				{ id: notebookId, data: payload },
 				{
 					onSuccess: () => {
-						goToNotebookList();
+						// タグ割り当てを反映
+						apiClient
+							.assignTagsToNotebook(notebookId, { tagIds: selectedTagIds })
+							.then(() => goToNotebookList())
+							.catch((e) => {
+								console.error('failed to assign tags to notebook', e);
+								goToNotebookList();
+							});
 					},
 					onError: (error) => {
 						console.error('error update notebook', error);
@@ -67,9 +80,15 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 			);
 		} else {
 			createNotebook.mutate(payload, {
-				onSuccess: () => {
-					console.log('success create notebook');
-					goToNotebookList();
+				onSuccess: (nb) => {
+					// 作成後にタグ割り当て
+					apiClient
+						.assignTagsToNotebook(nb.id, { tagIds: selectedTagIds })
+						.then(() => goToNotebookList())
+						.catch((e) => {
+							console.error('failed to assign tags to new notebook', e);
+							goToNotebookList();
+						});
 				},
 				onError: (error) => {
 					console.error('error create notebook', error);

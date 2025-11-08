@@ -160,4 +160,65 @@ export class TagService {
 			},
 		});
 	}
+
+	// ==== Notebooks x Tags (mirror of memos) ====
+	async assignTagsToNotebook(
+		notebookId: string,
+		assignTagsDto: AssignTagsDto,
+		userId: string,
+	) {
+		// Verify notebook ownership
+		const notebook = await this.prisma.notebook.findUnique({ where: { id: notebookId } });
+
+		if (!notebook) {
+			throw new NotFoundException(`Notebook with ID ${notebookId} not found`);
+		}
+
+		if (notebook.userId !== userId) {
+			throw new ForbiddenException('You can only modify your own notebooks');
+		}
+
+		// Verify all tags belong to the user
+		const tags = await this.prisma.tag.findMany({
+			where: {
+				id: { in: assignTagsDto.tagIds },
+				userId,
+			},
+		});
+
+		if (tags.length !== assignTagsDto.tagIds.length) {
+			throw new ForbiddenException('Some tags do not belong to you');
+		}
+
+		// Replace all notebook tags with the provided set
+		await this.prisma.notebookTag.deleteMany({ where: { notebookId } });
+
+		if (assignTagsDto.tagIds.length > 0) {
+			await this.prisma.notebookTag.createMany({
+				data: assignTagsDto.tagIds.map((tagId) => ({ notebookId, tagId })),
+			});
+		}
+
+		return this.prisma.notebook.findUnique({
+			where: { id: notebookId },
+			include: {
+				notebookTags: { include: { tag: true } },
+			},
+		});
+	}
+
+	async getNotebookTags(notebookId: string, userId: string) {
+		const notebook = await this.prisma.notebook.findUnique({ where: { id: notebookId } });
+		if (!notebook) {
+			throw new NotFoundException(`Notebook with ID ${notebookId} not found`);
+		}
+		if (notebook.userId !== userId) {
+			throw new ForbiddenException('You can only access your own notebooks');
+		}
+
+		return this.prisma.notebookTag.findMany({
+			where: { notebookId },
+			include: { tag: true },
+		});
+	}
 }

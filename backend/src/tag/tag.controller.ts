@@ -70,4 +70,21 @@ export class TagController {
 	getMemoTags(@Param('memoId') memoId: string, @Request() req: AuthenticatedRequest) {
 		return this.tagService.getMemoTags(memoId, req.user.id);
 	}
+
+	@Post('notebook/:notebookId/assign')
+	assignTagsToNotebook(
+		@Param('notebookId') notebookId: string,
+		@Body() assignTagsDto: AssignTagsDto,
+		@Request() req: AuthenticatedRequest,
+	) {
+		return this.tagService.assignTagsToNotebook(notebookId, assignTagsDto, req.user.id);
+	}
+
+	@Get('notebook/:notebookId')
+	getNotebookTags(
+		@Param('notebookId') notebookId: string,
+		@Request() req: AuthenticatedRequest,
+	) {
+		return this.tagService.getNotebookTags(notebookId, req.user.id);
+	}
 }
