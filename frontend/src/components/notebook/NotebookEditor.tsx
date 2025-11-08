@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { TagSelector } from '../tag/TagSelector';
+// import { TagSelector } from '../tag/TagSelector';
+import { TagDropdownIcon } from '../tag/TagDropdownIcon';
 import { RichTextEditor } from '../editor/RichTextEditor';
 import { useCreateNotebook, useNotebook, useUpdateNotebook } from '../../hooks/useNotebookQueries';
 import { useSystemThemes, usePublicThemes } from '../../hooks/useThemeQueries';
 import { useMemoStore } from '../../stores/useMemoStore';
+import { useTagStore } from '../../stores/useTagStore';
 
 interface NotebookEditorProps {
 	isCreate?: boolean;
@@ -18,6 +20,7 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 	const createNotebook = useCreateNotebook();
 	const updateNotebook = useUpdateNotebook();
 	const { goToNotebookList } = useMemoStore();
+  const { tags } = useTagStore();
 
 	const isEdit = !isCreate && !!notebookId;
 	const { data: editingNotebook, isLoading: isLoadingNotebook } = useNotebook(notebookId);
@@ -78,8 +81,16 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 	return (
 		<div className="flex flex-col h-full">
 			{/* ヘッダー */}
-			<div className="border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
+			<div className="border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-end">
 				<div className="flex items-center space-x-2">
+					<TagDropdownIcon
+						selectedTagIds={selectedTagIds}
+						onToggleTag={(id) => {
+							setSelectedTagIds((prev) =>
+								prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
+							);
+						}}
+					/>
 					<button
 						onClick={handleSave}
 						disabled={createNotebook.isPending || updateNotebook.isPending || (isEdit && isLoadingNotebook)}
@@ -109,7 +120,7 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 						/>
 					</div>
 
-					{/* テーマ選択（DBから取得したthemesをセレクト表示） */}
+				{/* テーマ選択（DBから取得したthemesをセレクト表示） */}
 					<div className="mb-4">
 						<label className="block text-sm font-medium mb-2 dark:text-white">テーマ</label>
 						<select
@@ -128,15 +139,28 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 							))}
 						</select>
 					</div>
-					{/* タグ選択UI */}
-					<div className="mb-4">
-						<label className="block text-sm font-medium mb-2 dark:text-white">タグ</label>
-						<TagSelector
-							selectedTagIds={selectedTagIds}
-							onTagsChange={setSelectedTagIds}
-							className="w-full"
-						/>
-					</div>
+
+					{/* 選択中タグ（小さめ表示・現状保存対象外） */}
+					{selectedTagIds.length > 0 && (
+						<div className="mb-4 flex flex-wrap gap-1 text-xs text-gray-600 dark:text-gray-300">
+							{selectedTagIds
+								.map((id) => tags.find((t) => t.id === id))
+								.filter(Boolean)
+								.map((tag) => (
+									<span
+										key={tag!.id}
+										className="inline-flex items-center px-2 py-0.5 rounded-full border text-[11px]"
+										style={{
+											borderColor: tag!.color,
+											color: tag!.color,
+											backgroundColor: `${tag!.color}15`,
+										}}
+									>
+										{tag!.name}
+									</span>
+								))}
+						</div>
+					)}
 
 					{/* コンテンツ入力エリア TODO:テーマ反映、placeholderを定義しても現れない */}
 					{/*.ノートブックの内容をいきなりメモみたいに書けるようにして良いのか？→良い。どういう雰囲気なのか書きながらユーザが感じ取れるから */}

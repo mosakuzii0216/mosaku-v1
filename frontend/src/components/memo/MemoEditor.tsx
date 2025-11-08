@@ -3,7 +3,9 @@ import { useCreateMemo, useUpdateMemo } from '../../hooks/useMemoQueries';
 import { useNotebooks } from '../../hooks/useNotebookQueries';
 import { useTagQueries } from '../../hooks/useTagQueries';
 import { applyThemeToElement, removeThemeFromElement } from '../../utils/themeUtils';
-import { TagSelector } from '../tag/TagSelector';
+// import { TagSelector } from '../tag/TagSelector';
+import { TagDropdownIcon } from '../tag/TagDropdownIcon';
+import { useTagStore } from '../../stores/useTagStore';
 import { RichTextEditor } from '../editor/RichTextEditor';
 import type { Memo } from '../../types/memo';
 import type { Theme } from '../../types/theme';
@@ -42,6 +44,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	);
 
 	const [hasChanges, setHasChanges] = useState(false);
+  const { tags } = useTagStore();
 
 	// memo prop の変更を検知してエディタの状態を更新する
 	useEffect(() => {
@@ -216,6 +219,14 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 			{/* ヘッダー */}
 			<div className="border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-end bg-white dark:bg-gray-900">
 				<div className="flex items-center space-x-2">
+					<TagDropdownIcon
+						selectedTagIds={selectedTagIds}
+						onToggleTag={(id) => {
+							setSelectedTagIds((prev) =>
+								prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
+							);
+						}}
+					/>
 					{hasChanges && (
 						<span className="text-sm text-gray-500 dark:text-gray-400">未保存の変更があります</span>
 					)}
@@ -273,20 +284,27 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 						<NotebookSelect value={selectedNotebookId} onChange={setSelectedNotebookId} />
 					</div>
 
-					{/* タグ選択エリア */}
-					<div className="mb-4">
-						<label
-							className="block text-sm font-medium mb-2 dark:text-white"
-							// style={{ color: selectedTheme ? 'var(--theme-subtext-color)' : undefined }} まだテーマ機能が確定してないからコメントアウト
-						>
-							タグ
-						</label>
-						<TagSelector
-							selectedTagIds={selectedTagIds}
-							onTagsChange={setSelectedTagIds}
-							className="w-full"
-						/>
-					</div>
+					{/* 選択中タグの表示（小さめチップ） */}
+					{selectedTagIds.length > 0 && (
+						<div className="mb-3 flex flex-wrap gap-1 text-xs text-gray-600 dark:text-gray-300">
+							{selectedTagIds
+								.map((id) => tags.find((t) => t.id === id))
+								.filter(Boolean)
+								.map((tag) => (
+									<span
+										key={tag!.id}
+										className="inline-flex items-center px-2 py-0.5 rounded-full border text-[11px]"
+										style={{
+											borderColor: tag!.color,
+											color: tag!.color,
+											backgroundColor: `${tag!.color}15`,
+										}}
+									>
+										{tag!.name}
+									</span>
+								))}
+						</div>
+					)}
 
 					{/* コンテンツ入力エリア */}
 					<div
