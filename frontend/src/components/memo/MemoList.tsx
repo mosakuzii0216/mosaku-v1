@@ -57,7 +57,7 @@ export const MemoList = () => {
 						<span>
 							{(() => {
 								if (notebookFilter === 'INBOX') {
-									return 'フィルタ中: Inbox（未選択）';
+									return 'フィルタ中: ノートブック未選択';
 								}
 								const notebook = notebooks.find((n) => n.id === notebookFilter);
 								const notebook_name = notebook?.name ?? '無題のノートブック';

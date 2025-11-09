@@ -44,7 +44,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	);
 
 	const [hasChanges, setHasChanges] = useState(false);
-  const { tags } = useTagStore();
+	const { tags } = useTagStore();
 
 	// memo prop の変更を検知してエディタの状態を更新する
 	useEffect(() => {
@@ -347,7 +347,7 @@ function NotebookSelect({ value, onChange }: { value: string; onChange: (v: stri
 			onChange={(e) => onChange(e.target.value)}
 			className="border rounded px-3 py-2 dark:text-white bg-transparent w-full"
 		>
-			<option value="">Inbox（未選択）</option>
+			<option value="">未選択</option>
 			{isLoading && <option disabled>読み込み中...</option>}
 			{!isLoading &&
 				notebooks.map((nb) => (

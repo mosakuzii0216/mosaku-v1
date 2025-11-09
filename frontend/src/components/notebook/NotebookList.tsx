@@ -43,7 +43,7 @@ export const NotebookList = () => {
 						onClick={() => goToMemosForNotebook('INBOX')}
 					>
 						<div className="flex items-center justify-between">
-							<div className="font-medium text-gray-900 dark:text-white">Inbox（未選択）</div>
+							<div className="font-medium text-gray-900 dark:text-white">未選択</div>
 						</div>
 					</li>
 					{notebooks.map((nb) => (
