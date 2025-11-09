@@ -30,15 +30,6 @@ export const MemoList = () => {
 		);
 	}
 
-	// ノートブック機能実装のため一時的に検索機能を無効化
-	// const filteredMemos = searchQuery
-	//   ? memos.filter(
-	//       (memo) =>
-	//         memo.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-	//         memo.content.toLowerCase().includes(searchQuery.toLowerCase())
-	//     )
-	//   : memos;
-
 	// Notebookフィルタに応じて表示を切り替え
 	const filteredMemos = (() => {
 		if (notebookFilter === 'ALL') return memos;
