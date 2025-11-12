@@ -3,7 +3,6 @@ import { useMemoStore } from '../../stores/useMemoStore';
 import { useAppInit } from '../../hooks/useAppInit';
 import { Header } from '../ui/Header';
 import { MemoList } from '../memo/MemoList';
-import { MemoDetail } from '../memo/MemoDetail';
 import { MemoEditor } from '../memo/MemoEditor';
 import { TagManager } from '../tag/TagManager';
 import { NotebookEditor } from '../notebook/NotebookEditor';
@@ -22,14 +21,14 @@ const EmptyMemoView = () => {
 };
 
 export const DesktopLayout = () => {
-  const {
-    currentObject,
-    currentView,
-    selectedMemo,
-    goToMemoCreate,
-    goToNotebookCreate,
-    selectedNotebookId,
-  } = useMemoStore();
+	const {
+		currentObject,
+		currentView,
+		selectedMemo,
+		goToMemoCreate,
+		goToNotebookCreate,
+		selectedNotebookId,
+	} = useMemoStore();
 	useAppInit(); // アプリ初期化（タグロード等）
 
 	// ショートカットキーのハンドリング
@@ -54,9 +53,6 @@ export const DesktopLayout = () => {
 		switch (currentObject) {
 			case 'memo':
 				switch (currentView) {
-					case 'detail':
-						return selectedMemo ? <MemoDetail memo={selectedMemo} /> : <EmptyMemoView />;
-
 					case 'edit':
 						return selectedMemo ? (
 							<MemoEditor memo={selectedMemo} />
@@ -76,17 +72,17 @@ export const DesktopLayout = () => {
 			case 'tag':
 				return <TagManager />;
 
-      case 'notebook':
-        switch (currentView) {
-          case 'list':
-            return <NotebookList />;
-          case 'create':
-            return <NotebookEditor isCreate />;
-          case 'edit':
-            return <NotebookEditor notebookId={selectedNotebookId ?? undefined} />;
-          default:
-            return <NotebookList />;
-        }
+			case 'notebook':
+				switch (currentView) {
+					case 'list':
+						return <NotebookList />;
+					case 'create':
+						return <NotebookEditor isCreate />;
+					case 'edit':
+						return <NotebookEditor notebookId={selectedNotebookId ?? undefined} />;
+					default:
+						return <NotebookList />;
+				}
 
 			case 'theme':
 				// TODO: テーマ管理画面を実装

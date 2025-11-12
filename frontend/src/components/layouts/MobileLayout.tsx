@@ -3,21 +3,20 @@ import { useMemoStore } from '../../stores/useMemoStore';
 import { useAppInit } from '../../hooks/useAppInit';
 import { Header } from '../ui/Header';
 import { MemoList } from '../memo/MemoList';
-import { MemoDetail } from '../memo/MemoDetail';
 import { MemoEditor } from '../memo/MemoEditor';
 import { TagManager } from '../tag/TagManager';
 import { NotebookList } from '../notebook/NotebookList';
 import { NotebookEditor } from '../notebook/NotebookEditor';
 
 export const MobileLayout = () => {
-  const {
-    currentObject,
-    currentView,
-    selectedMemo,
-    goToMemoCreate,
-    goToNotebookCreate,
-    selectedNotebookId,
-  } = useMemoStore();
+	const {
+		currentObject,
+		currentView,
+		selectedMemo,
+		goToMemoCreate,
+		goToNotebookCreate,
+		selectedNotebookId,
+	} = useMemoStore();
 	useAppInit(); // アプリ初期化（タグロード等）
 
 	// ショートカットキーのハンドリング
@@ -44,22 +43,6 @@ export const MobileLayout = () => {
 					case 'list':
 						return <MemoList />;
 
-					case 'detail':
-						return selectedMemo ? (
-							<MemoDetail memo={selectedMemo} />
-						) : (
-							<div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
-								<p>メモが選択されていません</p>
-								<p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
-									新規作成:{' '}
-									{/Mac|iPod|iPhone|iPad/.test(window.navigator.platform)
-										? 'Cmd + Option'
-										: 'Ctrl + Alt'}{' '}
-									+ N
-								</p>
-							</div>
-						);
-
 					case 'edit':
 						return selectedMemo ? (
 							<MemoEditor memo={selectedMemo} />
@@ -80,16 +63,16 @@ export const MobileLayout = () => {
 				}
 				// 内部switchが網羅的でも静的解析ではfallthroughと判断されるため明示的にbreak
 				break;
-      case 'notebook':
-        switch (currentView) {
-          case 'list':
-            return <NotebookList />;
-          case 'create':
-            return <NotebookEditor isCreate />;
-          case 'edit':
-            return <NotebookEditor notebookId={selectedNotebookId ?? undefined} />;
-        }
-        break;
+			case 'notebook':
+				switch (currentView) {
+					case 'list':
+						return <NotebookList />;
+					case 'create':
+						return <NotebookEditor isCreate />;
+					case 'edit':
+						return <NotebookEditor notebookId={selectedNotebookId ?? undefined} />;
+				}
+				break;
 				// fallthrough防止のため明示的にbreak
 				break;
 			case 'tag':
