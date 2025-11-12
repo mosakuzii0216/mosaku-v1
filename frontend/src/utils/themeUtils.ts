@@ -6,7 +6,6 @@ import type {
 	ThemeTypography,
 	ThemeLayout,
 } from '../types/theme';
-import { cssFileLoader } from './cssFileLoader';
 
 /**
  * テーマスタイルをCSS変数に変換する（後方互換性のため）
@@ -89,13 +88,7 @@ export const convertThemeToCSS = (theme: Theme): ThemeCSSVariables => {
  * テーマをDOM要素に適用する
  */
 export const applyThemeToElement = async (element: HTMLElement, theme: Theme): Promise<void> => {
-	// CSSファイルベースのテーマの場合
-	if (theme.cssFilePath && !theme.styles) {
-		await cssFileLoader.loadAndApplyCSS(theme.cssFilePath, theme.id);
-		return;
-	}
-
-	// 従来のstylesオブジェクトベースのテーマの場合（後方互換性）
+	// stylesオブジェクトベースのテーマの場合
 	if (theme.styles) {
 		const cssVariables = convertThemeToCSS(theme);
 
