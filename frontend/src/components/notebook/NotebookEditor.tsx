@@ -7,6 +7,7 @@ import { useSystemThemes, usePublicThemes } from '../../hooks/useThemeQueries';
 import { useMemoStore } from '../../stores/useMemoStore';
 import { useTagStore } from '../../stores/useTagStore';
 import { apiClient } from '../../utils/api';
+import { loadThemeCSS } from '../../utils/themeLoader';
 
 interface NotebookEditorProps {
 	isCreate?: boolean;
@@ -51,6 +52,21 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 		}
 		return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'ja'));
 	}, [systemThemes, publicThemes]);
+
+	// 選択されたテーマを取得
+	const selectedTheme = useMemo(() => {
+		if (!themeId || themeId === 'default') return null;
+		return allThemes.find((t) => t.id === themeId);
+	}, [themeId, allThemes]);
+
+	// テーマCSSを読み込む
+	useEffect(() => {
+		if (selectedTheme?.cssFilePath) {
+			loadThemeCSS(selectedTheme.id, selectedTheme.cssFilePath).catch((error) => {
+				console.error('Failed to load theme CSS:', error);
+			});
+		}
+	}, [selectedTheme]);
 
 	const handleSave = () => {
 		const payload = {
@@ -137,15 +153,17 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 			</div>
 			{/* エディター */}
 			<div className="flex-1 flex flex-col p-4 bg-white dark:bg-gray-900">
-				{/* TODO: ノートブックテーマをstyle={}で反映 */}
-				<div className="max-w-4xl mx-auto w-full flex-1 flex flex-col">
+				<div
+					className={`max-w-4xl mx-auto w-full flex-1 flex flex-col ${selectedTheme ? 'theme-root' : ''}`}
+					data-theme-id={selectedTheme?.id}
+				>
 					<div className="mb-4">
 						<input
 							type="text"
 							value={name}
 							onChange={(e) => setName(e.target.value)}
 							placeholder="ノートブック名を入力"
-							className="text-2xl font-bold border-none outline-none placeholder-gray-400 dark:text-white bg-transparent w-full"
+							className="memo-title text-2xl font-bold border-none outline-none placeholder-gray-400 dark:text-white bg-transparent w-full"
 						/>
 					</div>
 
@@ -191,12 +209,9 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 						</div>
 					)}
 
-					{/* コンテンツ入力エリア TODO:テーマ反映、placeholderを定義しても現れない */}
-					{/*.ノートブックの内容をいきなりメモみたいに書けるようにして良いのか？→良い。どういう雰囲気なのか書きながらユーザが感じ取れるから */}
-					<div className="relative flex-1 flex flex-col">
-						<div className="flex-1">
-							<RichTextEditor content={content} onChange={setContent} className="h-full" />
-						</div>
+					{/* コンテンツ入力エリア */}
+					<div className="memo-content relative flex-1 flex flex-col">
+						<RichTextEditor content={content} onChange={setContent} className="h-full" />
 					</div>
 				</div>
 			</div>
