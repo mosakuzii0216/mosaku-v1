@@ -10,7 +10,7 @@ export interface Memo {
 	updatedAt: string;
 	memoTags?: MemoTag[];
 	themeId?: string | null;
-	theme?: Pick<Theme, 'id' | 'name' | 'styles'> | null;
+	theme?: Pick<Theme, 'id' | 'name' | 'styles' | 'cssFilePath'> | null;
 	// ノートブック関連
 	notebookId?: string | null;
 	notebook?: Pick<Notebook, 'id' | 'name'> | null;

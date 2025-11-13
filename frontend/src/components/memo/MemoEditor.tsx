@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useCreateMemo, useUpdateMemo } from '../../hooks/useMemoQueries';
 import { useNotebooks } from '../../hooks/useNotebookQueries';
 import { useTagQueries } from '../../hooks/useTagQueries';
-import { applyThemeToElement, removeThemeFromElement } from '../../utils/themeUtils';
+import { loadThemeCSS } from '../../utils/themeLoader';
 // import { TagSelector } from '../tag/TagSelector';
 import { TagDropdownIcon } from '../tag/TagDropdownIcon';
 import { useTagStore } from '../../stores/useTagStore';
@@ -26,22 +26,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 		memo?.memoTags?.map((mt) => mt.tag.id) || [],
 	);
 	const [selectedNotebookId, setSelectedNotebookId] = useState<string>(memo?.notebookId || '');
-	const [selectedTheme, setSelectedTheme] = useState<Theme | null>(
-		memo?.theme
-			? {
-					...memo.theme,
-					description: null,
-					isSystem: false,
-					isPublic: false,
-					cssFilePath: '',
-					createdAt: memo.createdAt,
-					updatedAt: memo.updatedAt,
-					createdById: null,
-					favoriteCount: 0,
-					usageCount: 0,
-				}
-			: null,
-	);
+	const [selectedTheme, setSelectedTheme] = useState<Pick<Theme, 'id' | 'name' | 'styles' | 'cssFilePath'> | null>(memo?.theme || null);
 
 	const [hasChanges, setHasChanges] = useState(false);
 	const { tags } = useTagStore();
@@ -54,56 +39,21 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 			setContent(memo.content || '');
 			setSelectedTagIds(memo.memoTags?.map((mt) => mt.tag.id) || []);
 			setSelectedNotebookId(memo.notebookId || '');
-			setSelectedTheme(
-				memo.theme
-					? {
-							...memo.theme,
-							description: null,
-							isSystem: false,
-							isPublic: false,
-							cssFilePath: '',
-							createdAt: memo.createdAt,
-							updatedAt: memo.updatedAt,
-							createdById: null,
-							favoriteCount: 0,
-							usageCount: 0,
-						}
-					: null,
-			);
+			setSelectedTheme(memo.theme || null);
 			// 新しいメモに切り替わったので、変更状態をリセット
 			setHasChanges(false);
 		}
 	}, [memo, isCreate]);
 
-	// テーマの適用
+	// テーマCSSの読み込み
 	useEffect(() => {
-		const container = document.getElementById(`memo-editor-${memo?.id || 'new'}`);
-		if (container && selectedTheme) {
-			const fullTheme: Theme = {
-				...selectedTheme,
-				description: selectedTheme.description || null,
-				isSystem: selectedTheme.isSystem ?? true,
-				isPublic: selectedTheme.isPublic ?? true,
-				cssFilePath: selectedTheme.cssFilePath || '',
-				createdAt: selectedTheme.createdAt || new Date().toISOString(),
-				updatedAt: selectedTheme.updatedAt || new Date().toISOString(),
-				createdById: selectedTheme.createdById || null,
-				createdBy: selectedTheme.createdBy || null,
-				favoriteCount: selectedTheme.favoriteCount || 0,
-				usageCount: selectedTheme.usageCount || 0,
-				isFavorited: selectedTheme.isFavorited ?? false,
-			};
-			applyThemeToElement(container, fullTheme).catch(console.error);
-		} else if (container) {
-			removeThemeFromElement(container);
+		if (selectedTheme?.cssFilePath) {
+			loadThemeCSS(selectedTheme.id, selectedTheme.cssFilePath).catch((error) => {
+				console.error('Failed to load theme CSS:', error);
+				// エラーハンドリング: 必要に応じてユーザーに通知
+			});
 		}
-
-		return () => {
-			if (container) {
-				removeThemeFromElement(container);
-			}
-		};
-	}, [selectedTheme, memo?.id]);
+	}, [selectedTheme?.id, selectedTheme?.cssFilePath]);
 
 	// 変更検知
 	useEffect(() => {
@@ -249,15 +199,8 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 			<div className="flex-1 flex flex-col p-4 bg-white dark:bg-gray-900">
 				<div
 					id={`memo-editor-${memo?.id || 'new'}`}
-					className="max-w-4xl mx-auto w-full flex-1 flex flex-col"
-					style={{
-						backgroundColor: selectedTheme ? 'var(--theme-bg-color)' : undefined,
-						color: selectedTheme ? 'var(--theme-text-color)' : undefined,
-						fontFamily: selectedTheme ? 'var(--theme-font-family)' : undefined,
-						fontSize: selectedTheme ? 'var(--theme-font-size)' : undefined,
-						padding: selectedTheme ? 'var(--theme-padding)' : undefined,
-						borderRadius: selectedTheme ? 'var(--theme-border-radius)' : undefined,
-					}}
+					className={`max-w-4xl mx-auto w-full flex-1 flex flex-col ${selectedTheme ? 'theme-root' : ''}`}
+					data-theme-id={selectedTheme?.id}
 				>
 					{/* タイトル入力エリア */}
 					<div className="mb-4">
@@ -266,15 +209,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 							placeholder="タイトル"
 							value={title}
 							onChange={(e) => setTitle(e.target.value)}
-							className="text-2xl font-bold border-none outline-none placeholder-gray-400 dark:text-white bg-transparent w-full"
-							style={{
-								// color: selectedTheme ? 'var(--theme-heading-color)' : undefined, まだテーマ機能が確定してないからコメントアウト
-								fontFamily: selectedTheme
-									? 'var(--theme-heading-font-family, var(--theme-font-family))'
-									: undefined,
-								fontSize: selectedTheme ? 'var(--theme-heading-font-size)' : undefined,
-								fontWeight: selectedTheme ? 'var(--theme-heading-font-weight)' : undefined,
-							}}
+							className="memo-title text-2xl font-bold border-none outline-none placeholder-gray-400 dark:text-white bg-transparent w-full"
 						/>
 					</div>
 
@@ -307,30 +242,13 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 					)}
 
 					{/* コンテンツ入力エリア */}
-					<div
-						className="relative flex-1 flex flex-col"
-						style={{
-							borderTop: selectedTheme ? `1px solid var(--theme-border-color)` : undefined,
-							marginTop: selectedTheme ? 'var(--theme-margin)' : undefined,
-							paddingTop: selectedTheme ? 'var(--theme-padding)' : undefined,
-						}}
-					>
-						<div
-							className="flex-1"
-							style={{
-								color: selectedTheme ? 'var(--theme-text-color)' : undefined,
-								fontFamily: selectedTheme ? 'var(--theme-font-family)' : undefined,
-								fontSize: selectedTheme ? 'var(--theme-font-size)' : undefined,
-								lineHeight: selectedTheme ? 'var(--theme-line-height)' : undefined,
-							}}
-						>
-							<RichTextEditor
-								content={content}
-								onChange={setContent}
-								placeholder="メモを入力..."
-								className="h-full"
-							/>
-						</div>
+					<div className="memo-content relative flex-1 flex flex-col">
+						<RichTextEditor
+							content={content}
+							onChange={setContent}
+							placeholder="メモを入力..."
+							className="h-full"
+						/>
 					</div>
 				</div>
 			</div>

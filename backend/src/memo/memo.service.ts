@@ -37,6 +37,7 @@ export class MemoService {
 						id: true,
 						name: true,
 						styles: true,
+						cssFilePath: true,
 					},
 				},
 				notebook: {
@@ -63,6 +64,7 @@ export class MemoService {
 						id: true,
 						name: true,
 						styles: true,
+						cssFilePath: true,
 					},
 				},
 				notebook: {
@@ -98,6 +100,7 @@ export class MemoService {
 						id: true,
 						name: true,
 						styles: true,
+						cssFilePath: true,
 					},
 				},
 				notebook: {
@@ -123,6 +126,7 @@ export class MemoService {
 						id: true,
 						name: true,
 						styles: true,
+						cssFilePath: true,
 					},
 				},
 				notebook: {
@@ -189,6 +193,7 @@ export class MemoService {
 						id: true,
 						name: true,
 						styles: true,
+						cssFilePath: true,
 					},
 				},
 			},
