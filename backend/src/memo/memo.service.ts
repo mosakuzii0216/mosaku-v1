@@ -32,16 +32,19 @@ export class MemoService {
 						tag: true,
 					},
 				},
-				theme: {
+				notebook: {
 					select: {
 						id: true,
 						name: true,
-						styles: true,
-						cssFilePath: true,
+						theme: {
+							select: {
+								id: true,
+								name: true,
+								styles: true,
+								cssFilePath: true,
+							},
+						},
 					},
-				},
-				notebook: {
-					select: { id: true, name: true },
 				},
 			},
 			orderBy: {
@@ -59,16 +62,19 @@ export class MemoService {
 						tag: true,
 					},
 				},
-				theme: {
+				notebook: {
 					select: {
 						id: true,
 						name: true,
-						styles: true,
-						cssFilePath: true,
+						theme: {
+							select: {
+								id: true,
+								name: true,
+								styles: true,
+								cssFilePath: true,
+							},
+						},
 					},
-				},
-				notebook: {
-					select: { id: true, name: true },
 				},
 			},
 		});
@@ -83,11 +89,6 @@ export class MemoService {
 			userId,
 		};
 
-		// テーマIDが指定されている場合は関連付け
-		if (createMemoDto.themeId) {
-			createData.themeId = createMemoDto.themeId;
-		}
-
 		if (createMemoDto.notebookId) {
 			createData.notebookId = createMemoDto.notebookId;
 		}
@@ -95,16 +96,19 @@ export class MemoService {
 		return this.prisma.memo.create({
 			data: createData,
 			include: {
-				theme: {
+				notebook: {
 					select: {
 						id: true,
 						name: true,
-						styles: true,
-						cssFilePath: true,
+						theme: {
+							select: {
+								id: true,
+								name: true,
+								styles: true,
+								cssFilePath: true,
+							},
+						},
 					},
-				},
-				notebook: {
-					select: { id: true, name: true },
 				},
 			},
 		});
@@ -121,16 +125,19 @@ export class MemoService {
 			where: { id },
 			data: updateMemoDto,
 			include: {
-				theme: {
+				notebook: {
 					select: {
 						id: true,
 						name: true,
-						styles: true,
-						cssFilePath: true,
+						theme: {
+							select: {
+								id: true,
+								name: true,
+								styles: true,
+								cssFilePath: true,
+							},
+						},
 					},
-				},
-				notebook: {
-					select: { id: true, name: true },
 				},
 			},
 		});
@@ -188,12 +195,18 @@ export class MemoService {
 						tag: true,
 					},
 				},
-				theme: {
+				notebook: {
 					select: {
 						id: true,
 						name: true,
-						styles: true,
-						cssFilePath: true,
+						theme: {
+							select: {
+								id: true,
+								name: true,
+								styles: true,
+								cssFilePath: true,
+							},
+						},
 					},
 				},
 			},

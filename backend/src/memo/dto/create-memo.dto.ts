@@ -11,9 +11,5 @@ export class CreateMemoDto {
 
 	@IsString()
 	@IsOptional()
-	themeId?: string; // テーマID（オプショナル）
-
-	@IsString()
-	@IsOptional()
 	notebookId?: string; // ノートブックID（オプショナル、未指定はInbox）
 }

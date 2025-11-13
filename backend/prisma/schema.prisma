@@ -52,18 +52,15 @@ model Memo {
   content   String   @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   userId    String   @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  themeId   String?  @map("theme_id")
-  theme     Theme?   @relation(fields: [themeId], references: [id], onDelete: SetNull)
 
   notebookId  String?   @map("notebook_id")
   notebook    Notebook? @relation(fields: [notebookId], references: [id], onDelete: SetNull)
-  
+
   memoTags  MemoTag[]
-  
+
   @@map("memos")
 }
 
@@ -169,7 +166,6 @@ model Theme {
   category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   // リレーション
-  memos           Memo[]
   notebooks       Notebook[]
   userFavorites   UserFavoriteTheme[]
 
