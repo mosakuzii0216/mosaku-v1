@@ -8,7 +8,6 @@ import { TagDropdownIcon } from '../tag/TagDropdownIcon';
 import { useTagStore } from '../../stores/useTagStore';
 import { RichTextEditor } from '../editor/RichTextEditor';
 import type { Memo } from '../../types/memo';
-import type { Theme } from '../../types/theme';
 
 interface MemoEditorProps {
 	memo?: Memo;
@@ -26,10 +25,12 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 		memo?.memoTags?.map((mt) => mt.tag.id) || [],
 	);
 	const [selectedNotebookId, setSelectedNotebookId] = useState<string>(memo?.notebookId || '');
-	const [selectedTheme, setSelectedTheme] = useState<Pick<Theme, 'id' | 'name' | 'styles' | 'cssFilePath'> | null>(memo?.theme || null);
 
 	const [hasChanges, setHasChanges] = useState(false);
 	const { tags } = useTagStore();
+
+	// ノートブックのテーマを取得
+	const selectedTheme = memo?.notebook?.theme || null;
 
 	// memo prop の変更を検知してエディタの状態を更新する
 	useEffect(() => {
@@ -39,7 +40,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 			setContent(memo.content || '');
 			setSelectedTagIds(memo.memoTags?.map((mt) => mt.tag.id) || []);
 			setSelectedNotebookId(memo.notebookId || '');
-			setSelectedTheme(memo.theme || null);
 			// 新しいメモに切り替わったので、変更状態をリセット
 			setHasChanges(false);
 		}
@@ -50,7 +50,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 		if (selectedTheme?.cssFilePath) {
 			loadThemeCSS(selectedTheme.id, selectedTheme.cssFilePath).catch((error) => {
 				console.error('Failed to load theme CSS:', error);
-				// エラーハンドリング: 必要に応じてユーザーに通知
 			});
 		}
 	}, [selectedTheme?.id, selectedTheme?.cssFilePath]);
@@ -60,22 +59,19 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 		const originalTitle = memo?.title || '';
 		const originalContent = memo?.content || '';
 		const originalTagIds = memo?.memoTags?.map((mt) => mt.tag.id) || [];
-		const originalThemeId = memo?.themeId || null;
 		const originalNotebookId = memo?.notebookId || '';
 
 		const tagsChanged =
 			JSON.stringify(selectedTagIds.sort()) !== JSON.stringify(originalTagIds.sort());
-		const themeChanged = selectedTheme?.id !== originalThemeId;
 		const notebookChanged = selectedNotebookId !== originalNotebookId;
 
 		setHasChanges(
 			title !== originalTitle ||
 				content !== originalContent ||
 				tagsChanged ||
-				themeChanged ||
 				notebookChanged,
 		);
-	}, [title, content, selectedTagIds, selectedTheme, selectedNotebookId, memo]);
+	}, [title, content, selectedTagIds, selectedNotebookId, memo]);
 
 	const handleSave = useCallback(async () => {
 		if (!title.trim() && !content.trim()) {
@@ -89,7 +85,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 						{
 							title: title.trim() || '無題',
 							content: content.trim(),
-							themeId: selectedTheme?.id,
 							notebookId: selectedNotebookId || null,
 						},
 						{
@@ -111,7 +106,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 							data: {
 								title: title.trim() || '無題',
 								content: content.trim(),
-								themeId: selectedTheme?.id,
 								notebookId: selectedNotebookId || null,
 							},
 						},
@@ -139,7 +133,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 		title,
 		content,
 		selectedTagIds,
-		selectedTheme,
 		isCreate,
 		createMemo,
 		memo,
