@@ -9,24 +9,22 @@ export interface Memo {
 	createdAt: string;
 	updatedAt: string;
 	memoTags?: MemoTag[];
-	themeId?: string | null;
-	theme?: Pick<Theme, 'id' | 'name' | 'styles' | 'cssFilePath'> | null;
 	// ノートブック関連
 	notebookId?: string | null;
-	notebook?: Pick<Notebook, 'id' | 'name'> | null;
+	notebook?: Pick<Notebook, 'id' | 'name'> & {
+		theme?: Pick<Theme, 'id' | 'name' | 'styles' | 'cssFilePath'> | null;
+	} | null;
 }
 
 export interface CreateMemoDto {
 	title: string;
 	content: string;
-	themeId?: string;
 	notebookId?: string | null;
 }
 
 export interface UpdateMemoDto {
 	title?: string;
 	content?: string;
-	themeId?: string;
 	notebookId?: string | null;
 }
 
