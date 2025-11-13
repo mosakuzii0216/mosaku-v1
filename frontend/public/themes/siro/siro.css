@@ -1,33 +1,184 @@
-/* siro: 見出しとアクセントだけ最小適用（白基調・ニュートラル） */
+/* siro: 白基調・ニュートラルなテーマ */
 
-:root {
-	--theme-text-color: #1f2937; /* gray-800 */
-	--theme-heading-color: #1f2937; /* gray-800（可読性重視） */
-	--theme-accent-color: #6b7280; /* gray-500 */
-	--theme-bg-color: #ffffff; /* 背景: 白 */
+/* 1. CSS変数の定義とベーススタイル */
+.theme-root {
+	/* カラー */
+	--theme-bg-color: #ffffff;
+	--theme-text-color: #1f2937;
+	--theme-heading-color: #1f2937;
+	--theme-accent-color: #6b7280;
+	--theme-border-color: #e5e7eb;
+
+	/* タイポグラフィ */
+	--theme-font-family: 'Helvetica Neue', Arial, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+	--theme-font-size: 16px;
+	--theme-line-height: 1.8;
+
+	/* レイアウト */
+	--theme-padding: 2rem;
+	--theme-margin: 1rem;
+	--theme-border-radius: 0.5rem;
+
+	/* ベーススタイルの適用 */
+	background-color: var(--theme-bg-color);
+	color: var(--theme-text-color);
+	padding: var(--theme-padding);
+	border-radius: var(--theme-border-radius);
+	font-family: var(--theme-font-family);
+	font-size: var(--theme-font-size);
+	line-height: var(--theme-line-height);
 }
 
-/* 背景色（わかりやすさのため最小適用） */
-body {
-	background-color: var(--theme-bg-color) !important;
+/* 2. タイトル */
+.theme-root .memo-title {
+	color: var(--theme-heading-color);
+	font-size: 2rem;
+	font-weight: 700;
+	margin-bottom: 1.5rem;
+	border-bottom: 2px solid var(--theme-accent-color);
+	padding-bottom: 0.5rem;
 }
 
-/* 見出し（タイトル含む） */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-.memo-title {
-	color: var(--theme-heading-color) !important;
+.theme-root .memo-title::placeholder {
+	color: rgba(31, 41, 55, 0.5);
 }
 
-/* 必要になったらアクセントも有効化（現状は最小変更でコメントアウト） */
-/*
-.link-primary,
-.button-primary {
-  color: var(--theme-accent-color) !important;
-  border-color: var(--theme-accent-color) !important;
+/* 3. コンテンツエリア */
+.theme-root .memo-content {
+	color: var(--theme-text-color);
+	font-size: var(--theme-font-size);
+	line-height: var(--theme-line-height);
 }
-*/
+
+/* 4. 見出し */
+.theme-root .memo-content h1 {
+	color: var(--theme-heading-color);
+	font-size: 2rem;
+	font-weight: 600;
+	margin-top: 1.5rem;
+	margin-bottom: 0.75rem;
+}
+
+.theme-root .memo-content h2 {
+	color: var(--theme-heading-color);
+	font-size: 1.5rem;
+	font-weight: 600;
+	margin-top: 1.5rem;
+	margin-bottom: 0.75rem;
+}
+
+.theme-root .memo-content h3 {
+	color: var(--theme-heading-color);
+	font-size: 1.25rem;
+	font-weight: 600;
+	margin-top: 1.5rem;
+	margin-bottom: 0.75rem;
+}
+
+.theme-root .memo-content h4,
+.theme-root .memo-content h5,
+.theme-root .memo-content h6 {
+	color: var(--theme-heading-color);
+	font-weight: 600;
+	margin-top: 1.5rem;
+	margin-bottom: 0.75rem;
+}
+
+/* 5. 段落 */
+.theme-root .memo-content p {
+	margin-bottom: 1rem;
+}
+
+/* 6. 強調・斜体・取消線 */
+.theme-root .memo-content strong {
+	font-weight: 700;
+	color: var(--theme-heading-color);
+}
+
+.theme-root .memo-content em {
+	font-style: italic;
+}
+
+.theme-root .memo-content s {
+	text-decoration: line-through;
+	opacity: 0.7;
+}
+
+/* 7. リスト */
+.theme-root .memo-content ul,
+.theme-root .memo-content ol {
+	margin-left: 1.5rem;
+	margin-bottom: 1rem;
+}
+
+.theme-root .memo-content li {
+	margin-bottom: 0.5rem;
+}
+
+/* 8. 引用 */
+.theme-root .memo-content blockquote {
+	border-left: 4px solid var(--theme-accent-color);
+	padding-left: 1rem;
+	margin-left: 0;
+	margin-bottom: 1rem;
+	color: rgba(31, 41, 55, 0.8);
+	font-style: italic;
+}
+
+/* 9. コードブロック */
+.theme-root .memo-content pre {
+	background-color: rgba(107, 114, 128, 0.1);
+	border: 1px solid var(--theme-border-color);
+	border-radius: 0.25rem;
+	padding: 1rem;
+	overflow-x: auto;
+	margin-bottom: 1rem;
+}
+
+.theme-root .memo-content code {
+	background-color: rgba(107, 114, 128, 0.1);
+	padding: 0.2rem 0.4rem;
+	border-radius: 0.25rem;
+	font-family: 'Monaco', 'Courier New', monospace;
+	font-size: 0.9em;
+}
+
+/* 10. 水平線 */
+.theme-root .memo-content hr {
+	border: none;
+	border-top: 2px solid var(--theme-border-color);
+	margin: 2rem 0;
+}
+
+/* 11. リンク */
+.theme-root .memo-content a {
+	color: var(--theme-accent-color);
+	text-decoration: underline;
+}
+
+.theme-root .memo-content a:hover {
+	color: var(--theme-heading-color);
+}
+
+/* 12. レスポンシブ */
+@media (max-width: 768px) {
+	.theme-root {
+		padding: 1rem;
+	}
+
+	.theme-root .memo-title {
+		font-size: 1.5rem;
+	}
+
+	.theme-root .memo-content h1 {
+		font-size: 1.5rem;
+	}
+
+	.theme-root .memo-content h2 {
+		font-size: 1.25rem;
+	}
+
+	.theme-root .memo-content h3 {
+		font-size: 1.1rem;
+	}
+}
