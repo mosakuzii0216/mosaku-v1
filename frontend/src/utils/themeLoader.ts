@@ -47,11 +47,14 @@ export async function loadThemeCSS(themeId: string, cssPath: string): Promise<vo
 
 			const cssText = await response.text();
 
+			// CSS変換: .theme-root を .theme-root[data-theme-id="xxx"] に置換（衝突防止）
+			const scopedCSS = cssText.replace(/\.theme-root\b/g, `.theme-root[data-theme-id="${themeId}"]`);
+
 			// <style>タグを作成
 			const styleElement = document.createElement('style');
 			styleElement.id = `theme-${themeId}`;
 			styleElement.setAttribute('data-theme-name', cssPath);
-			styleElement.textContent = cssText;
+			styleElement.textContent = scopedCSS;
 
 			// <head>に追加
 			document.head.appendChild(styleElement);
@@ -59,7 +62,7 @@ export async function loadThemeCSS(themeId: string, cssPath: string): Promise<vo
 			// 管理用Mapに保存
 			loadedThemes.set(themeId, styleElement);
 
-			console.log(`[themeLoader] Theme ${themeId} loaded successfully`);
+			console.log(`[themeLoader] Theme ${themeId} loaded and scoped successfully`);
 		} catch (error) {
 			console.error(`[themeLoader] Failed to load theme ${themeId}:`, error);
 			throw error;
