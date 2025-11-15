@@ -92,7 +92,7 @@ export class ThemeService {
 				_count: {
 					select: {
 						userFavorites: true,
-						memos: true,
+						notebooks: true,
 					},
 				},
 			},
@@ -107,7 +107,7 @@ export class ThemeService {
 			...theme,
 			isFavorited: userId && theme.userFavorites?.length > 0,
 			favoriteCount: theme._count.userFavorites,
-			usageCount: theme._count.memos,
+			usageCount: theme._count.notebooks,
 			userFavorites: undefined, // クライアントには送らない
 			_count: undefined,
 		}));
@@ -132,7 +132,7 @@ export class ThemeService {
 				_count: {
 					select: {
 						userFavorites: true,
-						memos: true,
+						notebooks: true,
 					},
 				},
 			},
@@ -153,7 +153,7 @@ export class ThemeService {
 			...theme,
 			isFavorited: userId && theme.userFavorites?.length > 0,
 			favoriteCount: theme._count.userFavorites,
-			usageCount: theme._count.memos,
+			usageCount: theme._count.notebooks,
 			userFavorites: undefined,
 			_count: undefined,
 		};
@@ -251,7 +251,7 @@ export class ThemeService {
 			where: { id },
 			include: {
 				_count: {
-					select: { memos: true },
+					select: { notebooks: true },
 				},
 			},
 		});
@@ -259,7 +259,7 @@ export class ThemeService {
 		this.validateThemeOwnership(theme, userId, '削除');
 
 		// 使用中のテーマは削除不可
-		if (theme!._count.memos > 0) {
+		if (theme!._count.notebooks > 0) {
 			throw new BadRequestException('使用中のテーマは削除できません');
 		}
 
@@ -358,7 +358,7 @@ export class ThemeService {
 						_count: {
 							select: {
 								userFavorites: true,
-								memos: true,
+								notebooks: true,
 							},
 						},
 					},
@@ -375,7 +375,7 @@ export class ThemeService {
 			...fav.theme,
 			isFavorited: true,
 			favoriteCount: fav.theme._count.userFavorites,
-			usageCount: fav.theme._count.memos,
+			usageCount: fav.theme._count.notebooks,
 			_count: undefined,
 		}));
 	}
