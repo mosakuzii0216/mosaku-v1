@@ -73,10 +73,39 @@ function writeIcon(name, size, color) {
 	console.log('wrote', outPath, png.length, 'bytes');
 }
 
-const blue = [33, 150, 243, 255];
-const gray = [245, 247, 250, 255];
+// Try to read color from favicon.svg so icons match its color
+function parseHexToRgba(hex) {
+  if (!hex) return null;
+  const m = hex.trim().match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+  if (!m) return null;
+  let h = m[1];
+  if (h.length === 3) {
+    h = h.split('').map((c) => c + c).join('');
+  }
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return [r, g, b, 255];
+}
 
-writeIcon('icon-192x192.png', 192, blue);
-writeIcon('icon-512x512.png', 512, blue);
-writeIcon('maskable-icon-512x512.png', 512, blue);
-writeIcon('apple-touch-icon.png', 180, gray);
+function faviconColor() {
+  try {
+    const svgPath = path.join(__dirname, '..', 'public', 'favicon.svg');
+    const svg = fs.readFileSync(svgPath, 'utf8');
+    // Pick the first hex color like #RRGGBB or #RGB
+    const match = svg.match(/#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})/);
+    return parseHexToRgba(match ? `#${match[1]}` : null);
+  } catch (_) {
+    return null;
+  }
+}
+
+// Force target color to #00582d as requested
+const base = parseHexToRgba('#00582d');
+
+// Generate icons using the specified color
+writeIcon('icon-192x192.png', 192, base);
+writeIcon('icon-512x512.png', 512, base);
+// Keep maskable consistent as well
+writeIcon('maskable-icon-512x512.png', 512, base);
+writeIcon('apple-touch-icon.png', 180, base);
