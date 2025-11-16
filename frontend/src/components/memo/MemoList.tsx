@@ -12,7 +12,7 @@ export const MemoList = () => {
 	if (isLoading) {
 		return (
 			<div className="flex-1 flex items-center justify-center">
-				<div className="text-gray-500 dark:text-gray-400">読み込み中...</div>
+				<div className="text-gray-500">読み込み中...</div>
 			</div>
 		);
 	}
@@ -20,7 +20,7 @@ export const MemoList = () => {
 	if (error) {
 		return (
 			<div className="flex-1 flex items-center justify-center">
-				<div className="text-red-500 dark:text-red-400">
+				<div className="text-red-500">
 					<div>エラーが発生しました</div>
 					<div className="text-sm mt-2">
 						{error instanceof Error ? error.message : 'Unknown error'}
@@ -41,7 +41,7 @@ export const MemoList = () => {
 		<div className="flex flex-col h-full">
 			<div className="flex-1 overflow-y-auto">
 				{notebookFilter !== 'ALL' && (
-					<div className="px-4 py-2 text-sm bg-yellow-50 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 border-b border-yellow-100 dark:border-yellow-800 flex items-center justify-between">
+					<div className="px-4 py-2 text-sm bg-yellow-50/30 text-yellow-800 border-b border-yellow-100 flex items-center justify-between">
 						<span>
 							{(() => {
 								if (notebookFilter === 'INBOX') {

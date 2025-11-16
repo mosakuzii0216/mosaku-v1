@@ -126,7 +126,7 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 	return (
 		<div className="flex flex-col h-full">
 			{/* ヘッダー */}
-			<div className="border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-end">
+			<div className="border-b border-gray-200 p-4 flex items-center justify-end">
 				<div className="flex items-center space-x-2">
 					<TagDropdownIcon
 						selectedTagIds={selectedTagIds}
@@ -145,14 +145,14 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 					</button>
 					<button
 						onClick={goToNotebookList}
-						className="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+						className="px-3 py-1 text-sm bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors"
 					>
 						キャンセル
 					</button>
 				</div>
 			</div>
 			{/* エディター */}
-			<div className="flex-1 flex flex-col p-4 bg-white dark:bg-gray-900">
+			<div className="flex-1 flex flex-col p-4 bg-white">
 				<div
 					className={`max-w-4xl mx-auto w-full flex-1 flex flex-col ${selectedTheme ? 'theme-root' : ''}`}
 					data-theme-id={selectedTheme?.id}
@@ -163,17 +163,17 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 							value={name}
 							onChange={(e) => setName(e.target.value)}
 							placeholder="ノートブック名を入力"
-							className="memo-title text-2xl font-bold border-none outline-none placeholder-gray-400 dark:text-white bg-transparent w-full"
+							className="memo-title text-2xl font-bold border-none outline-none placeholder-gray-400 bg-transparent w-full"
 						/>
 					</div>
 
 				{/* テーマ選択（DBから取得したthemesをセレクト表示） */}
 					<div className="mb-4">
-						<label className="block text-sm font-medium mb-2 dark:text-white">テーマ</label>
+						<label className="block text-sm font-medium mb-2">テーマ</label>
 						<select
 							value={themeId}
 							onChange={(e) => setThemeId(e.target.value)}
-							className="border rounded px-3 py-2 dark:text-white bg-transparent w-full"
+							className="border rounded px-3 py-2 bg-transparent w-full"
 						>
 							<option value="default">未選択（デフォルト）</option>
 						{(isLoadingSystem || isLoadingPublic) && <option disabled>読み込み中...</option>}
@@ -189,7 +189,7 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 
 					{/* 選択中タグ（小さめ表示・現状保存対象外） */}
 					{selectedTagIds.length > 0 && (
-						<div className="mb-4 flex flex-wrap gap-1 text-xs text-gray-600 dark:text-gray-300">
+						<div className="mb-4 flex flex-wrap gap-1 text-xs text-gray-600">
 							{selectedTagIds
 								.map((id) => tags.find((t) => t.id === id))
 								.filter(Boolean)

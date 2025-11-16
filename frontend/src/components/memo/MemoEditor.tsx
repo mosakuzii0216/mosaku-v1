@@ -160,7 +160,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	return (
 		<div className="flex flex-col h-full">
 			{/* ヘッダー */}
-			<div className="border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-end bg-white dark:bg-gray-900">
+			<div className="border-b border-gray-200 p-4 flex items-center justify-end bg-white">
 				<div className="flex items-center space-x-2">
 					<TagDropdownIcon
 						selectedTagIds={selectedTagIds}
@@ -171,7 +171,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 						}}
 					/>
 					{hasChanges && (
-						<span className="text-sm text-gray-500 dark:text-gray-400">未保存の変更があります</span>
+						<span className="text-sm text-gray-500">未保存の変更があります</span>
 					)}
 					<button
 						onClick={handleSave}
@@ -189,7 +189,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 			</div>
 
 			{/* エディター */}
-			<div className="flex-1 flex flex-col p-4 bg-white dark:bg-gray-900">
+			<div className="flex-1 flex flex-col p-4 bg-white">
 				<div
 					id={`memo-editor-${memo?.id || 'new'}`}
 					className={`max-w-4xl mx-auto w-full flex-1 flex flex-col ${selectedTheme ? 'theme-root' : ''}`}
@@ -202,19 +202,19 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 							placeholder="タイトル"
 							value={title}
 							onChange={(e) => setTitle(e.target.value)}
-							className="memo-title text-2xl font-bold border-none outline-none placeholder-gray-400 dark:text-white bg-transparent w-full"
+							className="memo-title text-2xl font-bold border-none outline-none placeholder-gray-400 bg-transparent w-full"
 						/>
 					</div>
 
 					{/* ノートブック選択 */}
 					<div className="mb-4">
-						<label className="block text-sm font-medium mb-2 dark:text-white">ノートブック</label>
+						<label className="block text-sm font-medium mb-2">ノートブック</label>
 						<NotebookSelect value={selectedNotebookId} onChange={setSelectedNotebookId} />
 					</div>
 
 					{/* 選択中タグの表示（小さめチップ） */}
 					{selectedTagIds.length > 0 && (
-						<div className="mb-3 flex flex-wrap gap-1 text-xs text-gray-600 dark:text-gray-300">
+						<div className="mb-3 flex flex-wrap gap-1 text-xs text-gray-600">
 							{selectedTagIds
 								.map((id) => tags.find((t) => t.id === id))
 								.filter(Boolean)
@@ -256,7 +256,7 @@ function NotebookSelect({ value, onChange }: { value: string; onChange: (v: stri
 		<select
 			value={value}
 			onChange={(e) => onChange(e.target.value)}
-			className="border rounded px-3 py-2 dark:text-white bg-transparent w-full"
+			className="border rounded px-3 py-2 bg-transparent w-full"
 		>
 			<option value="">未選択</option>
 			{isLoading && <option disabled>読み込み中...</option>}

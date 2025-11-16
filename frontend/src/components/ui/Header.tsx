@@ -1,7 +1,6 @@
 import { useMemoStore } from '../../stores/useMemoStore';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import { ThemeToggle } from './ThemeToggle';
 
 interface HeaderProps {
 	onMemoCreateClick: () => void;
@@ -12,7 +11,7 @@ export const Header = ({ onMemoCreateClick, onNotebookCreateClick }: HeaderProps
 	const { currentView, currentObject, goToList, goToTags, goToNotebookList } = useMemoStore();
 	const { user, logout } = useAuth();
 	return (
-		<header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
+		<header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
 			<div className="flex items-center">
 				{currentView !== 'list' && (
 					<button
@@ -28,8 +27,8 @@ export const Header = ({ onMemoCreateClick, onNotebookCreateClick }: HeaderProps
 						onClick={goToList}
 						className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
 							currentObject === 'memo'
-								? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-								: 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+								? 'bg-blue-100 text-blue-800'
+								: 'text-gray-600 hover:text-gray-900'
 						}`}
 					>
 						📝 メモ
@@ -38,8 +37,8 @@ export const Header = ({ onMemoCreateClick, onNotebookCreateClick }: HeaderProps
 						onClick={goToNotebookList}
 						className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
 							currentObject === 'notebook'
-								? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-								: 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+								? 'bg-blue-100 text-blue-800'
+								: 'text-gray-600 hover:text-gray-900'
 						}`}
 					>
 						📚 ノートブック
@@ -48,8 +47,8 @@ export const Header = ({ onMemoCreateClick, onNotebookCreateClick }: HeaderProps
 						onClick={goToTags}
 						className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
 							currentObject === 'tag'
-								? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-								: 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+								? 'bg-blue-100 text-blue-800'
+								: 'text-gray-600 hover:text-gray-900'
 						}`}
 					>
 						🏷️ タグ
@@ -58,9 +57,8 @@ export const Header = ({ onMemoCreateClick, onNotebookCreateClick }: HeaderProps
 			</div>
 
 			<div className="flex items-center space-x-3">
-				<ThemeToggle />
 				{user && (
-					<span className="text-sm text-gray-600 dark:text-gray-300">
+					<span className="text-sm text-gray-600">
 						{user.name || user.email} ({user.role})
 					</span>
 				)}

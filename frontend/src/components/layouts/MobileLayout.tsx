@@ -47,9 +47,9 @@ export const MobileLayout = () => {
 						return selectedMemo ? (
 							<MemoEditor memo={selectedMemo} />
 						) : (
-							<div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
+							<div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
 								<p>メモが選択されていません</p>
-								<p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
+								<p className="mt-2 text-sm text-gray-400">
 									新規作成:{' '}
 									{/Mac|iPod|iPhone|iPad/.test(window.navigator.platform)
 										? 'Cmd + Option'
@@ -84,7 +84,7 @@ export const MobileLayout = () => {
 	};
 
 	return (
-		<div className="h-screen flex flex-col bg-white dark:bg-gray-900">
+		<div className="h-screen flex flex-col bg-white">
 			<Header onMemoCreateClick={goToMemoCreate} onNotebookCreateClick={goToNotebookCreate} />
 			<main className="flex-1 overflow-hidden">{renderContent()}</main>
 		</div>

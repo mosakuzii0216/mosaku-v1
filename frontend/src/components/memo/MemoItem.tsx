@@ -39,10 +39,10 @@ export const MemoItem = ({ memo }: MemoItemProps) => {
 				goToEdit(memo);
 				logCurrent();
 			}}
-			className="p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+			className="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
 		>
 			<div className="flex justify-between items-start mb-2">
-				<h3 className="font-medium text-gray-900 dark:text-white truncate flex-1 mr-2">
+				<h3 className="font-medium text-gray-900 truncate flex-1 mr-2">
 					{memo.title || '無題'}
 				</h3>
 				<div className="flex items-center space-x-2">
@@ -56,14 +56,14 @@ export const MemoItem = ({ memo }: MemoItemProps) => {
 							title={`テーマ: ${memo.theme.name}`}
 						/>
 					)}
-					<span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+					<span className="text-xs text-gray-500 whitespace-nowrap">
 						{formatDate(memo.updatedAt)}
 					</span>
 				</div>
 			</div>
 
 			{memo.content && (
-				<p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-2">
+				<p className="text-sm text-gray-600 line-clamp-2 mb-2">
 					{getPreview(memo.content)}
 				</p>
 			)}
@@ -81,7 +81,7 @@ export const MemoItem = ({ memo }: MemoItemProps) => {
 
 				{/* テーマ名表示 */}
 				{memo.theme && (
-					<span className="text-xs text-gray-500 dark:text-gray-400 ml-2 truncate">
+					<span className="text-xs text-gray-500 ml-2 truncate">
 						{memo.theme.name}
 					</span>
 				)}

@@ -13,9 +13,9 @@ const EmptyMemoView = () => {
 	const shortcutKey = isMac ? 'Cmd + Option' : 'Ctrl + Alt';
 
 	return (
-		<div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
+		<div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
 			<p>メモを選択してください</p>
-			<p className="mt-2 text-sm text-gray-400 dark:text-gray-500">新規作成: {shortcutKey} + N</p>
+			<p className="mt-2 text-sm text-gray-400">新規作成: {shortcutKey} + N</p>
 		</div>
 	);
 };
@@ -57,7 +57,7 @@ export const DesktopLayout = () => {
 						return selectedMemo ? (
 							<MemoEditor memo={selectedMemo} />
 						) : (
-							<div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+							<div className="flex items-center justify-center h-full text-gray-500">
 								メモが選択されていません
 							</div>
 						);
@@ -87,7 +87,7 @@ export const DesktopLayout = () => {
 			case 'theme':
 				// TODO: テーマ管理画面を実装
 				return (
-					<div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+					<div className="flex items-center justify-center h-full text-gray-500">
 						テーマ管理（未実装）
 					</div>
 				);
@@ -98,13 +98,13 @@ export const DesktopLayout = () => {
 	};
 
 	return (
-		<div className="h-screen flex flex-col bg-white dark:bg-gray-900">
+		<div className="h-screen flex flex-col bg-white">
 			<Header onMemoCreateClick={goToMemoCreate} onNotebookCreateClick={goToNotebookCreate} />
 
 			<main className="flex-1 flex overflow-hidden">
 				{/* 左サイドバー - メモ一覧 (memoオブジェクト時のみ表示) */}
 				{currentObject === 'memo' && (
-					<div className="w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+					<div className="w-80 border-r border-gray-200 flex flex-col">
 						<MemoList />
 					</div>
 				)}

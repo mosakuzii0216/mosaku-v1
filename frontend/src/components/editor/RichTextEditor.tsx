@@ -30,7 +30,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 		editorProps: {
 			attributes: {
 				class:
-					'prose prose-sm sm:prose-base lg:prose-lg xl:prose-xl mx-auto focus:outline-none min-h-full p-4 text-gray-900 dark:text-white dark:prose-invert',
+					'prose prose-sm sm:prose-base lg:prose-lg xl:prose-xl mx-auto focus:outline-none min-h-full p-4 text-gray-900',
 			},
 		},
 	});
@@ -47,7 +47,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
 	return (
 		<div className={`rich-text-editor ${className}`}>
-			<div className="border-b border-gray-200 dark:border-gray-600 p-2 bg-gray-50 dark:bg-gray-800">
+			<div className="border-b border-gray-200 p-2 bg-gray-50">
 				<div className="flex space-x-1">
 					<button
 						onClick={() => editor.chain().focus().toggleBold().run()}
@@ -55,7 +55,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 						className={`px-3 py-1 text-sm rounded ${
 							editor.isActive('bold')
 								? 'bg-blue-500 text-white'
-								: 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+								: 'bg-white text-gray-700 border border-gray-300'
 						} hover:bg-blue-500 hover:text-white disabled:opacity-50`}
 					>
 						太字
@@ -66,7 +66,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 						className={`px-3 py-1 text-sm rounded ${
 							editor.isActive('italic')
 								? 'bg-blue-500 text-white'
-								: 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+								: 'bg-white text-gray-700 border border-gray-300'
 						} hover:bg-blue-500 hover:text-white disabled:opacity-50`}
 					>
 						斜体
@@ -77,7 +77,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 						className={`px-3 py-1 text-sm rounded ${
 							editor.isActive('strike')
 								? 'bg-blue-500 text-white'
-								: 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+								: 'bg-white text-gray-700 border border-gray-300'
 						} hover:bg-blue-500 hover:text-white disabled:opacity-50`}
 					>
 						取消線
@@ -87,7 +87,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 						className={`px-3 py-1 text-sm rounded ${
 							editor.isActive('heading', { level: 1 })
 								? 'bg-blue-500 text-white'
-								: 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+								: 'bg-white text-gray-700 border border-gray-300'
 						} hover:bg-blue-500 hover:text-white`}
 					>
 						H1
@@ -97,7 +97,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 						className={`px-3 py-1 text-sm rounded ${
 							editor.isActive('heading', { level: 2 })
 								? 'bg-blue-500 text-white'
-								: 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+								: 'bg-white text-gray-700 border border-gray-300'
 						} hover:bg-blue-500 hover:text-white`}
 					>
 						H2
@@ -107,7 +107,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 						className={`px-3 py-1 text-sm rounded ${
 							editor.isActive('bulletList')
 								? 'bg-blue-500 text-white'
-								: 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+								: 'bg-white text-gray-700 border border-gray-300'
 						} hover:bg-blue-500 hover:text-white`}
 					>
 						・リスト
@@ -117,7 +117,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 						className={`px-3 py-1 text-sm rounded ${
 							editor.isActive('orderedList')
 								? 'bg-blue-500 text-white'
-								: 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+								: 'bg-white text-gray-700 border border-gray-300'
 						} hover:bg-blue-500 hover:text-white`}
 					>
 						1.リスト
@@ -127,14 +127,14 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 						className={`px-3 py-1 text-sm rounded ${
 							editor.isActive('blockquote')
 								? 'bg-blue-500 text-white'
-								: 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+								: 'bg-white text-gray-700 border border-gray-300'
 						} hover:bg-blue-500 hover:text-white`}
 					>
 						引用
 					</button>
 				</div>
 			</div>
-			<div className="flex-1 bg-white dark:bg-gray-900">
+			<div className="flex-1 bg-white">
 				<EditorContent editor={editor} className="min-h-[200px]" />
 			</div>
 		</div>
