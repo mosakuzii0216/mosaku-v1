@@ -165,7 +165,10 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	}, [hasChanges, title, content, handleSave]);
 
 	return (
-		<div className="flex flex-col h-full">
+		<div
+			className={`flex flex-col h-full ${selectedTheme ? 'theme-root' : ''}`}
+			data-theme-id={selectedTheme?.id}
+		>
 			{/* ヘッダー */}
 			<div className="border-b border-gray-200 p-4 flex items-center justify-end bg-white">
 				<div className="flex items-center space-x-2">
@@ -199,8 +202,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 			<div className="flex-1 flex flex-col p-4 bg-white">
 				<div
 					id={`memo-editor-${memo?.id || 'new'}`}
-					className={`max-w-4xl mx-auto w-full flex-1 flex flex-col ${selectedTheme ? 'theme-root' : ''}`}
-					data-theme-id={selectedTheme?.id}
+					className="max-w-4xl mx-auto w-full flex-1 flex flex-col"
 				>
 					{/* タイトル入力エリア */}
 					<div className="mb-4">
