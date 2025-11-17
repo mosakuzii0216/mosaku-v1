@@ -10,9 +10,9 @@
 	--theme-border-color: #b3d9ff;
 
 	/* タイポグラフィ */
-	--theme-font-family: 'Helvetica Neue', Arial, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+	--theme-font-family: 'Noto Serif JP', '游明朝', 'Yu Mincho', 'ヒラギノ明朝 ProN', 'Hiragino Mincho ProN', Georgia, serif;
 	--theme-font-size: 16px;
-	--theme-line-height: 1.8;
+	--theme-line-height: 1.9;
 
 	/* レイアウト */
 	--theme-padding: 2rem;
