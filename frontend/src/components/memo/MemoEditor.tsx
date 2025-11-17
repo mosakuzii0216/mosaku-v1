@@ -34,8 +34,15 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 
 	// memo prop の変更を検知してエディタの状態を更新する
 	useEffect(() => {
-		// isCreateモードでない、かつ、表示対象のメモが変更された場合に状態をリセット
-		if (!isCreate && memo) {
+		if (isCreate) {
+			// 新規作成モードの時は常に空にする
+			setTitle('');
+			setContent('');
+			setSelectedTagIds([]);
+			setSelectedNotebookId('');
+			setHasChanges(false);
+		} else if (memo) {
+			// 編集モードの時はmemoの内容で更新
 			setTitle(memo.title || '');
 			setContent(memo.content || '');
 			setSelectedTagIds(memo.memoTags?.map((mt) => mt.tag.id) || []);
