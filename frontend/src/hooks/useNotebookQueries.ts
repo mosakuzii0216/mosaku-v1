@@ -25,11 +25,11 @@ export const useCreateNotebook = () => {
 };
 
 export const useNotebook = (id?: string, enabled: boolean = true) => {
-    return useQuery({
-        queryKey: id ? keys.detail(id) : (['notebooks', '__none__'] as const),
-        queryFn: () => apiClient.getNotebook(id as string),
-        enabled: !!id && enabled,
-    });
+	return useQuery({
+		queryKey: id ? keys.detail(id) : (['notebooks', '__none__'] as const),
+		queryFn: () => apiClient.getNotebook(id as string),
+		enabled: !!id && enabled,
+	});
 };
 
 export const useUpdateNotebook = () => {

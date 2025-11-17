@@ -162,12 +162,12 @@ export class TagService {
 	}
 
 	// ==== Notebooks x Tags (mirror of memos) ====
-	async assignTagsToNotebook(
-		notebookId: string,
-		assignTagsDto: AssignTagsDto,
-		userId: string,
-	) {
-		console.log('[assignTagsToNotebook] Called with:', { notebookId, tagIds: assignTagsDto.tagIds, userId });
+	async assignTagsToNotebook(notebookId: string, assignTagsDto: AssignTagsDto, userId: string) {
+		console.log('[assignTagsToNotebook] Called with:', {
+			notebookId,
+			tagIds: assignTagsDto.tagIds,
+			userId,
+		});
 
 		// Verify notebook ownership
 		const notebook = await this.prisma.notebook.findUnique({ where: { id: notebookId } });
@@ -188,7 +188,12 @@ export class TagService {
 			},
 		});
 
-		console.log('[assignTagsToNotebook] Found tags:', tags.length, '/', assignTagsDto.tagIds.length);
+		console.log(
+			'[assignTagsToNotebook] Found tags:',
+			tags.length,
+			'/',
+			assignTagsDto.tagIds.length,
+		);
 
 		if (tags.length !== assignTagsDto.tagIds.length) {
 			throw new ForbiddenException('Some tags do not belong to you');

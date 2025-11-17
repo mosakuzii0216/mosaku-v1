@@ -57,7 +57,7 @@ export const useMemoStore = create<MemoStore>((set, get) => ({
 	isEditing: false,
 	searchQuery: '',
 	isLoading: false,
-    notebookFilter: 'ALL',
+	notebookFilter: 'ALL',
 
 	// Actions
 	setMemos: (memos) => set({ memos }),

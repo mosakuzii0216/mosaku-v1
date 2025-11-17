@@ -17,15 +17,15 @@ export interface UpdateTagDto {
 }
 
 export interface MemoTag {
-  memoId: string;
-  tagId: string;
-  tag: Tag;
+	memoId: string;
+	tagId: string;
+	tag: Tag;
 }
 
 export interface NotebookTag {
-  notebookId: string;
-  tagId: string;
-  tag: Tag;
+	notebookId: string;
+	tagId: string;
+	tag: Tag;
 }
 
 export interface AssignTagsDto {

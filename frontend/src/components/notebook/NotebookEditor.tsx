@@ -22,7 +22,7 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 	const createNotebook = useCreateNotebook();
 	const updateNotebook = useUpdateNotebook();
 	const { goToNotebookList } = useMemoStore();
-  const { tags } = useTagStore();
+	const { tags } = useTagStore();
 
 	const isEdit = !isCreate && !!notebookId;
 	const { data: editingNotebook, isLoading: isLoadingNotebook } = useNotebook(notebookId);
@@ -83,7 +83,10 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 				{
 					onSuccess: () => {
 						// タグ割り当てを反映
-						console.log('[NotebookEditor] Calling assignTagsToNotebook with:', { notebookId, tagIds: selectedTagIds });
+						console.log('[NotebookEditor] Calling assignTagsToNotebook with:', {
+							notebookId,
+							tagIds: selectedTagIds,
+						});
 						apiClient
 							.assignTagsToNotebook(notebookId, { tagIds: selectedTagIds })
 							.then((result) => {
@@ -98,13 +101,16 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 					onError: (error) => {
 						console.error('error update notebook', error);
 					},
-				}
+				},
 			);
 		} else {
 			createNotebook.mutate(payload, {
 				onSuccess: (nb) => {
 					// 作成後にタグ割り当て
-					console.log('[NotebookEditor] Calling assignTagsToNotebook with:', { notebookId: nb.id, tagIds: selectedTagIds });
+					console.log('[NotebookEditor] Calling assignTagsToNotebook with:', {
+						notebookId: nb.id,
+						tagIds: selectedTagIds,
+					});
 					apiClient
 						.assignTagsToNotebook(nb.id, { tagIds: selectedTagIds })
 						.then((result) => {
@@ -138,10 +144,16 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 					/>
 					<button
 						onClick={handleSave}
-						disabled={createNotebook.isPending || updateNotebook.isPending || (isEdit && isLoadingNotebook)}
+						disabled={
+							createNotebook.isPending || updateNotebook.isPending || (isEdit && isLoadingNotebook)
+						}
 						className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 					>
-						{createNotebook.isPending || updateNotebook.isPending ? '保存中...' : isEdit ? '更新' : '保存'}
+						{createNotebook.isPending || updateNotebook.isPending
+							? '保存中...'
+							: isEdit
+								? '更新'
+								: '保存'}
 					</button>
 					<button
 						onClick={goToNotebookList}
@@ -167,7 +179,7 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 						/>
 					</div>
 
-				{/* テーマ選択（DBから取得したthemesをセレクト表示） */}
+					{/* テーマ選択（DBから取得したthemesをセレクト表示） */}
 					<div className="mb-4">
 						<label className="block text-sm font-medium mb-2">テーマ</label>
 						<select
@@ -176,14 +188,14 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 							className="border rounded px-3 py-2 bg-transparent w-full"
 						>
 							<option value="default">未選択（デフォルト）</option>
-						{(isLoadingSystem || isLoadingPublic) && <option disabled>読み込み中...</option>}
-						{!isLoadingSystem &&
-							!isLoadingPublic &&
-							allThemes.map((t) => (
-								<option key={t.id} value={t.id}>
-									{t.name}
-								</option>
-							))}
+							{(isLoadingSystem || isLoadingPublic) && <option disabled>読み込み中...</option>}
+							{!isLoadingSystem &&
+								!isLoadingPublic &&
+								allThemes.map((t) => (
+									<option key={t.id} value={t.id}>
+										{t.name}
+									</option>
+								))}
 						</select>
 					</div>
 

@@ -73,10 +73,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 		const notebookChanged = selectedNotebookId !== originalNotebookId;
 
 		setHasChanges(
-			title !== originalTitle ||
-				content !== originalContent ||
-				tagsChanged ||
-				notebookChanged,
+			title !== originalTitle || content !== originalContent || tagsChanged || notebookChanged,
 		);
 	}, [title, content, selectedTagIds, selectedNotebookId, memo]);
 
@@ -180,9 +177,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 							);
 						}}
 					/>
-					{hasChanges && (
-						<span className="text-sm text-gray-500">未保存の変更があります</span>
-					)}
+					{hasChanges && <span className="text-sm text-gray-500">未保存の変更があります</span>}
 					<button
 						onClick={handleSave}
 						disabled={

@@ -75,29 +75,32 @@ function writeIcon(name, size, color) {
 
 // Try to read color from favicon.svg so icons match its color
 function parseHexToRgba(hex) {
-  if (!hex) return null;
-  const m = hex.trim().match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
-  if (!m) return null;
-  let h = m[1];
-  if (h.length === 3) {
-    h = h.split('').map((c) => c + c).join('');
-  }
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return [r, g, b, 255];
+	if (!hex) return null;
+	const m = hex.trim().match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+	if (!m) return null;
+	let h = m[1];
+	if (h.length === 3) {
+		h = h
+			.split('')
+			.map((c) => c + c)
+			.join('');
+	}
+	const r = parseInt(h.slice(0, 2), 16);
+	const g = parseInt(h.slice(2, 4), 16);
+	const b = parseInt(h.slice(4, 6), 16);
+	return [r, g, b, 255];
 }
 
 function faviconColor() {
-  try {
-    const svgPath = path.join(__dirname, '..', 'public', 'favicon.svg');
-    const svg = fs.readFileSync(svgPath, 'utf8');
-    // Pick the first hex color like #RRGGBB or #RGB
-    const match = svg.match(/#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})/);
-    return parseHexToRgba(match ? `#${match[1]}` : null);
-  } catch (_) {
-    return null;
-  }
+	try {
+		const svgPath = path.join(__dirname, '..', 'public', 'favicon.svg');
+		const svg = fs.readFileSync(svgPath, 'utf8');
+		// Pick the first hex color like #RRGGBB or #RGB
+		const match = svg.match(/#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})/);
+		return parseHexToRgba(match ? `#${match[1]}` : null);
+	} catch (_) {
+		return null;
+	}
 }
 
 // Force target color to #00582d as requested

@@ -81,10 +81,7 @@ export class TagController {
 	}
 
 	@Get('notebook/:notebookId')
-	getNotebookTags(
-		@Param('notebookId') notebookId: string,
-		@Request() req: AuthenticatedRequest,
-	) {
+	getNotebookTags(@Param('notebookId') notebookId: string, @Request() req: AuthenticatedRequest) {
 		return this.tagService.getNotebookTags(notebookId, req.user.id);
 	}
 }

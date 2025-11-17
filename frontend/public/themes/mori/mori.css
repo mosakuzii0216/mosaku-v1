@@ -3,16 +3,18 @@
 /* 1. CSS変数の定義とベーススタイル */
 .theme-root {
 	/* カラー */
-	--theme-bg-color: #f0fdf4;
-	--theme-text-color: #0d2b1a;
-	--theme-heading-color: #15803d;
+	--theme-bg-color: #00552e;
+	--theme-text-color: #86efac;
+	--theme-heading-color: #86efac;
 	--theme-accent-color: #22c55e;
 	--theme-border-color: #86efac;
 
 	/* タイポグラフィ */
-	--theme-font-family: '游明朝', 'Yu Mincho', 'YuMincho', 'ヒラギノ明朝 ProN', 'Hiragino Mincho ProN', 'Times New Roman', serif;
+	--theme-font-family:
+		'游明朝', 'Yu Mincho', 'YuMincho', 'ヒラギノ明朝 ProN', 'Hiragino Mincho ProN',
+		'Times New Roman', serif;
 	--theme-font-size: 16px;
-	--theme-line-height: 2.0;
+	--theme-line-height: 2;
 
 	/* レイアウト */
 	--theme-padding: 2rem;

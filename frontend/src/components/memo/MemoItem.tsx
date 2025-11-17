@@ -42,9 +42,7 @@ export const MemoItem = ({ memo }: MemoItemProps) => {
 			className="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
 		>
 			<div className="flex justify-between items-start mb-2">
-				<h3 className="font-medium text-gray-900 truncate flex-1 mr-2">
-					{memo.title || '無題'}
-				</h3>
+				<h3 className="font-medium text-gray-900 truncate flex-1 mr-2">{memo.title || '無題'}</h3>
 				<div className="flex items-center space-x-2">
 					{/* テーマインジケーター */}
 					{memo.theme && (
@@ -63,9 +61,7 @@ export const MemoItem = ({ memo }: MemoItemProps) => {
 			</div>
 
 			{memo.content && (
-				<p className="text-sm text-gray-600 line-clamp-2 mb-2">
-					{getPreview(memo.content)}
-				</p>
+				<p className="text-sm text-gray-600 line-clamp-2 mb-2">{getPreview(memo.content)}</p>
 			)}
 
 			{/* メタ情報（タグとテーマ） */}
@@ -81,9 +77,7 @@ export const MemoItem = ({ memo }: MemoItemProps) => {
 
 				{/* テーマ名表示 */}
 				{memo.theme && (
-					<span className="text-xs text-gray-500 ml-2 truncate">
-						{memo.theme.name}
-					</span>
+					<span className="text-xs text-gray-500 ml-2 truncate">{memo.theme.name}</span>
 				)}
 			</div>
 		</div>

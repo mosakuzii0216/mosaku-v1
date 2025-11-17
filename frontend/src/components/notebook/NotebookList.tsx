@@ -36,9 +36,7 @@ export const NotebookList = () => {
 						onClick={() => goToMemosForNotebook('ALL')}
 					>
 						<div className="flex flex-col h-full">
-							<div className="text-lg font-bold text-gray-900 mb-2">
-								すべてのメモ
-							</div>
+							<div className="text-lg font-bold text-gray-900 mb-2">すべてのメモ</div>
 							<div className="text-sm text-gray-500">全てのメモを表示</div>
 						</div>
 					</div>
@@ -50,9 +48,7 @@ export const NotebookList = () => {
 					>
 						<div className="flex flex-col h-full">
 							<div className="text-lg font-bold text-gray-900 mb-2">未選択</div>
-							<div className="text-sm text-gray-500">
-								ノートブック未設定のメモ
-							</div>
+							<div className="text-sm text-gray-500">ノートブック未設定のメモ</div>
 						</div>
 					</div>
 

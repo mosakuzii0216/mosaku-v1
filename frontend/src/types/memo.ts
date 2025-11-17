@@ -11,9 +11,11 @@ export interface Memo {
 	memoTags?: MemoTag[];
 	// ノートブック関連
 	notebookId?: string | null;
-	notebook?: Pick<Notebook, 'id' | 'name'> & {
-		theme?: Pick<Theme, 'id' | 'name' | 'styles' | 'cssFilePath'> | null;
-	} | null;
+	notebook?:
+		| (Pick<Notebook, 'id' | 'name'> & {
+				theme?: Pick<Theme, 'id' | 'name' | 'styles' | 'cssFilePath'> | null;
+		  })
+		| null;
 }
 
 export interface CreateMemoDto {

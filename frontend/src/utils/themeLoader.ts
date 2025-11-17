@@ -48,7 +48,10 @@ export async function loadThemeCSS(themeId: string, cssPath: string): Promise<vo
 			const cssText = await response.text();
 
 			// CSS変換: .theme-root を .theme-root[data-theme-id="xxx"] に置換（衝突防止）
-			const scopedCSS = cssText.replace(/\.theme-root\b/g, `.theme-root[data-theme-id="${themeId}"]`);
+			const scopedCSS = cssText.replace(
+				/\.theme-root\b/g,
+				`.theme-root[data-theme-id="${themeId}"]`,
+			);
 
 			// <style>タグを作成
 			const styleElement = document.createElement('style');
