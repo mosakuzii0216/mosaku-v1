@@ -170,7 +170,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 			data-theme-id={selectedTheme?.id}
 		>
 			{/* ヘッダー */}
-			<div className="border-b border-gray-200 p-4 flex items-center justify-end bg-white">
+			<div className="border-b border-gray-200 p-4 flex items-center justify-end">
 				<div className="flex items-center space-x-2">
 					<TagDropdownIcon
 						selectedTagIds={selectedTagIds}
@@ -199,7 +199,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 			</div>
 
 			{/* エディター */}
-			<div className="flex-1 flex flex-col p-4 bg-white">
+			<div className="flex-1 flex flex-col p-4">
 				<div
 					id={`memo-editor-${memo?.id || 'new'}`}
 					className="max-w-4xl mx-auto w-full flex-1 flex flex-col"

@@ -47,7 +47,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
 	return (
 		<div className={`rich-text-editor ${className}`}>
-			<div className="border-b border-gray-200 p-2 bg-gray-50">
+			<div className="border-b border-gray-200 p-2">
 				<div className="flex space-x-1">
 					<button
 						onClick={() => editor.chain().focus().toggleBold().run()}
@@ -134,7 +134,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 					</button>
 				</div>
 			</div>
-			<div className="flex-1 bg-white">
+			<div className="flex-1">
 				<EditorContent editor={editor} className="min-h-[200px]" />
 			</div>
 		</div>
