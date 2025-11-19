@@ -91,18 +91,6 @@ function parseHexToRgba(hex) {
 	return [r, g, b, 255];
 }
 
-function faviconColor() {
-	try {
-		const svgPath = path.join(__dirname, '..', 'public', 'favicon.svg');
-		const svg = fs.readFileSync(svgPath, 'utf8');
-		// Pick the first hex color like #RRGGBB or #RGB
-		const match = svg.match(/#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})/);
-		return parseHexToRgba(match ? `#${match[1]}` : null);
-	} catch (_) {
-		return null;
-	}
-}
-
 // Force target color to #00582d as requested
 const base = parseHexToRgba('#00582d');
 
