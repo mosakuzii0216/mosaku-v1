@@ -3,7 +3,7 @@
 /* 1. CSS変数の定義とベーススタイル */
 .theme-root {
 	/* カラー */
-	--theme-bg-color: #fef2f2;
+	--theme-bg: linear-gradient(70deg, #fee2e2, #fecaca);
 	--theme-text-color: #2b0b0b;
 	--theme-heading-color: #c53030;
 	--theme-accent-color: #ef4444;
@@ -22,7 +22,7 @@
 	--theme-border-radius: 0.5rem;
 
 	/* ベーススタイルの適用 */
-	background-color: var(--theme-bg-color);
+	background: var(--theme-bg);
 	color: var(--theme-text-color);
 	padding: var(--theme-padding);
 	border-radius: var(--theme-border-radius);
