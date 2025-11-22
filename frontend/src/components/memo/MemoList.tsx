@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { List, LayoutList } from 'lucide-react';
 import { useMemoStore } from '../../stores/useMemoStore';
 import { useMemos } from '../../hooks/useMemoQueries';
 import { useNotebooks } from '../../hooks/useNotebookQueries';
@@ -6,6 +8,7 @@ import type { Memo } from '../../types/memo';
 // import { MemoSearch } from './MemoSearch';
 
 type DateGroup = '今日' | '昨日' | '今週' | '今月' | 'それ以前';
+export type ViewDensity = 'compact' | 'normal';
 
 const getDateGroup = (dateString: string): DateGroup => {
 	const date = new Date(dateString);
@@ -52,6 +55,7 @@ export const MemoList = () => {
 	const { memos, notebookFilter, setNotebookFilter } = useMemoStore();
 	const { isLoading, error } = useMemos();
 	const { data: notebooks = [] } = useNotebooks();
+	const [viewDensity, setViewDensity] = useState<ViewDensity>('normal');
 
 	if (isLoading) {
 		return (
@@ -87,6 +91,43 @@ export const MemoList = () => {
 
 	return (
 		<div className="flex flex-col h-full">
+			{/* 表示密度切り替えバー */}
+			<div className="px-4 py-2 border-b border-gray-200 flex items-center justify-end bg-white">
+				<div className="flex gap-2">
+					{/* コンパクト表示アイコン */}
+					<button
+						onClick={() => setViewDensity('compact')}
+						className={`p-2 rounded transition-colors group relative ${
+							viewDensity === 'compact'
+								? 'bg-blue-500 text-white'
+								: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+						}`}
+						title="コンパクト表示"
+					>
+						<List size={20} strokeWidth={2} />
+						<span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+							コンパクト表示
+						</span>
+					</button>
+
+					{/* 通常表示アイコン */}
+					<button
+						onClick={() => setViewDensity('normal')}
+						className={`p-2 rounded transition-colors group relative ${
+							viewDensity === 'normal'
+								? 'bg-blue-500 text-white'
+								: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+						}`}
+						title="通常表示"
+					>
+						<LayoutList size={20} strokeWidth={2} />
+						<span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+							通常表示
+						</span>
+					</button>
+				</div>
+			</div>
+
 			<div className="flex-1 overflow-y-auto">
 				{notebookFilter !== 'ALL' && (
 					<div className="px-4 py-2 text-sm bg-yellow-50/30 text-yellow-800 border-b border-yellow-100 flex items-center justify-between">
@@ -120,7 +161,7 @@ export const MemoList = () => {
 								</div>
 								<div>
 									{memosInGroup.map((memo) => (
-										<MemoItem key={memo.id} memo={memo} />
+										<MemoItem key={memo.id} memo={memo} density={viewDensity} />
 									))}
 								</div>
 							</section>
