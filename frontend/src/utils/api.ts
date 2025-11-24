@@ -11,7 +11,7 @@ import type { Theme, ThemeSearchParams, CreateThemeData, UpdateThemeData } from 
 import type { Notebook, CreateNotebookDto, UpdateNotebookDto } from '../types/notebook';
 import { AuthTokenManager } from './auth';
 
-const API_BASE_URL = 'http://localhost/api';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 class ApiClient {
 	private async getAuthHeaders(): Promise<Record<string, string>> {

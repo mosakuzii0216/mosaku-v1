@@ -4,14 +4,14 @@ export class GoogleAuthUtils {
 	 */
 	static startGoogleAuth(): void {
 		const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-		const baseUrl = import.meta.env.VITE_APP_URL || 'http://localhost';
+		const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 		if (!clientId) {
 			throw new Error('Google Client ID is not configured');
 		}
 
 		// バックエンドのGoogle認証エンドポイントにリダイレクト
-		const googleAuthUrl = `${baseUrl}/api/auth/google`;
+		const googleAuthUrl = `${backendUrl}/auth/google`;
 		window.location.href = googleAuthUrl;
 	}
 
@@ -79,14 +79,14 @@ export class GitHubAuthUtils {
 	 */
 	static startGitHubAuth(): void {
 		const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
-		const baseUrl = import.meta.env.VITE_APP_URL || 'http://localhost';
+		const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 		if (!clientId) {
 			throw new Error('GitHub Client ID is not configured');
 		}
 
 		// バックエンドのGitHub認証エンドポイントにリダイレクト
-		const githubAuthUrl = `${baseUrl}/api/auth/github`;
+		const githubAuthUrl = `${backendUrl}/auth/github`;
 		window.location.href = githubAuthUrl;
 	}
 
@@ -154,14 +154,14 @@ export class XAuthUtils {
 	 */
 	static startXAuth(): void {
 		const consumerKey = import.meta.env.VITE_X_CONSUMER_KEY;
-		const baseUrl = import.meta.env.VITE_APP_URL || 'http://localhost';
+		const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 		if (!consumerKey) {
 			throw new Error('X Consumer Key is not configured');
 		}
 
 		// バックエンドのX認証エンドポイントにリダイレクト
-		const xAuthUrl = `${baseUrl}/api/auth/x`;
+		const xAuthUrl = `${backendUrl}/auth/x`;
 		window.location.href = xAuthUrl;
 	}
 
