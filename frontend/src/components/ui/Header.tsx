@@ -2,7 +2,6 @@ import { useMemoStore } from '../../stores/useMemoStore';
 import { NotebookPen, LibraryBig, Tag } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import { No } from 'zod/v4/locales';
 
 interface HeaderProps {
 	onMemoCreateClick: () => void;
