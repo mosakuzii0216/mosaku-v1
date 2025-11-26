@@ -23,6 +23,8 @@
 
 	/* ベーススタイルの適用 */
 	background: var(--theme-bg);
+	background-size: 200% 200%;
+	animation: gradientShift 10s ease infinite;
 	color: var(--theme-text-color);
 	padding: var(--theme-padding);
 	border-radius: var(--theme-border-radius);
@@ -182,5 +184,18 @@
 
 	.theme-root .memo-content h3 {
 		font-size: 1.1rem;
+	}
+}
+
+/* 13. アニメーション */
+@keyframes gradientShift {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
 	}
 }
