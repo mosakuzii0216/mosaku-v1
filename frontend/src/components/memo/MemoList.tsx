@@ -40,7 +40,7 @@ const groupMemosByDate = (memos: Memo[]): Record<DateGroup, Memo[]> => {
 		昨日: [],
 		今週: [],
 		今月: [],
-		'それ以前': [],
+		それ以前: [],
 	};
 
 	memos.forEach((memo) => {
