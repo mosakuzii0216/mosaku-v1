@@ -1,6 +1,8 @@
 import { useMemoStore } from '../../stores/useMemoStore';
+import { NotebookPen, LibraryBig, Tag } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import { No } from 'zod/v4/locales';
 
 interface HeaderProps {
 	onMemoCreateClick: () => void;
@@ -31,7 +33,7 @@ export const Header = ({ onMemoCreateClick, onNotebookCreateClick }: HeaderProps
 								: 'text-gray-600 hover:text-gray-900'
 						}`}
 					>
-						📝 メモ
+						<NotebookPen className="inline-block mr-1" /> メモ
 					</button>
 					<button
 						onClick={goToNotebookList}
@@ -41,7 +43,7 @@ export const Header = ({ onMemoCreateClick, onNotebookCreateClick }: HeaderProps
 								: 'text-gray-600 hover:text-gray-900'
 						}`}
 					>
-						📚 ノートブック
+						<LibraryBig className="inline-block mr-1" /> ノートブック
 					</button>
 					<button
 						onClick={goToTags}
@@ -51,7 +53,7 @@ export const Header = ({ onMemoCreateClick, onNotebookCreateClick }: HeaderProps
 								: 'text-gray-600 hover:text-gray-900'
 						}`}
 					>
-						🏷️ タグ
+						<Tag className="inline-block mr-1" /> タグ
 					</button>
 				</div>
 			</div>
