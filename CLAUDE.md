@@ -4,98 +4,300 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture Overview
 
-This is a full-stack memo application built with a containerized architecture:
+Mosaku is a full-stack memo/notebook application with multi-tenant support, OAuth authentication, and a theming system:
 
-- **Frontend**: React + TypeScript + Vite with Tailwind CSS, using Zustand for state management and React Query for API calls
-- **Backend**: NestJS with TypeScript, using Prisma ORM for database operations and PostgreSQL as the database
-- **Database**: PostgreSQL with a simple `memos` table containing id, title, content, and timestamps
-- **Infrastructure**: Docker Compose orchestrates all services with Nginx as reverse proxy
+- **Frontend**: React 19 + TypeScript + Vite with Tailwind CSS
+- **Backend**: NestJS + TypeScript with Prisma ORM
+- **Database**: PostgreSQL 16
+- **Infrastructure**: Docker Compose (development), Vercel + Cloud Run + Supabase (production)
 
-The application follows a clean separation of concerns:
-- Frontend components are organized by feature (memo operations) and UI patterns (layouts, UI components)
-- Backend uses NestJS modules with proper DTO validation and service layer patterns
-- Database schema is managed through Prisma migrations
+### Key Features
+- Multi-user memo and notebook management with tagging
+- JWT + OAuth authentication (Google, GitHub, X/Twitter)
+- Invitation code system for user registration
+- Custom theme system with CSS file-based themes
+- Role-based access control (FREE, PREMIUM, ADMIN)
+- Rich text editor (TipTap)
 
 ## Development Commands
 
-### Docker Environment
+### Monorepo Commands (from root)
 ```bash
-# Start all services (recommended for development)
-docker-compose up
+# Install all dependencies
+npm install
 
-# Backend runs on port 3000, Frontend on 5173, Nginx proxy on 80
-# Database on 5432 (PostgreSQL)
+# Run both frontend and backend in development
+npm run dev
+
+# Build both projects
+npm run build
+
+# Lint all code
+npm run lint
+
+# Format all code
+npm run format
 ```
 
-### Backend (NestJS)
+### Docker Environment (Recommended)
+```bash
+# Start all services (backend:3000, frontend:5173, nginx:80, db:5432)
+docker-compose up
+
+# Stop all services
+docker-compose down
+
+# Rebuild and restart
+docker-compose up --build
+```
+
+### Backend Development (NestJS)
 ```bash
 cd backend
 
 # Development
-npm run start:dev          # Watch mode development server
+npm run start:dev          # Watch mode with hot reload
 npm run start:debug        # Debug mode with watch
 
 # Build and Production
-npm run build              # Build for production
+npm run build              # Compile TypeScript
 npm run start:prod         # Run production build
 
 # Testing
-npm run test               # Unit tests
-npm run test:watch         # Watch mode testing
+npm run test               # Run unit tests
+npm run test:watch         # Watch mode for tests
 npm run test:e2e           # End-to-end tests
-npm run test:cov           # Test coverage
+npm run test:cov           # Generate coverage report
 
 # Code Quality
-npm run lint               # ESLint with auto-fix
-npm run format             # Prettier formatting
+npm run lint               # ESLint (auto-fix enabled)
+npm run lint:fix           # Explicit fix command
+npm run format             # Prettier format
+npm run format:check       # Check formatting without changes
 
 # Database
-npx prisma migrate dev     # Run migrations in development
+npx prisma migrate dev     # Create and apply migration
+npx prisma migrate deploy  # Apply migrations (production)
 npx prisma generate        # Generate Prisma client
-npx prisma studio          # Open Prisma Studio
+npx prisma studio          # Open Prisma Studio GUI
+npm run migration:apply    # Alias for migrate dev
+npm run migration:deploy   # Alias for migrate deploy
 ```
 
-### Frontend (React + Vite)
+### Frontend Development (React + Vite)
 ```bash
 cd frontend
 
 # Development
-npm run dev                # Start development server (port 5173)
+npm run dev                # Start dev server on port 5173
 npm run preview            # Preview production build
 
 # Build
-npm run build              # Build for production (TypeScript check + Vite build)
+npm run build              # TypeScript check + Vite build
 
 # Code Quality
 npm run lint               # ESLint
+npm run lint:fix           # ESLint with auto-fix
+npm run format             # Prettier format
+npm run format:check       # Check formatting
 ```
 
-## Key Technical Details
+## High-Level Architecture
 
-### Database Schema
-- Single `memos` table with CUID ids, title (100 chars), content (text), and timestamps
-- Prisma client generated to `backend/generated/prisma/` directory
+### Backend Module Structure
 
-### API Endpoints
-- `GET /memo` - List all memos (ordered by updatedAt desc)
-- `GET /memo/:id` - Get memo by ID
-- `POST /memo` - Create new memo
-- `PUT /memo/:id` - Update memo
-- `DELETE /memo/:id` - Delete memo
-- `GET /memo/search?query=term` - Search memos by title/content
+The backend follows NestJS modular architecture with clear separation:
+
+```
+AppModule
+├── ConfigModule (Global) - Centralized environment configuration
+├── PrismaModule (Global) - Database access layer
+├── CommonModule - Shared services (AuthorizationService for ownership checks)
+├── AuthModule - Authentication & authorization (JWT + OAuth strategies)
+├── InvitationModule - Invitation code management
+├── MemoModule - Memo CRUD operations
+├── NotebookModule - Notebook management
+├── TagModule - Tag system with many-to-many relations
+└── ThemeModule - Theme management with CSS file support
+```
+
+**Key Patterns:**
+- All protected routes use `@UseGuards(JwtAuthGuard)`
+- Public endpoints marked with `@Public()` decorator
+- User ownership validation via `AuthorizationService.checkOwnership()`
+- DTOs use `class-validator` and `class-transformer`
+- All modules export services for cross-module dependencies
 
 ### Frontend State Management
-- Zustand store (`useMemoStore`) manages memo data and UI state
-- React Query (`useMemoQueries`) handles API calls and caching
-- Responsive design with mobile/desktop layouts
 
-### Environment Configuration
-- Environment variables in `.env` file (not committed)
-- Backend needs `DATABASE_URL` for PostgreSQL connection
+**Zustand Stores** (Client State):
+- `useMemoStore`: Memo data, selected memo, view state (list/edit/create), mobile/desktop mode
+- `useTagStore`: Tag data and management
 
-## File Structure Notes
+**React Context**:
+- `AuthContext`: User authentication state, login/logout/OAuth flows
 
-- Backend uses generated Prisma client from `generated/prisma/`
-- Frontend components follow feature-based organization
-- Both projects use TypeScript with strict type checking
-- ESLint configured for both frontend and backend with consistent rules
+**React Query** (Server State):
+- All API calls use React Query for caching and synchronization
+- Custom hooks like `useMemoQueries` wrap API endpoints
+
+**View State Flow**:
+The app uses an `ObjectType` ('memo' | 'notebook' | 'tag') and `ViewType` ('list' | 'edit' | 'create') state machine managed by `useMemoStore` to control what's displayed.
+
+### Authentication Flow
+
+**Backend:**
+1. Passport strategies (Google, GitHub, X) handle OAuth flow
+2. Successful auth returns JWT token with user payload
+3. `JwtAuthGuard` validates token on protected routes
+4. `JwtStrategy` extracts user from token and attaches to request
+
+**Frontend:**
+1. `AuthContext` manages authentication state
+2. JWT stored in localStorage via `AuthTokenManager`
+3. All API requests include `Authorization: Bearer <token>` header
+4. OAuth flows redirect to backend `/auth/{provider}` and return to frontend with token
+
+**Invitation Code System:**
+- New users require invitation code (except admin email)
+- Codes have max uses and expiration
+- Validated before user creation
+- Admin role can create codes via `/admin/invitations`
+
+### Database Schema Highlights
+
+**User Model:**
+- CUID primary key
+- Supports both OAuth (`oauthId`) and email/password (`password`)
+- Role-based access: `FREE`, `PREMIUM`, `ADMIN`
+- Admin determined by `ADMIN_EMAIL` environment variable
+
+**Memo ↔ Notebook ↔ Tag Relationships:**
+- Memos belong to one Notebook (optional, nullable)
+- Memos can have many Tags via `MemoTag` join table
+- Notebooks can have many Tags via `NotebookTag` join table
+- All entities scoped to User (cascade delete)
+
+**Theme System:**
+- `cssFilePath` points to CSS file in `frontend/public/themes/`
+- Themes can be system (`isSystem: true`) or user-created
+- Categories organize themes
+- Users can favorite themes
+
+### Prisma Client Location
+
+The Prisma client is generated to `backend/generated/prisma/` (not default `node_modules`). This is configured in `schema.prisma`:
+
+```prisma
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+```
+
+Always run `npx prisma generate` after schema changes.
+
+## Deployment Architecture
+
+The application supports two deployment modes:
+
+**Local Development:**
+- Docker Compose orchestrates all services
+- Nginx reverse proxy routes traffic
+- PostgreSQL in container
+
+**Production (Current Setup):**
+- **Frontend**: Vercel (static site)
+- **Backend**: Google Cloud Run (containerized NestJS)
+- **Database**: Supabase PostgreSQL
+
+See `DEPLOYMENT_GUIDE.md` for production deployment instructions.
+
+### Environment Variables
+
+**Critical Backend Variables:**
+- `DATABASE_URL` - PostgreSQL connection (with connection pooling for Supabase)
+- `DIRECT_URL` - Direct PostgreSQL connection (for migrations)
+- `JWT_SECRET` - JWT signing key
+- `CORS_ORIGINS` - Comma-separated allowed origins
+- OAuth credentials: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, etc.
+
+**Critical Frontend Variables (VITE_ prefix required):**
+- `VITE_BACKEND_URL` - Backend API URL
+- `VITE_SUPABASE_URL` - Supabase project URL
+- `VITE_SUPABASE_ANON_KEY` - Supabase anon key
+- OAuth client IDs for frontend: `VITE_GOOGLE_CLIENT_ID`, etc.
+
+## Important Implementation Notes
+
+### Adding New Protected Endpoints
+
+```typescript
+@Controller('resource')
+@UseGuards(JwtAuthGuard)  // Apply to all routes
+export class ResourceController {
+  @Get()
+  findAll(@Request() req: AuthenticatedRequest) {
+    const userId = req.user.id;  // User from JWT
+    // ... implementation
+  }
+
+  @Public()  // Override guard for specific route
+  @Get('public')
+  publicEndpoint() {
+    // No authentication required
+  }
+}
+```
+
+### Ownership Validation Pattern
+
+```typescript
+// In service
+constructor(
+  private prisma: PrismaService,
+  private authService: AuthorizationService,
+) {}
+
+async update(id: string, userId: string, data: UpdateDto) {
+  const resource = await this.prisma.resource.findUnique({ where: { id } });
+  // Throws ForbiddenException if user doesn't own resource
+  this.authService.checkOwnership(resource, userId);
+  // ... update logic
+}
+```
+
+### Frontend API Calls Pattern
+
+```typescript
+// Use centralized API_BASE_URL from utils/api.ts
+const response = await fetch(`${API_BASE_URL}/endpoint`, {
+  headers: {
+    'Authorization': `Bearer ${AuthTokenManager.getAccessToken()}`,
+    'Content-Type': 'application/json',
+  },
+});
+```
+
+### Theme System
+
+Themes are CSS files in `frontend/public/themes/{category}/{theme-name}.css`. The theme service:
+1. Stores theme metadata in database (name, category, cssFilePath)
+2. Frontend loads CSS file dynamically when theme is selected
+3. CSS variables define colors, typography, layout, etc.
+
+### Testing Strategy
+
+- **Backend**: Jest for unit tests, Supertest for E2E
+- **Frontend**: No test framework configured yet
+- Use `npm run test:watch` for TDD workflow
+- Coverage reports generated to `backend/coverage/`
+
+## Common Gotchas
+
+1. **Prisma Client Not Found**: Run `npx prisma generate` after pulling schema changes
+2. **CORS Errors**: Ensure `CORS_ORIGINS` includes your frontend URL
+3. **OAuth Redirect Mismatch**: OAuth provider callback URLs must match `{BACKEND_URL}/auth/{provider}/callback`
+4. **Migration Conflicts**: Always pull latest migrations before creating new ones
+5. **Docker Port Conflicts**: Ensure ports 80, 3000, 5173, 5432 are available
+6. **Environment Variables**: Frontend variables MUST have `VITE_` prefix to be exposed
