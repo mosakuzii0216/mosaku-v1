@@ -26,33 +26,33 @@ export const Header = ({ onMemoCreateClick, onNotebookCreateClick }: HeaderProps
 				<div className="ml-6 flex items-center space-x-2">
 					<button
 						onClick={goToList}
-						className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+						className={`px-3 py-2 rounded text-sm font-medium transition-colors inline-flex items-center ${
 							currentObject === 'memo'
 								? 'bg-blue-100 text-blue-800'
 								: 'text-gray-600 hover:text-gray-900'
 						}`}
 					>
-						<NotebookPen className="inline-block mr-1" /> メモ
+						<NotebookPen className="w-4 h-4 mr-1.5" /> メモ
 					</button>
 					<button
 						onClick={goToNotebookList}
-						className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+						className={`px-3 py-2 rounded text-sm font-medium transition-colors inline-flex items-center ${
 							currentObject === 'notebook'
 								? 'bg-blue-100 text-blue-800'
 								: 'text-gray-600 hover:text-gray-900'
 						}`}
 					>
-						<LibraryBig className="inline-block mr-1" /> ノートブック
+						<LibraryBig className="w-4 h-4 mr-1.5" /> ノートブック
 					</button>
 					<button
 						onClick={goToTags}
-						className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+						className={`px-3 py-2 rounded text-sm font-medium transition-colors inline-flex items-center ${
 							currentObject === 'tag'
 								? 'bg-blue-100 text-blue-800'
 								: 'text-gray-600 hover:text-gray-900'
 						}`}
 					>
-						<Tag className="inline-block mr-1" /> タグ
+						<Tag className="w-4 h-4 mr-1.5" /> タグ
 					</button>
 				</div>
 			</div>
