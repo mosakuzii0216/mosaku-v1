@@ -9,7 +9,7 @@ export default defineConfig({
 			injectRegister: 'auto',
 			registerType: 'autoUpdate',
 			includeAssets: ['vite.svg', 'themes/*.css', 'apple-touch-icon.png'],
-			devOptions: { enabled: true },
+			devOptions: { enabled: false },
 			workbox: {
 				globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}', 'themes/*.css'],
 				navigateFallback: '/index.html',
@@ -62,7 +62,7 @@ export default defineConfig({
 		}),
 	],
 	server: {
-		host: true, // Dockerコンテナの外部からアクセスを許可
+		host: '0.0.0.0', // Dockerコンテナの外部からアクセスを許可（IPv4を明示）
 		port: 5173,
 		hmr: {
 			port: 5173,
