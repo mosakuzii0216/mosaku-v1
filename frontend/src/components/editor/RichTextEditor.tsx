@@ -8,6 +8,7 @@ interface RichTextEditorProps {
 	onChange: (content: string) => void;
 	placeholder?: string;
 	className?: string;
+	autofocus?: boolean;
 }
 
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({
@@ -15,6 +16,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 	onChange,
 	placeholder = 'メモを入力...',
 	className = '',
+	autofocus = false,
 }) => {
 	const editor = useEditor({
 		extensions: [
@@ -24,6 +26,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 			}),
 		],
 		content,
+		autofocus,
 		onUpdate: ({ editor }) => {
 			onChange(editor.getHTML());
 		},

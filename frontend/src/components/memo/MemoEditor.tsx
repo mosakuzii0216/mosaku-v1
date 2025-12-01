@@ -245,6 +245,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 							onChange={setContent}
 							placeholder="メモを入力..."
 							className="h-full"
+							autofocus={isCreate}
 						/>
 					</div>
 				</div>
