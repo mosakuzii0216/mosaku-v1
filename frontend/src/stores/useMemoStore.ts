@@ -53,7 +53,7 @@ export const useMemoStore = create<MemoStore>((set, get) => ({
 	selectedNotebookId: null,
 	isMobile: false,
 	currentObject: 'memo',
-	currentView: 'list',
+	currentView: 'create',
 	isEditing: false,
 	searchQuery: '',
 	isLoading: false,
