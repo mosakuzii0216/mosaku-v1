@@ -1,11 +1,13 @@
 import { useEffect } from 'react';
 import { useMemoStore } from '../../stores/useMemoStore';
 import { useAppInit } from '../../hooks/useAppInit';
+import { useMemoPalette } from '../../hooks/useMemoPalette';
 import { Header } from '../ui/Header';
 import { MemoEditor } from '../memo/MemoEditor';
 import { TagManager } from '../tag/TagManager';
 import { NotebookEditor } from '../notebook/NotebookEditor';
 import { NotebookList } from '../notebook/NotebookList';
+import { MemoPalette } from '../memo/MemoPalette';
 
 const EmptyMemoView = () => {
 	const isMac = /Mac|iPod|iPhone|iPad/.test(window.navigator.platform);
@@ -29,6 +31,7 @@ export const DesktopLayout = () => {
 		selectedNotebookId,
 	} = useMemoStore();
 	useAppInit(); // アプリ初期化（タグロード等）
+	const { isOpen, mode, closePalette } = useMemoPalette();
 
 	// ショートカットキーのハンドリング
 	useEffect(() => {
@@ -104,6 +107,9 @@ export const DesktopLayout = () => {
 				{/* 右メインエリア - メモ詳細/編集 */}
 				<div className="flex-1 flex flex-col">{renderMainContent()}</div>
 			</main>
+
+			{/* メモパレット */}
+			<MemoPalette isOpen={isOpen} onClose={closePalette} initialMode={mode} />
 		</div>
 	);
 };

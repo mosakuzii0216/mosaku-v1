@@ -1,11 +1,13 @@
 import { useEffect } from 'react';
 import { useMemoStore } from '../../stores/useMemoStore';
 import { useAppInit } from '../../hooks/useAppInit';
+import { useMemoPalette } from '../../hooks/useMemoPalette';
 import { Header } from '../ui/Header';
 import { MemoEditor } from '../memo/MemoEditor';
 import { TagManager } from '../tag/TagManager';
 import { NotebookList } from '../notebook/NotebookList';
 import { NotebookEditor } from '../notebook/NotebookEditor';
+import { MemoPalette } from '../memo/MemoPalette';
 
 export const MobileLayout = () => {
 	const {
@@ -17,6 +19,7 @@ export const MobileLayout = () => {
 		selectedNotebookId,
 	} = useMemoStore();
 	useAppInit(); // アプリ初期化（タグロード等）
+	const { isOpen, mode, closePalette } = useMemoPalette();
 
 	// ショートカットキーのハンドリング
 	useEffect(() => {
@@ -101,6 +104,9 @@ export const MobileLayout = () => {
 		<div className="h-screen flex flex-col bg-white">
 			<Header onMemoCreateClick={goToMemoCreate} onNotebookCreateClick={goToNotebookCreate} />
 			<main className="flex-1 overflow-hidden">{renderContent()}</main>
+
+			{/* メモパレット */}
+			<MemoPalette isOpen={isOpen} onClose={closePalette} initialMode={mode} />
 		</div>
 	);
 };
