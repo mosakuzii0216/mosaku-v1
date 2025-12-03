@@ -2,6 +2,9 @@ import React from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
+import Mention from '@tiptap/extension-mention';
+import { suggestion, setNotebooksData } from './suggestion';
+import { useNotebooks } from '../../hooks/useNotebookQueries';
 
 interface RichTextEditorProps {
 	content: string;
@@ -18,11 +21,28 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 	className = '',
 	autofocus = false,
 }) => {
+	// ノートブックデータを取得
+	const { data: notebooks = [] } = useNotebooks();
+
+	// ノートブックデータをsuggestionに渡す
+	React.useEffect(() => {
+		setNotebooksData(notebooks);
+	}, [notebooks]);
+
 	const editor = useEditor({
 		extensions: [
 			StarterKit,
 			Placeholder.configure({
 				placeholder,
+			}),
+			Mention.configure({
+				HTMLAttributes: {
+					class: 'mention',
+				},
+				suggestion: {
+					...suggestion,
+					char: '/', // スラッシュをトリガーに変更
+				},
 			}),
 		],
 		content,
