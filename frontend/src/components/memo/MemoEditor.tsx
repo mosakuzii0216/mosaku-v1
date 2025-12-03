@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useCreateMemo, useUpdateMemo } from '../../hooks/useMemoQueries';
+import { useCreateMemo, useUpdateMemo, useDeleteMemo } from '../../hooks/useMemoQueries';
 import { useNotebooks } from '../../hooks/useNotebookQueries';
 import { useTagQueries } from '../../hooks/useTagQueries';
 import { loadThemeCSS } from '../../utils/themeLoader';
@@ -17,6 +17,7 @@ interface MemoEditorProps {
 export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	const createMemo = useCreateMemo();
 	const updateMemo = useUpdateMemo();
+	const deleteMemo = useDeleteMemo();
 	const { assignTags } = useTagQueries();
 
 	const [title, setTitle] = useState(memo?.title || '');
@@ -146,6 +147,22 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 		selectedNotebookId,
 	]);
 
+	const handleDelete = useCallback(async () => {
+		if (!memo) return;
+
+		// 確認ダイアログ
+		if (!window.confirm('このメモを削除しますか？この操作は取り消せません。')) {
+			return;
+		}
+
+		try {
+			await deleteMemo.mutateAsync(memo.id);
+		} catch (error) {
+			console.error('削除に失敗しました:', error);
+			alert('削除に失敗しました。もう一度お試しください。');
+		}
+	}, [memo, deleteMemo]);
+
 	// キーボードショートカット（Ctrl+S / Cmd+S で保存）
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
@@ -190,6 +207,15 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 					>
 						{createMemo.isPending || updateMemo.isPending ? '保存中...' : '保存'}
 					</button>
+					{!isCreate && memo && (
+						<button
+							onClick={handleDelete}
+							disabled={deleteMemo.isPending}
+							className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+						>
+							{deleteMemo.isPending ? '削除中...' : '削除'}
+						</button>
+					)}
 				</div>
 			</div>
 
