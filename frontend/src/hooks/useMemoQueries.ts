@@ -62,13 +62,11 @@ export const useSearchMemos = (query: string) => {
 // メモ作成
 export const useCreateMemo = () => {
 	const queryClient = useQueryClient();
-	const { addMemo } = useMemoStore();
 
 	return useMutation({
 		mutationFn: (data: CreateMemoDto) => apiClient.createMemo(data),
-		onSuccess: (data) => {
-			queryClient.invalidateQueries({ queryKey: ['memos'] });
-			addMemo(data);
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memos() });
 		},
 	});
 };
@@ -76,15 +74,13 @@ export const useCreateMemo = () => {
 // メモ更新
 export const useUpdateMemo = () => {
 	const queryClient = useQueryClient();
-	const { updateMemo } = useMemoStore();
 
 	return useMutation({
 		mutationFn: ({ id, data }: { id: string; data: UpdateMemoDto }) =>
 			apiClient.updateMemo(id, data),
 		onSuccess: (data) => {
-			queryClient.invalidateQueries({ queryKey: ['memos'] });
+			queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memos() });
 			queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memo(data.id) });
-			updateMemo(data);
 		},
 	});
 };
@@ -92,13 +88,12 @@ export const useUpdateMemo = () => {
 // メモ削除
 export const useDeleteMemo = () => {
 	const queryClient = useQueryClient();
-	const { deleteMemo, goToList } = useMemoStore();
+	const { goToList } = useMemoStore();
 
 	return useMutation({
 		mutationFn: (id: string) => apiClient.deleteMemo(id),
-		onSuccess: (_, variables) => {
-			queryClient.invalidateQueries({ queryKey: ['memos'] });
-			deleteMemo(variables);
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memos() });
 			goToList();
 		},
 	});
