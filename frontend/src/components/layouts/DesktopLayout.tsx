@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { useMemoStore } from '../../stores/useMemoStore';
 import { useAppInit } from '../../hooks/useAppInit';
 import { Header } from '../ui/Header';
-import { MemoList } from '../memo/MemoList';
 import { MemoEditor } from '../memo/MemoEditor';
 import { TagManager } from '../tag/TagManager';
 import { NotebookEditor } from '../notebook/NotebookEditor';
@@ -102,13 +101,6 @@ export const DesktopLayout = () => {
 			<Header onMemoCreateClick={goToMemoCreate} onNotebookCreateClick={goToNotebookCreate} />
 
 			<main className="flex-1 flex overflow-hidden">
-				{/* 左サイドバー - メモ一覧 (memoオブジェクト時のみ表示) */}
-				{currentObject === 'memo' && (
-					<div className="w-80 border-r border-gray-200 flex flex-col">
-						<MemoList />
-					</div>
-				)}
-
 				{/* 右メインエリア - メモ詳細/編集 */}
 				<div className="flex-1 flex flex-col">{renderMainContent()}</div>
 			</main>

@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { useMemoStore } from '../../stores/useMemoStore';
 import { useAppInit } from '../../hooks/useAppInit';
 import { Header } from '../ui/Header';
-import { MemoList } from '../memo/MemoList';
 import { MemoEditor } from '../memo/MemoEditor';
 import { TagManager } from '../tag/TagManager';
 import { NotebookList } from '../notebook/NotebookList';
@@ -41,7 +40,18 @@ export const MobileLayout = () => {
 			case 'memo':
 				switch (currentView) {
 					case 'list':
-						return <MemoList />;
+						return (
+							<div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
+								<p>メモ一覧は現在利用できません</p>
+								<p className="mt-2 text-sm text-gray-400">
+									新規作成:{' '}
+									{/Mac|iPod|iPhone|iPad/.test(window.navigator.platform)
+										? 'Cmd + Option'
+										: 'Ctrl + Alt'}{' '}
+									+ N
+								</p>
+							</div>
+						);
 
 					case 'edit':
 						return selectedMemo ? (
@@ -79,7 +89,11 @@ export const MobileLayout = () => {
 				return <TagManager />;
 
 			default:
-				return <MemoList />;
+				return (
+					<div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
+						<p>メモ一覧は現在利用できません</p>
+					</div>
+				);
 		}
 	};
 
