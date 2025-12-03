@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNotebooks } from '../../hooks/useNotebookQueries';
+import { useMemos } from '../../hooks/useMemoQueries';
 import { useMemoStore } from '../../stores/useMemoStore';
 import type { Memo } from '../../types/memo';
 
@@ -18,8 +19,9 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 	const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 
-	const { memos, goToEdit } = useMemoStore();
+	const { goToEdit } = useMemoStore();
 	const { data: notebooks = [] } = useNotebooks();
+	const { data: memos = [] } = useMemos();
 
 	// モード変更時にsearchQueryとselectedIndexをリセット
 	useEffect(() => {
@@ -58,7 +60,14 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 
 	// フィルタリングされたメモ一覧（useMemoで最適化）
 	const filteredMemos = useMemo(() => {
-		return memos.filter((memo) => {
+		console.log('[MemoPalette] Filtering memos:', {
+			totalMemos: memos.length,
+			selectedNotebookId,
+			searchQuery,
+			sampleMemo: memos[0],
+		});
+
+		const filtered = memos.filter((memo) => {
 			// ノートブックフィルタ
 			if (selectedNotebookId) {
 				if (selectedNotebookId === 'ALL') {
@@ -81,6 +90,13 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 
 			return true;
 		});
+
+		console.log('[MemoPalette] Filtered result:', {
+			filteredCount: filtered.length,
+			filtered: filtered.slice(0, 3).map(m => ({ id: m.id, title: m.title, notebookId: m.notebookId })),
+		});
+
+		return filtered;
 	}, [memos, selectedNotebookId, searchQuery]);
 
 	// キーボードナビゲーション
@@ -105,6 +121,7 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 					e.preventDefault();
 					if (mode === 'notebook-select' && items.length > 0) {
 						const selected = items[selectedIndex] as typeof notebookOptions[0];
+						console.log('[MemoPalette] Notebook selected:', selected);
 						setSelectedNotebookId(selected.id);
 						setMode('memo-select');
 					} else if (mode === 'memo-select' && items.length > 0) {
@@ -193,6 +210,7 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 							notebooks={notebookOptions}
 							selectedIndex={selectedIndex}
 							onSelect={(nb) => {
+								console.log('[MemoPalette] Notebook clicked:', nb);
 								setSelectedNotebookId(nb.id);
 								setMode('memo-select');
 							}}
