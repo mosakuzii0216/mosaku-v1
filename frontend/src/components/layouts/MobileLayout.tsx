@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { useMemoStore } from '../../stores/useMemoStore';
 import { useAppInit } from '../../hooks/useAppInit';
-import { useMemoPalette } from '../../hooks/useMemoPalette';
 import { Header } from '../ui/Header';
 import { MemoEditor } from '../memo/MemoEditor';
+import { MemoList } from '../memo/MemoList';
 import { TagManager } from '../tag/TagManager';
 import { NotebookList } from '../notebook/NotebookList';
 import { NotebookEditor } from '../notebook/NotebookEditor';
@@ -17,9 +17,12 @@ export const MobileLayout = () => {
 		goToMemoCreate,
 		goToNotebookCreate,
 		selectedNotebookId,
+		paletteOpen,
+		paletteMode,
+		closeMemoPalette,
+		openMemoPalette,
 	} = useMemoStore();
 	useAppInit(); // アプリ初期化（タグロード等）
-	const { isOpen, mode, closePalette } = useMemoPalette();
 
 	// ショートカットキーのハンドリング
 	useEffect(() => {
@@ -30,31 +33,32 @@ export const MobileLayout = () => {
 				e.preventDefault();
 				goToMemoCreate();
 			}
+
+			// Cmd/Ctrl + K: メモ選択パレット
+			if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+				e.preventDefault();
+				openMemoPalette('memo-select');
+			}
+
+			// Cmd/Ctrl + P: ノートブック選択パレット（2段階）
+			if ((e.metaKey || e.ctrlKey) && e.key === 'p') {
+				e.preventDefault();
+				openMemoPalette('notebook-select');
+			}
 		};
 
 		window.addEventListener('keydown', handleKeyDown);
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown);
 		};
-	}, [goToMemoCreate]);
+	}, [goToMemoCreate, openMemoPalette]);
 
 	const renderContent = () => {
 		switch (currentObject) {
 			case 'memo':
 				switch (currentView) {
 					case 'list':
-						return (
-							<div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
-								<p>メモ一覧は現在利用できません</p>
-								<p className="mt-2 text-sm text-gray-400">
-									新規作成:{' '}
-									{/Mac|iPod|iPhone|iPad/.test(window.navigator.platform)
-										? 'Cmd + Option'
-										: 'Ctrl + Alt'}{' '}
-									+ N
-								</p>
-							</div>
-						);
+						return <MemoList />;
 
 					case 'edit':
 						return selectedMemo ? (
@@ -106,7 +110,7 @@ export const MobileLayout = () => {
 			<main className="flex-1 overflow-hidden">{renderContent()}</main>
 
 			{/* メモパレット */}
-			<MemoPalette isOpen={isOpen} onClose={closePalette} initialMode={mode} />
+			<MemoPalette isOpen={paletteOpen} onClose={closeMemoPalette} initialMode={paletteMode} />
 		</div>
 	);
 };

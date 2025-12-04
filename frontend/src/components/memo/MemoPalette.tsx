@@ -19,9 +19,16 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 	const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 
-	const { goToEdit } = useMemoStore();
+	const { goToEdit, paletteNotebookFilter } = useMemoStore();
 	const { data: notebooks = [] } = useNotebooks();
 	const { data: memos = [] } = useMemos();
+
+	// パレット開閉時に、ストアのnotebookFilterを反映
+	useEffect(() => {
+		if (isOpen && paletteNotebookFilter) {
+			setSelectedNotebookId(paletteNotebookFilter);
+		}
+	}, [isOpen, paletteNotebookFilter]);
 
 	// モード変更時にsearchQueryとselectedIndexをリセット
 	useEffect(() => {

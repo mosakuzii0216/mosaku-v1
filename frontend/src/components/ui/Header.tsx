@@ -1,5 +1,5 @@
 import { useMemoStore } from '../../stores/useMemoStore';
-import { NotebookPen, LibraryBig, Tag } from 'lucide-react';
+import { LibraryBig, Tag } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 

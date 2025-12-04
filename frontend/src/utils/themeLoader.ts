@@ -103,7 +103,7 @@ export function isThemeLoaded(themeId: string): boolean {
  * すべての読み込み済みテーマをアンロード
  */
 export function unloadAllThemes(): void {
-	loadedThemes.forEach((styleElement, themeId) => {
+	loadedThemes.forEach((styleElement) => {
 		if (styleElement.parentNode) {
 			styleElement.parentNode.removeChild(styleElement);
 		}

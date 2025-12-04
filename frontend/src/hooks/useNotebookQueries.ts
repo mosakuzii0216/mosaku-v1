@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../utils/api';
-import type { CreateNotebookDto, UpdateNotebookDto, Notebook } from '../types/notebook';
+import type { CreateNotebookDto, UpdateNotebookDto } from '../types/notebook';
 
 const keys = {
 	all: ['notebooks'] as const,

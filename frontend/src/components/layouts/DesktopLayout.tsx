@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { useMemoStore } from '../../stores/useMemoStore';
 import { useAppInit } from '../../hooks/useAppInit';
-import { useMemoPalette } from '../../hooks/useMemoPalette';
 import { Header } from '../ui/Header';
 import { MemoEditor } from '../memo/MemoEditor';
+import { MemoList } from '../memo/MemoList';
 import { TagManager } from '../tag/TagManager';
 import { NotebookEditor } from '../notebook/NotebookEditor';
 import { NotebookList } from '../notebook/NotebookList';
@@ -29,9 +29,12 @@ export const DesktopLayout = () => {
 		goToMemoCreate,
 		goToNotebookCreate,
 		selectedNotebookId,
+		paletteOpen,
+		paletteMode,
+		closeMemoPalette,
+		openMemoPalette,
 	} = useMemoStore();
 	useAppInit(); // アプリ初期化（タグロード等）
-	const { isOpen, mode, closePalette } = useMemoPalette();
 
 	// ショートカットキーのハンドリング
 	useEffect(() => {
@@ -42,19 +45,34 @@ export const DesktopLayout = () => {
 				e.preventDefault();
 				goToMemoCreate();
 			}
+
+			// Cmd/Ctrl + K: メモ選択パレット
+			if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+				e.preventDefault();
+				openMemoPalette('memo-select');
+			}
+
+			// Cmd/Ctrl + P: ノートブック選択パレット（2段階）
+			if ((e.metaKey || e.ctrlKey) && e.key === 'p') {
+				e.preventDefault();
+				openMemoPalette('notebook-select');
+			}
 		};
 
 		window.addEventListener('keydown', handleKeyDown);
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown);
 		};
-	}, [goToMemoCreate]);
+	}, [goToMemoCreate, openMemoPalette]);
 
 	const renderMainContent = () => {
 		// objectとviewの組み合わせで画面を切り替え
 		switch (currentObject) {
 			case 'memo':
 				switch (currentView) {
+					case 'list':
+						return <MemoList />;
+
 					case 'edit':
 						return selectedMemo ? (
 							<MemoEditor memo={selectedMemo} />
@@ -109,7 +127,7 @@ export const DesktopLayout = () => {
 			</main>
 
 			{/* メモパレット */}
-			<MemoPalette isOpen={isOpen} onClose={closePalette} initialMode={mode} />
+			<MemoPalette isOpen={paletteOpen} onClose={closeMemoPalette} initialMode={paletteMode} />
 		</div>
 	);
 };

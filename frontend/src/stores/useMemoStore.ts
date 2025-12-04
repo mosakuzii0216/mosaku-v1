@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import type { Memo, ViewType, ObjectType } from '../types/memo';
 
+type PaletteMode = 'notebook-select' | 'memo-select';
+
 interface MemoStore {
 	// データ
 	memos: Memo[];
@@ -18,6 +20,11 @@ interface MemoStore {
 	// Notebook filter state
 	notebookFilter: 'ALL' | 'INBOX' | string;
 
+	// Palette state
+	paletteOpen: boolean;
+	paletteMode: PaletteMode;
+	paletteNotebookFilter: string | null;
+
 	// Actions
 	setMemos: (memos: Memo[]) => void;
 	selectMemo: (memo: Memo | null) => void;
@@ -28,6 +35,10 @@ interface MemoStore {
 	setSearchQuery: (query: string) => void;
 	setIsLoading: (isLoading: boolean) => void;
 	setNotebookFilter: (filter: 'ALL' | 'INBOX' | string) => void;
+
+	// Palette actions
+	openMemoPalette: (mode: PaletteMode, notebookFilter?: string | null) => void;
+	closeMemoPalette: () => void;
 
 	// CRUD operations
 	addMemo: (memo: Memo) => void;
@@ -58,6 +69,9 @@ export const useMemoStore = create<MemoStore>((set, get) => ({
 	searchQuery: '',
 	isLoading: false,
 	notebookFilter: 'ALL',
+	paletteOpen: false,
+	paletteMode: 'memo-select',
+	paletteNotebookFilter: null,
 
 	// Actions
 	setMemos: (memos) => set({ memos }),
@@ -160,5 +174,18 @@ export const useMemoStore = create<MemoStore>((set, get) => ({
 			currentView: 'list',
 			selectedMemo: null,
 			isEditing: false,
+		}),
+
+	// Palette actions
+	openMemoPalette: (mode, notebookFilter = null) =>
+		set({
+			paletteOpen: true,
+			paletteMode: mode,
+			paletteNotebookFilter: notebookFilter,
+		}),
+
+	closeMemoPalette: () =>
+		set({
+			paletteOpen: false,
 		}),
 }));
