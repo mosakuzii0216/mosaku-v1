@@ -25,16 +25,6 @@ export const Header = ({ onMemoCreateClick, onNotebookCreateClick }: HeaderProps
 				{/* ナビゲーションボタン */}
 				<div className="ml-6 flex items-center space-x-2">
 					<button
-						onClick={goToList}
-						className={`px-3 py-2 rounded text-sm font-medium transition-colors inline-flex items-center ${
-							currentObject === 'memo'
-								? 'bg-blue-100 text-blue-800'
-								: 'text-gray-600 hover:text-gray-900'
-						}`}
-					>
-						<NotebookPen className="w-4 h-4 mr-1.5" /> メモ
-					</button>
-					<button
 						onClick={goToNotebookList}
 						className={`px-3 py-2 rounded text-sm font-medium transition-colors inline-flex items-center ${
 							currentObject === 'notebook'
