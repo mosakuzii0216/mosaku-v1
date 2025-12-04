@@ -7,7 +7,7 @@ export interface Notebook {
 	createdAt: string;
 	updatedAt: string;
 	themeId?: string | null;
-	theme?: Pick<Theme, 'id' | 'name' | 'styles'> | null;
+	theme?: Pick<Theme, 'id' | 'name' | 'styles' | 'cssFilePath'> | null;
 }
 
 export interface CreateNotebookDto {

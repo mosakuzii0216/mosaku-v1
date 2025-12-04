@@ -19,6 +19,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	const updateMemo = useUpdateMemo();
 	const deleteMemo = useDeleteMemo();
 	const { assignTags } = useTagQueries();
+	const { data: notebooks = [] } = useNotebooks();
 
 	const [title, setTitle] = useState(memo?.title || '');
 	const [content, setContent] = useState(memo?.content || '');
@@ -30,9 +31,11 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	const [hasChanges, setHasChanges] = useState(false);
 	const { tags } = useTagStore();
 
-	// ノートブックのテーマを取得
-	const selectedTheme = memo?.notebook?.theme || null;
-
+	// 選択されたノートブックのテーマを動的に取得
+	const selectedNotebook = notebooks.find((nb) => nb.id === selectedNotebookId);
+	console.log('Selected Notebook:', selectedNotebook);
+	const selectedTheme = selectedNotebook?.theme || memo?.notebook?.theme || null;
+	console.log('Selected Theme:', selectedTheme);
 	// memo prop の変更を検知してエディタの状態を更新する
 	useEffect(() => {
 		if (isCreate) {
