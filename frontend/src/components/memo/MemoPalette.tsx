@@ -55,7 +55,7 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 	// フィルタリングされたノートブック一覧（useMemoで最適化）
 	const notebookOptions = useMemo(() => {
 		const filteredNotebooks = notebooks.filter((nb) =>
-			nb.name?.toLowerCase().includes(searchQuery.toLowerCase())
+			nb.name?.toLowerCase().includes(searchQuery.toLowerCase()),
 		);
 
 		return [
@@ -90,8 +90,7 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 			if (searchQuery) {
 				const query = searchQuery.toLowerCase();
 				return (
-					memo.title.toLowerCase().includes(query) ||
-					memo.content.toLowerCase().includes(query)
+					memo.title.toLowerCase().includes(query) || memo.content.toLowerCase().includes(query)
 				);
 			}
 
@@ -100,7 +99,9 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 
 		console.log('[MemoPalette] Filtered result:', {
 			filteredCount: filtered.length,
-			filtered: filtered.slice(0, 3).map(m => ({ id: m.id, title: m.title, notebookId: m.notebookId })),
+			filtered: filtered
+				.slice(0, 3)
+				.map((m) => ({ id: m.id, title: m.title, notebookId: m.notebookId })),
 		});
 
 		return filtered;
@@ -127,7 +128,7 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 				case 'Enter':
 					e.preventDefault();
 					if (mode === 'notebook-select' && items.length > 0) {
-						const selected = items[selectedIndex] as typeof notebookOptions[0];
+						const selected = items[selectedIndex] as (typeof notebookOptions)[0];
 						console.log('[MemoPalette] Notebook selected:', selected);
 						setSelectedNotebookId(selected.id);
 						setMode('memo-select');
@@ -153,7 +154,17 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 
 		window.addEventListener('keydown', handleKeyDown);
 		return () => window.removeEventListener('keydown', handleKeyDown);
-	}, [isOpen, mode, selectedIndex, notebookOptions, filteredMemos, selectedNotebookId, initialMode, goToEdit, onClose]);
+	}, [
+		isOpen,
+		mode,
+		selectedIndex,
+		notebookOptions,
+		filteredMemos,
+		selectedNotebookId,
+		initialMode,
+		goToEdit,
+		onClose,
+	]);
 
 	// 選択インデックスが範囲外にならないように調整
 	useEffect(() => {
@@ -204,8 +215,8 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 							{selectedNotebookId === 'ALL'
 								? 'すべて'
 								: selectedNotebookId === 'INBOX'
-								? '未選択'
-								: notebooks.find((nb) => nb.id === selectedNotebookId)?.name || 'すべて'}
+									? '未選択'
+									: notebooks.find((nb) => nb.id === selectedNotebookId)?.name || 'すべて'}
 						</button>
 					</div>
 				)}
@@ -248,9 +259,7 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 						</span>
 					</div>
 					{mode === 'memo-select' && (
-						<div className="text-gray-400">
-							{filteredMemos.length} 件のメモ
-						</div>
+						<div className="text-gray-400">{filteredMemos.length} 件のメモ</div>
 					)}
 				</div>
 			</div>
@@ -279,11 +288,7 @@ const NotebookList = ({ notebooks, selectedIndex, onSelect }: NotebookListProps)
 	}, [selectedIndex]);
 
 	if (notebooks.length === 0) {
-		return (
-			<div className="p-8 text-center text-gray-500">
-				ノートブックが見つかりません
-			</div>
-		);
+		return <div className="p-8 text-center text-gray-500">ノートブックが見つかりません</div>;
 	}
 
 	return (
@@ -298,9 +303,7 @@ const NotebookList = ({ notebooks, selectedIndex, onSelect }: NotebookListProps)
 							: 'hover:bg-gray-50 border-l-4 border-transparent'
 					}`}
 				>
-					<div className="font-medium text-gray-900">
-						{nb.name || '(名称未設定)'}
-					</div>
+					<div className="font-medium text-gray-900">{nb.name || '(名称未設定)'}</div>
 					{nb.isSpecial && (
 						<div className="text-xs text-gray-500 mt-1">
 							{nb.id === 'ALL' ? '全てのメモを表示' : 'ノートブック未設定のメモ'}
@@ -333,11 +336,7 @@ const MemoList = ({ memos, selectedIndex, onSelect }: MemoListProps) => {
 	}, [selectedIndex]);
 
 	if (memos.length === 0) {
-		return (
-			<div className="p-8 text-center text-gray-500">
-				メモが見つかりません
-			</div>
-		);
+		return <div className="p-8 text-center text-gray-500">メモが見つかりません</div>;
 	}
 
 	return (
