@@ -3,7 +3,7 @@ import { useMemoStore } from '../../stores/useMemoStore';
 
 export const NotebookList = () => {
 	const { data: notebooks = [], isLoading, error } = useNotebooks();
-	const { goToMemosForNotebook, goToNotebookEdit } = useMemoStore();
+	const { goToMemosForNotebook, goToNotebookEdit, goToNotebookCreate } = useMemoStore();
 
 	if (isLoading) {
 		return (
@@ -49,6 +49,18 @@ export const NotebookList = () => {
 						<div className="flex flex-col h-full">
 							<div className="text-lg font-bold text-gray-900 mb-2">未選択</div>
 							<div className="text-sm text-gray-500">ノートブック未設定のメモ</div>
+						</div>
+					</div>
+
+					{/* 新規ノートブック作成 */}
+					<div
+						className="relative p-6 rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-500 cursor-pointer transition-all hover:shadow-lg bg-gray-50 hover:bg-blue-50"
+						onClick={() => goToNotebookCreate()}
+					>
+						<div className="flex flex-col h-full items-center justify-center">
+							<div className="text-4xl text-gray-400 mb-2">+</div>
+							<div className="text-lg font-bold text-gray-700">新しいノートブック</div>
+							<div className="text-sm text-gray-500">ノートブックを作成</div>
 						</div>
 					</div>
 
