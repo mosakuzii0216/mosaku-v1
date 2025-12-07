@@ -2,10 +2,16 @@ import { ReactRenderer } from '@tiptap/react';
 import tippy from 'tippy.js';
 import type { Instance as TippyInstance } from 'tippy.js';
 import { SlashCommandList } from './SlashCommandList';
+import type { Editor } from '@tiptap/react';
+
+interface Range {
+	from: number;
+	to: number;
+}
 
 interface SuggestionProps {
-	editor: any;
-	range: any;
+	editor: Editor;
+	range: Range;
 	query: string;
 	text: string;
 	clientRect?: (() => DOMRect | null) | null;
@@ -14,7 +20,7 @@ interface SuggestionProps {
 interface CommandItem {
 	title: string;
 	description?: string;
-	command: (params: any) => void;
+	command: (params: SuggestionProps) => void;
 	type?: 'base' | 'notebook';
 }
 
@@ -120,7 +126,7 @@ export const suggestion = {
 					return true;
 				}
 
-				// @ts-ignore - ReactRendererのrefの型が正しく認識されないため
+				// @ts-expect-error - ReactRendererのrefの型が正しく認識されないため
 				return component?.ref?.onKeyDown?.(props) || false;
 			},
 

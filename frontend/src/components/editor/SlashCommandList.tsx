@@ -1,9 +1,23 @@
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import type { Editor } from '@tiptap/react';
+
+interface Range {
+	from: number;
+	to: number;
+}
+
+interface SuggestionProps {
+	editor: Editor;
+	range: Range;
+	query: string;
+	text: string;
+	clientRect?: (() => DOMRect | null) | null;
+}
 
 interface CommandItem {
 	title: string;
 	description?: string;
-	command: (params: any) => void;
+	command: (params: SuggestionProps) => void;
 	type?: 'base' | 'notebook';
 }
 
@@ -12,7 +26,11 @@ interface SlashCommandListProps {
 	command: (item: CommandItem) => void;
 }
 
-export const SlashCommandList = forwardRef<any, SlashCommandListProps>((props, ref) => {
+interface SlashCommandListRef {
+	onKeyDown: ({ event }: { event: KeyboardEvent }) => boolean;
+}
+
+export const SlashCommandList = forwardRef<SlashCommandListRef, SlashCommandListProps>((props, ref) => {
 	const [selectedIndex, setSelectedIndex] = useState(0);
 
 	const selectItem = (index: number) => {

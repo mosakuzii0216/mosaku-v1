@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { AuthAPI, AuthTokenManager } from '../utils/auth';
-import type { UserProfile } from '../utils/auth';
+import type { UserProfile, OAuthUserData } from '../utils/auth';
 import { GoogleAuthUtils, GitHubAuthUtils, XAuthUtils } from '../utils/oauthAuth';
 
 export interface AuthState {
@@ -19,11 +19,11 @@ export interface AuthActions {
 		invitationCode?: string,
 	) => Promise<void>;
 	googleLogin: () => void;
-	googleRegisterWithInvitation: (googleUser: any, invitationCode: string) => Promise<void>;
+	googleRegisterWithInvitation: (googleUser: OAuthUserData, invitationCode: string) => Promise<void>;
 	githubLogin: () => void;
-	githubRegisterWithInvitation: (githubUser: any, invitationCode: string) => Promise<void>;
+	githubRegisterWithInvitation: (githubUser: OAuthUserData, invitationCode: string) => Promise<void>;
 	xLogin: () => void;
-	xRegisterWithInvitation: (xUser: any, invitationCode: string) => Promise<void>;
+	xRegisterWithInvitation: (xUser: OAuthUserData, invitationCode: string) => Promise<void>;
 	logout: () => Promise<void>;
 	resetPassword: (email: string) => Promise<void>;
 	changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
@@ -137,12 +137,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	};
 
 	const login = async (email: string, password: string): Promise<void> => {
-		try {
-			const response = await AuthAPI.login(email, password);
-			setUser(response.user);
-		} catch (error) {
-			throw error;
-		}
+		const response = await AuthAPI.login(email, password);
+		setUser(response.user);
 	};
 
 	const register = async (
@@ -151,12 +147,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		name?: string,
 		invitationCode?: string,
 	): Promise<void> => {
-		try {
-			await AuthAPI.register(email, password, name, invitationCode);
-			// Registration successful, but user needs to login
-		} catch (error) {
-			throw error;
-		}
+		await AuthAPI.register(email, password, name, invitationCode);
+		// Registration successful, but user needs to login
 	};
 
 	const logout = async (): Promise<void> => {
@@ -174,19 +166,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	};
 
 	const resetPassword = async (email: string): Promise<void> => {
-		try {
-			await AuthAPI.resetPassword(email);
-		} catch (error) {
-			throw error;
-		}
+		await AuthAPI.resetPassword(email);
 	};
 
 	const changePassword = async (currentPassword: string, newPassword: string): Promise<void> => {
-		try {
-			await AuthAPI.changePassword(currentPassword, newPassword);
-		} catch (error) {
-			throw error;
-		}
+		await AuthAPI.changePassword(currentPassword, newPassword);
 	};
 
 	const refreshUser = async (): Promise<void> => {
@@ -211,18 +195,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	};
 
 	const googleRegisterWithInvitation = async (
-		googleUser: any,
+		googleUser: OAuthUserData,
 		invitationCode: string,
 	): Promise<void> => {
-		try {
-			const response = await AuthAPI.googleRegisterWithInvitation(googleUser, invitationCode);
-			AuthTokenManager.setAccessToken(response.accessToken);
-			setUser(response.user);
-			// 成功したらpending user情報をクリア
-			sessionStorage.removeItem('pendingGoogleUser');
-		} catch (error) {
-			throw error;
-		}
+		const response = await AuthAPI.googleRegisterWithInvitation(googleUser, invitationCode);
+		AuthTokenManager.setAccessToken(response.accessToken);
+		setUser(response.user);
+		// 成功したらpending user情報をクリア
+		sessionStorage.removeItem('pendingGoogleUser');
 	};
 
 	const githubLogin = (): void => {
@@ -234,18 +214,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	};
 
 	const githubRegisterWithInvitation = async (
-		githubUser: any,
+		githubUser: OAuthUserData,
 		invitationCode: string,
 	): Promise<void> => {
-		try {
-			const response = await AuthAPI.githubRegisterWithInvitation(githubUser, invitationCode);
-			AuthTokenManager.setAccessToken(response.accessToken);
-			setUser(response.user);
-			// 成功したらpending user情報をクリア
-			sessionStorage.removeItem('pendingGitHubUser');
-		} catch (error) {
-			throw error;
-		}
+		const response = await AuthAPI.githubRegisterWithInvitation(githubUser, invitationCode);
+		AuthTokenManager.setAccessToken(response.accessToken);
+		setUser(response.user);
+		// 成功したらpending user情報をクリア
+		sessionStorage.removeItem('pendingGitHubUser');
 	};
 
 	const xLogin = (): void => {
@@ -256,16 +232,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		}
 	};
 
-	const xRegisterWithInvitation = async (xUser: any, invitationCode: string): Promise<void> => {
-		try {
-			const response = await AuthAPI.xRegisterWithInvitation(xUser, invitationCode);
-			AuthTokenManager.setAccessToken(response.accessToken);
-			setUser(response.user);
-			// 成功したらpending user情報をクリア
-			sessionStorage.removeItem('pendingXUser');
-		} catch (error) {
-			throw error;
-		}
+	const xRegisterWithInvitation = async (xUser: OAuthUserData, invitationCode: string): Promise<void> => {
+		const response = await AuthAPI.xRegisterWithInvitation(xUser, invitationCode);
+		AuthTokenManager.setAccessToken(response.accessToken);
+		setUser(response.user);
+		// 成功したらpending user情報をクリア
+		sessionStorage.removeItem('pendingXUser');
 	};
 
 	const value: AuthContextType = {

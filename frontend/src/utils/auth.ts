@@ -24,6 +24,22 @@ export interface RegisterResponse {
 	user: UserProfile;
 }
 
+export interface OAuthUserData {
+	oauthId: string;
+	email: string;
+	name: string;
+	picture?: string;
+}
+
+export interface TokenPayload {
+	sub: string;
+	email: string;
+	name: string;
+	role: 'FREE' | 'PREMIUM' | 'ADMIN';
+	iat: number;
+	exp: number;
+}
+
 class AuthTokenManager {
 	private static readonly ACCESS_TOKEN_KEY = 'auth_access_token';
 
@@ -49,9 +65,9 @@ class AuthTokenManager {
 		}
 	}
 
-	static getTokenPayload(token: string): any {
+	static getTokenPayload(token: string): TokenPayload | null {
 		try {
-			return JSON.parse(atob(token.split('.')[1]));
+			return JSON.parse(atob(token.split('.')[1])) as TokenPayload;
 		} catch {
 			return null;
 		}
@@ -186,7 +202,7 @@ export class AuthAPI {
 	}
 
 	static async googleRegisterWithInvitation(
-		googleUser: any,
+		googleUser: OAuthUserData,
 		invitationCode: string,
 	): Promise<LoginResponse> {
 		const response = await fetch(`${this.BASE_URL}/auth/google/register-with-invitation`, {
@@ -208,7 +224,7 @@ export class AuthAPI {
 	}
 
 	static async githubRegisterWithInvitation(
-		githubUser: any,
+		githubUser: OAuthUserData,
 		invitationCode: string,
 	): Promise<LoginResponse> {
 		const response = await fetch(`${this.BASE_URL}/auth/github/register-with-invitation`, {
@@ -229,7 +245,7 @@ export class AuthAPI {
 		return data;
 	}
 
-	static async xRegisterWithInvitation(xUser: any, invitationCode: string): Promise<LoginResponse> {
+	static async xRegisterWithInvitation(xUser: OAuthUserData, invitationCode: string): Promise<LoginResponse> {
 		const response = await fetch(`${this.BASE_URL}/auth/x/register-with-invitation`, {
 			method: 'POST',
 			headers: {

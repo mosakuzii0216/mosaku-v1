@@ -42,8 +42,8 @@ export default function OAuthWithInviteForm({ provider, onBack }: OAuthWithInvit
 			} else {
 				await githubRegisterWithInvitation(pendingUser, invitationCode);
 			}
-		} catch (err: any) {
-			setError(err.message || '登録に失敗しました');
+		} catch (err: unknown) {
+			setError(err instanceof Error ? err.message : '登録に失敗しました');
 		} finally {
 			setIsLoading(false);
 		}

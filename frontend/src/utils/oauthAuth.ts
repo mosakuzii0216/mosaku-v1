@@ -1,3 +1,5 @@
+import type { UserProfile, OAuthUserData } from './auth';
+
 export class GoogleAuthUtils {
 	/**
 	 * Google OAuth認証を開始する
@@ -18,7 +20,7 @@ export class GoogleAuthUtils {
 	/**
 	 * URLからGoogle認証の結果を解析する
 	 */
-	static parseAuthCallback(): { token?: string; user?: any; error?: string; googleUser?: any } {
+	static parseAuthCallback(): { token?: string; user?: UserProfile; error?: string; googleUser?: OAuthUserData } {
 		const urlParams = new URLSearchParams(window.location.search);
 
 		const token = urlParams.get('token');
@@ -93,7 +95,7 @@ export class GitHubAuthUtils {
 	/**
 	 * URLからGitHub認証の結果を解析する
 	 */
-	static parseAuthCallback(): { token?: string; user?: any; error?: string; githubUser?: any } {
+	static parseAuthCallback(): { token?: string; user?: UserProfile; error?: string; githubUser?: OAuthUserData } {
 		const urlParams = new URLSearchParams(window.location.search);
 
 		const token = urlParams.get('token');
@@ -168,7 +170,7 @@ export class XAuthUtils {
 	/**
 	 * URLからX認証の結果を解析する
 	 */
-	static parseAuthCallback(): { token?: string; user?: any; error?: string; xUser?: any } {
+	static parseAuthCallback(): { token?: string; user?: UserProfile; error?: string; xUser?: OAuthUserData } {
 		const urlParams = new URLSearchParams(window.location.search);
 
 		const token = urlParams.get('token');
