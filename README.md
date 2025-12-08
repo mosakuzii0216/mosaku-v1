@@ -85,3 +85,14 @@ npx prisma generate         # Prismaクライアント生成
 - Node.js 18+
 - PostgreSQL 16
 - Docker & Docker Compose
+
+## ドキュメント
+
+詳細な技術ドキュメントは[docs/](./docs)ディレクトリにあります。
+
+- **[移行計画](./docs/migration/overview.md)** - クラウド移行の全体計画
+- **[デプロイ手順](./docs/deployment/)** - Cloud Run / Vercel へのデプロイ
+- **[開発ガイド](./docs/development/)** - 開発関連のドキュメント
+- **[CLAUDE.md](./CLAUDE.md)** - Claude Code向けのプロジェクト説明書
+
+すべてのドキュメントの目次は [docs/README.md](./docs/README.md) を参照してください。
