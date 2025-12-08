@@ -211,7 +211,7 @@ The application supports two deployment modes:
 - **Backend**: Google Cloud Run (containerized NestJS)
 - **Database**: Supabase PostgreSQL
 
-See `DEPLOYMENT_GUIDE.md` for production deployment instructions.
+See [docs/deployment/](./docs/deployment/) for production deployment instructions.
 
 ### Environment Variables
 
@@ -301,3 +301,13 @@ Themes are CSS files in `frontend/public/themes/{category}/{theme-name}.css`. Th
 4. **Migration Conflicts**: Always pull latest migrations before creating new ones
 5. **Docker Port Conflicts**: Ensure ports 80, 3000, 5173, 5432 are available
 6. **Environment Variables**: Frontend variables MUST have `VITE_` prefix to be exposed
+
+## Documentation
+
+For detailed technical documentation, see the [docs/](./docs) directory:
+
+- **[Migration Plans](./docs/migration/overview.md)** - Cloud migration roadmap and detailed plans
+- **[Deployment Guides](./docs/deployment/)** - Cloud Run and Vercel deployment instructions
+- **[Development Docs](./docs/development/)** - Development-related documentation
+
+All documentation is organized in [docs/README.md](./docs/README.md).
