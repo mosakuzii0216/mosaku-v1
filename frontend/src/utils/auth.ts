@@ -245,7 +245,10 @@ export class AuthAPI {
 		return data;
 	}
 
-	static async xRegisterWithInvitation(xUser: OAuthUserData, invitationCode: string): Promise<LoginResponse> {
+	static async xRegisterWithInvitation(
+		xUser: OAuthUserData,
+		invitationCode: string,
+	): Promise<LoginResponse> {
 		const response = await fetch(`${this.BASE_URL}/auth/x/register-with-invitation`, {
 			method: 'POST',
 			headers: {

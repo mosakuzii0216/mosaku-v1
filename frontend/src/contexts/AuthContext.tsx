@@ -19,9 +19,15 @@ export interface AuthActions {
 		invitationCode?: string,
 	) => Promise<void>;
 	googleLogin: () => void;
-	googleRegisterWithInvitation: (googleUser: OAuthUserData, invitationCode: string) => Promise<void>;
+	googleRegisterWithInvitation: (
+		googleUser: OAuthUserData,
+		invitationCode: string,
+	) => Promise<void>;
 	githubLogin: () => void;
-	githubRegisterWithInvitation: (githubUser: OAuthUserData, invitationCode: string) => Promise<void>;
+	githubRegisterWithInvitation: (
+		githubUser: OAuthUserData,
+		invitationCode: string,
+	) => Promise<void>;
 	xLogin: () => void;
 	xRegisterWithInvitation: (xUser: OAuthUserData, invitationCode: string) => Promise<void>;
 	logout: () => Promise<void>;
@@ -232,7 +238,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		}
 	};
 
-	const xRegisterWithInvitation = async (xUser: OAuthUserData, invitationCode: string): Promise<void> => {
+	const xRegisterWithInvitation = async (
+		xUser: OAuthUserData,
+		invitationCode: string,
+	): Promise<void> => {
 		const response = await AuthAPI.xRegisterWithInvitation(xUser, invitationCode);
 		AuthTokenManager.setAccessToken(response.accessToken);
 		setUser(response.user);
