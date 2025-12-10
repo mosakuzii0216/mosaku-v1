@@ -8,7 +8,7 @@ Mosaku is a full-stack memo/notebook application with multi-tenant support, OAut
 
 - **Frontend**: React 19 + TypeScript + Vite with Tailwind CSS
 - **Backend**: NestJS + TypeScript with Prisma ORM
-- **Database**: PostgreSQL 16
+- **Database**: Supabase PostgreSQL (managed cloud database)
 - **Infrastructure**: Docker Compose (development), Vercel + Cloud Run + Supabase (production)
 
 ### Key Features
@@ -39,9 +39,10 @@ npm run lint
 npm run format
 ```
 
-### Docker Environment (Recommended)
+### Docker Environment
 ```bash
-# Start all services (backend:3000, frontend:5173, nginx:80, db:5432)
+# Start all services (backend:3000, frontend:5173, nginx:80)
+# Note: Database is now hosted on Supabase (cloud)
 docker-compose up
 
 # Stop all services
@@ -299,8 +300,9 @@ Themes are CSS files in `frontend/public/themes/{category}/{theme-name}.css`. Th
 2. **CORS Errors**: Ensure `CORS_ORIGINS` includes your frontend URL
 3. **OAuth Redirect Mismatch**: OAuth provider callback URLs must match `{BACKEND_URL}/auth/{provider}/callback`
 4. **Migration Conflicts**: Always pull latest migrations before creating new ones
-5. **Docker Port Conflicts**: Ensure ports 80, 3000, 5173, 5432 are available
+5. **Docker Port Conflicts**: Ensure ports 80, 3000, 5173 are available
 6. **Environment Variables**: Frontend variables MUST have `VITE_` prefix to be exposed
+7. **Supabase Connection**: Ensure `DATABASE_URL` uses pooling connection (port 6543) and `DIRECT_URL` uses direct connection (port 5432) for migrations
 
 ## Documentation
 
