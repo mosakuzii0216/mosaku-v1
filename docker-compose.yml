@@ -17,8 +17,6 @@ services:
       - ./backend/nest-cli.json:/usr/src/app/nest-cli.json
     ports:
       - "3000:3000"            # コンテナの3000番ポートをホストに公開（デバッグ用）
-    depends_on:
-      - db                     # dbサービスが起動してから起動する
     env_file: ./.env             # .envファイルから環境変数を読み込む
     restart: unless-stopped      # コンテナが落ちたら自動で再起動
 
@@ -36,15 +34,20 @@ services:
     env_file: ./.env
     restart: unless-stopped
 
-  # データベース (PostgreSQL) サービス
+  # ローカルデータベース (PostgreSQL) サービス
+  # オフライン開発用 - プロファイル "local" で起動
   db:
-    image: postgres:16-alpine    # Docker Hubの公式イメージを直接使う
+    image: postgres:16-alpine
     container_name: memo-app-db
+    profiles: ["local"]  # --profile local で起動する
     volumes:
-      - postgres_data:/var/lib/postgresql/data # DBデータを永続化するためのボリューム
+      - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"            # DBに直接接続したい場合に使う
-    env_file: ./.env
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: memodb
     restart: unless-stopped
 
   # リバースプロキシ (Nginx) サービス
@@ -57,6 +60,6 @@ services:
       - frontend
       - backend
 
-# DBのデータを永続化するための名前付きボリュームを定義
+# ローカルDB用の永続化ボリューム
 volumes:
   postgres_data:
