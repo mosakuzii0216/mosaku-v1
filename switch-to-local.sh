@@ -4,7 +4,6 @@ echo "🔄 Switching to LOCAL PostgreSQL environment..."
 echo ""
 
 # .envファイルを切り替え
-cp .env .env.backup.$(date +%Y%m%d_%H%M%S)
 cp .env.local .env
 cp .env.local backend/.env
 

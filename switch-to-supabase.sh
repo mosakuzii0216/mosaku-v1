@@ -4,7 +4,6 @@ echo "🔄 Switching to SUPABASE environment..."
 echo ""
 
 # .envファイルを切り替え
-cp .env .env.backup.$(date +%Y%m%d_%H%M%S)
 cp .env.supabase .env
 cp .env.supabase backend/.env
 
