@@ -111,3 +111,5 @@ prisma/migrations/dev.db*
 # Temporary files
 tmp/
 temp/
+# Environment backup files (deprecated)
+.env.backup.*
