@@ -1,9 +1,19 @@
 import { useNotebooks } from '../../hooks/useNotebookQueries';
 import { useMemoStore } from '../../stores/useMemoStore';
+import { useThemeCSS } from '../../hooks/useThemeCSS';
 
 export const NotebookList = () => {
 	const { data: notebooks = [], isLoading, error } = useNotebooks();
 	const { goToMemosForNotebook, goToNotebookEdit, goToNotebookCreate } = useMemoStore();
+
+	// テーマCSSを読み込む
+	const themesToLoad = notebooks
+		.filter((nb) => nb.theme?.cssFilePath)
+		.map((nb) => ({
+			id: nb.theme!.id,
+			cssFilePath: nb.theme!.cssFilePath,
+		}));
+	useThemeCSS(themesToLoad);
 
 	if (isLoading) {
 		return (
@@ -68,12 +78,19 @@ export const NotebookList = () => {
 					{notebooks.map((nb) => (
 						<div
 							key={nb.id}
-							className="relative p-6 rounded-lg border-2 border-gray-300 hover:border-blue-500 cursor-pointer transition-all hover:shadow-lg bg-white group"
+							data-theme-id={nb.theme?.id}
+							className={`relative cursor-pointer transition-all hover:shadow-lg group ${
+								nb.theme?.id
+									? 'border-2'
+									: 'p-6 rounded-lg border-2 border-gray-300 hover:border-blue-500 bg-white'
+							}`}
 							onClick={() => goToMemosForNotebook(nb.id)}
 						>
 							<div className="flex flex-col h-full">
 								<div className="flex items-start justify-between mb-2">
-									<div className="text-lg font-bold text-gray-900 break-words flex-1">
+									<div
+										className={`text-lg font-bold break-words flex-1 ${!nb.theme?.id ? 'text-gray-900' : ''}`}
+									>
 										{nb.name || '(名称未設定)'}
 									</div>
 									<button
@@ -87,7 +104,9 @@ export const NotebookList = () => {
 									</button>
 								</div>
 
-								<div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+								<div
+									className={`text-xs mb-2 flex items-center gap-1 ${!nb.theme?.id ? 'text-gray-500' : ''}`}
+								>
 									<svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
 										<path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" />
 										<path
@@ -99,7 +118,7 @@ export const NotebookList = () => {
 									<span>{nb.theme ? <>{nb.theme.name}</> : 'テーマ未設定'}</span>
 								</div>
 
-								<div className="mt-auto text-xs text-gray-400">
+								<div className={`mt-auto text-xs ${!nb.theme?.id ? 'text-gray-400' : ''}`}>
 									{new Date(nb.updatedAt).toLocaleDateString('ja-JP', {
 										year: 'numeric',
 										month: 'short',
