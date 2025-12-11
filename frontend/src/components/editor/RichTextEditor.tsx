@@ -24,9 +24,12 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 	// ノートブックデータを取得
 	const { data: notebooks = [] } = useNotebooks();
 
-	// ノートブックデータをsuggestionに渡す
+	// ノートブックデータをsuggestionに渡す（name が null でないものだけ）
 	React.useEffect(() => {
-		setNotebooksData(notebooks);
+		const validNotebooks = notebooks
+			.filter((nb): nb is typeof nb & { name: string } => nb.name !== null)
+			.map((nb) => ({ id: nb.id, name: nb.name }));
+		setNotebooksData(validNotebooks);
 	}, [notebooks]);
 
 	const editor = useEditor({
