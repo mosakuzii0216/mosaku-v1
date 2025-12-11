@@ -5,6 +5,7 @@ import { GoogleLoginButton } from '../ui/GoogleLoginButton';
 import { GitHubLoginButton } from '../ui/GitHubLoginButton';
 import { XLoginButton } from '../ui/XLoginButton';
 import { OAuthInviteForm } from './OAuthInviteForm';
+import type { OAuthUserData } from '../../utils/auth';
 
 type AuthMode = 'login' | 'signup' | 'resetPassword' | 'googleInvite' | 'githubInvite' | 'xInvite';
 
@@ -18,8 +19,8 @@ export default function AuthForm() {
 	const [message, setMessage] = useState('');
 	const [mode, setMode] = useState<AuthMode>('login');
 
-	// OAuthプロバイダから戻る一時ユーザー情報（厳密な型はプロバイダごとに異なるためunknownで保持）
-	const [pendingOAuthUser, setPendingOAuthUser] = useState<unknown>(null);
+	// OAuthプロバイダから戻る一時ユーザー情報
+	const [pendingOAuthUser, setPendingOAuthUser] = useState<OAuthUserData | null>(null);
 
 	const {
 		login,
@@ -52,7 +53,7 @@ export default function AuthForm() {
 				const storedUser = sessionStorage.getItem(provider.key);
 				if (storedUser) {
 					try {
-						const user = JSON.parse(storedUser);
+						const user = JSON.parse(storedUser) as OAuthUserData;
 						provider.setter(user);
 						setMessage(`ユーザー登録には招待コードが必要です。`);
 						setMode(provider.mode);
