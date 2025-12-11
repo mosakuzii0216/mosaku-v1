@@ -1,13 +1,9 @@
 import React from 'react';
-
-interface PendingUser {
-	email?: string;
-	username?: string;
-}
+import type { OAuthUserData } from '../../utils/auth';
 
 interface OAuthInviteFormProps {
 	providerName: 'Google' | 'GitHub' | 'X';
-	pendingUser: PendingUser | null;
+	pendingUser: OAuthUserData | null;
 	invitationCode: string;
 	setInvitationCode: (code: string) => void;
 	onSubmit: (e: React.FormEvent) => void;
@@ -53,7 +49,7 @@ export const OAuthInviteForm: React.FC<OAuthInviteFormProps> = ({
 			{pendingUser && (
 				<div className={`${styles.bgColor} p-3 rounded-lg mb-4`}>
 					<p className={`text-sm ${styles.textColor}`}>
-						<strong>{providerName} アカウント:</strong> {pendingUser.email || pendingUser.username}
+						<strong>{providerName} アカウント:</strong> {pendingUser.email || pendingUser.name}
 					</p>
 					<p className={`text-xs ${styles.textSubColor} mt-1`}>
 						このアカウントで登録するには招待コードが必要です
