@@ -1,0 +1,18 @@
+# Dependencies
+node_modules
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Build output (Vercel will build)
+dist
+
+# Development
+.DS_Store
+*.log
+
+# IDE
+.vscode
+.idea
