@@ -4,7 +4,12 @@ import { LibraryBig, Tag, LogOut, Settings } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 
-export const Header = () => {
+interface HeaderProps {
+	onMemoCreateClick?: () => void;
+	onNotebookCreateClick?: () => void;
+}
+
+export const Header = (_props?: HeaderProps) => {
 	const { currentView, currentObject, goToList, goToTags, goToNotebookList } = useMemoStore();
 	const { user, logout } = useAuth();
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
