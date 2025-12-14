@@ -4,12 +4,12 @@
 
 ## 必須環境変数
 
-| 変数名 | 値 | 環境 | 説明 |
-|--------|-----|------|------|
-| `VITE_SUPABASE_URL` | `https://ninyjmahwnbtgqqjxcli.supabase.co` | Production, Preview, Development | Supabase プロジェクトURL |
-| `VITE_SUPABASE_ANON_KEY` | `eyJhbGci...` (実際の値は.envから) | Production, Preview, Development | Supabase 匿名キー |
-| `VITE_BACKEND_URL` | 下記参照 | 環境別に設定 | バックエンドAPI URL |
-| `VITE_APP_URL` | 下記参照 | 環境別に設定 | フロントエンドURL |
+| 変数名                   | 値                                         | 環境                             | 説明                     |
+| ------------------------ | ------------------------------------------ | -------------------------------- | ------------------------ |
+| `VITE_SUPABASE_URL`      | `https://ninyjmahwnbtgqqjxcli.supabase.co` | Production, Preview, Development | Supabase プロジェクトURL |
+| `VITE_SUPABASE_ANON_KEY` | `eyJhbGci...` (実際の値は.envから)         | Production, Preview, Development | Supabase 匿名キー        |
+| `VITE_BACKEND_URL`       | 下記参照                                   | 環境別に設定                     | バックエンドAPI URL      |
+| `VITE_APP_URL`           | 下記参照                                   | 環境別に設定                     | フロントエンドURL        |
 
 ### `VITE_BACKEND_URL` の設定
 
@@ -25,13 +25,14 @@
 
 ## OAuth関連（本番環境用）
 
-| 変数名 | 値 | 環境 | 説明 |
-|--------|-----|------|------|
-| `VITE_GOOGLE_CLIENT_ID` | 本番用Client ID | Production | Google OAuth Client ID |
-| `VITE_GITHUB_CLIENT_ID` | 本番用Client ID | Production | GitHub OAuth Client ID |
-| `VITE_X_CONSUMER_KEY` | 本番用Consumer Key | Production | X (Twitter) OAuth Consumer Key |
+| 変数名                  | 値                 | 環境       | 説明                           |
+| ----------------------- | ------------------ | ---------- | ------------------------------ |
+| `VITE_GOOGLE_CLIENT_ID` | 本番用Client ID    | Production | Google OAuth Client ID         |
+| `VITE_GITHUB_CLIENT_ID` | 本番用Client ID    | Production | GitHub OAuth Client ID         |
+| `VITE_X_CONSUMER_KEY`   | 本番用Consumer Key | Production | X (Twitter) OAuth Consumer Key |
 
 **注意**: OAuth設定には、各プロバイダーのコンソールでリダイレクトURLを更新する必要があります:
+
 - Google: `https://[BACKEND-URL]/auth/google/callback`
 - GitHub: `https://[BACKEND-URL]/auth/github/callback`
 - X: `https://[BACKEND-URL]/auth/x/callback`
@@ -47,6 +48,7 @@
 ## 環境変数の確認
 
 設定後、Vercel Dashboardで以下を確認:
+
 - ✅ すべての必須変数が設定されている
 - ✅ 環境ごとに正しい値が設定されている
 - ✅ `VITE_` プレフィックスが付いている (Viteの要件)
@@ -63,6 +65,7 @@
 ### CORS エラーが発生する場合
 
 バックエンドの `CORS_ORIGINS` にVercel URLを追加:
+
 ```
 CORS_ORIGINS=https://[YOUR-APP].vercel.app,https://[YOUR-APP]-*.vercel.app
 ```

@@ -4,9 +4,7 @@ import { useEffect } from 'react';
  * テーマのCSSファイルを動的に読み込み、スコープ化して適用するフック
  * @param themes - 読み込むテーマの配列 [{ id: 'aka', cssFilePath: 'aka/aka.css' }, ...]
  */
-export const useThemeCSS = (
-	themes: Array<{ id: string; cssFilePath: string | null }>,
-) => {
+export const useThemeCSS = (themes: Array<{ id: string; cssFilePath: string | null }>) => {
 	useEffect(() => {
 		const loadedStyleElements: HTMLStyleElement[] = [];
 
@@ -20,10 +18,7 @@ export const useThemeCSS = (
 					const cssText = await response.text();
 
 					// .theme-root を [data-theme-id="themeid"] に置き換えてスコープ化
-					const scopedCSS = cssText.replace(
-						/\.theme-root\b/g,
-						`[data-theme-id="${theme.id}"]`,
-					);
+					const scopedCSS = cssText.replace(/\.theme-root\b/g, `[data-theme-id="${theme.id}"]`);
 
 					// <style>タグを作成して挿入
 					const styleElement = document.createElement('style');
