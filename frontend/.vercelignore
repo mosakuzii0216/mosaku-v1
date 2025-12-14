@@ -16,3 +16,6 @@ dist
 # IDE
 .vscode
 .idea
+
+# NPM config (can cause build issues on Vercel)
+.npmrc
