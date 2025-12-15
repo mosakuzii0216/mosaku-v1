@@ -4,6 +4,7 @@
 	"installCommand": "npm install",
 	"outputDirectory": "dist",
 	"framework": "vite",
+	"nodeVersion": "20",
 	"rewrites": [
 		{
 			"source": "/(.*)",
