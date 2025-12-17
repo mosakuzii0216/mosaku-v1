@@ -45,7 +45,7 @@ export class NotebookService {
 		return this.prisma.notebook.create({
 			data,
 			include: {
-				theme: { select: THEME_SELECT },
+				theme: { select: { id: true, name: true, styles: true, cssFilePath: true } },
 			},
 		});
 		// メモ: Notebookにcontent等を足すならschema.prismaを変更 → migrationしてここでdataに加える
@@ -67,7 +67,7 @@ export class NotebookService {
 			where: { id },
 			data,
 			include: {
-				theme: { select: THEME_SELECT },
+				theme: { select: { id: true, name: true, styles: true, cssFilePath: true } },
 			},
 		});
 	}
