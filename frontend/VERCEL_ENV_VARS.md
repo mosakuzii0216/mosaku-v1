@@ -4,12 +4,12 @@
 
 ## 必須環境変数
 
-| 変数名                   | 値                                         | 環境                             | 説明                     |
-| ------------------------ | ------------------------------------------ | -------------------------------- | ------------------------ |
-| `VITE_SUPABASE_URL`      | `https://ninyjmahwnbtgqqjxcli.supabase.co` | Production, Preview, Development | Supabase プロジェクトURL |
+| 変数名                   | 値                                                                                                                                                                                                                 | 環境                             | 説明                     |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- | ------------------------ |
+| `VITE_SUPABASE_URL`      | `https://ninyjmahwnbtgqqjxcli.supabase.co`                                                                                                                                                                         | Production, Preview, Development | Supabase プロジェクトURL |
 | `VITE_SUPABASE_ANON_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pbnlqbWFod25idGdxcWp4Y2xpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMjIwNTIsImV4cCI6MjA4MDc5ODA1Mn0.oIblkyb_NQE4VXvjkFthtcAXdWBjDoLmK5fCBqyvJMg` | Production, Preview, Development | Supabase 匿名キー        |
-| `VITE_BACKEND_URL`       | 下記参照                                   | 環境別に設定                     | バックエンドAPI URL      |
-| `VITE_APP_URL`           | 下記参照                                   | 環境別に設定                     | フロントエンドURL        |
+| `VITE_BACKEND_URL`       | 下記参照                                                                                                                                                                                                           | 環境別に設定                     | バックエンドAPI URL      |
+| `VITE_APP_URL`           | 下記参照                                                                                                                                                                                                           | 環境別に設定                     | フロントエンドURL        |
 
 ### `VITE_BACKEND_URL` の設定
 
