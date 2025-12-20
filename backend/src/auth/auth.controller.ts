@@ -11,7 +11,13 @@ import {
 	UnauthorizedException,
 } from '@nestjs/common';
 import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
-import type { AuthenticatedRequest } from './types';
+import type { AuthenticatedRequest, OAuthRequest } from './types';
+import type {
+	GitHubStrategyUser,
+	GoogleStrategyUser,
+	OAuthStrategyUser,
+	XStrategyUser,
+} from './types/oauth.types';
 import { ConfigService } from '../config/config.service';
 import { GoogleRegisterWithInvitationDto } from './dto/google-register-with-invitation.dto';
 import { GithubRegisterWithInvitationDto } from './dto/github-register-with-invitation.dto';
@@ -24,7 +30,7 @@ import { XAuthGuard } from './x-auth.guard';
 import { Public } from './public.decorator';
 import { AuthService } from './auth.service';
 import { InvitationService } from '../invitation/invitation.service';
-import { CreateUserDto, RegisterUserDto } from './dto/create-user.dto';
+import { RegisterUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResetPasswordRequestDto, ChangePasswordDto } from './dto/reset-password.dto';
 
@@ -40,14 +46,14 @@ export class AuthController {
 	/**
 	 * OAuth認証コールバック共通処理
 	 */
-	private async handleOAuthCallback(
-		authMethod: (user: unknown) => Promise<{ accessToken: string; user: unknown }>,
-		req: ExpressRequest,
+	private async handleOAuthCallback<TUser extends OAuthStrategyUser>(
+		authMethod: (user: TUser) => Promise<{ accessToken: string; user: unknown }>,
+		req: OAuthRequest<TUser>,
 		res: ExpressResponse,
 		providerName: string,
 	): Promise<void> {
 		try {
-			const result = await authMethod((req as any).user as unknown);
+			const result = await authMethod(req.user);
 
 			// フロントエンドにトークンを渡すため、URLパラメータとしてリダイレクト
 			const redirectUrl = this.configService.generateSuccessRedirectUrl(
@@ -64,7 +70,7 @@ export class AuthController {
 			if (message.includes('invitation code')) {
 				const redirectUrl = this.configService.generateInvitationRequiredUrl(
 					providerName,
-					(req as any).user,
+					req.user,
 				);
 				return res.redirect(redirectUrl);
 			}
@@ -289,7 +295,10 @@ export class AuthController {
 
 	@Get('google/callback')
 	@UseGuards(GoogleAuthGuard)
-	async googleAuthRedirect(@Request() req: ExpressRequest, @Response() res: ExpressResponse) {
+	async googleAuthRedirect(
+		@Request() req: OAuthRequest<GoogleStrategyUser>,
+		@Response() res: ExpressResponse,
+	) {
 		return this.handleOAuthCallback(
 			(user) => this.authService.googleLogin(user),
 			req,
@@ -302,10 +311,11 @@ export class AuthController {
 	@Post('google/register-with-invitation')
 	async googleRegisterWithInvitation(@Body() body: GoogleRegisterWithInvitationDto) {
 		const { googleUser, invitationCode } = body;
+		const parsedGoogleUser = this.parseGoogleUser(googleUser);
 
 		try {
 			const result = await this.authService.googleRegisterWithInvitation(
-				googleUser,
+				parsedGoogleUser,
 				invitationCode,
 			);
 
@@ -328,7 +338,10 @@ export class AuthController {
 
 	@Get('github/callback')
 	@UseGuards(GitHubAuthGuard)
-	async githubAuthRedirect(@Request() req: ExpressRequest, @Response() res: ExpressResponse) {
+	async githubAuthRedirect(
+		@Request() req: OAuthRequest<GitHubStrategyUser>,
+		@Response() res: ExpressResponse,
+	) {
 		return this.handleOAuthCallback(
 			(user) => this.authService.githubLogin(user),
 			req,
@@ -341,10 +354,11 @@ export class AuthController {
 	@Post('github/register-with-invitation')
 	async githubRegisterWithInvitation(@Body() body: GithubRegisterWithInvitationDto) {
 		const { githubUser, invitationCode } = body;
+		const parsedGithubUser = this.parseGithubUser(githubUser);
 
 		try {
 			const result = await this.authService.githubRegisterWithInvitation(
-				githubUser,
+				parsedGithubUser,
 				invitationCode,
 			);
 
@@ -367,17 +381,26 @@ export class AuthController {
 
 	@Get('x/callback')
 	@UseGuards(XAuthGuard)
-	async xAuthRedirect(@Request() req: ExpressRequest, @Response() res: ExpressResponse) {
-		return this.handleOAuthCallback((user) => this.authService.xLogin(user), req, res, 'X');
+	async xAuthRedirect(
+		@Request() req: OAuthRequest<XStrategyUser>,
+		@Response() res: ExpressResponse,
+	) {
+		return this.handleOAuthCallback(
+			(user) => this.authService.xLogin(user),
+			req,
+			res,
+			'X',
+		);
 	}
 
 	@Public()
 	@Post('x/register-with-invitation')
 	async xRegisterWithInvitation(@Body() body: XRegisterWithInvitationDto) {
 		const { xUser, invitationCode } = body;
+		const parsedXUser = this.parseXUser(xUser);
 
 		try {
-			const result = await this.authService.xRegisterWithInvitation(xUser, invitationCode);
+			const result = await this.authService.xRegisterWithInvitation(parsedXUser, invitationCode);
 
 			return {
 				message: 'Registration successful',
@@ -387,5 +410,63 @@ export class AuthController {
 			const message = error instanceof Error ? error.message : 'Registration failed';
 			throw new BadRequestException(message);
 		}
+	}
+
+	private parseGoogleUser(value: Record<string, unknown>): GoogleStrategyUser {
+		const googleId = value.googleId;
+		const name = value.name;
+		if (typeof googleId !== 'string' || typeof name !== 'string') {
+			throw new BadRequestException('Invalid Google user payload');
+		}
+
+		const email = typeof value.email === 'string' ? value.email : undefined;
+		return {
+			googleId,
+			name,
+			email,
+			accessToken: typeof value.accessToken === 'string' ? value.accessToken : undefined,
+			refreshToken: typeof value.refreshToken === 'string' ? value.refreshToken : undefined,
+			firstName: typeof value.firstName === 'string' ? value.firstName : undefined,
+			lastName: typeof value.lastName === 'string' ? value.lastName : undefined,
+			picture: typeof value.picture === 'string' ? value.picture : undefined,
+		};
+	}
+
+	private parseGithubUser(value: Record<string, unknown>): GitHubStrategyUser {
+		const githubId = value.githubId;
+		const name = value.name;
+		if (typeof githubId !== 'string' || typeof name !== 'string') {
+			throw new BadRequestException('Invalid GitHub user payload');
+		}
+
+		const email = typeof value.email === 'string' ? value.email : undefined;
+		return {
+			githubId,
+			name,
+			email,
+			username: typeof value.username === 'string' ? value.username : undefined,
+			picture: typeof value.picture === 'string' ? value.picture : undefined,
+			accessToken: typeof value.accessToken === 'string' ? value.accessToken : undefined,
+			refreshToken: typeof value.refreshToken === 'string' ? value.refreshToken : undefined,
+		};
+	}
+
+	private parseXUser(value: Record<string, unknown>): XStrategyUser {
+		const xId = value.xId;
+		const name = value.name;
+		if (typeof xId !== 'string' || typeof name !== 'string') {
+			throw new BadRequestException('Invalid X user payload');
+		}
+
+		const email = typeof value.email === 'string' ? value.email : undefined;
+		return {
+			xId,
+			name,
+			email,
+			username: typeof value.username === 'string' ? value.username : undefined,
+			picture: typeof value.picture === 'string' ? value.picture : undefined,
+			accessToken: typeof value.accessToken === 'string' ? value.accessToken : undefined,
+			tokenSecret: typeof value.tokenSecret === 'string' ? value.tokenSecret : undefined,
+		};
 	}
 }
