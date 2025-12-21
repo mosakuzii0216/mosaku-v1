@@ -2,13 +2,19 @@ import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { BaseOAuthUser, OAuthProvider } from './types/oauth.types';
+import type {
+	BaseOAuthUser,
+	GitHubStrategyUser,
+	GoogleStrategyUser,
+	XStrategyUser,
+} from './types/oauth.types';
 import { ConfigService } from '../config/config.service';
+import type { AuthenticatedUser, UserRole } from './types';
 
 export interface JwtPayload {
 	sub: string; // user.id
 	email: string;
-	role: 'FREE' | 'PREMIUM' | 'ADMIN';
+	role: UserRole;
 	iat?: number;
 	exp?: number;
 }
@@ -36,11 +42,11 @@ export class AuthService {
 		return bcrypt.compare(password, hash);
 	}
 
-	async generateTokens(
+	generateTokens(
 		userId: string,
 		email: string,
-		role: 'FREE' | 'PREMIUM' | 'ADMIN',
-	): Promise<AuthTokens> {
+		role: UserRole,
+	): AuthTokens {
 		const payload: JwtPayload = {
 			sub: userId,
 			email,
@@ -56,7 +62,7 @@ export class AuthService {
 		};
 	}
 
-	async validateUser(email: string, password: string): Promise<any> {
+	async validateUser(email: string, password: string): Promise<AuthenticatedUser> {
 		const user = await this.prisma.user.findUnique({
 			where: { email },
 		});
@@ -74,7 +80,7 @@ export class AuthService {
 		return this.excludePassword(user);
 	}
 
-	async validateJwtPayload(payload: JwtPayload): Promise<any> {
+	async validateJwtPayload(payload: JwtPayload): Promise<AuthenticatedUser> {
 		const user = await this.prisma.user.findUnique({
 			where: { id: payload.sub },
 		});
@@ -91,8 +97,8 @@ export class AuthService {
 		email: string,
 		password: string,
 		name?: string,
-		invitationCode?: string,
-	): Promise<any> {
+		_invitationCode?: string,
+	): Promise<AuthenticatedUser> {
 		// 既存ユーザーチェック
 		const existingUser = await this.prisma.user.findUnique({
 			where: { email },
@@ -122,7 +128,7 @@ export class AuthService {
 		return this.excludePassword(user);
 	}
 
-	async login(email: string, password: string): Promise<AuthTokens & { user: any }> {
+	async login(email: string, password: string): Promise<AuthTokens & { user: AuthenticatedUser }> {
 		const user = await this.validateUser(email, password);
 		const tokens = await this.generateTokens(user.id, user.email, user.role);
 
@@ -132,7 +138,7 @@ export class AuthService {
 		};
 	}
 
-	async findUserById(id: string): Promise<any> {
+	async findUserById(id: string): Promise<AuthenticatedUser> {
 		const user = await this.prisma.user.findUnique({
 			where: { id },
 		});
@@ -166,7 +172,7 @@ export class AuthService {
 	private async handleOAuthLogin(
 		oauthUser: BaseOAuthUser,
 		providerId: string,
-	): Promise<AuthTokens & { user: any }> {
+	): Promise<AuthTokens & { user: AuthenticatedUser }> {
 		// OAuth IDまたはメールアドレスでユーザーを検索
 		let user = await this.prisma.user.findFirst({
 			where: {
@@ -207,7 +213,7 @@ export class AuthService {
 		providerId: string,
 		invitationCode: string,
 		fallbackEmail?: string,
-	): Promise<AuthTokens & { user: any }> {
+	): Promise<AuthTokens & { user: AuthenticatedUser }> {
 		// 招待コードの検証
 		const invitation = await this.prisma.invitationCode.findUnique({
 			where: { code: invitationCode },
@@ -270,7 +276,9 @@ export class AuthService {
 		};
 	}
 
-	async googleLogin(googleUser: any): Promise<AuthTokens & { user: any }> {
+	async googleLogin(
+		googleUser: GoogleStrategyUser,
+	): Promise<AuthTokens & { user: AuthenticatedUser }> {
 		const normalizedUser: BaseOAuthUser = {
 			id: googleUser.googleId,
 			email: googleUser.email,
@@ -282,9 +290,9 @@ export class AuthService {
 	}
 
 	async googleRegisterWithInvitation(
-		googleUser: any,
+		googleUser: GoogleStrategyUser,
 		invitationCode: string,
-	): Promise<AuthTokens & { user: any }> {
+	): Promise<AuthTokens & { user: AuthenticatedUser }> {
 		const normalizedUser: BaseOAuthUser = {
 			id: googleUser.googleId,
 			email: googleUser.email,
@@ -299,7 +307,9 @@ export class AuthService {
 		);
 	}
 
-	async githubLogin(githubUser: any): Promise<AuthTokens & { user: any }> {
+	async githubLogin(
+		githubUser: GitHubStrategyUser,
+	): Promise<AuthTokens & { user: AuthenticatedUser }> {
 		const normalizedUser: BaseOAuthUser = {
 			id: githubUser.githubId,
 			email: githubUser.email,
@@ -311,9 +321,9 @@ export class AuthService {
 	}
 
 	async githubRegisterWithInvitation(
-		githubUser: any,
+		githubUser: GitHubStrategyUser,
 		invitationCode: string,
-	): Promise<AuthTokens & { user: any }> {
+	): Promise<AuthTokens & { user: AuthenticatedUser }> {
 		const normalizedUser: BaseOAuthUser = {
 			id: githubUser.githubId,
 			email: githubUser.email,
@@ -328,7 +338,7 @@ export class AuthService {
 		);
 	}
 
-	async xLogin(xUser: any): Promise<AuthTokens & { user: any }> {
+	async xLogin(xUser: XStrategyUser): Promise<AuthTokens & { user: AuthenticatedUser }> {
 		const normalizedUser: BaseOAuthUser = {
 			id: xUser.xId,
 			email: xUser.email,
@@ -340,9 +350,9 @@ export class AuthService {
 	}
 
 	async xRegisterWithInvitation(
-		xUser: any,
+		xUser: XStrategyUser,
 		invitationCode: string,
-	): Promise<AuthTokens & { user: any }> {
+	): Promise<AuthTokens & { user: AuthenticatedUser }> {
 		// X OAuth の場合、emailが提供されないことがあるため、フォールバックメールを生成
 		const fallbackEmail = `${xUser.username}@x.placeholder.local`;
 
