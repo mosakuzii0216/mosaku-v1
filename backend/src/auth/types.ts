@@ -26,5 +26,7 @@ export const isAuthenticatedUser = (value: unknown): value is AuthenticatedUser 
 	}
 
 	const user = value as { id?: unknown; email?: unknown; role?: unknown };
-	return typeof user.id === 'string' && typeof user.email === 'string' && typeof user.role === 'string';
+	return (
+		typeof user.id === 'string' && typeof user.email === 'string' && typeof user.role === 'string'
+	);
 };

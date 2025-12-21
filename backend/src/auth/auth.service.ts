@@ -42,11 +42,7 @@ export class AuthService {
 		return bcrypt.compare(password, hash);
 	}
 
-	generateTokens(
-		userId: string,
-		email: string,
-		role: UserRole,
-	): AuthTokens {
+	generateTokens(userId: string, email: string, role: UserRole): AuthTokens {
 		const payload: JwtPayload = {
 			sub: userId,
 			email,
@@ -130,7 +126,7 @@ export class AuthService {
 
 	async login(email: string, password: string): Promise<AuthTokens & { user: AuthenticatedUser }> {
 		const user = await this.validateUser(email, password);
-		const tokens = await this.generateTokens(user.id, user.email, user.role);
+		const tokens = this.generateTokens(user.id, user.email, user.role);
 
 		return {
 			...tokens,
@@ -197,7 +193,7 @@ export class AuthService {
 		}
 
 		// JWTトークンを生成
-		const tokens = await this.generateTokens(user.id, user.email, user.role);
+		const tokens = this.generateTokens(user.id, user.email, user.role);
 
 		return {
 			...tokens,
@@ -268,7 +264,7 @@ export class AuthService {
 		});
 
 		// JWTトークンを生成
-		const tokens = await this.generateTokens(user.id, user.email, user.role);
+		const tokens = this.generateTokens(user.id, user.email, user.role);
 
 		return {
 			...tokens,

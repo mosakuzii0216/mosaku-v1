@@ -14,9 +14,7 @@ interface GitHubProfile {
 
 @Injectable()
 export class GitHubStrategy extends PassportStrategy(Strategy, 'github') {
-	constructor(
-		private readonly configService: ConfigService,
-	) {
+	constructor(private readonly configService: ConfigService) {
 		super({
 			clientID: configService.githubClientId,
 			clientSecret: configService.githubClientSecret,

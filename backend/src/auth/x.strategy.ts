@@ -14,9 +14,7 @@ interface XProfile {
 
 @Injectable()
 export class XStrategy extends PassportStrategy(Strategy, 'x') {
-	constructor(
-		private readonly configService: ConfigService,
-	) {
+	constructor(private readonly configService: ConfigService) {
 		super({
 			consumerKey: configService.xConsumerKey,
 			consumerSecret: configService.xConsumerSecret,

@@ -385,12 +385,7 @@ export class AuthController {
 		@Request() req: OAuthRequest<XStrategyUser>,
 		@Response() res: ExpressResponse,
 	) {
-		return this.handleOAuthCallback(
-			(user) => this.authService.xLogin(user),
-			req,
-			res,
-			'X',
-		);
+		return this.handleOAuthCallback((user) => this.authService.xLogin(user), req, res, 'X');
 	}
 
 	@Public()
