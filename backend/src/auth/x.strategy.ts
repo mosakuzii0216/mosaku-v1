@@ -1,13 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, IStrategyOption } from 'passport-twitter';
-import { AuthService } from './auth.service';
 import { ConfigService } from '../config/config.service';
+import type { XStrategyUser } from './types/oauth.types';
+
+interface XProfile {
+	id: string;
+	username?: string;
+	displayName?: string;
+	emails?: Array<{ value: string }>;
+	photos?: Array<{ value: string }>;
+}
 
 @Injectable()
 export class XStrategy extends PassportStrategy(Strategy, 'x') {
 	constructor(
-		private readonly authService: AuthService,
 		private readonly configService: ConfigService,
 	) {
 		super({
@@ -18,14 +25,14 @@ export class XStrategy extends PassportStrategy(Strategy, 'x') {
 		} as IStrategyOption);
 	}
 
-	async validate(token: string, tokenSecret: string, profile: any): Promise<any> {
+	validate(token: string, tokenSecret: string, profile: XProfile): XStrategyUser {
 		const { id, username, displayName, emails, photos } = profile;
 
-		const user = {
+		const user: XStrategyUser = {
 			xId: id,
 			email: emails?.[0]?.value,
 			username,
-			name: displayName || username,
+			name: displayName ?? username ?? id,
 			picture: photos?.[0]?.value,
 			accessToken: token,
 			tokenSecret,

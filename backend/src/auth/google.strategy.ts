@@ -1,13 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, StrategyOptions } from 'passport-google-oauth20';
-import { AuthService } from './auth.service';
 import { ConfigService } from '../config/config.service';
+import type { GoogleStrategyUser } from './types/oauth.types';
+
+interface GoogleProfile {
+	id: string;
+	name?: {
+		givenName?: string;
+		familyName?: string;
+	};
+	emails?: Array<{ value: string }>;
+	photos?: Array<{ value: string }>;
+}
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 	constructor(
-		private readonly authService: AuthService,
 		private readonly configService: ConfigService,
 	) {
 		super({
@@ -18,16 +27,16 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 		} as StrategyOptions);
 	}
 
-	async validate(accessToken: string, refreshToken: string, profile: any): Promise<any> {
+	validate(accessToken: string, refreshToken: string, profile: GoogleProfile): GoogleStrategyUser {
 		const { id, name, emails, photos } = profile;
 
-		const user = {
+		const user: GoogleStrategyUser = {
 			googleId: id,
-			email: emails[0].value,
-			name: `${name.givenName} ${name.familyName}`,
-			firstName: name.givenName,
-			lastName: name.familyName,
-			picture: photos[0].value,
+			email: emails?.[0]?.value,
+			name: `${name?.givenName ?? ''} ${name?.familyName ?? ''}`.trim(),
+			firstName: name?.givenName,
+			lastName: name?.familyName,
+			picture: photos?.[0]?.value,
 			accessToken,
 			refreshToken,
 		};
