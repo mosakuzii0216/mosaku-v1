@@ -25,8 +25,41 @@ export interface XOAuthUser extends BaseOAuthUser {
 
 export type OAuthUser = GoogleOAuthUser | GitHubOAuthUser | XOAuthUser;
 
+export interface GoogleStrategyUser {
+	googleId: string;
+	email?: string;
+	name: string;
+	firstName?: string;
+	lastName?: string;
+	picture?: string;
+	accessToken?: string;
+	refreshToken?: string;
+}
+
+export interface GitHubStrategyUser {
+	githubId: string;
+	email?: string;
+	name: string;
+	username?: string;
+	picture?: string;
+	accessToken?: string;
+	refreshToken?: string;
+}
+
+export interface XStrategyUser {
+	xId: string;
+	email?: string;
+	name: string;
+	username?: string;
+	picture?: string;
+	accessToken?: string;
+	tokenSecret?: string;
+}
+
+export type OAuthStrategyUser = GoogleStrategyUser | GitHubStrategyUser | XStrategyUser;
+
 export interface OAuthConfig {
-	getProviderId: (user: any) => string;
-	normalizeUser: (user: any) => BaseOAuthUser;
-	generateFallbackEmail?: (user: any) => string;
+	getProviderId: (user: OAuthStrategyUser) => string;
+	normalizeUser: (user: OAuthStrategyUser) => BaseOAuthUser;
+	generateFallbackEmail?: (user: OAuthStrategyUser) => string;
 }
