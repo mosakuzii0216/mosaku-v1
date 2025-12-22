@@ -19,7 +19,7 @@ export class CreateThemeDto {
 
 	@IsObject()
 	@IsOptional()
-	styles?: any; // ThemeStyles型だが、JSONのためanyで受け取り（CSSファイル使用時は不要）
+	styles?: Record<string, unknown>; // ThemeStyles型だが、JSONのためunknownで受け取り（CSSファイル使用時は不要）
 
 	@IsString()
 	@IsOptional()
@@ -28,5 +28,5 @@ export class CreateThemeDto {
 
 	@IsObject()
 	@IsOptional()
-	metadata?: any; // メタデータ（JSON）
+	metadata?: Record<string, unknown>; // メタデータ（JSON）
 }
