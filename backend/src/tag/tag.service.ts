@@ -1,9 +1,4 @@
-import {
-	Injectable,
-	ConflictException,
-	NotFoundException,
-	ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthorizationService } from '../common/services/authorization.service';
 import { CreateTagDto } from './dto/create-tag.dto';
