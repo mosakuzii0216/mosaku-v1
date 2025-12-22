@@ -19,7 +19,7 @@ export class UpdateThemeDto {
 
 	@IsObject()
 	@IsOptional()
-	styles?: any; // ThemeStyles型だが、JSONのためanyで受け取り
+	styles?: Record<string, unknown>; // ThemeStyles型だが、JSONのためunknownで受け取り
 
 	@IsString()
 	@IsOptional()
@@ -28,5 +28,5 @@ export class UpdateThemeDto {
 
 	@IsObject()
 	@IsOptional()
-	metadata?: any; // メタデータ（JSON）
+	metadata?: Record<string, unknown>; // メタデータ（JSON）
 }
