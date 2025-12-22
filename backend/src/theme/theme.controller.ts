@@ -16,7 +16,6 @@ import { ThemeService } from './theme.service';
 import { CreateThemeDto } from './dto/create-theme.dto';
 import { UpdateThemeDto } from './dto/update-theme.dto';
 import { SearchThemeDto } from './dto/search-theme.dto';
-import { FavoriteThemeDto } from './dto/favorite-theme.dto';
 import type { AuthenticatedRequest, MaybeAuthRequest } from '../auth/types';
 
 @Controller('theme')
