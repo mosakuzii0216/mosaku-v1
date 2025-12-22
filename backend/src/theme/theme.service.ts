@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthorizationService } from '../common/services/authorization.service';
-import type { Prisma } from '@prisma/client';
+import type { Prisma, Theme } from '@prisma/client';
 import { CreateThemeDto } from './dto/create-theme.dto';
 import { UpdateThemeDto } from './dto/update-theme.dto';
 import { SearchThemeDto } from './dto/search-theme.dto';
@@ -21,10 +21,10 @@ export class ThemeService {
 	/**
 	 * テーマの編集権限を検証（システムテーマと所有者チェック）
 	 */
-	private validateThemeOwnership(theme: any, userId: string, action: string): void {
-		this.authorizationService.validateExistence(theme, 'テーマ');
+	private validateThemeOwnership(theme: Theme | null, userId: string, action: string): void {
+		const ensuredTheme = this.authorizationService.validateExistence(theme, 'テーマ');
 
-		if (theme.isSystem || theme.createdById !== userId) {
+		if (ensuredTheme.isSystem || ensuredTheme.createdById !== userId) {
 			throw new ForbiddenException(`このテーマを${action}する権限がありません`);
 		}
 	}
@@ -49,6 +49,15 @@ export class ThemeService {
 		// システムテーマフィルター
 		if (isSystem !== undefined) {
 			where.isSystem = isSystem;
+		}
+
+		// カテゴリフィルター
+		if (category) {
+			where.category = {
+				is: {
+					OR: [{ slug: category }, { name: category }],
+				},
+			};
 		}
 
 		// 公開テーマフィルター
