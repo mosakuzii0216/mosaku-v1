@@ -4,7 +4,13 @@ import { Injectable } from '@nestjs/common';
 export class ConfigService {
 	// JWT設定
 	get jwtSecret(): string {
-		return process.env.JWT_SECRET || 'your-secret-key';
+		const secret = process.env.JWT_SECRET;
+		if (!secret) {
+			throw new Error(
+				'JWT_SECRET is not configured. Please set JWT_SECRET environment variable.',
+			);
+		}
+		return secret;
 	}
 
 	// 管理者設定
@@ -23,7 +29,13 @@ export class ConfigService {
 
 	// セッション設定
 	get sessionSecret(): string {
-		return process.env.SESSION_SECRET || 'your-session-secret-change-this-in-production';
+		const secret = process.env.SESSION_SECRET;
+		if (!secret) {
+			throw new Error(
+				'SESSION_SECRET is not configured. Please set SESSION_SECRET environment variable.',
+			);
+		}
+		return secret;
 	}
 
 	// サーバー設定
@@ -33,46 +45,86 @@ export class ConfigService {
 
 	// OAuth Google設定
 	get googleClientId(): string {
-		return process.env.GOOGLE_CLIENT_ID!;
+		const clientId = process.env.GOOGLE_CLIENT_ID;
+		if (!clientId) {
+			throw new Error('GOOGLE_CLIENT_ID is not configured');
+		}
+		return clientId;
 	}
 
 	get googleClientSecret(): string {
-		return process.env.GOOGLE_CLIENT_SECRET!;
+		const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+		if (!clientSecret) {
+			throw new Error('GOOGLE_CLIENT_SECRET is not configured');
+		}
+		return clientSecret;
 	}
 
 	get googleRedirectUri(): string {
-		return process.env.GOOGLE_REDIRECT_URI!;
+		const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+		if (!redirectUri) {
+			throw new Error('GOOGLE_REDIRECT_URI is not configured');
+		}
+		return redirectUri;
 	}
 
 	// OAuth GitHub設定
 	get githubClientId(): string {
-		return process.env.GITHUB_CLIENT_ID!;
+		const clientId = process.env.GITHUB_CLIENT_ID;
+		if (!clientId) {
+			throw new Error('GITHUB_CLIENT_ID is not configured');
+		}
+		return clientId;
 	}
 
 	get githubClientSecret(): string {
-		return process.env.GITHUB_CLIENT_SECRET!;
+		const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+		if (!clientSecret) {
+			throw new Error('GITHUB_CLIENT_SECRET is not configured');
+		}
+		return clientSecret;
 	}
 
 	get githubRedirectUri(): string {
-		return process.env.GITHUB_REDIRECT_URI!;
+		const redirectUri = process.env.GITHUB_REDIRECT_URI;
+		if (!redirectUri) {
+			throw new Error('GITHUB_REDIRECT_URI is not configured');
+		}
+		return redirectUri;
 	}
 
 	// OAuth X設定
 	get xConsumerKey(): string {
-		return process.env.X_CONSUMER_KEY!;
+		const consumerKey = process.env.X_CONSUMER_KEY;
+		if (!consumerKey) {
+			throw new Error('X_CONSUMER_KEY is not configured');
+		}
+		return consumerKey;
 	}
 
 	get xConsumerSecret(): string {
-		return process.env.X_CONSUMER_SECRET!;
+		const consumerSecret = process.env.X_CONSUMER_SECRET;
+		if (!consumerSecret) {
+			throw new Error('X_CONSUMER_SECRET is not configured');
+		}
+		return consumerSecret;
 	}
 
 	get xRedirectUri(): string {
-		return process.env.X_REDIRECT_URI!;
+		const redirectUri = process.env.X_REDIRECT_URI;
+		if (!redirectUri) {
+			throw new Error('X_REDIRECT_URI is not configured');
+		}
+		return redirectUri;
 	}
 
 	// データベース設定
 	get databaseUrl(): string {
-		return process.env.DATABASE_URL!;
+		const url = process.env.DATABASE_URL;
+		if (!url) {
+			throw new Error('DATABASE_URL is not configured');
+		}
+		return url;
 	}
 
 	// URL生成ヘルパー
