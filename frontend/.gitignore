@@ -25,3 +25,4 @@ dev-dist
 *.sln
 *.sw?
 *.vercel
+.env.vercel.production
