@@ -1,16 +1,14 @@
 import type { UserProfile, OAuthUserData } from './auth';
+import { getBackendUrl, getGoogleClientId, getGithubClientId, getXConsumerKey } from './env';
 
 export class GoogleAuthUtils {
 	/**
 	 * Google OAuth認証を開始する
 	 */
 	static startGoogleAuth(): void {
-		const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-		const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
-
-		if (!clientId) {
-			throw new Error('Google Client ID is not configured');
-		}
+		// 環境変数の検証は getGoogleClientId() 内で行われる
+		getGoogleClientId(); // 環境変数が設定されているか検証
+		const backendUrl = getBackendUrl();
 
 		// バックエンドのGoogle認証エンドポイントにリダイレクト
 		const googleAuthUrl = `${backendUrl}/auth/google`;
@@ -85,12 +83,9 @@ export class GitHubAuthUtils {
 	 * GitHub OAuth認証を開始する
 	 */
 	static startGitHubAuth(): void {
-		const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
-		const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
-
-		if (!clientId) {
-			throw new Error('GitHub Client ID is not configured');
-		}
+		// 環境変数の検証は getGithubClientId() 内で行われる
+		getGithubClientId(); // 環境変数が設定されているか検証
+		const backendUrl = getBackendUrl();
 
 		// バックエンドのGitHub認証エンドポイントにリダイレクト
 		const githubAuthUrl = `${backendUrl}/auth/github`;
@@ -165,12 +160,9 @@ export class XAuthUtils {
 	 * X OAuth認証を開始する
 	 */
 	static startXAuth(): void {
-		const consumerKey = import.meta.env.VITE_X_CONSUMER_KEY;
-		const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
-
-		if (!consumerKey) {
-			throw new Error('X Consumer Key is not configured');
-		}
+		// 環境変数の検証は getXConsumerKey() 内で行われる
+		getXConsumerKey(); // 環境変数が設定されているか検証
+		const backendUrl = getBackendUrl();
 
 		// バックエンドのX認証エンドポイントにリダイレクト
 		const xAuthUrl = `${backendUrl}/auth/x`;

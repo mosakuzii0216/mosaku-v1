@@ -10,8 +10,9 @@ import type {
 import type { Theme, ThemeSearchParams, CreateThemeData, UpdateThemeData } from '../types/theme';
 import type { Notebook, CreateNotebookDto, UpdateNotebookDto } from '../types/notebook';
 import { AuthTokenManager } from './auth';
+import { getBackendUrl } from './env';
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+const API_BASE_URL = getBackendUrl();
 
 class ApiClient {
 	private async getAuthHeaders(): Promise<Record<string, string>> {

@@ -1,4 +1,5 @@
 // JWT Token Management Utilities
+import { getBackendUrl } from './env';
 
 export interface UserProfile {
 	id: string;
@@ -82,7 +83,7 @@ class AuthTokenManager {
 
 // API Call Helper with Authentication
 export class AuthAPI {
-	private static readonly BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+	private static readonly BASE_URL = getBackendUrl();
 
 	private static async makeRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
 		const token = AuthTokenManager.getAccessToken();
