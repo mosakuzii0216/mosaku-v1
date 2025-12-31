@@ -6,9 +6,7 @@ export class ConfigService {
 	get jwtSecret(): string {
 		const secret = process.env.JWT_SECRET;
 		if (!secret) {
-			throw new Error(
-				'JWT_SECRET is not configured. Please set JWT_SECRET environment variable.',
-			);
+			throw new Error('JWT_SECRET is not configured. Please set JWT_SECRET environment variable.');
 		}
 		return secret;
 	}

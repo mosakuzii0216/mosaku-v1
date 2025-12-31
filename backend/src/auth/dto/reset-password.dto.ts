@@ -1,4 +1,5 @@
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsString } from 'class-validator';
+import { IsStrongPassword } from '../validators/password-strength.validator';
 
 export class ResetPasswordRequestDto {
 	@IsEmail()
@@ -10,16 +11,27 @@ export class ResetPasswordDto {
 	token: string;
 
 	@IsString()
-	@MinLength(6)
+	@IsStrongPassword({
+		minLength: 8,
+		requireUppercase: true,
+		requireLowercase: true,
+		requireNumbers: true,
+		requireSpecialChars: false,
+	})
 	newPassword: string;
 }
 
 export class ChangePasswordDto {
 	@IsString()
-	@MinLength(6)
 	currentPassword: string;
 
 	@IsString()
-	@MinLength(6)
+	@IsStrongPassword({
+		minLength: 8,
+		requireUppercase: true,
+		requireLowercase: true,
+		requireNumbers: true,
+		requireSpecialChars: false,
+	})
 	newPassword: string;
 }
