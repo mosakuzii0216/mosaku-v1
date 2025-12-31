@@ -25,6 +25,26 @@ export class ConfigService {
 		return process.env.VITE_APP_URL || 'http://localhost';
 	}
 
+	// CORS設定
+	get corsOrigins(): string[] {
+		const origins = process.env.CORS_ORIGINS;
+		if (!origins) {
+			// デフォルトはローカル開発環境のみ
+			return ['http://localhost:5173', 'http://localhost:80', 'http://localhost'];
+		}
+		// カンマ区切りで複数のoriginを設定可能
+		return origins.split(',').map((origin) => origin.trim());
+	}
+
+	// 環境判定
+	get isProduction(): boolean {
+		return process.env.NODE_ENV === 'production';
+	}
+
+	get isDevelopment(): boolean {
+		return process.env.NODE_ENV !== 'production';
+	}
+
 	// セッション設定
 	get sessionSecret(): string {
 		const secret = process.env.SESSION_SECRET;
