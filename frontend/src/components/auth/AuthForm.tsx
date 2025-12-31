@@ -5,6 +5,7 @@ import { GoogleLoginButton } from '../ui/GoogleLoginButton';
 import { GitHubLoginButton } from '../ui/GitHubLoginButton';
 import { XLoginButton } from '../ui/XLoginButton';
 import { OAuthInviteForm } from './OAuthInviteForm';
+import { PasswordInput } from '../ui/PasswordInput';
 import type { OAuthUserData } from '../../utils/auth';
 
 type AuthMode = 'login' | 'signup' | 'resetPassword' | 'googleInvite' | 'githubInvite' | 'xInvite';
@@ -252,20 +253,15 @@ export default function AuthForm() {
 							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
 						/>
 					</div>
-					<div>
-						<label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-							パスワード
-						</label>
-						<input
-							type="password"
-							id="password"
-							value={password}
-							onChange={(e) => setPassword(e.target.value)}
-							required
-							minLength={6}
-							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-						/>
-					</div>
+					<PasswordInput
+						id="password"
+						label="パスワード"
+						value={password}
+						onChange={setPassword}
+						required
+						showStrengthIndicator={mode === 'signup'}
+						autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+					/>
 					{mode === 'signup' && (
 						<>
 							<div>

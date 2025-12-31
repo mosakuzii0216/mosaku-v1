@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { PasswordInput } from '../ui/PasswordInput';
+import { validatePasswordStrength } from '../../utils/passwordValidator';
 
 export default function PasswordReset() {
 	const [currentPassword, setCurrentPassword] = useState('');
@@ -19,8 +21,10 @@ export default function PasswordReset() {
 			return;
 		}
 
-		if (newPassword.length < 6) {
-			setMessage('パスワードは6文字以上で入力してください');
+		// パスワード強度検証
+		const validation = validatePasswordStrength(newPassword);
+		if (!validation.isValid) {
+			setMessage(`パスワードが要件を満たしていません: ${validation.errors.join(', ')}`);
 			return;
 		}
 
@@ -60,49 +64,33 @@ export default function PasswordReset() {
 			)}
 
 			<form onSubmit={handlePasswordChange} className="space-y-4">
-				<div>
-					<label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
-						現在のパスワード
-					</label>
-					<input
-						type="password"
-						id="currentPassword"
-						value={currentPassword}
-						onChange={(e) => setCurrentPassword(e.target.value)}
-						required
-						className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-					/>
-				</div>
+				<PasswordInput
+					id="currentPassword"
+					label="現在のパスワード"
+					value={currentPassword}
+					onChange={setCurrentPassword}
+					required
+					autoComplete="current-password"
+				/>
 
-				<div>
-					<label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-						新しいパスワード
-					</label>
-					<input
-						type="password"
-						id="newPassword"
-						value={newPassword}
-						onChange={(e) => setNewPassword(e.target.value)}
-						required
-						minLength={6}
-						className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-					/>
-				</div>
+				<PasswordInput
+					id="newPassword"
+					label="新しいパスワード"
+					value={newPassword}
+					onChange={setNewPassword}
+					required
+					showStrengthIndicator
+					autoComplete="new-password"
+				/>
 
-				<div>
-					<label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-						新しいパスワード確認
-					</label>
-					<input
-						type="password"
-						id="confirmPassword"
-						value={confirmPassword}
-						onChange={(e) => setConfirmPassword(e.target.value)}
-						required
-						minLength={6}
-						className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-					/>
-				</div>
+				<PasswordInput
+					id="confirmPassword"
+					label="新しいパスワード確認"
+					value={confirmPassword}
+					onChange={setConfirmPassword}
+					required
+					autoComplete="new-password"
+				/>
 
 				<button
 					type="submit"
