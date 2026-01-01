@@ -7,9 +7,19 @@ import { TagModule } from './tag/tag.module';
 import { ThemeModule } from './theme/theme.module';
 import { ConfigModule } from './config/config.module';
 import { NotebookModule } from './notebook/notebook.module';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
 	imports: [
+		// レート制限設定（グローバル）
+		ThrottlerModule.forRoot([
+			{
+				name: 'default',
+				ttl: 60000, // 60秒
+				limit: 30, // 60秒間に30リクエストまで
+			},
+		]),
 		ConfigModule,
 		MemoModule,
 		AuthModule,
@@ -18,6 +28,13 @@ import { NotebookModule } from './notebook/notebook.module';
 		TagModule,
 		ThemeModule,
 		NotebookModule,
+	],
+	providers: [
+		// グローバルにThrottlerGuardを適用
+		{
+			provide: APP_GUARD,
+			useClass: ThrottlerGuard,
+		},
 	],
 })
 export class AppModule {}

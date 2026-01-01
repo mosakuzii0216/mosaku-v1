@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import * as session from 'express-session';
 import { ConfigService } from './config/config.service';
 import helmet from 'helmet';
+import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.filter';
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
@@ -54,6 +55,9 @@ async function bootstrap() {
 			forbidNonWhitelisted: false,
 		}),
 	);
+
+	// レート制限エラーのカスタムフィルター
+	app.useGlobalFilters(new ThrottlerExceptionFilter());
 
 	await app.listen(configService.port);
 }

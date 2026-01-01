@@ -10,6 +10,7 @@ import {
 	BadRequestException,
 	UnauthorizedException,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import type { AuthenticatedRequest, OAuthRequest } from './types';
 import type {
@@ -81,6 +82,7 @@ export class AuthController {
 	}
 
 	@Public()
+	@Throttle({ default: { limit: 5, ttl: 60000 } }) // 1分間に5回まで
 	@Post('register')
 	async register(@Body() registerUserDto: RegisterUserDto) {
 		const { email, password, name, invitationCode } = registerUserDto;
@@ -106,6 +108,7 @@ export class AuthController {
 	}
 
 	@Public()
+	@Throttle({ default: { limit: 5, ttl: 900000 } }) // 15分間に5回まで（ブルートフォース対策）
 	@Post('login')
 	async login(@Body() loginDto: LoginDto) {
 		const { email, password } = loginDto;
