@@ -127,9 +127,7 @@ export function getPasswordStrengthScore(password: string): number {
  * @param strength パスワード強度
  * @returns Tailwind CSSクラス名
  */
-export function getPasswordStrengthColor(
-	strength: 'weak' | 'medium' | 'strong',
-): string {
+export function getPasswordStrengthColor(strength: 'weak' | 'medium' | 'strong'): string {
 	switch (strength) {
 		case 'weak':
 			return 'text-red-600';
@@ -146,9 +144,7 @@ export function getPasswordStrengthColor(
  * @param strength パスワード強度
  * @returns 日本語ラベル
  */
-export function getPasswordStrengthLabel(
-	strength: 'weak' | 'medium' | 'strong',
-): string {
+export function getPasswordStrengthLabel(strength: 'weak' | 'medium' | 'strong'): string {
 	switch (strength) {
 		case 'weak':
 			return '弱い';

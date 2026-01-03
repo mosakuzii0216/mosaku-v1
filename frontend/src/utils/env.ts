@@ -37,9 +37,7 @@ class EnvironmentValidator {
 	private getRequiredEnv(key: string, envVarName: string): string {
 		const value = import.meta.env[envVarName];
 		if (!value) {
-			throw new Error(
-				`${key} is not configured. Please set ${envVarName} environment variable.`,
-			);
+			throw new Error(`${key} is not configured. Please set ${envVarName} environment variable.`);
 		}
 		return value;
 	}
@@ -88,9 +86,7 @@ class EnvironmentValidator {
 		} catch (error) {
 			// 環境変数エラーをユーザーフレンドリーな形で表示
 			const message =
-				error instanceof Error
-					? error.message
-					: 'Failed to load environment configuration';
+				error instanceof Error ? error.message : 'Failed to load environment configuration';
 
 			// 開発環境ではconsole.errorも出力
 			if (import.meta.env.DEV) {
