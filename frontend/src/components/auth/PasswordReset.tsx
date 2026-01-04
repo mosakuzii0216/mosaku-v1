@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { PasswordInput } from '../ui/PasswordInput';
 import { validatePasswordStrength } from '../../utils/passwordValidator';
+import { logger } from '../../utils/logger';
 
 export default function PasswordReset() {
 	const [currentPassword, setCurrentPassword] = useState('');
@@ -40,7 +41,7 @@ export default function PasswordReset() {
 				navigate('/');
 			}, 3000);
 		} catch (error: unknown) {
-			console.error('パスワード変更エラー:', error);
+			logger.error('パスワード変更エラー:', error);
 			setMessage(error instanceof Error ? error.message : 'パスワードの更新に失敗しました');
 		} finally {
 			setLoading(false);

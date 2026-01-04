@@ -3,6 +3,7 @@ import { useNotebooks } from '../../hooks/useNotebookQueries';
 import { useMemos } from '../../hooks/useMemoQueries';
 import { useMemoStore } from '../../stores/useMemoStore';
 import type { Memo } from '../../types/memo';
+import { logger } from '../../utils/logger';
 
 type PaletteMode = 'notebook-select' | 'memo-select';
 
@@ -67,7 +68,7 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 
 	// フィルタリングされたメモ一覧（useMemoで最適化）
 	const filteredMemos = useMemo(() => {
-		console.log('[MemoPalette] Filtering memos:', {
+		logger.debug('[MemoPalette] Filtering memos:', {
 			totalMemos: memos.length,
 			selectedNotebookId,
 			searchQuery,
@@ -97,7 +98,7 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 			return true;
 		});
 
-		console.log('[MemoPalette] Filtered result:', {
+		logger.debug('[MemoPalette] Filtered result:', {
 			filteredCount: filtered.length,
 			filtered: filtered
 				.slice(0, 3)
@@ -129,7 +130,7 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 					e.preventDefault();
 					if (mode === 'notebook-select' && items.length > 0) {
 						const selected = items[selectedIndex] as (typeof notebookOptions)[0];
-						console.log('[MemoPalette] Notebook selected:', selected);
+						logger.debug('[MemoPalette] Notebook selected:', selected);
 						setSelectedNotebookId(selected.id);
 						setMode('memo-select');
 					} else if (mode === 'memo-select' && items.length > 0) {
@@ -228,7 +229,7 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 							notebooks={notebookOptions}
 							selectedIndex={selectedIndex}
 							onSelect={(nb) => {
-								console.log('[MemoPalette] Notebook clicked:', nb);
+								logger.debug('[MemoPalette] Notebook clicked:', nb);
 								setSelectedNotebookId(nb.id);
 								setMode('memo-select');
 							}}

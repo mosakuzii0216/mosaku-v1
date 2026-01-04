@@ -7,6 +7,7 @@ import type {
 	UpdateThemeData,
 	ThemeCategory,
 } from '../types/theme';
+import { logger } from '../utils/logger';
 
 // Query Keys
 export const themeKeys = {
@@ -29,7 +30,7 @@ export const useThemes = (params?: ThemeSearchParams) => {
 			try {
 				return await apiClient.getThemes(params);
 			} catch (error) {
-				console.error('テーマ取得エラー:', error);
+				logger.error('テーマ取得エラー:', error);
 				throw error;
 			}
 		},
@@ -45,7 +46,7 @@ export const useSystemThemes = () => {
 			try {
 				return await apiClient.getSystemThemes();
 			} catch (error) {
-				console.error('システムテーマ取得エラー:', error);
+				logger.error('システムテーマ取得エラー:', error);
 				throw error;
 			}
 		},
@@ -61,7 +62,7 @@ export const usePublicThemes = () => {
 			try {
 				return await apiClient.getPublicThemes();
 			} catch (error) {
-				console.error('公開テーマ取得エラー:', error);
+				logger.error('公開テーマ取得エラー:', error);
 				throw error;
 			}
 		},
@@ -77,7 +78,7 @@ export const useThemesByCategory = (category: ThemeCategory) => {
 			try {
 				return await apiClient.getThemesByCategory(category);
 			} catch (error) {
-				console.error(`カテゴリ${category}のテーマ取得エラー:`, error);
+				logger.error(`カテゴリ${category}のテーマ取得エラー:`, error);
 				throw error;
 			}
 		},
@@ -93,7 +94,7 @@ export const useTheme = (id: string) => {
 			try {
 				return await apiClient.getTheme(id);
 			} catch (error) {
-				console.error(`テーマ${id}取得エラー:`, error);
+				logger.error(`テーマ${id}取得エラー:`, error);
 				throw error;
 			}
 		},
@@ -110,7 +111,7 @@ export const useFavoriteThemes = () => {
 			try {
 				return await apiClient.getFavoriteThemes();
 			} catch (error) {
-				console.error('お気に入りテーマ取得エラー:', error);
+				logger.error('お気に入りテーマ取得エラー:', error);
 				throw error;
 			}
 		},
@@ -127,7 +128,7 @@ export const useCreateTheme = () => {
 			try {
 				return await apiClient.createTheme(data);
 			} catch (error) {
-				console.error('テーマ作成エラー:', error);
+				logger.error('テーマ作成エラー:', error);
 				throw error;
 			}
 		},
@@ -147,7 +148,7 @@ export const useUpdateTheme = () => {
 			try {
 				return await apiClient.updateTheme(id, data);
 			} catch (error) {
-				console.error('テーマ更新エラー:', error);
+				logger.error('テーマ更新エラー:', error);
 				throw error;
 			}
 		},
@@ -170,7 +171,7 @@ export const useDeleteTheme = () => {
 				await apiClient.deleteTheme(id);
 				return id;
 			} catch (error) {
-				console.error('テーマ削除エラー:', error);
+				logger.error('テーマ削除エラー:', error);
 				throw error;
 			}
 		},
@@ -192,7 +193,7 @@ export const useAddToFavoriteThemes = () => {
 			try {
 				return await apiClient.addToFavoriteThemes(themeId);
 			} catch (error) {
-				console.error('お気に入り追加エラー:', error);
+				logger.error('お気に入り追加エラー:', error);
 				throw error;
 			}
 		},
@@ -221,7 +222,7 @@ export const useRemoveFromFavoriteThemes = () => {
 			try {
 				return await apiClient.removeFromFavoriteThemes(themeId);
 			} catch (error) {
-				console.error('お気に入り削除エラー:', error);
+				logger.error('お気に入り削除エラー:', error);
 				throw error;
 			}
 		},

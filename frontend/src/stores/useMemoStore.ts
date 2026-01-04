@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Memo, ViewType, ObjectType } from '../types/memo';
+import { logger } from '../utils/logger';
 
 type PaletteMode = 'notebook-select' | 'memo-select';
 
@@ -113,7 +114,7 @@ export const useMemoStore = create<MemoStore>((set, get) => ({
 
 	logCurrent: () => {
 		const current = get();
-		console.log('Current Memo Store State:', current);
+		logger.debug('Current Memo Store State:', current);
 	},
 
 	goToEdit: (memo) =>

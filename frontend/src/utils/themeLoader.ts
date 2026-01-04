@@ -2,6 +2,8 @@
  * テーマCSSの動的読み込みユーティリティ
  */
 
+import { logger } from './logger';
+
 /**
  * 読み込み済みテーマを管理
  * Key: themeId, Value: HTMLStyleElement
@@ -23,18 +25,18 @@ const loadingThemes = new Map<string, Promise<void>>();
 export async function loadThemeCSS(themeId: string, cssPath: string): Promise<void> {
 	// 既に読み込み済み
 	if (loadedThemes.has(themeId)) {
-		console.log(`[themeLoader] Theme ${themeId} already loaded`);
+		logger.debug(`[themeLoader] Theme ${themeId} already loaded`);
 		return;
 	}
 
 	// 読み込み中
 	if (loadingThemes.has(themeId)) {
-		console.log(`[themeLoader] Theme ${themeId} is loading, waiting...`);
+		logger.debug(`[themeLoader] Theme ${themeId} is loading, waiting...`);
 		return loadingThemes.get(themeId)!;
 	}
 
 	// 読み込み開始
-	console.log(`[themeLoader] Loading theme ${themeId} from ${cssPath}`);
+	logger.debug(`[themeLoader] Loading theme ${themeId} from ${cssPath}`);
 
 	const loadPromise = (async () => {
 		try {
@@ -65,9 +67,9 @@ export async function loadThemeCSS(themeId: string, cssPath: string): Promise<vo
 			// 管理用Mapに保存
 			loadedThemes.set(themeId, styleElement);
 
-			console.log(`[themeLoader] Theme ${themeId} loaded and scoped successfully`);
+			logger.debug(`[themeLoader] Theme ${themeId} loaded and scoped successfully`);
 		} catch (error) {
-			console.error(`[themeLoader] Failed to load theme ${themeId}:`, error);
+			logger.error(`[themeLoader] Failed to load theme ${themeId}:`, error);
 			throw error;
 		} finally {
 			// 読み込み完了後、読み込み中リストから削除
@@ -88,7 +90,7 @@ export function unloadThemeCSS(themeId: string): void {
 	if (styleElement && styleElement.parentNode) {
 		styleElement.parentNode.removeChild(styleElement);
 		loadedThemes.delete(themeId);
-		console.log(`[themeLoader] Theme ${themeId} unloaded`);
+		logger.debug(`[themeLoader] Theme ${themeId} unloaded`);
 	}
 }
 
@@ -109,7 +111,7 @@ export function unloadAllThemes(): void {
 		}
 	});
 	loadedThemes.clear();
-	console.log('[themeLoader] All themes unloaded');
+	logger.debug('[themeLoader] All themes unloaded');
 }
 
 /**

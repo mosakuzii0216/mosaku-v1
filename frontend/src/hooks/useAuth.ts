@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AuthAPI, AuthTokenManager } from '../utils/auth';
 import type { UserProfile } from '../utils/auth';
+import { logger } from '../utils/logger';
 
 export interface AuthState {
 	user: UserProfile | null;
@@ -37,7 +38,7 @@ export const useAuth = (): AuthState & AuthActions => {
 				setUser(userProfile);
 			}
 		} catch (error) {
-			console.error('Failed to initialize auth:', error);
+			logger.error('Failed to initialize auth:', error);
 			AuthTokenManager.removeTokens();
 		} finally {
 			setLoading(false);
@@ -75,7 +76,7 @@ export const useAuth = (): AuthState & AuthActions => {
 			// バックエンドへのログアウト通知は非同期で実行
 			await AuthAPI.logout();
 		} catch (error) {
-			console.error('Logout error:', error);
+			logger.error('Logout error:', error);
 			// エラーが発生してもローカル状態は既にクリアされているのでそのまま続行
 		}
 	};
@@ -103,7 +104,7 @@ export const useAuth = (): AuthState & AuthActions => {
 				setUser(userProfile);
 			}
 		} catch (error) {
-			console.error('Failed to refresh user:', error);
+			logger.error('Failed to refresh user:', error);
 			setUser(null);
 			AuthTokenManager.removeTokens();
 		}

@@ -1,5 +1,6 @@
 import type { UserProfile, OAuthUserData } from './auth';
 import { getBackendUrl, getGoogleClientId, getGithubClientId, getXConsumerKey } from './env';
+import { logger } from './logger';
 
 export class GoogleAuthUtils {
 	/**
@@ -42,7 +43,7 @@ export class GoogleAuthUtils {
 				try {
 					googleUser = JSON.parse(decodeURIComponent(googleUserParam));
 				} catch (parseError) {
-					console.error('Failed to parse google user data:', parseError);
+					logger.error('Failed to parse google user data:', parseError);
 				}
 			}
 			return { error, googleUser };
@@ -53,7 +54,7 @@ export class GoogleAuthUtils {
 				const user = JSON.parse(decodeURIComponent(userParam));
 				return { token, user };
 			} catch (parseError) {
-				console.error('Failed to parse user data:', parseError);
+				logger.error('Failed to parse user data:', parseError);
 				return { error: 'Failed to parse authentication data' };
 			}
 		}
@@ -119,7 +120,7 @@ export class GitHubAuthUtils {
 				try {
 					githubUser = JSON.parse(decodeURIComponent(githubUserParam));
 				} catch (parseError) {
-					console.error('Failed to parse github user data:', parseError);
+					logger.error('Failed to parse github user data:', parseError);
 				}
 			}
 			return { error, githubUser };
@@ -130,7 +131,7 @@ export class GitHubAuthUtils {
 				const user = JSON.parse(decodeURIComponent(userParam));
 				return { token, user };
 			} catch (parseError) {
-				console.error('Failed to parse user data:', parseError);
+				logger.error('Failed to parse user data:', parseError);
 				return { error: 'Failed to parse authentication data' };
 			}
 		}
@@ -196,7 +197,7 @@ export class XAuthUtils {
 				try {
 					xUser = JSON.parse(decodeURIComponent(xUserParam));
 				} catch (parseError) {
-					console.error('Failed to parse x user data:', parseError);
+					logger.error('Failed to parse x user data:', parseError);
 				}
 			}
 			return { error, xUser };
@@ -207,7 +208,7 @@ export class XAuthUtils {
 				const user = JSON.parse(decodeURIComponent(userParam));
 				return { token, user };
 			} catch (parseError) {
-				console.error('Failed to parse user data:', parseError);
+				logger.error('Failed to parse user data:', parseError);
 				return { error: 'Failed to parse authentication data' };
 			}
 		}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthTokenManager } from '../../utils/auth';
+import { logger } from '../../utils/logger';
 
 interface InvitationCode {
 	id: string;
@@ -47,7 +48,7 @@ export default function InvitationManager() {
 			const data = await response.json();
 			setInvitations(data);
 		} catch (error) {
-			console.error('Error loading invitations:', error);
+			logger.error('Error loading invitations:', error);
 			setMessage(error instanceof Error ? error.message : 'Failed to load invitations');
 		} finally {
 			setLoading(false);
@@ -90,7 +91,7 @@ export default function InvitationManager() {
 			setExpiresAt('');
 			setMessage('招待コードが作成されました');
 		} catch (error) {
-			console.error('Error creating invitation:', error);
+			logger.error('Error creating invitation:', error);
 			setMessage(error instanceof Error ? error.message : 'Failed to create invitation');
 		} finally {
 			setCreating(false);
@@ -123,7 +124,7 @@ export default function InvitationManager() {
 			setInvitations(invitations.filter((inv) => inv.id !== id));
 			setMessage('招待コードが削除されました');
 		} catch (error) {
-			console.error('Error deleting invitation:', error);
+			logger.error('Error deleting invitation:', error);
 			setMessage(error instanceof Error ? error.message : 'Failed to delete invitation');
 		}
 	};

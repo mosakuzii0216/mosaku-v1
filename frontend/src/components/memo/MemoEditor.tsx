@@ -3,11 +3,11 @@ import { useCreateMemo, useUpdateMemo, useDeleteMemo } from '../../hooks/useMemo
 import { useNotebooks } from '../../hooks/useNotebookQueries';
 import { useTagQueries } from '../../hooks/useTagQueries';
 import { loadThemeCSS } from '../../utils/themeLoader';
-// import { TagSelector } from '../tag/TagSelector';
 import { TagDropdownIcon } from '../tag/TagDropdownIcon';
 import { useTagStore } from '../../stores/useTagStore';
 import { RichTextEditor } from '../editor/RichTextEditor';
 import type { Memo } from '../../types/memo';
+import { logger } from '../../utils/logger';
 
 interface MemoEditorProps {
 	memo?: Memo;
@@ -33,9 +33,9 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 
 	// 選択されたノートブックのテーマを動的に取得
 	const selectedNotebook = notebooks.find((nb) => nb.id === selectedNotebookId);
-	console.log('Selected Notebook:', selectedNotebook);
+	logger.debug('Selected Notebook:', selectedNotebook);
 	const selectedTheme = selectedNotebook?.theme || memo?.notebook?.theme || null;
-	console.log('Selected Theme:', selectedTheme);
+	logger.debug('Selected Theme:', selectedTheme);
 	// memo prop の変更を検知してエディタの状態を更新する
 	useEffect(() => {
 		if (isCreate) {
@@ -60,7 +60,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	useEffect(() => {
 		if (selectedTheme?.cssFilePath) {
 			loadThemeCSS(selectedTheme.id, selectedTheme.cssFilePath).catch((error) => {
-				console.error('Failed to load theme CSS:', error);
+				logger.error('Failed to load theme CSS:', error);
 			});
 		}
 	}, [selectedTheme?.id, selectedTheme?.cssFilePath]);
@@ -133,7 +133,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 				}
 			}
 		} catch (error) {
-			console.error('保存に失敗しました:', error);
+			logger.error('保存に失敗しました:', error);
 			// エラーハンドリング - ユーザーにエラーを通知
 			alert('保存に失敗しました。もう一度お試しください。');
 		}
@@ -161,7 +161,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 		try {
 			await deleteMemo.mutateAsync(memo.id);
 		} catch (error) {
-			console.error('削除に失敗しました:', error);
+			logger.error('削除に失敗しました:', error);
 			alert('削除に失敗しました。もう一度お試しください。');
 		}
 	}, [memo, deleteMemo]);

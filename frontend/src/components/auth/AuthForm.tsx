@@ -7,6 +7,7 @@ import { XLoginButton } from '../ui/XLoginButton';
 import { OAuthInviteForm } from './OAuthInviteForm';
 import { PasswordInput } from '../ui/PasswordInput';
 import type { OAuthUserData } from '../../utils/auth';
+import { logger } from '../../utils/logger';
 
 type AuthMode = 'login' | 'signup' | 'resetPassword' | 'googleInvite' | 'githubInvite' | 'xInvite';
 
@@ -61,7 +62,7 @@ export default function AuthForm() {
 						userFound = true;
 						break;
 					} catch (err) {
-						console.error(`Failed to parse pending user for ${provider.key}:`, err);
+						logger.error(`Failed to parse pending user for ${provider.key}:`, err);
 						setMessage('認証処理でエラーが発生しました。再度お試しください。');
 					}
 				}
@@ -112,7 +113,7 @@ export default function AuthForm() {
 			await resetPassword(email);
 			setMessage('パスワードリセットメールを送信しました。メールをご確認ください。');
 		} catch (error: unknown) {
-			console.error('パスワードリセットエラー:', error);
+			logger.error('パスワードリセットエラー:', error);
 			setMessage(error instanceof Error ? error.message : 'Failed to send password reset email');
 		} finally {
 			setLoading(false);
@@ -139,7 +140,7 @@ export default function AuthForm() {
 
 			await registerFunction(pendingOAuthUser, invitationCode);
 		} catch (error: unknown) {
-			console.error(`${mode}登録エラー:`, error);
+			logger.error(`${mode}登録エラー:`, error);
 			const errorMessage = error instanceof Error ? error.message : `${mode} registration failed`;
 			setMessage(errorMessage);
 		} finally {

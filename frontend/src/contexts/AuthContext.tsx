@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { AuthAPI, AuthTokenManager } from '../utils/auth';
 import type { UserProfile, OAuthUserData } from '../utils/auth';
 import { GoogleAuthUtils, GitHubAuthUtils, XAuthUtils } from '../utils/oauthAuth';
+import { logger } from '../utils/logger';
 
 export interface AuthState {
 	user: UserProfile | null;
@@ -59,7 +60,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 			if (googleAuthCallback.error || (googleAuthCallback.token && googleAuthCallback.user)) {
 				if (googleAuthCallback.error) {
-					console.error('Google auth error:', googleAuthCallback.error);
+					logger.error('Google auth error:', googleAuthCallback.error);
 
 					// 招待コードが必要な場合の処理
 					if (googleAuthCallback.error === 'invitation_required' && googleAuthCallback.googleUser) {
@@ -85,7 +86,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 			if (githubAuthCallback.error || (githubAuthCallback.token && githubAuthCallback.user)) {
 				if (githubAuthCallback.error) {
-					console.error('GitHub auth error:', githubAuthCallback.error);
+					logger.error('GitHub auth error:', githubAuthCallback.error);
 
 					// 招待コードが必要な場合の処理
 					if (githubAuthCallback.error === 'invitation_required' && githubAuthCallback.githubUser) {
@@ -111,7 +112,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 			if (xAuthCallback.error || (xAuthCallback.token && xAuthCallback.user)) {
 				if (xAuthCallback.error) {
-					console.error('X auth error:', xAuthCallback.error);
+					logger.error('X auth error:', xAuthCallback.error);
 
 					// 招待コードが必要な場合の処理
 					if (xAuthCallback.error === 'invitation_required' && xAuthCallback.xUser) {
@@ -135,7 +136,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 				setUser(userProfile);
 			}
 		} catch (error) {
-			console.error('Failed to initialize auth:', error);
+			logger.error('Failed to initialize auth:', error);
 			AuthTokenManager.removeTokens();
 		} finally {
 			setLoading(false);
@@ -166,7 +167,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			// バックエンドへのログアウト通知は非同期で実行
 			await AuthAPI.logout();
 		} catch (error) {
-			console.error('Logout error:', error);
+			logger.error('Logout error:', error);
 			// エラーが発生してもローカル状態は既にクリアされているのでそのまま続行
 		}
 	};
@@ -186,7 +187,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 				setUser(userProfile);
 			}
 		} catch (error) {
-			console.error('Failed to refresh user:', error);
+			logger.error('Failed to refresh user:', error);
 			setUser(null);
 			AuthTokenManager.removeTokens();
 		}
@@ -196,7 +197,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		try {
 			GoogleAuthUtils.startGoogleAuth();
 		} catch (error) {
-			console.error('Failed to start Google auth:', error);
+			logger.error('Failed to start Google auth:', error);
 		}
 	};
 
@@ -215,7 +216,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		try {
 			GitHubAuthUtils.startGitHubAuth();
 		} catch (error) {
-			console.error('Failed to start GitHub auth:', error);
+			logger.error('Failed to start GitHub auth:', error);
 		}
 	};
 
@@ -234,7 +235,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		try {
 			XAuthUtils.startXAuth();
 		} catch (error) {
-			console.error('Failed to start X auth:', error);
+			logger.error('Failed to start X auth:', error);
 		}
 	};
 

@@ -1,5 +1,6 @@
 // JWT Token Management Utilities
 import { getBackendUrl } from './env';
+import { logger } from './logger';
 
 export interface UserProfile {
 	id: string;
@@ -147,7 +148,7 @@ export class AuthAPI {
 		try {
 			await this.makeRequest('/auth/logout', { method: 'POST' });
 		} catch (error) {
-			console.error('Logout API call failed:', error);
+			logger.error('Logout API call failed:', error);
 		} finally {
 			AuthTokenManager.removeTokens();
 		}

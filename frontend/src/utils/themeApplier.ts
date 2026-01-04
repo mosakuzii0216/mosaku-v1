@@ -2,6 +2,8 @@
  * CSS参照型テーマの適用ユーティリティ
  */
 
+import { logger } from './logger';
+
 interface AppliedTheme {
 	id: string;
 	styleElement: HTMLStyleElement;
@@ -33,7 +35,7 @@ class ThemeApplier {
 			styleElement,
 		};
 
-		console.log(`✅ テーマ「${themeId}」を適用しました`);
+		logger.debug(`✅ テーマ「${themeId}」を適用しました`);
 	}
 
 	/**
@@ -42,7 +44,7 @@ class ThemeApplier {
 	public removeCurrentTheme(): void {
 		if (this.currentTheme) {
 			this.currentTheme.styleElement.remove();
-			console.log(`🗑️ テーマ「${this.currentTheme.id}」を削除しました`);
+			logger.debug(`🗑️ テーマ「${this.currentTheme.id}」を削除しました`);
 			this.currentTheme = null;
 		}
 

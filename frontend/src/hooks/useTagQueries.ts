@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../utils/api';
 import { useTagStore } from '../stores/useTagStore';
 import type { CreateTagDto, UpdateTagDto, AssignTagsDto } from '../types/tag';
+import { logger } from '../utils/logger';
 
 export const useTagQueries = () => {
 	const queryClient = useQueryClient();
@@ -16,7 +17,7 @@ export const useTagQueries = () => {
 				setTags(tags); // Zustandストアに保存
 				return tags;
 			} catch (error) {
-				console.error('タグ取得エラー:', error);
+				logger.error('タグ取得エラー:', error);
 				throw error;
 			}
 		},

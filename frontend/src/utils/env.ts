@@ -2,6 +2,8 @@
  * 環境変数の検証と取得を行うユーティリティ
  */
 
+import { logger } from './logger';
+
 interface EnvConfig {
 	// バックエンドURL
 	backendUrl: string;
@@ -72,7 +74,7 @@ class EnvironmentValidator {
 
 			// 開発環境でのデバッグログ
 			if (import.meta.env.DEV) {
-				console.log('Environment configuration loaded:', {
+				logger.debug('Environment configuration loaded:', {
 					backendUrl: this.config.backendUrl,
 					appUrl: this.config.appUrl,
 					supabaseUrl: this.config.supabaseUrl,
@@ -88,9 +90,9 @@ class EnvironmentValidator {
 			const message =
 				error instanceof Error ? error.message : 'Failed to load environment configuration';
 
-			// 開発環境ではconsole.errorも出力
+			// 開発環境ではエラーログも出力
 			if (import.meta.env.DEV) {
-				console.error('Environment validation failed:', error);
+				logger.error('Environment validation failed:', error);
 			}
 
 			// エラーを再スロー（アプリケーション起動を中止）

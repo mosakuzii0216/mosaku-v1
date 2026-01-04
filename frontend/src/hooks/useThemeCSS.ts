@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { logger } from '../utils/logger';
 
 /**
  * テーマのCSSファイルを動的に読み込み、スコープ化して適用するフック
@@ -28,7 +29,7 @@ export const useThemeCSS = (themes: Array<{ id: string; cssFilePath: string | nu
 
 					loadedStyleElements.push(styleElement);
 				} catch (error) {
-					console.error(`Failed to load theme CSS: ${theme.cssFilePath}`, error);
+					logger.error(`Failed to load theme CSS: ${theme.cssFilePath}`, error);
 				}
 			}
 		};
