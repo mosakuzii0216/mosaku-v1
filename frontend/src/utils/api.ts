@@ -271,7 +271,7 @@ class ApiClient {
 				} else {
 					errorMessage = `API Error: ${response.status} ${response.statusText}`;
 				}
-			} catch (parseError) {
+			} catch {
 				errorMessage = `Network Error: ${response.status} ${response.statusText}`;
 			}
 			throw new Error(errorMessage);

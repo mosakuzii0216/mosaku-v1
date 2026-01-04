@@ -196,9 +196,9 @@ export class ThemeService {
 				description: createThemeDto.description,
 				isSystem: false, // ユーザー作成テーマ
 				isPublic: createThemeDto.isPublic || false,
-				styles: createThemeDto.styles || null,
+				styles: (createThemeDto.styles as any) || null,
 				cssFilePath: createThemeDto.cssFilePath || null,
-				metadata: createThemeDto.metadata || {},
+				metadata: (createThemeDto.metadata as any) || {},
 				createdById: userId,
 			},
 			include: {
@@ -238,9 +238,9 @@ export class ThemeService {
 				...(updateThemeDto.isPublic !== undefined && {
 					isPublic: updateThemeDto.isPublic,
 				}),
-				...(updateThemeDto.styles && { styles: updateThemeDto.styles }),
+				...(updateThemeDto.styles && { styles: updateThemeDto.styles as any }),
 				...(updateThemeDto.cssFilePath && { cssFilePath: updateThemeDto.cssFilePath }),
-				...(updateThemeDto.metadata && { metadata: updateThemeDto.metadata }),
+				...(updateThemeDto.metadata && { metadata: updateThemeDto.metadata as any }),
 			},
 			include: {
 				createdBy: {

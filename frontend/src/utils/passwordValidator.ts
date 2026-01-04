@@ -72,7 +72,7 @@ export function validatePasswordStrength(
 	}
 
 	// 特殊文字チェック
-	if (opts.requireSpecialChars && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+	if (opts.requireSpecialChars && !/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
 		errors.push('少なくとも1つの特殊文字を含める必要があります');
 	}
 
@@ -81,7 +81,7 @@ export function validatePasswordStrength(
 	const meetsRequirements = errors.length === 0;
 
 	if (meetsRequirements) {
-		const hasSpecialChars = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+		const hasSpecialChars = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
 		const isLongEnough = password.length >= 12;
 
 		if (hasSpecialChars && isLongEnough) {
@@ -116,7 +116,7 @@ export function getPasswordStrengthScore(password: string): number {
 	if (/[a-z]/.test(password)) score += 15;
 	if (/[A-Z]/.test(password)) score += 15;
 	if (/[0-9]/.test(password)) score += 15;
-	if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) score += 15;
+	if (/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) score += 15;
 
 	return Math.min(score, 100);
 }
