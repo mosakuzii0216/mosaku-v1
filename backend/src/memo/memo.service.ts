@@ -4,6 +4,7 @@ import { AuthorizationService } from '../common/services/authorization.service';
 import { CreateMemoDto } from './dto/create-memo.dto';
 import { UpdateMemoDto } from './dto/update-memo.dto';
 import type { Prisma } from '@prisma/client';
+import { NOTEBOOK_WITH_THEME_SELECT } from '../common/constants/prisma-selects';
 
 @Injectable()
 export class MemoService {
@@ -33,18 +34,7 @@ export class MemoService {
 					},
 				},
 				notebook: {
-					select: {
-						id: true,
-						name: true,
-						theme: {
-							select: {
-								id: true,
-								name: true,
-								styles: true,
-								cssFilePath: true,
-							},
-						},
-					},
+					select: NOTEBOOK_WITH_THEME_SELECT,
 				},
 			},
 			orderBy: {
@@ -63,18 +53,7 @@ export class MemoService {
 					},
 				},
 				notebook: {
-					select: {
-						id: true,
-						name: true,
-						theme: {
-							select: {
-								id: true,
-								name: true,
-								styles: true,
-								cssFilePath: true,
-							},
-						},
-					},
+					select: NOTEBOOK_WITH_THEME_SELECT,
 				},
 			},
 		});
@@ -97,18 +76,7 @@ export class MemoService {
 			data: createData,
 			include: {
 				notebook: {
-					select: {
-						id: true,
-						name: true,
-						theme: {
-							select: {
-								id: true,
-								name: true,
-								styles: true,
-								cssFilePath: true,
-							},
-						},
-					},
+					select: NOTEBOOK_WITH_THEME_SELECT,
 				},
 			},
 		});
@@ -126,18 +94,7 @@ export class MemoService {
 			data: updateMemoDto,
 			include: {
 				notebook: {
-					select: {
-						id: true,
-						name: true,
-						theme: {
-							select: {
-								id: true,
-								name: true,
-								styles: true,
-								cssFilePath: true,
-							},
-						},
-					},
+					select: NOTEBOOK_WITH_THEME_SELECT,
 				},
 			},
 		});
@@ -196,18 +153,7 @@ export class MemoService {
 					},
 				},
 				notebook: {
-					select: {
-						id: true,
-						name: true,
-						theme: {
-							select: {
-								id: true,
-								name: true,
-								styles: true,
-								cssFilePath: true,
-							},
-						},
-					},
+					select: NOTEBOOK_WITH_THEME_SELECT,
 				},
 			},
 			orderBy: {

@@ -1,0 +1,38 @@
+/**
+ * Common Prisma select objects to avoid duplication across services
+ */
+
+import type { Prisma } from '@prisma/client';
+
+/**
+ * Standard theme selection fields
+ * Used when fetching theme data in responses
+ */
+export const THEME_SELECT = {
+	id: true,
+	name: true,
+	styles: true,
+	cssFilePath: true,
+} as const satisfies Prisma.ThemeSelect;
+
+/**
+ * Notebook selection with nested theme
+ * Used when including notebook data in memo responses
+ */
+export const NOTEBOOK_WITH_THEME_SELECT = {
+	id: true,
+	name: true,
+	theme: {
+		select: THEME_SELECT,
+	},
+} as const satisfies Prisma.NotebookSelect;
+
+/**
+ * Notebook include object with theme
+ * Used for Prisma include clauses
+ */
+export const NOTEBOOK_INCLUDE_THEME = {
+	theme: {
+		select: THEME_SELECT,
+	},
+} as const satisfies Prisma.NotebookInclude;

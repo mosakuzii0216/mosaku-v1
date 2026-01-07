@@ -4,6 +4,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateNotebookDto } from './dto/create-notebook.dto/create-notebook.dto';
 import { UpdateNotebookDto } from './dto/update-notebook.dto/update-notebook.dto';
 import type { Prisma } from '@prisma/client';
+import { THEME_SELECT } from '../common/constants/prisma-selects';
 
 @Injectable()
 export class NotebookService {
@@ -16,7 +17,7 @@ export class NotebookService {
 		return this.prisma.notebook.findMany({
 			where: { userId },
 			include: {
-				theme: { select: { id: true, name: true, styles: true, cssFilePath: true } },
+				theme: { select: THEME_SELECT },
 			},
 			orderBy: { updatedAt: 'desc' },
 		});
@@ -27,7 +28,7 @@ export class NotebookService {
 		const notebook = await this.prisma.notebook.findUnique({
 			where: { id },
 			include: {
-				theme: { select: { id: true, name: true, styles: true, cssFilePath: true } },
+				theme: { select: THEME_SELECT },
 			},
 		});
 		// 見つからない/他人のものなら例外に
@@ -45,7 +46,7 @@ export class NotebookService {
 		return this.prisma.notebook.create({
 			data,
 			include: {
-				theme: { select: { id: true, name: true, styles: true, cssFilePath: true } },
+				theme: { select: THEME_SELECT },
 			},
 		});
 		// メモ: Notebookにcontent等を足すならschema.prismaを変更 → migrationしてここでdataに加える
@@ -67,7 +68,7 @@ export class NotebookService {
 			where: { id },
 			data,
 			include: {
-				theme: { select: { id: true, name: true, styles: true, cssFilePath: true } },
+				theme: { select: THEME_SELECT },
 			},
 		});
 	}
