@@ -53,81 +53,62 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		initializeAuth();
 	}, []);
 
+	// OAuth providerの設定
+	const oauthProviders = [
+		{
+			name: 'Google',
+			utils: GoogleAuthUtils,
+			storageKey: 'pendingGoogleUser',
+			getUserData: (callback: ReturnType<typeof GoogleAuthUtils.parseAuthCallback>) => callback.googleUser,
+		},
+		{
+			name: 'GitHub',
+			utils: GitHubAuthUtils,
+			storageKey: 'pendingGitHubUser',
+			getUserData: (callback: ReturnType<typeof GitHubAuthUtils.parseAuthCallback>) => callback.githubUser,
+		},
+		{
+			name: 'X',
+			utils: XAuthUtils,
+			storageKey: 'pendingXUser',
+			getUserData: (callback: ReturnType<typeof XAuthUtils.parseAuthCallback>) => callback.xUser,
+		},
+	] as const;
+
+	const handleOAuthCallback = (
+		provider: typeof oauthProviders[number],
+		callback: { token?: string; user?: UserProfile; error?: string },
+		oauthUserData?: OAuthUserData,
+	): boolean => {
+		if (callback.error) {
+			logger.error(`${provider.name} auth error:`, callback.error);
+
+			// 招待コードが必要な場合の処理
+			if (callback.error === 'invitation_required' && oauthUserData) {
+				sessionStorage.setItem(provider.storageKey, JSON.stringify(oauthUserData));
+			}
+		} else if (callback.token && callback.user) {
+			// OAuth認証成功
+			AuthTokenManager.setAccessToken(callback.token);
+			setUser(callback.user);
+		}
+
+		provider.utils.clearAuthParams();
+		setLoading(false);
+		return true;
+	};
+
 	const initializeAuth = async () => {
 		try {
-			// Google OAuth認証のコールバックをチェック
-			const googleAuthCallback = GoogleAuthUtils.parseAuthCallback();
+			// 各OAuth providerのコールバックをチェック
+			for (const provider of oauthProviders) {
+				const authCallback = provider.utils.parseAuthCallback();
 
-			if (googleAuthCallback.error || (googleAuthCallback.token && googleAuthCallback.user)) {
-				if (googleAuthCallback.error) {
-					logger.error('Google auth error:', googleAuthCallback.error);
-
-					// 招待コードが必要な場合の処理
-					if (googleAuthCallback.error === 'invitation_required' && googleAuthCallback.googleUser) {
-						// Google user情報をsessionStorageに保存（招待コード入力で使用）
-						sessionStorage.setItem(
-							'pendingGoogleUser',
-							JSON.stringify(googleAuthCallback.googleUser),
-						);
-					}
-				} else if (googleAuthCallback.token && googleAuthCallback.user) {
-					// Google認証成功
-					AuthTokenManager.setAccessToken(googleAuthCallback.token);
-					setUser(googleAuthCallback.user);
+				if (authCallback.error || (authCallback.token && authCallback.user)) {
+					const oauthUserData = provider.getUserData(authCallback as any);
+					handleOAuthCallback(provider, authCallback, oauthUserData);
+					return;
 				}
-
-				GoogleAuthUtils.clearAuthParams();
-				setLoading(false);
-				return;
-			}
-
-			// GitHub OAuth認証のコールバックをチェック
-			const githubAuthCallback = GitHubAuthUtils.parseAuthCallback();
-
-			if (githubAuthCallback.error || (githubAuthCallback.token && githubAuthCallback.user)) {
-				if (githubAuthCallback.error) {
-					logger.error('GitHub auth error:', githubAuthCallback.error);
-
-					// 招待コードが必要な場合の処理
-					if (githubAuthCallback.error === 'invitation_required' && githubAuthCallback.githubUser) {
-						// GitHub user情報をsessionStorageに保存（招待コード入力で使用）
-						sessionStorage.setItem(
-							'pendingGitHubUser',
-							JSON.stringify(githubAuthCallback.githubUser),
-						);
-					}
-				} else if (githubAuthCallback.token && githubAuthCallback.user) {
-					// GitHub認証成功
-					AuthTokenManager.setAccessToken(githubAuthCallback.token);
-					setUser(githubAuthCallback.user);
-				}
-
-				GitHubAuthUtils.clearAuthParams();
-				setLoading(false);
-				return;
-			}
-
-			// X OAuth認証のコールバックをチェック
-			const xAuthCallback = XAuthUtils.parseAuthCallback();
-
-			if (xAuthCallback.error || (xAuthCallback.token && xAuthCallback.user)) {
-				if (xAuthCallback.error) {
-					logger.error('X auth error:', xAuthCallback.error);
-
-					// 招待コードが必要な場合の処理
-					if (xAuthCallback.error === 'invitation_required' && xAuthCallback.xUser) {
-						// X user情報をsessionStorageに保存（招待コード入力で使用）
-						sessionStorage.setItem('pendingXUser', JSON.stringify(xAuthCallback.xUser));
-					}
-				} else if (xAuthCallback.token && xAuthCallback.user) {
-					// X認証成功
-					AuthTokenManager.setAccessToken(xAuthCallback.token);
-					setUser(xAuthCallback.user);
-				}
-
-				XAuthUtils.clearAuthParams();
-				setLoading(false);
-				return;
 			}
 
 			// 既存のJWT認証をチェック

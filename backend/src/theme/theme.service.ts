@@ -33,61 +33,10 @@ export class ThemeService {
 	 * テーマ一覧を取得（検索・フィルタリング対応）
 	 */
 	async findMany(searchDto: SearchThemeDto, userId?: string) {
-		const { query, category, isSystem, isPublic, favoritesOnly } = searchDto;
-
-		// 基本検索条件
-		const where: Prisma.ThemeWhereInput = {};
-
-		// テキスト検索
-		if (query) {
-			where.OR = [
-				{ name: { contains: query, mode: 'insensitive' } },
-				{ description: { contains: query, mode: 'insensitive' } },
-			];
-		}
-
-		// システムテーマフィルター
-		if (isSystem !== undefined) {
-			where.isSystem = isSystem;
-		}
-
-		// カテゴリフィルター
-		if (category) {
-			where.category = {
-				is: {
-					OR: [{ slug: category }, { name: category }],
-				},
-			};
-		}
-
-		// 公開テーマフィルター
-		if (isPublic !== undefined) {
-			where.isPublic = isPublic;
-		}
-
-		// お気に入りフィルター（ログイン時のみ）
-		if (favoritesOnly && userId) {
-			where.userFavorites = {
-				some: {
-					userId: userId,
-				},
-			};
-		}
-
-		// アクセス権限の条件追加
-		if (!userId) {
-			// 未ログイン：システムテーマまたは公開テーマのみ
-			where.OR = [{ isSystem: true }, { isPublic: true }];
-		} else {
-			// ログイン済み：システム、公開、または自分が作成したテーマ
-			if (!where.OR) {
-				where.OR = [];
-			}
-			where.OR.push({ isSystem: true }, { isPublic: true }, { createdById: userId });
-		}
+		const whereClause = this.buildWhereClause(searchDto, userId);
 
 		const themes = await this.prisma.theme.findMany({
-			where,
+			where: whereClause,
 			include: {
 				createdBy: {
 					select: { id: true, name: true },
@@ -111,13 +60,78 @@ export class ThemeService {
 			],
 		});
 
-		// レスポンス形式を整形
+		return this.transformThemes(themes, userId);
+	}
+
+	private buildWhereClause(searchDto: SearchThemeDto, userId?: string): Prisma.ThemeWhereInput {
+		const { query, category, isSystem, isPublic, favoritesOnly } = searchDto;
+		const conditions: Prisma.ThemeWhereInput[] = [];
+
+		// アクセス権限の条件
+		const accessConditions: Prisma.ThemeWhereInput[] = [{ isSystem: true }, { isPublic: true }];
+		if (userId) {
+			accessConditions.push({ createdById: userId });
+		}
+		conditions.push({ OR: accessConditions });
+
+		// テキスト検索
+		if (query) {
+			conditions.push({
+				OR: [
+					{ name: { contains: query, mode: 'insensitive' } },
+					{ description: { contains: query, mode: 'insensitive' } },
+				],
+			});
+		}
+
+		// システムテーマフィルター
+		if (isSystem !== undefined) {
+			conditions.push({ isSystem });
+		}
+
+		// カテゴリフィルター
+		if (category) {
+			conditions.push({
+				category: {
+					is: {
+						OR: [{ slug: category }, { name: category }],
+					},
+				},
+			});
+		}
+
+		// 公開テーマフィルター
+		if (isPublic !== undefined) {
+			conditions.push({ isPublic });
+		}
+
+		// お気に入りフィルター（ログイン時のみ）
+		if (favoritesOnly && userId) {
+			conditions.push({
+				userFavorites: {
+					some: { userId },
+				},
+			});
+		}
+
+		return { AND: conditions };
+	}
+
+	private transformThemes(
+		themes: Array<
+			Theme & {
+				userFavorites?: Array<{ userId: string }>;
+				_count?: { userFavorites: number; notebooks: number };
+			}
+		>,
+		userId?: string,
+	) {
 		return themes.map((theme) => ({
 			...theme,
-			isFavorited: userId && theme.userFavorites?.length > 0,
-			favoriteCount: theme._count.userFavorites,
-			usageCount: theme._count.notebooks,
-			userFavorites: undefined, // クライアントには送らない
+			isFavorited: userId && (theme.userFavorites?.length ?? 0) > 0,
+			favoriteCount: theme._count?.userFavorites ?? 0,
+			usageCount: theme._count?.notebooks ?? 0,
+			userFavorites: undefined,
 			_count: undefined,
 		}));
 	}
