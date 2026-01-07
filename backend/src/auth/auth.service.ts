@@ -10,6 +10,7 @@ import type {
 } from './types/oauth.types';
 import { ConfigService } from '../config/config.service';
 import type { AuthenticatedUser, UserRole } from './types';
+import { BCRYPT_SALT_ROUNDS, JWT_EXPIRATION } from '../config/auth-constants';
 
 export interface JwtPayload {
 	sub: string; // user.id
@@ -26,8 +27,6 @@ export interface AuthTokens {
 
 @Injectable()
 export class AuthService {
-	private readonly SALT_ROUNDS = 12;
-
 	constructor(
 		private readonly prisma: PrismaService,
 		private readonly jwtService: JwtService,
@@ -35,7 +34,7 @@ export class AuthService {
 	) {}
 
 	async hashPassword(password: string): Promise<string> {
-		return bcrypt.hash(password, this.SALT_ROUNDS);
+		return bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 	}
 
 	async comparePassword(password: string, hash: string): Promise<boolean> {
@@ -50,7 +49,7 @@ export class AuthService {
 		};
 
 		const accessToken = this.jwtService.sign(payload, {
-			expiresIn: '24h',
+			expiresIn: JWT_EXPIRATION,
 		});
 
 		return {

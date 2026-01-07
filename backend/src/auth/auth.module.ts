@@ -14,6 +14,7 @@ import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ConfigService } from '../config/config.service';
 import { InvitationService } from '../invitation/invitation.service';
+import { JWT_EXPIRATION } from '../config/auth-constants';
 
 @Module({
 	imports: [
@@ -23,7 +24,7 @@ import { InvitationService } from '../invitation/invitation.service';
 			inject: [ConfigService],
 			useFactory: (configService: ConfigService) => ({
 				secret: configService.jwtSecret,
-				signOptions: { expiresIn: '24h' },
+				signOptions: { expiresIn: JWT_EXPIRATION },
 			}),
 		}),
 	],

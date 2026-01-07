@@ -14,12 +14,25 @@ import { getBackendUrl } from './env';
 
 const API_BASE_URL = getBackendUrl();
 
+type AuthLevel = 'REQUIRED' | 'OPTIONAL' | 'NONE';
+
+interface RequestConfig extends RequestInit {
+	authLevel?: AuthLevel;
+}
+
 class ApiClient {
-	private async getAuthHeaders(): Promise<Record<string, string>> {
+	private getAuthHeaders(authLevel: AuthLevel): Record<string, string> {
+		if (authLevel === 'NONE') {
+			return {};
+		}
+
 		const token = AuthTokenManager.getAccessToken();
 
 		if (!token || AuthTokenManager.isTokenExpired(token)) {
-			throw new Error('認証が必要です');
+			if (authLevel === 'REQUIRED') {
+				throw new Error('認証が必要です');
+			}
+			return {};
 		}
 
 		return {
@@ -27,29 +40,31 @@ class ApiClient {
 		};
 	}
 
-	private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+	private async request<T>(endpoint: string, config: RequestConfig = {}): Promise<T> {
+		const { authLevel = 'REQUIRED', ...fetchConfig } = config;
 		const url = `${API_BASE_URL}${endpoint}`;
-		const authHeaders = await this.getAuthHeaders();
 
-		const config: RequestInit = {
+		const authHeaders = this.getAuthHeaders(authLevel);
+
+		const finalConfig: RequestInit = {
 			headers: {
 				'Content-Type': 'application/json',
 				...authHeaders,
-				...options.headers,
+				...fetchConfig.headers,
 			},
-			...options,
+			...fetchConfig,
 		};
 
 		let response: Response;
 		try {
-			response = await fetch(url, config);
+			response = await fetch(url, finalConfig);
 		} catch (networkError) {
 			const message = networkError instanceof Error ? networkError.message : String(networkError);
 			throw new Error(`ネットワークエラー: ${message}`);
 		}
 
 		if (!response.ok) {
-			if (response.status === 401) {
+			if (response.status === 401 && authLevel === 'REQUIRED') {
 				throw new Error('認証エラー: ログインし直してください');
 			}
 			throw new Error(`HTTP error! status: ${response.status}`);
@@ -58,75 +73,16 @@ class ApiClient {
 		return response.json();
 	}
 
-	// 認証不要のリクエスト（テーマ用）
+	// 後方互換性のためのヘルパーメソッド（将来的に削除予定）
 	private async requestPublic<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-		const url = `${API_BASE_URL}${endpoint}`;
-
-		const config: RequestInit = {
-			headers: {
-				'Content-Type': 'application/json',
-				...options.headers,
-			},
-			...options,
-		};
-
-		let response: Response;
-		try {
-			response = await fetch(url, config);
-		} catch (networkError) {
-			const message = networkError instanceof Error ? networkError.message : String(networkError);
-			throw new Error(`ネットワークエラー: ${message}`);
-		}
-
-		if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`);
-		}
-
-		return response.json();
+		return this.request<T>(endpoint, { ...options, authLevel: 'NONE' });
 	}
 
-	// 認証が可能な場合のみ認証ヘッダーを追加するリクエスト
 	private async requestWithOptionalAuth<T>(
 		endpoint: string,
 		options: RequestInit = {},
 	): Promise<T> {
-		const url = `${API_BASE_URL}${endpoint}`;
-
-		// 認証情報を取得（失敗しても続行）
-		let authHeaders: Record<string, string> = {};
-		try {
-			const token = AuthTokenManager.getAccessToken();
-			if (token && !AuthTokenManager.isTokenExpired(token)) {
-				authHeaders = {
-					Authorization: `Bearer ${token}`,
-				};
-			}
-		} catch {
-			// 認証失敗時は無認証でリクエスト
-		}
-
-		const config: RequestInit = {
-			headers: {
-				'Content-Type': 'application/json',
-				...authHeaders,
-				...options.headers,
-			},
-			...options,
-		};
-
-		let response: Response;
-		try {
-			response = await fetch(url, config);
-		} catch (networkError) {
-			const message = networkError instanceof Error ? networkError.message : String(networkError);
-			throw new Error(`ネットワークエラー: ${message}`);
-		}
-
-		if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`);
-		}
-
-		return response.json();
+		return this.request<T>(endpoint, { ...options, authLevel: 'OPTIONAL' });
 	}
 
 	// メモ一覧取得

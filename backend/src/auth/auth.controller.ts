@@ -34,6 +34,7 @@ import { InvitationService } from '../invitation/invitation.service';
 import { RegisterUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResetPasswordRequestDto, ChangePasswordDto } from './dto/reset-password.dto';
+import { THROTTLE_CONFIG } from '../config/auth-constants';
 
 @Controller('auth')
 export class AuthController {
@@ -82,7 +83,7 @@ export class AuthController {
 	}
 
 	@Public()
-	@Throttle({ default: { limit: 5, ttl: 60000 } }) // 1分間に5回まで
+	@Throttle({ default: { limit: THROTTLE_CONFIG.REGISTER.LIMIT, ttl: THROTTLE_CONFIG.REGISTER.TTL } })
 	@Post('register')
 	async register(@Body() registerUserDto: RegisterUserDto) {
 		const { email, password, name, invitationCode } = registerUserDto;
@@ -108,7 +109,7 @@ export class AuthController {
 	}
 
 	@Public()
-	@Throttle({ default: { limit: 5, ttl: 900000 } }) // 15分間に5回まで（ブルートフォース対策）
+	@Throttle({ default: { limit: THROTTLE_CONFIG.LOGIN.LIMIT, ttl: THROTTLE_CONFIG.LOGIN.TTL } })
 	@Post('login')
 	async login(@Body() loginDto: LoginDto) {
 		const { email, password } = loginDto;
