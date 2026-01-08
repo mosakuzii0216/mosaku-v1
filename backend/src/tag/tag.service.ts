@@ -89,60 +89,103 @@ export class TagService {
 		entityType: 'memo' | 'notebook',
 	) {
 		// エンティティの取得と所有権検証
-		const entityModel = entityType === 'memo' ? this.prisma.memo : this.prisma.notebook;
-		const entity = await entityModel.findUnique({ where: { id: entityId } });
+		if (entityType === 'memo') {
+			const entity = await this.prisma.memo.findUnique({ where: { id: entityId } });
 
-		if (!entity) {
-			const typeName = entityType === 'memo' ? 'Memo' : 'Notebook';
-			throw new NotFoundException(`${typeName} with ID ${entityId} not found`);
-		}
+			if (!entity) {
+				throw new NotFoundException(`Memo with ID ${entityId} not found`);
+			}
 
-		if (entity.userId !== userId) {
-			const typeName = entityType === 'memo' ? 'memos' : 'notebooks';
-			throw new ForbiddenException(`You can only modify your own ${typeName}`);
-		}
+			if (entity.userId !== userId) {
+				throw new ForbiddenException('You can only modify your own memos');
+			}
 
-		// タグの所有権検証
-		const tags = await this.prisma.tag.findMany({
-			where: {
-				id: { in: assignTagsDto.tagIds },
-				userId,
-			},
-		});
-
-		if (tags.length !== assignTagsDto.tagIds.length) {
-			throw new ForbiddenException('Some tags do not belong to you');
-		}
-
-		// 既存のタグ関連を削除して新しい関連を作成
-		const joinTableModel = entityType === 'memo' ? this.prisma.memoTag : this.prisma.notebookTag;
-		const foreignKeyField = entityType === 'memo' ? 'memoId' : 'notebookId';
-
-		await joinTableModel.deleteMany({
-			where: { [foreignKeyField]: entityId },
-		});
-
-		if (assignTagsDto.tagIds.length > 0) {
-			await joinTableModel.createMany({
-				data: assignTagsDto.tagIds.map((tagId) => ({
-					[foreignKeyField]: entityId,
-					tagId,
-				})),
+			// タグの所有権検証
+			const tags = await this.prisma.tag.findMany({
+				where: {
+					id: { in: assignTagsDto.tagIds },
+					userId,
+				},
 			});
-		}
 
-		// 更新後のエンティティを返却
-		const includeField = entityType === 'memo' ? 'memoTags' : 'notebookTags';
-		return entityModel.findUnique({
-			where: { id: entityId },
-			include: {
-				[includeField]: {
-					include: {
-						tag: true,
+			if (tags.length !== assignTagsDto.tagIds.length) {
+				throw new ForbiddenException('Some tags do not belong to you');
+			}
+
+			// 既存のタグ関連を削除して新しい関連を作成
+			await this.prisma.memoTag.deleteMany({
+				where: { memoId: entityId },
+			});
+
+			if (assignTagsDto.tagIds.length > 0) {
+				await this.prisma.memoTag.createMany({
+					data: assignTagsDto.tagIds.map((tagId) => ({
+						memoId: entityId,
+						tagId,
+					})),
+				});
+			}
+
+			// 更新後のエンティティを返却
+			return this.prisma.memo.findUnique({
+				where: { id: entityId },
+				include: {
+					memoTags: {
+						include: {
+							tag: true,
+						},
 					},
 				},
-			},
-		});
+			});
+		} else {
+			const entity = await this.prisma.notebook.findUnique({ where: { id: entityId } });
+
+			if (!entity) {
+				throw new NotFoundException(`Notebook with ID ${entityId} not found`);
+			}
+
+			if (entity.userId !== userId) {
+				throw new ForbiddenException('You can only modify your own notebooks');
+			}
+
+			// タグの所有権検証
+			const tags = await this.prisma.tag.findMany({
+				where: {
+					id: { in: assignTagsDto.tagIds },
+					userId,
+				},
+			});
+
+			if (tags.length !== assignTagsDto.tagIds.length) {
+				throw new ForbiddenException('Some tags do not belong to you');
+			}
+
+			// 既存のタグ関連を削除して新しい関連を作成
+			await this.prisma.notebookTag.deleteMany({
+				where: { notebookId: entityId },
+			});
+
+			if (assignTagsDto.tagIds.length > 0) {
+				await this.prisma.notebookTag.createMany({
+					data: assignTagsDto.tagIds.map((tagId) => ({
+						notebookId: entityId,
+						tagId,
+					})),
+				});
+			}
+
+			// 更新後のエンティティを返却
+			return this.prisma.notebook.findUnique({
+				where: { id: entityId },
+				include: {
+					notebookTags: {
+						include: {
+							tag: true,
+						},
+					},
+				},
+			});
+		}
 	}
 
 	async assignTagsToMemo(memoId: string, assignTagsDto: AssignTagsDto, userId: string) {

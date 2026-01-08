@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { PasswordInput } from '../ui/PasswordInput';
-import { GoogleLoginButton } from '../ui/GoogleLoginButton';
-import { GitHubLoginButton } from '../ui/GitHubLoginButton';
-import { XLoginButton } from '../ui/XLoginButton';
+import { OAuthLoginButton } from '../ui/OAuthLoginButton';
 
 interface EmailAuthFormProps {
 	mode: 'login' | 'signup';
@@ -153,9 +151,9 @@ export function EmailAuthForm({ mode, onSwitchMode, onForgotPassword }: EmailAut
 			</div>
 
 			<div className="space-y-3">
-				<GoogleLoginButton mode={mode} />
-				<GitHubLoginButton mode={mode} />
-				<XLoginButton mode={mode} />
+				<OAuthLoginButton provider="google" mode={mode} />
+				<OAuthLoginButton provider="github" mode={mode} />
+				<OAuthLoginButton provider="x" mode={mode} />
 			</div>
 
 			<div className="text-center mt-4">

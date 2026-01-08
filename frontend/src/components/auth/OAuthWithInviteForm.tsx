@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { GoogleLoginButton } from '../ui/GoogleLoginButton';
-import { GitHubLoginButton } from '../ui/GitHubLoginButton';
+import { OAuthLoginButton } from '../ui/OAuthLoginButton';
 
 interface OAuthWithInviteFormProps {
 	provider: 'google' | 'github';
@@ -106,7 +105,7 @@ export default function OAuthWithInviteForm({ provider, onBack }: OAuthWithInvit
 			<h2 className="text-2xl font-bold mb-6 text-center">{providerName}でログイン</h2>
 
 			<div className="mb-6">
-				{provider === 'google' ? <GoogleLoginButton /> : <GitHubLoginButton />}
+				<OAuthLoginButton provider={provider} />
 			</div>
 
 			<div className="text-center">

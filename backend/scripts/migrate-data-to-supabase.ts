@@ -79,7 +79,11 @@ async function migrateData() {
       await supabaseDb.theme.upsert({
         where: { id: theme.id },
         update: {},
-        create: theme,
+        create: {
+          ...theme,
+          styles: theme.styles as any,
+          metadata: theme.metadata as any,
+        },
       });
     }
     console.log(`✓ Migrated ${themes.length} themes\n`);
