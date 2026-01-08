@@ -311,17 +311,19 @@ export class AuthController {
 		);
 	}
 
-	@Public()
-	@Post('google/register-with-invitation')
-	async googleRegisterWithInvitation(@Body() body: GoogleRegisterWithInvitationDto) {
-		const { googleUser, invitationCode } = body;
-		const parsedGoogleUser = this.parseGoogleUser(googleUser);
+	/**
+	 * OAuth招待コード登録の共通処理
+	 */
+	private async handleOAuthRegisterWithInvitation<TUser extends OAuthStrategyUser>(
+		user: Record<string, unknown>,
+		invitationCode: string,
+		parser: (user: Record<string, unknown>) => TUser,
+		registerMethod: (user: TUser, code: string) => Promise<{ accessToken: string; user: unknown }>,
+	) {
+		const parsedUser = parser(user);
 
 		try {
-			const result = await this.authService.googleRegisterWithInvitation(
-				parsedGoogleUser,
-				invitationCode,
-			);
+			const result = await registerMethod(parsedUser, invitationCode);
 
 			return {
 				message: 'Registration successful',
@@ -331,6 +333,18 @@ export class AuthController {
 			const message = error instanceof Error ? error.message : 'Registration failed';
 			throw new BadRequestException(message);
 		}
+	}
+
+	@Public()
+	@Post('google/register-with-invitation')
+	async googleRegisterWithInvitation(@Body() body: GoogleRegisterWithInvitationDto) {
+		const { googleUser, invitationCode } = body;
+		return this.handleOAuthRegisterWithInvitation(
+			googleUser,
+			invitationCode,
+			this.parseGoogleUser.bind(this),
+			this.authService.googleRegisterWithInvitation.bind(this.authService),
+		);
 	}
 
 	// GitHub OAuth エンドポイント
@@ -358,22 +372,12 @@ export class AuthController {
 	@Post('github/register-with-invitation')
 	async githubRegisterWithInvitation(@Body() body: GithubRegisterWithInvitationDto) {
 		const { githubUser, invitationCode } = body;
-		const parsedGithubUser = this.parseGithubUser(githubUser);
-
-		try {
-			const result = await this.authService.githubRegisterWithInvitation(
-				parsedGithubUser,
-				invitationCode,
-			);
-
-			return {
-				message: 'Registration successful',
-				...result,
-			};
-		} catch (error: unknown) {
-			const message = error instanceof Error ? error.message : 'Registration failed';
-			throw new BadRequestException(message);
-		}
+		return this.handleOAuthRegisterWithInvitation(
+			githubUser,
+			invitationCode,
+			this.parseGithubUser.bind(this),
+			this.authService.githubRegisterWithInvitation.bind(this.authService),
+		);
 	}
 
 	// X OAuth エンドポイント
@@ -396,19 +400,12 @@ export class AuthController {
 	@Post('x/register-with-invitation')
 	async xRegisterWithInvitation(@Body() body: XRegisterWithInvitationDto) {
 		const { xUser, invitationCode } = body;
-		const parsedXUser = this.parseXUser(xUser);
-
-		try {
-			const result = await this.authService.xRegisterWithInvitation(parsedXUser, invitationCode);
-
-			return {
-				message: 'Registration successful',
-				...result,
-			};
-		} catch (error: unknown) {
-			const message = error instanceof Error ? error.message : 'Registration failed';
-			throw new BadRequestException(message);
-		}
+		return this.handleOAuthRegisterWithInvitation(
+			xUser,
+			invitationCode,
+			this.parseXUser.bind(this),
+			this.authService.xRegisterWithInvitation.bind(this.authService),
+		);
 	}
 
 	private parseGoogleUser(value: Record<string, unknown>): GoogleStrategyUser {
