@@ -35,15 +35,20 @@ import { RegisterUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResetPasswordRequestDto, ChangePasswordDto } from './dto/reset-password.dto';
 import { THROTTLE_CONFIG } from '../config/auth-constants';
+import { AppLogger } from '../common/logger/app-logger.service';
 
 @Controller('auth')
 export class AuthController {
+	private readonly logger = new AppLogger();
+
 	constructor(
 		private readonly prisma: PrismaService,
 		private readonly authService: AuthService,
 		private readonly invitationService: InvitationService,
 		private readonly configService: ConfigService,
-	) {}
+	) {
+		this.logger.setContext('AuthController');
+	}
 
 	/**
 	 * OAuth認証コールバック共通処理
@@ -65,11 +70,11 @@ export class AuthController {
 
 			return res.redirect(redirectUrl);
 		} catch (error: unknown) {
-			console.error(`${providerName} auth error:`, error);
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.logger.error(`${providerName} auth error: ${errorMessage}`);
 
 			// 新規ユーザーで招待コードが必要な場合
-			const message = error instanceof Error ? error.message : '';
-			if (message.includes('invitation code')) {
+			if (errorMessage.includes('invitation code')) {
 				const redirectUrl = this.configService.generateInvitationRequiredUrl(
 					providerName,
 					req.user,

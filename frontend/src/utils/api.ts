@@ -9,6 +9,7 @@ import type {
 } from '../types/tag';
 import type { Theme, ThemeSearchParams, CreateThemeData, UpdateThemeData } from '../types/theme';
 import type { Notebook, CreateNotebookDto, UpdateNotebookDto } from '../types/notebook';
+import type { InvitationVerificationResponse } from '../types/invitation';
 import { AuthTokenManager } from './auth';
 import { getBackendUrl } from './env';
 
@@ -191,8 +192,8 @@ class ApiClient {
 	}
 
 	// ノートブックにタグを割り当て
-	async assignTagsToNotebook(notebookId: string, data: AssignTagsDto): Promise<any> {
-		return this.request<any>(`/tags/notebook/${notebookId}/assign`, {
+	async assignTagsToNotebook(notebookId: string, data: AssignTagsDto): Promise<Notebook> {
+		return this.request<Notebook>(`/tags/notebook/${notebookId}/assign`, {
 			method: 'POST',
 			body: JSON.stringify(data),
 		});
@@ -204,7 +205,7 @@ class ApiClient {
 	}
 
 	// 招待コード検証（認証不要）
-	async verifyInvitationCode(code: string): Promise<any> {
+	async verifyInvitationCode(code: string): Promise<InvitationVerificationResponse> {
 		const url = `${API_BASE_URL}/invitation/verify`;
 
 		const config: RequestInit = {
@@ -314,7 +315,7 @@ class ApiClient {
 		return this.request<Theme[]>('/theme/favorites/me');
 	}
 
-	private normalizeNotebook(raw: any): Notebook {
+	private normalizeNotebook(raw: Notebook): Notebook {
 		return {
 			id: raw.id,
 			name: raw.name ?? null, // 後方互換: name優先
@@ -327,17 +328,17 @@ class ApiClient {
 	}
 
 	async getNotebooks(): Promise<Notebook[]> {
-		const res = await this.request<any[]>('/notebooks');
+		const res = await this.request<Notebook[]>('/notebooks');
 		return res.map((r) => this.normalizeNotebook(r));
 	}
 
 	async getNotebook(id: string): Promise<Notebook> {
-		const res = await this.request<any>(`/notebooks/${id}`);
+		const res = await this.request<Notebook>(`/notebooks/${id}`);
 		return this.normalizeNotebook(res);
 	}
 
 	async createNotebook(data: CreateNotebookDto): Promise<Notebook> {
-		const res = await this.request<any>('/notebooks', {
+		const res = await this.request<Notebook>('/notebooks', {
 			method: 'POST',
 			body: JSON.stringify(data),
 		});
@@ -345,7 +346,7 @@ class ApiClient {
 	}
 
 	async updateNotebook(id: string, data: UpdateNotebookDto): Promise<Notebook> {
-		const res = await this.request<any>(`/notebooks/${id}`, {
+		const res = await this.request<Notebook>(`/notebooks/${id}`, {
 			method: 'PATCH',
 			body: JSON.stringify(data),
 		});
