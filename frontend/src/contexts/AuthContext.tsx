@@ -105,7 +105,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 				const authCallback = provider.utils.parseAuthCallback();
 
 				if (authCallback.error || (authCallback.token && authCallback.user)) {
-					const oauthUserData = provider.getUserData(authCallback as any);
+					const oauthUserData = provider.getUserData(authCallback as any) as OAuthUserData | undefined;
 					handleOAuthCallback(provider, authCallback, oauthUserData);
 					return;
 				}

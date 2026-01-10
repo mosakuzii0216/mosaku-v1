@@ -74,7 +74,7 @@ export default function AuthForm() {
 				googleInvite: googleRegisterWithInvitation,
 				githubInvite: githubRegisterWithInvitation,
 				xInvite: xRegisterWithInvitation,
-			}[mode];
+			}[mode as 'googleInvite' | 'githubInvite' | 'xInvite'];
 
 			if (!registerFunction) return;
 
@@ -94,7 +94,7 @@ export default function AuthForm() {
 				googleInvite: 'pendingGoogleUser',
 				githubInvite: 'pendingGitHubUser',
 				xInvite: 'pendingXUser',
-			}[mode];
+			}[mode as 'googleInvite' | 'githubInvite' | 'xInvite'];
 
 			if (providerKey) {
 				sessionStorage.removeItem(providerKey);
@@ -110,7 +110,7 @@ export default function AuthForm() {
 		clearPendingOAuthUser();
 	};
 
-	const getProviderName = () => {
+	const getProviderName = (): 'Google' | 'GitHub' | 'X' => {
 		switch (mode) {
 			case 'googleInvite':
 				return 'Google';
@@ -119,7 +119,7 @@ export default function AuthForm() {
 			case 'xInvite':
 				return 'X';
 			default:
-				return '';
+				return 'Google'; // フォールバック（実際にはここに到達しないはず）
 		}
 	};
 
