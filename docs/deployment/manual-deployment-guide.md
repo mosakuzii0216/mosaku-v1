@@ -151,6 +151,50 @@ gcloud config set run/region asia-northeast1
 gcloud config list
 ```
 
+### ステップ2.1.5: PROJECT_REFとPASSWORDの確認
+
+Secret Managerに接続文字列を登録する前に、以下の値を確認します。
+
+#### PROJECT_REF の確認
+
+**方法A: プロジェクト設定から確認**
+
+1. Supabase Dashboard (https://supabase.com/dashboard) にアクセス
+2. プロジェクト `ninyjmahwnbtgqqjxcli` を選択
+3. 左サイドバーから **⚙️ Settings** → **General** を選択
+4. **Project Settings** セクションの **Reference ID** に表示されている値が `PROJECT_REF` です
+   - 例: `ninyjmahwnbtgqqjxcli`
+
+**方法B: 接続文字列から確認**
+
+Phase 1のステップ1.2とステップ1.3で取得した接続文字列に既に含まれています。
+
+形式例:
+```
+postgresql://postgres.ninyjmahwnbtgqqjxcli:[PASSWORD]@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres
+                     ^^^^^^^^^^^^^^^^^^^^
+                     これがPROJECT_REF
+```
+
+#### PASSWORD の確認
+
+**パスワードを覚えている場合**:
+- データベース作成時に設定したパスワードをそのまま使用します
+
+**パスワードを忘れた場合**:
+
+1. Supabase Dashboard → **⚙️ Settings** → **Database** を選択
+2. **Database password** セクションを見つける
+3. **Reset database password** ボタンをクリック
+4. 新しいパスワードが生成され、表示されます
+5. **⚠️ 重要**: このパスワードは一度しか表示されないので、必ず安全な場所にメモしてください
+6. パスワードをリセットした場合、Phase 1で取得した接続文字列の `[PASSWORD]` 部分を新しいパスワードに置き換えてください
+
+**注意事項**:
+- パスワードに特殊文字（`?`, `@`, `#`, `&`, `=`, `/`, など）が含まれる場合は、URLエンコードが必要です
+  - 例: `?` → `%3F`, `@` → `%40`, `#` → `%23`, `&` → `%26`
+  - オンラインのURLエンコーダー（例: https://www.urlencoder.org/）を使用できます
+
 ### ステップ2.2: Secret Managerへのシークレット登録
 
 #### DATABASE_URL の登録
@@ -335,8 +379,8 @@ gcloud run deploy mosaku-backend \
   --min-instances=0 \
   --max-instances=10 \
   --timeout=300 \
-  --set-env-vars="NODE_ENV=production,PORT=8080,SUPABASE_URL=https://ninyjmahwnbtgqqjxcli.supabase.co,FRONTEND_URL=https://frontend-mosakuziis-projects.vercel.app,CORS_ORIGINS=https://frontend-mosakuziis-projects.vercel.app,ADMIN_EMAIL=mosakuzii1928@gmail.com" \
-  --set-secrets="DATABASE_URL=database-url:latest,DIRECT_URL=direct-url:latest,SUPABASE_ANON_KEY=supabase-anon-key:latest,JWT_SECRET=jwt-secret:latest,SESSION_SECRET=session-secret:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest,GITHUB_CLIENT_SECRET=github-client-secret:latest,X_CONSUMER_SECRET=x-consumer-secret:latest,X_ACCESS_TOKEN=x-access-token:latest,X_ACCESS_TOKEN_SECRET=x-access-token-secret:latest"
+  --set-env-vars="NODE_ENV=production,SUPABASE_URL=https://ninyjmahwnbtgqqjxcli.supabase.co,FRONTEND_URL=https://frontend-mosakuziis-projects.vercel.app,CORS_ORIGINS=https://frontend-mosakuziis-projects.vercel.app,ADMIN_EMAIL=mosakuzii1928@gmail.com" \
+  --set-secrets="DATABASE_URL=database-url:latest,DIRECT_URL=direct-url:latest,SUPABASE_ANON_KEY=supabase-anon-key:latest,JWT_SECRET=jwt-secret:latest,SESSION_SECRET=session-secret:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest,GITHUB_CLIENT_SECRET=github-client-secret:latest,X_CONSUMER_SECRET=x-consumer-secret:latest"
 ```
 
 **パラメータ説明:**
