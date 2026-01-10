@@ -61,54 +61,30 @@ export class ConfigService {
 		return parseInt(process.env.PORT || '3000', 10);
 	}
 
-	// OAuth Google設定
+	// OAuth Google設定 (Optional - defaults to placeholder if not configured)
 	get googleClientId(): string {
-		const clientId = process.env.GOOGLE_CLIENT_ID;
-		if (!clientId) {
-			throw new Error('GOOGLE_CLIENT_ID is not configured');
-		}
-		return clientId;
+		return process.env.GOOGLE_CLIENT_ID || 'not-configured';
 	}
 
 	get googleClientSecret(): string {
-		const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-		if (!clientSecret) {
-			throw new Error('GOOGLE_CLIENT_SECRET is not configured');
-		}
-		return clientSecret;
+		return process.env.GOOGLE_CLIENT_SECRET || 'not-configured';
 	}
 
 	get googleRedirectUri(): string {
-		const redirectUri = process.env.GOOGLE_REDIRECT_URI;
-		if (!redirectUri) {
-			throw new Error('GOOGLE_REDIRECT_URI is not configured');
-		}
-		return redirectUri;
+		return process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/auth/google/callback';
 	}
 
-	// OAuth GitHub設定
+	// OAuth GitHub設定 (Optional - defaults to placeholder if not configured)
 	get githubClientId(): string {
-		const clientId = process.env.GITHUB_CLIENT_ID;
-		if (!clientId) {
-			throw new Error('GITHUB_CLIENT_ID is not configured');
-		}
-		return clientId;
+		return process.env.GITHUB_CLIENT_ID || 'not-configured';
 	}
 
 	get githubClientSecret(): string {
-		const clientSecret = process.env.GITHUB_CLIENT_SECRET;
-		if (!clientSecret) {
-			throw new Error('GITHUB_CLIENT_SECRET is not configured');
-		}
-		return clientSecret;
+		return process.env.GITHUB_CLIENT_SECRET || 'not-configured';
 	}
 
 	get githubRedirectUri(): string {
-		const redirectUri = process.env.GITHUB_REDIRECT_URI;
-		if (!redirectUri) {
-			throw new Error('GITHUB_REDIRECT_URI is not configured');
-		}
-		return redirectUri;
+		return process.env.GITHUB_REDIRECT_URI || 'http://localhost:3000/auth/github/callback';
 	}
 
 	// OAuth X設定 (Disabled - X OAuth is not currently in use)

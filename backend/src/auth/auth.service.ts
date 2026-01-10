@@ -9,6 +9,7 @@ import type {
 	XStrategyUser,
 } from './types/oauth.types';
 import { ConfigService } from '../config/config.service';
+import { InvitationService } from '../invitation/invitation.service';
 import type { AuthenticatedUser, UserRole } from './types';
 import { BCRYPT_SALT_ROUNDS, JWT_EXPIRATION } from '../config/auth-constants';
 
@@ -31,6 +32,7 @@ export class AuthService {
 		private readonly prisma: PrismaService,
 		private readonly jwtService: JwtService,
 		private readonly configService: ConfigService,
+		private readonly invitationService: InvitationService,
 	) {}
 
 	async hashPassword(password: string): Promise<string> {
@@ -210,21 +212,7 @@ export class AuthService {
 		fallbackEmail?: string,
 	): Promise<AuthTokens & { user: AuthenticatedUser }> {
 		// 招待コードの検証
-		const invitation = await this.prisma.invitationCode.findUnique({
-			where: { code: invitationCode },
-		});
-
-		if (!invitation) {
-			throw new BadRequestException('Invalid invitation code');
-		}
-
-		if (invitation.expiresAt && new Date() > invitation.expiresAt) {
-			throw new BadRequestException('Invitation code has expired');
-		}
-
-		if (invitation.usedCount >= invitation.maxUses) {
-			throw new BadRequestException('Invitation code has been fully used');
-		}
+		await this.invitationService.verifyInvitation(invitationCode);
 
 		// 既存ユーザーチェック
 		const userEmail = oauthUser.email || fallbackEmail;
@@ -257,10 +245,7 @@ export class AuthService {
 		});
 
 		// 招待コード使用回数を更新
-		await this.prisma.invitationCode.update({
-			where: { id: invitation.id },
-			data: { usedCount: invitation.usedCount + 1 },
-		});
+		await this.invitationService.useInvitation(invitationCode);
 
 		// JWTトークンを生成
 		const tokens = this.generateTokens(user.id, user.email, user.role);
