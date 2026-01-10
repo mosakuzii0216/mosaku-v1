@@ -5,11 +5,11 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { GoogleStrategy } from './google.strategy';
 import { GitHubStrategy } from './github.strategy';
-import { XStrategy } from './x.strategy';
+// import { XStrategy } from './x.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { GoogleAuthGuard } from './google-auth.guard';
 import { GitHubAuthGuard } from './github-auth.guard';
-import { XAuthGuard } from './x-auth.guard';
+// import { XAuthGuard } from './x-auth.guard';
 import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ConfigService } from '../config/config.service';
@@ -34,13 +34,13 @@ import { JWT_EXPIRATION } from '../config/auth-constants';
 		JwtStrategy,
 		GoogleStrategy,
 		GitHubStrategy,
-		XStrategy,
+		// XStrategy,
 		JwtAuthGuard,
 		GoogleAuthGuard,
 		GitHubAuthGuard,
-		XAuthGuard,
+		// XAuthGuard,
 		InvitationService,
 	],
-	exports: [AuthService, JwtAuthGuard, GoogleAuthGuard, GitHubAuthGuard, XAuthGuard],
+	exports: [AuthService, JwtAuthGuard, GoogleAuthGuard, GitHubAuthGuard],
 })
 export class AuthModule {}

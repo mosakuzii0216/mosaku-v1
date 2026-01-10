@@ -111,29 +111,17 @@ export class ConfigService {
 		return redirectUri;
 	}
 
-	// OAuth X設定
-	get xConsumerKey(): string {
-		const consumerKey = process.env.X_CONSUMER_KEY;
-		if (!consumerKey) {
-			throw new Error('X_CONSUMER_KEY is not configured');
-		}
-		return consumerKey;
+	// OAuth X設定 (Disabled - X OAuth is not currently in use)
+	get xConsumerKey(): string | undefined {
+		return process.env.X_CONSUMER_KEY;
 	}
 
-	get xConsumerSecret(): string {
-		const consumerSecret = process.env.X_CONSUMER_SECRET;
-		if (!consumerSecret) {
-			throw new Error('X_CONSUMER_SECRET is not configured');
-		}
-		return consumerSecret;
+	get xConsumerSecret(): string | undefined {
+		return process.env.X_CONSUMER_SECRET;
 	}
 
-	get xRedirectUri(): string {
-		const redirectUri = process.env.X_REDIRECT_URI;
-		if (!redirectUri) {
-			throw new Error('X_REDIRECT_URI is not configured');
-		}
-		return redirectUri;
+	get xRedirectUri(): string | undefined {
+		return process.env.X_REDIRECT_URI;
 	}
 
 	// データベース設定

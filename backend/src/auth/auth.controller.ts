@@ -17,17 +17,17 @@ import type {
 	GitHubStrategyUser,
 	GoogleStrategyUser,
 	OAuthStrategyUser,
-	XStrategyUser,
+	// XStrategyUser,
 } from './types/oauth.types';
 import { ConfigService } from '../config/config.service';
 import { GoogleRegisterWithInvitationDto } from './dto/google-register-with-invitation.dto';
 import { GithubRegisterWithInvitationDto } from './dto/github-register-with-invitation.dto';
-import { XRegisterWithInvitationDto } from './dto/x-register-with-invitation.dto';
+// import { XRegisterWithInvitationDto } from './dto/x-register-with-invitation.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { GoogleAuthGuard } from './google-auth.guard';
 import { GitHubAuthGuard } from './github-auth.guard';
-import { XAuthGuard } from './x-auth.guard';
+// import { XAuthGuard } from './x-auth.guard';
 import { Public } from './public.decorator';
 import { AuthService } from './auth.service';
 import { InvitationService } from '../invitation/invitation.service';
@@ -385,33 +385,33 @@ export class AuthController {
 		);
 	}
 
-	// X OAuth エンドポイント
-	@Get('x')
-	@UseGuards(XAuthGuard)
-	xAuth(@Request() _req: ExpressRequest) {
-		// X認証画面にリダイレクト
-	}
+	// X OAuth エンドポイント (Disabled - X OAuth is not currently in use)
+	// @Get('x')
+	// @UseGuards(XAuthGuard)
+	// xAuth(@Request() _req: ExpressRequest) {
+	// 	// X認証画面にリダイレクト
+	// }
 
-	@Get('x/callback')
-	@UseGuards(XAuthGuard)
-	async xAuthRedirect(
-		@Request() req: OAuthRequest<XStrategyUser>,
-		@Response() res: ExpressResponse,
-	) {
-		return this.handleOAuthCallback((user) => this.authService.xLogin(user), req, res, 'X');
-	}
+	// @Get('x/callback')
+	// @UseGuards(XAuthGuard)
+	// async xAuthRedirect(
+	// 	@Request() req: OAuthRequest<XStrategyUser>,
+	// 	@Response() res: ExpressResponse,
+	// ) {
+	// 	return this.handleOAuthCallback((user) => this.authService.xLogin(user), req, res, 'X');
+	// }
 
-	@Public()
-	@Post('x/register-with-invitation')
-	async xRegisterWithInvitation(@Body() body: XRegisterWithInvitationDto) {
-		const { xUser, invitationCode } = body;
-		return this.handleOAuthRegisterWithInvitation(
-			xUser,
-			invitationCode,
-			this.parseXUser.bind(this),
-			this.authService.xRegisterWithInvitation.bind(this.authService),
-		);
-	}
+	// @Public()
+	// @Post('x/register-with-invitation')
+	// async xRegisterWithInvitation(@Body() body: XRegisterWithInvitationDto) {
+	// 	const { xUser, invitationCode } = body;
+	// 	return this.handleOAuthRegisterWithInvitation(
+	// 		xUser,
+	// 		invitationCode,
+	// 		this.parseXUser.bind(this),
+	// 		this.authService.xRegisterWithInvitation.bind(this.authService),
+	// 	);
+	// }
 
 	private parseGoogleUser(value: Record<string, unknown>): GoogleStrategyUser {
 		const googleId = value.googleId;
@@ -452,22 +452,22 @@ export class AuthController {
 		};
 	}
 
-	private parseXUser(value: Record<string, unknown>): XStrategyUser {
-		const xId = value.xId;
-		const name = value.name;
-		if (typeof xId !== 'string' || typeof name !== 'string') {
-			throw new BadRequestException('Invalid X user payload');
-		}
+	// private parseXUser(value: Record<string, unknown>): XStrategyUser {
+	// 	const xId = value.xId;
+	// 	const name = value.name;
+	// 	if (typeof xId !== 'string' || typeof name !== 'string') {
+	// 		throw new BadRequestException('Invalid X user payload');
+	// 	}
 
-		const email = typeof value.email === 'string' ? value.email : undefined;
-		return {
-			xId,
-			name,
-			email,
-			username: typeof value.username === 'string' ? value.username : undefined,
-			picture: typeof value.picture === 'string' ? value.picture : undefined,
-			accessToken: typeof value.accessToken === 'string' ? value.accessToken : undefined,
-			tokenSecret: typeof value.tokenSecret === 'string' ? value.tokenSecret : undefined,
-		};
-	}
+	// 	const email = typeof value.email === 'string' ? value.email : undefined;
+	// 	return {
+	// 		xId,
+	// 		name,
+	// 		email,
+	// 		username: typeof value.username === 'string' ? value.username : undefined,
+	// 		picture: typeof value.picture === 'string' ? value.picture : undefined,
+	// 		accessToken: typeof value.accessToken === 'string' ? value.accessToken : undefined,
+	// 		tokenSecret: typeof value.tokenSecret === 'string' ? value.tokenSecret : undefined,
+	// 	};
+	// }
 }
