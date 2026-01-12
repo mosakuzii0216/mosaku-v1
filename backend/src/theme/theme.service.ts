@@ -1,11 +1,7 @@
-import {
-	Injectable,
-	NotFoundException,
-	ForbiddenException,
-	BadRequestException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthorizationService } from '../common/services/authorization.service';
+import { ERROR_CODES, throwBadRequest, throwForbidden, throwNotFound } from '../common/exceptions';
 import type { Prisma, Theme } from '@prisma/client';
 import { CreateThemeDto } from './dto/create-theme.dto';
 import { UpdateThemeDto } from './dto/update-theme.dto';
@@ -25,7 +21,7 @@ export class ThemeService {
 		const ensuredTheme = this.authorizationService.validateExistence(theme, 'テーマ');
 
 		if (ensuredTheme.isSystem || ensuredTheme.createdById !== userId) {
-			throw new ForbiddenException(`このテーマを${action}する権限がありません`);
+			throwForbidden(ERROR_CODES.AUTHZ.NO_PERMISSION, `このテーマを${action}する権限がありません`);
 		}
 	}
 
@@ -162,14 +158,14 @@ export class ThemeService {
 		});
 
 		if (!theme) {
-			throw new NotFoundException('テーマが見つかりません');
+			throwNotFound(ERROR_CODES.RESOURCE.NOT_FOUND, 'テーマが見つかりません');
 		}
 
 		// アクセス権限チェック
 		const hasAccess = theme.isSystem || theme.isPublic || (userId && theme.createdById === userId);
 
 		if (!hasAccess) {
-			throw new ForbiddenException('このテーマにアクセスする権限がありません');
+			throwForbidden(ERROR_CODES.AUTHZ.NO_PERMISSION, 'このテーマにアクセスする権限がありません');
 		}
 
 		return {
@@ -191,7 +187,7 @@ export class ThemeService {
 			!createThemeDto.cssFilePath &&
 			(!createThemeDto.styles || typeof createThemeDto.styles !== 'object')
 		) {
-			throw new BadRequestException('CSSファイルパスまたは有効なスタイルデータが必要です');
+			throwBadRequest(ERROR_CODES.VALIDATION.MISSING_CSS_OR_STYLES);
 		}
 
 		// stylesがある場合は必須フィールドの検証
@@ -199,7 +195,7 @@ export class ThemeService {
 			const requiredFields = ['colors', 'typography', 'layout'];
 			for (const field of requiredFields) {
 				if (!createThemeDto.styles[field]) {
-					throw new BadRequestException(`スタイル設定に${field}が含まれている必要があります`);
+					throwBadRequest(ERROR_CODES.VALIDATION.MISSING_REQUIRED_STYLE_FIELD, `スタイル設定に${field}が含まれている必要があります`);
 				}
 			}
 		}
@@ -238,7 +234,7 @@ export class ThemeService {
 		// スタイルデータの検証（更新時）
 		if (updateThemeDto.styles) {
 			if (typeof updateThemeDto.styles !== 'object') {
-				throw new BadRequestException('有効なスタイルデータが必要です');
+				throwBadRequest(ERROR_CODES.VALIDATION.INVALID_INPUT, '有効なスタイルデータが必要です');
 			}
 		}
 
@@ -283,7 +279,7 @@ export class ThemeService {
 
 		// 使用中のテーマは削除不可
 		if (theme!._count.notebooks > 0) {
-			throw new BadRequestException('使用中のテーマは削除できません');
+			throwBadRequest(ERROR_CODES.RESOURCE.IN_USE);
 		}
 
 		await this.prisma.theme.delete({
@@ -303,14 +299,14 @@ export class ThemeService {
 		});
 
 		if (!theme) {
-			throw new NotFoundException('テーマが見つかりません');
+			throwNotFound(ERROR_CODES.RESOURCE.NOT_FOUND, 'テーマが見つかりません');
 		}
 
 		// アクセス権限チェック
 		const hasAccess = theme.isSystem || theme.isPublic || theme.createdById === userId;
 
 		if (!hasAccess) {
-			throw new ForbiddenException('このテーマにアクセスする権限がありません');
+			throwForbidden(ERROR_CODES.AUTHZ.NO_PERMISSION, 'このテーマにアクセスする権限がありません');
 		}
 
 		// 既にお気に入りかチェック
@@ -324,7 +320,7 @@ export class ThemeService {
 		});
 
 		if (existingFavorite) {
-			throw new BadRequestException('既にお気に入りに追加されています');
+			throwBadRequest(ERROR_CODES.RESOURCE.ALREADY_FAVORITED);
 		}
 
 		await this.prisma.userFavoriteTheme.create({
@@ -351,7 +347,7 @@ export class ThemeService {
 		});
 
 		if (!existingFavorite) {
-			throw new NotFoundException('お気に入りに登録されていません');
+			throwNotFound(ERROR_CODES.RESOURCE.NOT_FAVORITED);
 		}
 
 		await this.prisma.userFavoriteTheme.delete({

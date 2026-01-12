@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthorizationService } from '../common/services/authorization.service';
+import { ERROR_CODES, throwForbidden, throwNotFound } from '../common/exceptions';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { AssignTagsDto } from './dto/assign-tags.dto';
@@ -93,11 +94,11 @@ export class TagService {
 			const entity = await this.prisma.memo.findUnique({ where: { id: entityId } });
 
 			if (!entity) {
-				throw new NotFoundException(`Memo with ID ${entityId} not found`);
+				throwNotFound(ERROR_CODES.RESOURCE.NOT_FOUND, `Memo with ID ${entityId} not found`);
 			}
 
 			if (entity.userId !== userId) {
-				throw new ForbiddenException('You can only modify your own memos');
+				throwForbidden(ERROR_CODES.AUTHZ.NOT_OWNER);
 			}
 
 			// タグの所有権検証
@@ -109,7 +110,7 @@ export class TagService {
 			});
 
 			if (tags.length !== assignTagsDto.tagIds.length) {
-				throw new ForbiddenException('Some tags do not belong to you');
+				throwForbidden(ERROR_CODES.AUTHZ.NOT_OWNER, 'Some tags do not belong to you');
 			}
 
 			// 既存のタグ関連を削除して新しい関連を作成
@@ -141,11 +142,11 @@ export class TagService {
 			const entity = await this.prisma.notebook.findUnique({ where: { id: entityId } });
 
 			if (!entity) {
-				throw new NotFoundException(`Notebook with ID ${entityId} not found`);
+				throwNotFound(ERROR_CODES.RESOURCE.NOT_FOUND, `Notebook with ID ${entityId} not found`);
 			}
 
 			if (entity.userId !== userId) {
-				throw new ForbiddenException('You can only modify your own notebooks');
+				throwForbidden(ERROR_CODES.AUTHZ.NOT_OWNER);
 			}
 
 			// タグの所有権検証
@@ -157,7 +158,7 @@ export class TagService {
 			});
 
 			if (tags.length !== assignTagsDto.tagIds.length) {
-				throw new ForbiddenException('Some tags do not belong to you');
+				throwForbidden(ERROR_CODES.AUTHZ.NOT_OWNER, 'Some tags do not belong to you');
 			}
 
 			// 既存のタグ関連を削除して新しい関連を作成
@@ -199,11 +200,11 @@ export class TagService {
 		});
 
 		if (!memo) {
-			throw new NotFoundException(`Memo with ID ${memoId} not found`);
+			throwNotFound(ERROR_CODES.RESOURCE.NOT_FOUND, `Memo with ID ${memoId} not found`);
 		}
 
 		if (memo.userId !== userId) {
-			throw new ForbiddenException('You can only access your own memos');
+			throwForbidden(ERROR_CODES.AUTHZ.NOT_OWNER);
 		}
 
 		return this.prisma.memoTag.findMany({
@@ -222,10 +223,10 @@ export class TagService {
 	async getNotebookTags(notebookId: string, userId: string) {
 		const notebook = await this.prisma.notebook.findUnique({ where: { id: notebookId } });
 		if (!notebook) {
-			throw new NotFoundException(`Notebook with ID ${notebookId} not found`);
+			throwNotFound(ERROR_CODES.RESOURCE.NOT_FOUND, `Notebook with ID ${notebookId} not found`);
 		}
 		if (notebook.userId !== userId) {
-			throw new ForbiddenException('You can only access your own notebooks');
+			throwForbidden(ERROR_CODES.AUTHZ.NOT_OWNER);
 		}
 
 		return this.prisma.notebookTag.findMany({
