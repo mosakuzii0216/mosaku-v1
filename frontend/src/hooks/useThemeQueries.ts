@@ -8,24 +8,12 @@ import type {
 	ThemeCategory,
 } from '../types/theme';
 import { logger } from '../utils/logger';
-
-// Query Keys
-export const themeKeys = {
-	all: ['themes'] as const,
-	lists: () => [...themeKeys.all, 'list'] as const,
-	list: (params?: ThemeSearchParams) => [...themeKeys.lists(), params] as const,
-	details: () => [...themeKeys.all, 'detail'] as const,
-	detail: (id: string) => [...themeKeys.details(), id] as const,
-	system: () => [...themeKeys.all, 'system'] as const,
-	public: () => [...themeKeys.all, 'public'] as const,
-	category: (category: string) => [...themeKeys.all, 'category', category] as const,
-	favorites: () => [...themeKeys.all, 'favorites'] as const,
-};
+import { queryKeys } from '../constants/queryKeys';
 
 // テーマ一覧取得（検索・フィルタリング対応）
 export const useThemes = (params?: ThemeSearchParams) => {
 	return useQuery({
-		queryKey: themeKeys.list(params),
+		queryKey: queryKeys.themes.list(params),
 		queryFn: async () => {
 			try {
 				return await apiClient.getThemes(params);
@@ -41,7 +29,7 @@ export const useThemes = (params?: ThemeSearchParams) => {
 // システムテーマ一覧取得
 export const useSystemThemes = () => {
 	return useQuery({
-		queryKey: themeKeys.system(),
+		queryKey: queryKeys.themes.system(),
 		queryFn: async () => {
 			try {
 				return await apiClient.getSystemThemes();
@@ -57,7 +45,7 @@ export const useSystemThemes = () => {
 // 公開テーマ一覧取得
 export const usePublicThemes = () => {
 	return useQuery({
-		queryKey: themeKeys.public(),
+		queryKey: queryKeys.themes.public(),
 		queryFn: async () => {
 			try {
 				return await apiClient.getPublicThemes();
@@ -73,7 +61,7 @@ export const usePublicThemes = () => {
 // カテゴリ別テーマ一覧取得
 export const useThemesByCategory = (category: ThemeCategory) => {
 	return useQuery({
-		queryKey: themeKeys.category(category),
+		queryKey: queryKeys.themes.category(category),
 		queryFn: async () => {
 			try {
 				return await apiClient.getThemesByCategory(category);
@@ -89,7 +77,7 @@ export const useThemesByCategory = (category: ThemeCategory) => {
 // 特定テーマ取得
 export const useTheme = (id: string) => {
 	return useQuery({
-		queryKey: themeKeys.detail(id),
+		queryKey: queryKeys.themes.detail(id),
 		queryFn: async () => {
 			try {
 				return await apiClient.getTheme(id);
@@ -106,7 +94,7 @@ export const useTheme = (id: string) => {
 // お気に入りテーマ一覧取得
 export const useFavoriteThemes = () => {
 	return useQuery({
-		queryKey: themeKeys.favorites(),
+		queryKey: queryKeys.themes.favorites(),
 		queryFn: async () => {
 			try {
 				return await apiClient.getFavoriteThemes();
@@ -134,7 +122,7 @@ export const useCreateTheme = () => {
 		},
 		onSuccess: () => {
 			// テーマ一覧を無効化して再取得
-			queryClient.invalidateQueries({ queryKey: themeKeys.all });
+			queryClient.invalidateQueries({ queryKey: queryKeys.themes.all });
 		},
 	});
 };
@@ -154,9 +142,9 @@ export const useUpdateTheme = () => {
 		},
 		onSuccess: (updatedTheme) => {
 			// 特定テーマのキャッシュを更新
-			queryClient.setQueryData(themeKeys.detail(updatedTheme.id), updatedTheme);
+			queryClient.setQueryData(queryKeys.themes.detail(updatedTheme.id), updatedTheme);
 			// テーマ一覧を無効化
-			queryClient.invalidateQueries({ queryKey: themeKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: queryKeys.themes.lists() });
 		},
 	});
 };
@@ -177,9 +165,9 @@ export const useDeleteTheme = () => {
 		},
 		onSuccess: (deletedId) => {
 			// 削除されたテーマのキャッシュを削除
-			queryClient.removeQueries({ queryKey: themeKeys.detail(deletedId) });
+			queryClient.removeQueries({ queryKey: queryKeys.themes.detail(deletedId) });
 			// テーマ一覧を無効化
-			queryClient.invalidateQueries({ queryKey: themeKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: queryKeys.themes.lists() });
 		},
 	});
 };
@@ -199,16 +187,16 @@ export const useAddToFavoriteThemes = () => {
 		},
 		onSuccess: (_, themeId) => {
 			// お気に入り一覧を無効化
-			queryClient.invalidateQueries({ queryKey: themeKeys.favorites() });
+			queryClient.invalidateQueries({ queryKey: queryKeys.themes.favorites() });
 			// テーマ詳細のisFavoritedを更新
-			queryClient.setQueryData(themeKeys.detail(themeId), (old: Theme | undefined) => {
+			queryClient.setQueryData(queryKeys.themes.detail(themeId), (old: Theme | undefined) => {
 				if (old) {
 					return { ...old, isFavorited: true, favoriteCount: old.favoriteCount + 1 };
 				}
 				return old;
 			});
 			// テーマ一覧も無効化（isFavoritedフラグの更新）
-			queryClient.invalidateQueries({ queryKey: themeKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: queryKeys.themes.lists() });
 		},
 	});
 };
@@ -228,16 +216,16 @@ export const useRemoveFromFavoriteThemes = () => {
 		},
 		onSuccess: (_, themeId) => {
 			// お気に入り一覧を無効化
-			queryClient.invalidateQueries({ queryKey: themeKeys.favorites() });
+			queryClient.invalidateQueries({ queryKey: queryKeys.themes.favorites() });
 			// テーマ詳細のisFavoritedを更新
-			queryClient.setQueryData(themeKeys.detail(themeId), (old: Theme | undefined) => {
+			queryClient.setQueryData(queryKeys.themes.detail(themeId), (old: Theme | undefined) => {
 				if (old) {
 					return { ...old, isFavorited: false, favoriteCount: Math.max(0, old.favoriteCount - 1) };
 				}
 				return old;
 			});
 			// テーマ一覧も無効化（isFavoritedフラグの更新）
-			queryClient.invalidateQueries({ queryKey: themeKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: queryKeys.themes.lists() });
 		},
 	});
 };

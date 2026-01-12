@@ -3,6 +3,7 @@ import { apiClient } from '../utils/api';
 import { useTagStore } from '../stores/useTagStore';
 import type { CreateTagDto, UpdateTagDto, AssignTagsDto } from '../types/tag';
 import { logger } from '../utils/logger';
+import { queryKeys } from '../constants/queryKeys';
 
 export const useTagQueries = () => {
 	const queryClient = useQueryClient();
@@ -10,7 +11,7 @@ export const useTagQueries = () => {
 
 	// タグ一覧取得
 	const tagsQuery = useQuery({
-		queryKey: ['tags'],
+		queryKey: queryKeys.tags.all,
 		queryFn: async () => {
 			try {
 				const tags = await apiClient.getTags();
@@ -36,7 +37,7 @@ export const useTagQueries = () => {
 		mutationFn: (data: CreateTagDto) => apiClient.createTag(data),
 		onSuccess: (newTag) => {
 			addTag(newTag);
-			queryClient.invalidateQueries({ queryKey: ['tags'] });
+			queryClient.invalidateQueries({ queryKey: queryKeys.tags.all });
 		},
 	});
 
@@ -45,7 +46,7 @@ export const useTagQueries = () => {
 		mutationFn: ({ id, data }: { id: string; data: UpdateTagDto }) => apiClient.updateTag(id, data),
 		onSuccess: (updatedTag) => {
 			updateTag(updatedTag);
-			queryClient.invalidateQueries({ queryKey: ['tags'] });
+			queryClient.invalidateQueries({ queryKey: queryKeys.tags.all });
 		},
 	});
 
@@ -54,8 +55,8 @@ export const useTagQueries = () => {
 		mutationFn: (id: string) => apiClient.deleteTag(id),
 		onSuccess: (_, deletedId) => {
 			deleteTag(deletedId);
-			queryClient.invalidateQueries({ queryKey: ['tags'] });
-			queryClient.invalidateQueries({ queryKey: ['memos'] });
+			queryClient.invalidateQueries({ queryKey: queryKeys.tags.all });
+			queryClient.invalidateQueries({ queryKey: queryKeys.memos.all });
 		},
 	});
 
@@ -64,14 +65,14 @@ export const useTagQueries = () => {
 		mutationFn: ({ memoId, data }: { memoId: string; data: AssignTagsDto }) =>
 			apiClient.assignTagsToMemo(memoId, data),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['memos'] });
+			queryClient.invalidateQueries({ queryKey: queryKeys.memos.all });
 		},
 	});
 
 	// タグ検索（Hookとして公開）
 	const useSearchTagsQuery = (query: string) =>
 		useQuery({
-			queryKey: ['tags', 'search', query],
+			queryKey: queryKeys.tags.search(query),
 			queryFn: () => apiClient.searchTags(query),
 			enabled: !!query,
 		});
