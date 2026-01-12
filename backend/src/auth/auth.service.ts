@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -12,6 +12,7 @@ import { ConfigService } from '../config/config.service';
 import { InvitationService } from '../invitation/invitation.service';
 import type { AuthenticatedUser, UserRole } from './types';
 import { BCRYPT_SALT_ROUNDS, JWT_EXPIRATION } from '../config/auth-constants';
+import { ERROR_CODES, throwUnauthorized, throwBadRequest } from '../common/exceptions';
 
 export interface JwtPayload {
 	sub: string; // user.id
@@ -65,12 +66,12 @@ export class AuthService {
 		});
 
 		if (!user || !user.password) {
-			throw new UnauthorizedException('Invalid credentials');
+			throwUnauthorized(ERROR_CODES.AUTH.INVALID_CREDENTIALS);
 		}
 
 		const isPasswordValid = await this.comparePassword(password, user.password);
 		if (!isPasswordValid) {
-			throw new UnauthorizedException('Invalid credentials');
+			throwUnauthorized(ERROR_CODES.AUTH.INVALID_CREDENTIALS);
 		}
 
 		// パスワードを除外して返す
@@ -83,7 +84,7 @@ export class AuthService {
 		});
 
 		if (!user) {
-			throw new UnauthorizedException('User not found');
+			throwUnauthorized(ERROR_CODES.AUTH.USER_NOT_FOUND);
 		}
 
 		// パスワードを除外して返す
@@ -102,7 +103,7 @@ export class AuthService {
 		});
 
 		if (existingUser) {
-			throw new BadRequestException('Email already exists');
+			throwBadRequest(ERROR_CODES.AUTH.EMAIL_ALREADY_EXISTS);
 		}
 
 		// パスワードハッシュ化
@@ -141,7 +142,7 @@ export class AuthService {
 		});
 
 		if (!user) {
-			throw new UnauthorizedException('User not found');
+			throwUnauthorized(ERROR_CODES.AUTH.USER_NOT_FOUND);
 		}
 
 		// パスワードを除外して返す
@@ -188,9 +189,7 @@ export class AuthService {
 			});
 		} else {
 			// 新規ユーザーの場合は招待コードなしでは登録できない
-			throw new BadRequestException(
-				'New user registration requires invitation code. Please use the registration with invitation code.',
-			);
+			throwBadRequest(ERROR_CODES.AUTH.INVITATION_REQUIRED);
 		}
 
 		// JWTトークンを生成
@@ -217,7 +216,7 @@ export class AuthService {
 		// 既存ユーザーチェック
 		const userEmail = oauthUser.email || fallbackEmail;
 		if (!userEmail) {
-			throw new BadRequestException('Email address is required for registration');
+			throwBadRequest(ERROR_CODES.VALIDATION.REQUIRED_FIELD, 'メールアドレスは必須です');
 		}
 
 		const existingUser = await this.prisma.user.findFirst({
@@ -227,7 +226,7 @@ export class AuthService {
 		});
 
 		if (existingUser) {
-			throw new BadRequestException('User already exists with this email or OAuth account');
+			throwBadRequest(ERROR_CODES.AUTH.USER_ALREADY_EXISTS);
 		}
 
 		// 管理者権限チェック

@@ -1,7 +1,8 @@
-import { Injectable, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { Injectable, ExecutionContext } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
 import { isAuthenticatedUser } from './types';
+import { ERROR_CODES, throwUnauthorized } from '../common/exceptions';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -28,11 +29,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 			if (err instanceof Error) {
 				throw err;
 			}
-			throw new UnauthorizedException('Authentication required');
+			throwUnauthorized(ERROR_CODES.AUTH.AUTHENTICATION_REQUIRED);
 		}
 
 		if (!isAuthenticatedUser(user)) {
-			throw new UnauthorizedException('Authentication required');
+			throwUnauthorized(ERROR_CODES.AUTH.AUTHENTICATION_REQUIRED);
 		}
 		return user as TUser;
 	}

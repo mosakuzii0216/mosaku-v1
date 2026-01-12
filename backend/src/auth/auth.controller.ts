@@ -6,10 +6,8 @@ import {
 	UseGuards,
 	Request,
 	Response,
-	NotFoundException,
-	BadRequestException,
-	UnauthorizedException,
 } from '@nestjs/common';
+import { ERROR_CODES, throwBadRequest, throwUnauthorized, throwNotFound } from '../common/exceptions';
 import { Throttle } from '@nestjs/throttler';
 import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import type { AuthenticatedRequest, OAuthRequest } from './types';
@@ -109,7 +107,7 @@ export class AuthController {
 			};
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : 'Registration failed';
-			throw new BadRequestException(message);
+			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_INPUT, message);
 		}
 	}
 
@@ -127,7 +125,7 @@ export class AuthController {
 			};
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : 'Login failed';
-			throw new UnauthorizedException(message);
+			throwUnauthorized(ERROR_CODES.AUTH.INVALID_CREDENTIALS, message);
 		}
 	}
 
@@ -148,7 +146,7 @@ export class AuthController {
 
 		const user = await this.authService.findUserById(userId);
 		if (!user) {
-			throw new NotFoundException('User not found');
+			throwNotFound(ERROR_CODES.AUTH.USER_NOT_FOUND);
 		}
 
 		// 既存ユーザーの管理者権限を確認・更新
@@ -201,7 +199,7 @@ export class AuthController {
 		} catch (error: unknown) {
 			const message =
 				error instanceof Error ? error.message : 'Failed to send password reset email';
-			throw new BadRequestException(message);
+			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_INPUT, message);
 		}
 	}
 
@@ -220,7 +218,7 @@ export class AuthController {
 			});
 
 			if (!user || !user.password) {
-				throw new BadRequestException('User not found or password not set');
+				throwBadRequest(ERROR_CODES.AUTH.PASSWORD_NOT_SET);
 			}
 
 			// 現在のパスワードを検証
@@ -230,7 +228,7 @@ export class AuthController {
 			);
 
 			if (!isCurrentPasswordValid) {
-				throw new UnauthorizedException('Current password is incorrect');
+				throwUnauthorized(ERROR_CODES.AUTH.INVALID_PASSWORD);
 			}
 
 			// 新しいパスワードをハッシュ化して更新
@@ -245,7 +243,7 @@ export class AuthController {
 			};
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : 'Failed to change password';
-			throw new BadRequestException(message);
+			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_INPUT, message);
 		}
 	}
 
@@ -258,7 +256,7 @@ export class AuthController {
 		const shouldBeAdmin = this.configService.isAdminEmail(currentUser.email);
 
 		if (!shouldBeAdmin) {
-			throw new BadRequestException('This email is not authorized as admin');
+			throwBadRequest(ERROR_CODES.AUTHZ.ADMIN_EMAIL_REQUIRED);
 		}
 
 		const user = await this.prisma.user.findUnique({
@@ -266,7 +264,7 @@ export class AuthController {
 		});
 
 		if (!user) {
-			throw new NotFoundException('User not found');
+			throwNotFound(ERROR_CODES.AUTH.USER_NOT_FOUND);
 		}
 
 		const updatedUser = await this.prisma.user.update({
@@ -336,7 +334,7 @@ export class AuthController {
 			};
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : 'Registration failed';
-			throw new BadRequestException(message);
+			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_INPUT, message);
 		}
 	}
 
@@ -417,7 +415,7 @@ export class AuthController {
 		const googleId = value.googleId;
 		const name = value.name;
 		if (typeof googleId !== 'string' || typeof name !== 'string') {
-			throw new BadRequestException('Invalid Google user payload');
+			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_PAYLOAD);
 		}
 
 		const email = typeof value.email === 'string' ? value.email : undefined;
@@ -437,7 +435,7 @@ export class AuthController {
 		const githubId = value.githubId;
 		const name = value.name;
 		if (typeof githubId !== 'string' || typeof name !== 'string') {
-			throw new BadRequestException('Invalid GitHub user payload');
+			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_PAYLOAD);
 		}
 
 		const email = typeof value.email === 'string' ? value.email : undefined;

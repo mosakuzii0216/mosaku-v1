@@ -1,9 +1,10 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { AuthService, JwtPayload } from './auth.service';
 import type { AuthenticatedUser } from './types';
 import { ConfigService } from '../config/config.service';
+import { ERROR_CODES, throwUnauthorized } from '../common/exceptions';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -22,7 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 		try {
 			return await this.authService.validateJwtPayload(payload);
 		} catch {
-			throw new UnauthorizedException('Invalid token');
+			throwUnauthorized(ERROR_CODES.AUTH.INVALID_TOKEN);
 		}
 	}
 }

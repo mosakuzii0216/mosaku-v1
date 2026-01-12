@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { ERROR_CODES, throwForbidden, throwNotFound } from '../exceptions';
 
 export interface OwnableEntity {
 	userId: string;
@@ -21,11 +22,11 @@ export class AuthorizationService {
 		entityName: string,
 	): T {
 		if (!entity) {
-			throw new NotFoundException(`${entityName} not found`);
+			throwNotFound(ERROR_CODES.RESOURCE.NOT_FOUND, `${entityName} not found`);
 		}
 
 		if (entity.userId !== userId) {
-			throw new ForbiddenException(`You can only access your own ${entityName.toLowerCase()}s`);
+			throwForbidden(ERROR_CODES.AUTHZ.NOT_OWNER, `You can only access your own ${entityName.toLowerCase()}s`);
 		}
 
 		return entity;
@@ -40,7 +41,7 @@ export class AuthorizationService {
 	 */
 	validateExistence<T>(entity: T | null, entityName: string): T {
 		if (!entity) {
-			throw new NotFoundException(`${entityName} not found`);
+			throwNotFound(ERROR_CODES.RESOURCE.NOT_FOUND, `${entityName} not found`);
 		}
 		return entity;
 	}
@@ -61,7 +62,7 @@ export class AuthorizationService {
 		const unauthorizedEntity = entities.find((entity) => entity.userId !== userId);
 
 		if (unauthorizedEntity) {
-			throw new ForbiddenException(`You can only access your own ${entityName.toLowerCase()}s`);
+			throwForbidden(ERROR_CODES.AUTHZ.NOT_OWNER, `You can only access your own ${entityName.toLowerCase()}s`);
 		}
 
 		return entities;
