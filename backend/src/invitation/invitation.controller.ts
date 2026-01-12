@@ -7,9 +7,8 @@ import {
 	Param,
 	UseGuards,
 	Request,
-	BadRequestException,
-	NotFoundException,
 } from '@nestjs/common';
+import { ERROR_CODES, throwBadRequest, throwNotFound } from '../common/exceptions';
 import { InvitationService } from './invitation.service';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
 import { VerifyInvitationDto } from './dto/verify-invitation.dto';
@@ -30,7 +29,7 @@ export class InvitationController {
 		});
 
 		if (!user) {
-			throw new NotFoundException('User not found in local database');
+			throwNotFound(ERROR_CODES.AUTH.USER_NOT_FOUND);
 		}
 
 		return user;
@@ -47,7 +46,7 @@ export class InvitationController {
 
 		// Only admin users can create invitations
 		if (localUser.role !== 'ADMIN') {
-			throw new BadRequestException('Only admin users can create invitations');
+			throwBadRequest(ERROR_CODES.AUTHZ.ADMIN_ONLY);
 		}
 
 		return this.invitationService.createInvitation(createInvitationDto, localUser.id);
@@ -66,7 +65,7 @@ export class InvitationController {
 
 		// Only admin users can view invitations
 		if (localUser.role !== 'ADMIN') {
-			throw new BadRequestException('Only admin users can view invitations');
+			throwBadRequest(ERROR_CODES.AUTHZ.ADMIN_ONLY);
 		}
 
 		return this.invitationService.getAllInvitations();
@@ -80,7 +79,7 @@ export class InvitationController {
 
 		// Only admin users can delete invitations
 		if (localUser.role !== 'ADMIN') {
-			throw new BadRequestException('Only admin users can delete invitations');
+			throwBadRequest(ERROR_CODES.AUTHZ.ADMIN_ONLY);
 		}
 
 		return this.invitationService.deleteAnyInvitation(id);

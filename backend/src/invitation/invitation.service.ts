@@ -1,7 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
 import { randomBytes } from 'crypto';
+import { ERROR_CODES, throwBadRequest } from '../common/exceptions';
 
 @Injectable()
 export class InvitationService {
@@ -26,15 +27,15 @@ export class InvitationService {
 		});
 
 		if (!invitation) {
-			throw new BadRequestException('Invalid invitation code');
+			throwBadRequest(ERROR_CODES.INVITATION.INVALID_CODE);
 		}
 
 		if (invitation.expiresAt && invitation.expiresAt < new Date()) {
-			throw new BadRequestException('Invitation code has expired');
+			throwBadRequest(ERROR_CODES.INVITATION.EXPIRED);
 		}
 
 		if (invitation.usedCount >= invitation.maxUses) {
-			throw new BadRequestException('Invitation code has been used maximum times');
+			throwBadRequest(ERROR_CODES.INVITATION.MAX_USES_REACHED);
 		}
 
 		return invitation;
@@ -68,7 +69,7 @@ export class InvitationService {
 		});
 
 		if (!invitation) {
-			throw new BadRequestException('Invitation not found');
+			throwBadRequest(ERROR_CODES.INVITATION.NOT_FOUND);
 		}
 
 		return this.prisma.invitationCode.delete({
@@ -82,7 +83,7 @@ export class InvitationService {
 		});
 
 		if (!invitation) {
-			throw new BadRequestException('Invitation not found');
+			throwBadRequest(ERROR_CODES.INVITATION.NOT_FOUND);
 		}
 
 		return this.prisma.invitationCode.delete({
