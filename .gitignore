@@ -114,3 +114,4 @@ temp/
 # Environment backup files (deprecated)
 .env.backup.*
 .vercel
+.env*.local
