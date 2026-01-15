@@ -1,22 +1,22 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../utils/api';
-import { useTagStore } from '../stores/useTagStore';
 import type { CreateTagDto, UpdateTagDto, AssignTagsDto } from '../types/tag';
 import { logger } from '../utils/logger';
 import { queryKeys } from '../constants/queryKeys';
 
+/**
+ * タグ関連のReact Query hooks
+ * React Query を唯一の真実の源泉として使用（Zustand へのコピーは行わない）
+ */
 export const useTagQueries = () => {
 	const queryClient = useQueryClient();
-	const { addTag, updateTag, deleteTag, setTags } = useTagStore();
 
 	// タグ一覧取得
 	const tagsQuery = useQuery({
 		queryKey: queryKeys.tags.all,
 		queryFn: async () => {
 			try {
-				const tags = await apiClient.getTags();
-				setTags(tags); // Zustandストアに保存
-				return tags;
+				return await apiClient.getTags();
 			} catch (error) {
 				logger.error('タグ取得エラー:', error);
 				throw error;
@@ -35,8 +35,7 @@ export const useTagQueries = () => {
 	// タグ作成
 	const createTagMutation = useMutation({
 		mutationFn: (data: CreateTagDto) => apiClient.createTag(data),
-		onSuccess: (newTag) => {
-			addTag(newTag);
+		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: queryKeys.tags.all });
 		},
 	});
@@ -44,8 +43,7 @@ export const useTagQueries = () => {
 	// タグ更新
 	const updateTagMutation = useMutation({
 		mutationFn: ({ id, data }: { id: string; data: UpdateTagDto }) => apiClient.updateTag(id, data),
-		onSuccess: (updatedTag) => {
-			updateTag(updatedTag);
+		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: queryKeys.tags.all });
 		},
 	});
@@ -53,8 +51,7 @@ export const useTagQueries = () => {
 	// タグ削除
 	const deleteTagMutation = useMutation({
 		mutationFn: (id: string) => apiClient.deleteTag(id),
-		onSuccess: (_, deletedId) => {
-			deleteTag(deletedId);
+		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: queryKeys.tags.all });
 			queryClient.invalidateQueries({ queryKey: queryKeys.memos.all });
 		},

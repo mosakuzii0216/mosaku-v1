@@ -1,39 +1,43 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+/**
+ * AuthContext - 認証状態管理
+ *
+ * 内部で以下のカスタムフックを使用して責務を分離:
+ * - useEmailAuth: Email/Password認証
+ * - useOAuth: OAuth認証（Google, GitHub, X）
+ */
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { AuthAPI, AuthTokenManager } from '../utils/auth';
 import type { UserProfile, OAuthUserData } from '../utils/auth';
-import { GoogleAuthUtils, GitHubAuthUtils, XAuthUtils } from '../utils/oauthAuth';
+import { useEmailAuth, initializeEmailAuth, performLogout } from '../hooks/useEmailAuth';
+import { useOAuth, type OAuthProvider } from '../hooks/useOAuth';
 import { logger } from '../utils/logger';
 
+// 状態の型定義
 export interface AuthState {
 	user: UserProfile | null;
 	loading: boolean;
 	isAuthenticated: boolean;
 }
 
+// アクションの型定義
 export interface AuthActions {
+	// Email認証
 	login: (email: string, password: string) => Promise<void>;
-	register: (
-		email: string,
-		password: string,
-		name?: string,
-		invitationCode?: string,
-	) => Promise<void>;
-	googleLogin: () => void;
-	googleRegisterWithInvitation: (
-		googleUser: OAuthUserData,
-		invitationCode: string,
-	) => Promise<void>;
-	githubLogin: () => void;
-	githubRegisterWithInvitation: (
-		githubUser: OAuthUserData,
-		invitationCode: string,
-	) => Promise<void>;
-	xLogin: () => void;
-	xRegisterWithInvitation: (xUser: OAuthUserData, invitationCode: string) => Promise<void>;
-	logout: () => Promise<void>;
+	register: (email: string, password: string, name?: string, invitationCode?: string) => Promise<void>;
 	resetPassword: (email: string) => Promise<void>;
 	changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+
+	// OAuth認証
+	googleLogin: () => void;
+	googleRegisterWithInvitation: (googleUser: OAuthUserData, invitationCode: string) => Promise<void>;
+	githubLogin: () => void;
+	githubRegisterWithInvitation: (githubUser: OAuthUserData, invitationCode: string) => Promise<void>;
+	xLogin: () => void;
+	xRegisterWithInvitation: (xUser: OAuthUserData, invitationCode: string) => Promise<void>;
+
+	// 共通
+	logout: () => Promise<void>;
 	refreshUser: () => Promise<void>;
 }
 
@@ -49,119 +53,90 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	const [user, setUser] = useState<UserProfile | null>(null);
 	const [loading, setLoading] = useState(true);
 
-	useEffect(() => {
-		initializeAuth();
+	// カスタムフックを使用
+	const emailAuth = useEmailAuth();
+	const oauth = useOAuth();
+
+	// 認証成功時のハンドラー
+	const handleAuthSuccess = useCallback((token: string, userProfile: UserProfile) => {
+		AuthTokenManager.setAccessToken(token);
+		setUser(userProfile);
 	}, []);
 
-	// OAuth providerの設定
-	const oauthProviders = [
-		{
-			name: 'Google',
-			utils: GoogleAuthUtils,
-			storageKey: 'pendingGoogleUser',
-			getUserData: (callback: ReturnType<typeof GoogleAuthUtils.parseAuthCallback>) => callback.googleUser,
-		},
-		{
-			name: 'GitHub',
-			utils: GitHubAuthUtils,
-			storageKey: 'pendingGitHubUser',
-			getUserData: (callback: ReturnType<typeof GitHubAuthUtils.parseAuthCallback>) => callback.githubUser,
-		},
-		{
-			name: 'X',
-			utils: XAuthUtils,
-			storageKey: 'pendingXUser',
-			getUserData: (callback: ReturnType<typeof XAuthUtils.parseAuthCallback>) => callback.xUser,
-		},
-	] as const;
+	// 招待コードが必要な場合のハンドラー（現在は何もしない - UIで処理）
+	const handleInvitationRequired = useCallback((_provider: OAuthProvider, _userData: OAuthUserData) => {
+		// 招待コード入力フォームはAuthFormコンポーネントで処理
+	}, []);
 
-	const handleOAuthCallback = (
-		provider: typeof oauthProviders[number],
-		callback: { token?: string; user?: UserProfile; error?: string },
-		oauthUserData?: OAuthUserData,
-	): boolean => {
-		if (callback.error) {
-			logger.error(`${provider.name} auth error:`, callback.error);
+	// 初期化
+	useEffect(() => {
+		const initialize = async () => {
+			try {
+				// OAuthコールバックをチェック
+				const oauthHandled = oauth.handleCallback(
+					(token, userProfile) => handleAuthSuccess(token, userProfile),
+					handleInvitationRequired,
+				);
 
-			// 招待コードが必要な場合の処理
-			if (callback.error === 'invitation_required' && oauthUserData) {
-				sessionStorage.setItem(provider.storageKey, JSON.stringify(oauthUserData));
-			}
-		} else if (callback.token && callback.user) {
-			// OAuth認証成功
-			AuthTokenManager.setAccessToken(callback.token);
-			setUser(callback.user);
-		}
-
-		provider.utils.clearAuthParams();
-		setLoading(false);
-		return true;
-	};
-
-	const initializeAuth = async () => {
-		try {
-			// 各OAuth providerのコールバックをチェック
-			for (const provider of oauthProviders) {
-				const authCallback = provider.utils.parseAuthCallback();
-
-				if (authCallback.error || (authCallback.token && authCallback.user)) {
-					const oauthUserData = provider.getUserData(authCallback as any) as OAuthUserData | undefined;
-					handleOAuthCallback(provider, authCallback, oauthUserData);
+				if (oauthHandled) {
+					setLoading(false);
 					return;
 				}
+
+				// 既存のJWT認証をチェック
+				const userProfile = await initializeEmailAuth();
+				if (userProfile) {
+					setUser(userProfile);
+				}
+			} catch (error) {
+				logger.error('Failed to initialize auth:', error);
+				AuthTokenManager.removeTokens();
+			} finally {
+				setLoading(false);
 			}
+		};
 
-			// 既存のJWT認証をチェック
-			if (AuthTokenManager.isAuthenticated()) {
-				const userProfile = await AuthAPI.getCurrentUser();
-				setUser(userProfile);
-			}
-		} catch (error) {
-			logger.error('Failed to initialize auth:', error);
-			AuthTokenManager.removeTokens();
-		} finally {
-			setLoading(false);
-		}
-	};
+		initialize();
+	}, [oauth, handleAuthSuccess, handleInvitationRequired]);
 
-	const login = async (email: string, password: string): Promise<void> => {
-		const response = await AuthAPI.login(email, password);
-		setUser(response.user);
-	};
+	// Email認証アクション
+	const login = useCallback(
+		async (email: string, password: string): Promise<void> => {
+			const userProfile = await emailAuth.login(email, password);
+			setUser(userProfile);
+		},
+		[emailAuth],
+	);
 
-	const register = async (
-		email: string,
-		password: string,
-		name?: string,
-		invitationCode?: string,
-	): Promise<void> => {
-		await AuthAPI.register(email, password, name, invitationCode);
-		// Registration successful, but user needs to login
-	};
+	const register = useCallback(
+		async (email: string, password: string, name?: string, invitationCode?: string): Promise<void> => {
+			await emailAuth.register(email, password, name, invitationCode);
+		},
+		[emailAuth],
+	);
 
-	const logout = async (): Promise<void> => {
-		// 即座にローカル状態をクリア（UI更新を優先）
+	const resetPassword = useCallback(
+		async (email: string): Promise<void> => {
+			await emailAuth.resetPassword(email);
+		},
+		[emailAuth],
+	);
+
+	const changePassword = useCallback(
+		async (currentPassword: string, newPassword: string): Promise<void> => {
+			await emailAuth.changePassword(currentPassword, newPassword);
+		},
+		[emailAuth],
+	);
+
+	// ログアウト
+	const logout = useCallback(async (): Promise<void> => {
 		setUser(null);
-		AuthTokenManager.removeTokens();
+		await performLogout();
+	}, []);
 
-		try {
-			// バックエンドへのログアウト通知は非同期で実行
-			await AuthAPI.logout();
-		} catch (error) {
-			logger.error('Logout error:', error);
-			// エラーが発生してもローカル状態は既にクリアされているのでそのまま続行
-		}
-	};
-
-	const resetPassword = async (email: string): Promise<void> => {
-		await AuthAPI.resetPassword(email);
-	};
-
-	const changePassword = async (currentPassword: string, newPassword: string): Promise<void> => {
-		await AuthAPI.changePassword(currentPassword, newPassword);
-	};
-
-	const refreshUser = async (): Promise<void> => {
+	// ユーザー情報更新
+	const refreshUser = useCallback(async (): Promise<void> => {
 		try {
 			if (AuthTokenManager.isAuthenticated()) {
 				const userProfile = await AuthAPI.getCurrentUser();
@@ -172,80 +147,59 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			setUser(null);
 			AuthTokenManager.removeTokens();
 		}
-	};
+	}, []);
 
-	const googleLogin = (): void => {
-		try {
-			GoogleAuthUtils.startGoogleAuth();
-		} catch (error) {
-			logger.error('Failed to start Google auth:', error);
-		}
-	};
+	// OAuthアクション
+	const googleLogin = useCallback(() => oauth.startLogin('google'), [oauth]);
+	const githubLogin = useCallback(() => oauth.startLogin('github'), [oauth]);
+	const xLogin = useCallback(() => oauth.startLogin('x'), [oauth]);
 
-	const googleRegisterWithInvitation = async (
-		googleUser: OAuthUserData,
-		invitationCode: string,
-	): Promise<void> => {
-		const response = await AuthAPI.googleRegisterWithInvitation(googleUser, invitationCode);
-		AuthTokenManager.setAccessToken(response.accessToken);
-		setUser(response.user);
-		// 成功したらpending user情報をクリア
-		sessionStorage.removeItem('pendingGoogleUser');
-	};
+	const googleRegisterWithInvitation = useCallback(
+		async (googleUser: OAuthUserData, invitationCode: string): Promise<void> => {
+			const response = await oauth.registerWithInvitation('google', googleUser, invitationCode);
+			handleAuthSuccess(response.accessToken, response.user);
+		},
+		[oauth, handleAuthSuccess],
+	);
 
-	const githubLogin = (): void => {
-		try {
-			GitHubAuthUtils.startGitHubAuth();
-		} catch (error) {
-			logger.error('Failed to start GitHub auth:', error);
-		}
-	};
+	const githubRegisterWithInvitation = useCallback(
+		async (githubUser: OAuthUserData, invitationCode: string): Promise<void> => {
+			const response = await oauth.registerWithInvitation('github', githubUser, invitationCode);
+			handleAuthSuccess(response.accessToken, response.user);
+		},
+		[oauth, handleAuthSuccess],
+	);
 
-	const githubRegisterWithInvitation = async (
-		githubUser: OAuthUserData,
-		invitationCode: string,
-	): Promise<void> => {
-		const response = await AuthAPI.githubRegisterWithInvitation(githubUser, invitationCode);
-		AuthTokenManager.setAccessToken(response.accessToken);
-		setUser(response.user);
-		// 成功したらpending user情報をクリア
-		sessionStorage.removeItem('pendingGitHubUser');
-	};
-
-	const xLogin = (): void => {
-		try {
-			XAuthUtils.startXAuth();
-		} catch (error) {
-			logger.error('Failed to start X auth:', error);
-		}
-	};
-
-	const xRegisterWithInvitation = async (
-		xUser: OAuthUserData,
-		invitationCode: string,
-	): Promise<void> => {
-		const response = await AuthAPI.xRegisterWithInvitation(xUser, invitationCode);
-		AuthTokenManager.setAccessToken(response.accessToken);
-		setUser(response.user);
-		// 成功したらpending user情報をクリア
-		sessionStorage.removeItem('pendingXUser');
-	};
+	const xRegisterWithInvitation = useCallback(
+		async (xUser: OAuthUserData, invitationCode: string): Promise<void> => {
+			const response = await oauth.registerWithInvitation('x', xUser, invitationCode);
+			handleAuthSuccess(response.accessToken, response.user);
+		},
+		[oauth, handleAuthSuccess],
+	);
 
 	const value: AuthContextType = {
+		// 状態
 		user,
 		loading,
 		isAuthenticated: !!user && AuthTokenManager.isAuthenticated(),
+
+		// Email認証
 		login,
 		register,
+		resetPassword,
+		changePassword,
+
+		// OAuth認証
 		googleLogin,
 		googleRegisterWithInvitation,
 		githubLogin,
 		githubRegisterWithInvitation,
 		xLogin,
 		xRegisterWithInvitation,
+
+		// 共通
 		logout,
-		resetPassword,
-		changePassword,
 		refreshUser,
 	};
 
@@ -259,3 +213,7 @@ export const useAuth = (): AuthContextType => {
 	}
 	return context;
 };
+
+// カスタムフックを再エクスポート
+export { useOAuth, type OAuthProvider } from '../hooks/useOAuth';
+export { useEmailAuth } from '../hooks/useEmailAuth';

@@ -4,7 +4,6 @@ import { useNotebooks } from '../../hooks/useNotebookQueries';
 import { useTagQueries } from '../../hooks/useTagQueries';
 import { loadThemeCSS } from '../../utils/themeLoader';
 import { TagDropdownIcon } from '../tag/TagDropdownIcon';
-import { useTagStore } from '../../stores/useTagStore';
 import { RichTextEditor } from '../editor/RichTextEditor';
 import type { Memo } from '../../types/memo';
 import { logger } from '../../utils/logger';
@@ -18,7 +17,8 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	const createMemo = useCreateMemo();
 	const updateMemo = useUpdateMemo();
 	const deleteMemo = useDeleteMemo();
-	const { assignTags } = useTagQueries();
+	const { assignTags, tagsQuery } = useTagQueries();
+	const tags = tagsQuery.data ?? [];
 	const { data: notebooks = [] } = useNotebooks();
 
 	const [title, setTitle] = useState(memo?.title || '');
@@ -29,7 +29,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	const [selectedNotebookId, setSelectedNotebookId] = useState<string>(memo?.notebookId || '');
 
 	const [hasChanges, setHasChanges] = useState(false);
-	const { tags } = useTagStore();
 
 	// 選択されたノートブックのテーマを動的に取得
 	const selectedNotebook = notebooks.find((nb) => nb.id === selectedNotebookId);

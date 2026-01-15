@@ -1,41 +1,41 @@
 import { Injectable } from '@nestjs/common';
 import { AuthorizationService } from 'src/common/services/authorization.service';
+import { BaseOwnableService, PrismaModelDelegate } from 'src/common/services/base-ownable.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateNotebookDto } from './dto/create-notebook.dto/create-notebook.dto';
 import { UpdateNotebookDto } from './dto/update-notebook.dto/update-notebook.dto';
-import type { Prisma } from '@prisma/client';
+import type { Notebook, Prisma } from '@prisma/client';
 import { THEME_SELECT } from '../common/constants/prisma-selects';
 
+type NotebookWithRelations = Notebook & { userId: string };
+
 @Injectable()
-export class NotebookService {
+export class NotebookService extends BaseOwnableService<NotebookWithRelations> {
 	constructor(
-		private readonly prisma: PrismaService,
-		private readonly authorizationService: AuthorizationService,
-	) {}
-
-	findAll(userId: string) {
-		return this.prisma.notebook.findMany({
-			where: { userId },
-			include: {
-				theme: { select: THEME_SELECT },
-			},
-			orderBy: { updatedAt: 'desc' },
-		});
+		prisma: PrismaService,
+		authorizationService: AuthorizationService,
+	) {
+		super(prisma, authorizationService);
 	}
 
-	// 1件取得(所有者チェック込み)
-	async findOne(id: string, userId: string) {
-		const notebook = await this.prisma.notebook.findUnique({
-			where: { id },
-			include: {
-				theme: { select: THEME_SELECT },
-			},
-		});
-		// 見つからない/他人のものなら例外に
-		return this.authorizationService.validateOwnership(notebook, userId, 'Notebook');
+	protected getModelDelegate(): PrismaModelDelegate<NotebookWithRelations> {
+		return this.prisma.notebook as unknown as PrismaModelDelegate<NotebookWithRelations>;
 	}
 
-	// 作成
+	protected getEntityName(): string {
+		return 'Notebook';
+	}
+
+	protected getDefaultInclude() {
+		return {
+			theme: { select: THEME_SELECT },
+		};
+	}
+
+	protected getDefaultOrderBy() {
+		return { updatedAt: 'desc' as const };
+	}
+
 	create(dto: CreateNotebookDto, userId: string) {
 		const data: Prisma.NotebookCreateInput = {
 			name: dto.name ?? null,
@@ -45,17 +45,13 @@ export class NotebookService {
 		};
 		return this.prisma.notebook.create({
 			data,
-			include: {
-				theme: { select: THEME_SELECT },
-			},
+			include: this.getDefaultInclude(),
 		});
-		// メモ: Notebookにcontent等を足すならschema.prismaを変更 → migrationしてここでdataに加える
 	}
 
-	// 更新(まず所有者チェック→更新)
 	async update(id: string, dto: UpdateNotebookDto, userId: string) {
-		const existing = await this.prisma.notebook.findUnique({ where: { id } });
-		this.authorizationService.validateOwnership(existing, userId, 'Notebook');
+		// 所有者検証
+		await this.findOne(id, userId);
 
 		const data: Prisma.NotebookUpdateInput = {
 			...(dto.name !== undefined ? { name: dto.name } : {}),
@@ -67,16 +63,11 @@ export class NotebookService {
 		return this.prisma.notebook.update({
 			where: { id },
 			data,
-			include: {
-				theme: { select: THEME_SELECT },
-			},
+			include: this.getDefaultInclude(),
 		});
 	}
 
 	async delete(id: string, userId: string) {
-		const existing = await this.prisma.notebook.findUnique({ where: { id } });
-		this.authorizationService.validateOwnership(existing, userId, 'Notebook');
-
-		return this.prisma.notebook.delete({ where: { id } });
+		return this.remove(id, userId);
 	}
 }

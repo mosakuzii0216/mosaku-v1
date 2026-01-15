@@ -1,67 +1,45 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthorizationService } from '../common/services/authorization.service';
+import { BaseOwnableService, PrismaModelDelegate } from '../common/services/base-ownable.service';
 import { ERROR_CODES, throwForbidden, throwNotFound } from '../common/exceptions';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { AssignTagsDto } from './dto/assign-tags.dto';
+import type { Tag } from '@prisma/client';
+
+type TagWithRelations = Tag & { userId: string };
 
 @Injectable()
-export class TagService {
+export class TagService extends BaseOwnableService<TagWithRelations> {
 	constructor(
-		private readonly prisma: PrismaService,
-		private readonly authorizationService: AuthorizationService,
-	) {}
-
-	async findAll(userId: string) {
-		return this.prisma.tag.findMany({
-			where: { userId },
-			orderBy: {
-				name: 'asc',
-			},
-		});
+		prisma: PrismaService,
+		authorizationService: AuthorizationService,
+	) {
+		super(prisma, authorizationService);
 	}
 
-	async findOne(id: string, userId: string) {
-		const tag = await this.prisma.tag.findUnique({
-			where: { id },
-		});
+	protected getModelDelegate(): PrismaModelDelegate<TagWithRelations> {
+		return this.prisma.tag as unknown as PrismaModelDelegate<TagWithRelations>;
+	}
 
-		return this.authorizationService.validateOwnership(tag, userId, 'Tag');
+	protected getEntityName(): string {
+		return 'Tag';
+	}
+
+	protected getDefaultOrderBy() {
+		return { name: 'asc' as const };
 	}
 
 	async create(createTagDto: CreateTagDto, userId: string) {
-		return this.prisma.tag.create({
-			data: {
-				...createTagDto,
-				userId,
-			},
+		return this.createBase({
+			...createTagDto,
+			userId,
 		});
 	}
 
 	async update(id: string, updateTagDto: UpdateTagDto, userId: string) {
-		const tag = await this.prisma.tag.findUnique({
-			where: { id },
-		});
-
-		this.authorizationService.validateOwnership(tag, userId, 'Tag');
-
-		return this.prisma.tag.update({
-			where: { id },
-			data: updateTagDto,
-		});
-	}
-
-	async remove(id: string, userId: string) {
-		const tag = await this.prisma.tag.findUnique({
-			where: { id },
-		});
-
-		this.authorizationService.validateOwnership(tag, userId, 'Tag');
-
-		return this.prisma.tag.delete({
-			where: { id },
-		});
+		return this.updateBase(id, updateTagDto, userId);
 	}
 
 	async search(query: string, userId: string) {
@@ -77,9 +55,7 @@ export class TagService {
 					mode: 'insensitive',
 				},
 			},
-			orderBy: {
-				name: 'asc',
-			},
+			orderBy: this.getDefaultOrderBy(),
 		});
 	}
 

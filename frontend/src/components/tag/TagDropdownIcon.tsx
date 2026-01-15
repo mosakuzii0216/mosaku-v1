@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useTagStore } from '../../stores/useTagStore';
+import { useTagQueries } from '../../hooks/useTagQueries';
 
 interface TagDropdownIconProps {
 	selectedTagIds: string[];
@@ -12,7 +12,8 @@ export const TagDropdownIcon = ({
 	onToggleTag,
 	className = '',
 }: TagDropdownIconProps) => {
-	const { tags } = useTagStore();
+	const { tagsQuery } = useTagQueries();
+	const tags = tagsQuery.data ?? [];
 	const [open, setOpen] = useState(false);
 	const ref = useRef<HTMLDivElement>(null);
 

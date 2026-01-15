@@ -1,64 +1,71 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthorizationService } from '../common/services/authorization.service';
+import { BaseOwnableService, PrismaModelDelegate } from '../common/services/base-ownable.service';
 import { CreateMemoDto } from './dto/create-memo.dto';
 import { UpdateMemoDto } from './dto/update-memo.dto';
-import type { Prisma } from '@prisma/client';
+import type { Memo, Prisma } from '@prisma/client';
 import { NOTEBOOK_WITH_THEME_SELECT } from '../common/constants/prisma-selects';
 
+// Memoエンティティ型（リレーション込み）
+type MemoWithRelations = Memo & { userId: string };
+
 @Injectable()
-export class MemoService {
+export class MemoService extends BaseOwnableService<MemoWithRelations> {
 	constructor(
-		private readonly prisma: PrismaService,
-		private readonly authorizationService: AuthorizationService,
-	) {}
+		prisma: PrismaService,
+		authorizationService: AuthorizationService,
+	) {
+		super(prisma, authorizationService);
+	}
 
+	protected getModelDelegate(): PrismaModelDelegate<MemoWithRelations> {
+		return this.prisma.memo as unknown as PrismaModelDelegate<MemoWithRelations>;
+	}
+
+	protected getEntityName(): string {
+		return 'Memo';
+	}
+
+	protected getDefaultInclude() {
+		return {
+			memoTags: {
+				include: {
+					tag: true,
+				},
+			},
+			notebook: {
+				select: NOTEBOOK_WITH_THEME_SELECT,
+			},
+		};
+	}
+
+	protected getDefaultOrderBy() {
+		return { updatedAt: 'desc' as const };
+	}
+
+	/**
+	 * タグでフィルタリングして全メモを取得
+	 */
 	async findAll(userId: string, tagIds?: string[]) {
-		const whereClause: Prisma.MemoWhereInput = { userId };
+		if (!tagIds || tagIds.length === 0) {
+			return super.findAll(userId);
+		}
 
-		// Filter by tags if provided
-		if (tagIds && tagIds.length > 0) {
-			whereClause.memoTags = {
+		const whereClause: Prisma.MemoWhereInput = {
+			userId,
+			memoTags: {
 				some: {
 					tagId: { in: tagIds },
 				},
-			};
-		}
+			},
+		};
 
 		return this.prisma.memo.findMany({
 			where: whereClause,
-			include: {
-				memoTags: {
-					include: {
-						tag: true,
-					},
-				},
-				notebook: {
-					select: NOTEBOOK_WITH_THEME_SELECT,
-				},
-			},
-			orderBy: {
-				updatedAt: 'desc',
-			},
+			include: this.getDefaultInclude(),
+			orderBy: this.getDefaultOrderBy(),
 		});
-	}
-
-	async findOne(id: string, userId: string) {
-		const memo = await this.prisma.memo.findUnique({
-			where: { id },
-			include: {
-				memoTags: {
-					include: {
-						tag: true,
-					},
-				},
-				notebook: {
-					select: NOTEBOOK_WITH_THEME_SELECT,
-				},
-			},
-		});
-
-		return this.authorizationService.validateOwnership(memo, userId, 'Memo');
 	}
 
 	async create(createMemoDto: CreateMemoDto, userId: string) {
@@ -83,33 +90,7 @@ export class MemoService {
 	}
 
 	async update(id: string, updateMemoDto: UpdateMemoDto, userId: string) {
-		const memo = await this.prisma.memo.findUnique({
-			where: { id },
-		});
-
-		this.authorizationService.validateOwnership(memo, userId, 'Memo');
-
-		return this.prisma.memo.update({
-			where: { id },
-			data: updateMemoDto,
-			include: {
-				notebook: {
-					select: NOTEBOOK_WITH_THEME_SELECT,
-				},
-			},
-		});
-	}
-
-	async remove(id: string, userId: string) {
-		const memo = await this.prisma.memo.findUnique({
-			where: { id },
-		});
-
-		this.authorizationService.validateOwnership(memo, userId, 'Memo');
-
-		return this.prisma.memo.delete({
-			where: { id },
-		});
+		return this.updateBase(id, updateMemoDto, userId);
 	}
 
 	async search(query: string, userId: string, tagIds?: string[]) {

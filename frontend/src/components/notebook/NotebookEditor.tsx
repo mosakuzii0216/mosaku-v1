@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-// import { TagSelector } from '../tag/TagSelector';
 import { TagDropdownIcon } from '../tag/TagDropdownIcon';
 import { RichTextEditor } from '../editor/RichTextEditor';
 import { useCreateNotebook, useNotebook, useUpdateNotebook } from '../../hooks/useNotebookQueries';
 import { useSystemThemes, usePublicThemes } from '../../hooks/useThemeQueries';
-import { useMemoStore } from '../../stores/useMemoStore';
-import { useTagStore } from '../../stores/useTagStore';
+import { useTagQueries } from '../../hooks/useTagQueries';
+import { useViewStore } from '../../stores/useViewStore';
 import { apiClient } from '../../utils/api';
 import { loadThemeCSS } from '../../utils/themeLoader';
 import { logger } from '../../utils/logger';
@@ -22,8 +21,9 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 	const [themeId, setThemeId] = useState<string>('default');
 	const createNotebook = useCreateNotebook();
 	const updateNotebook = useUpdateNotebook();
-	const { goToNotebookList } = useMemoStore();
-	const { tags } = useTagStore();
+	const { goToNotebookList } = useViewStore();
+	const { tagsQuery } = useTagQueries();
+	const tags = tagsQuery.data ?? [];
 
 	const isEdit = !isCreate && !!notebookId;
 	const { data: editingNotebook, isLoading: isLoadingNotebook } = useNotebook(notebookId);

@@ -1642,11 +1642,11 @@ findAll(
 
 ## フェーズ1完了レポート
 
-**完了日**: 2026-01-10
-**実施期間**: 2026-01-08 〜 2026-01-10（3日間）
+**完了日**: 2026-01-13
+**実施期間**: 2026-01-08 〜 2026-01-13（6日間）
 **完了率**: **100%** 🎉
 
-### 📊 完了した項目（11項目）
+### 📊 完了した項目（12項目）
 
 #### 🔴 高優先度（4項目）
 
@@ -1665,11 +1665,12 @@ findAll(
 | **2-C** | AuthForm分割 | ✅ 完了 | `ed9b2bd` | ~180行 |
 | **3-C** | APIリクエストメソッド統合 | ✅ 完了 | `6767250` | ~30行 |
 
-#### 🟢 低優先度（4項目）
+#### 🟢 低優先度（5項目）
 
 | # | 項目 | 状態 | コミット | 削減行数 |
 |---|------|------|---------|---------|
 | **3-D** | マジックナンバー・文字列の設定化 | ✅ 完了 | `6767250` | - |
+| **4-A** | エラーメッセージの統一（ERROR_CODES導入） | ✅ 完了 | TBD | ~50箇所 |
 | **5-A** | any型の削除 | ✅ 完了 | `cbb1fc0` | - |
 | **8-A** | ロギングの統一（AppLogger導入） | ✅ 完了 | `cbb1fc0`, `88eec41` | - |
 | **9-A** | OAuthボタンコンポーネント統合 | ✅ 完了 | `69e6965` | ~120行 |
@@ -1695,6 +1696,7 @@ findAll(
 - ✅ OAuth戦略の共通化（BaseOAuthStrategy）
 - ✅ APIリクエストメソッドの統合（AuthLevel enum）
 - ✅ 招待コード検証の一元化（InvitationService）
+- ✅ エラーメッセージの統一（ERROR_CODES、AppException、統一ヘルパー関数）
 
 ### 📝 主要コミット履歴
 
@@ -1745,6 +1747,17 @@ ed9b2bd refactor: 複雑な関数を分割して循環的複雑度を低減
    } as const;
    ```
 
+3. **エラーメッセージ統一システム**: 全~50箇所のエラーを統一
+   ```typescript
+   // Before: 不統一な例外（英語/日本語混在）
+   throw new BadRequestException('Invalid invitation code');
+   throw new UnauthorizedException('認証が必要です');
+
+   // After: 統一されたエラーコードとメッセージ
+   throwBadRequest(ERROR_CODES.INVITATION.INVALID_CODE);
+   throwUnauthorized(ERROR_CODES.AUTH.AUTHENTICATION_REQUIRED);
+   ```
+
 #### Frontend
 1. **OAuthプロバイダ配列化**: 3つのプロバイダを統一処理
    ```typescript
@@ -1770,3 +1783,186 @@ ed9b2bd refactor: 複雑な関数を分割して循環的複雑度を低減
 
 **推定期間**: 2-3週間
 **期待される効果**: さらなる保守性向上、テスト容易性の改善
+
+---
+
+## フェーズ2完了レポート
+
+**完了日**: 2026-01-15
+**実施期間**: 2026-01-15（1日）
+**完了率**: **100%** 🎉
+
+### 📊 完了した項目（4項目）
+
+| # | 項目 | 状態 | 影響範囲 |
+|---|------|------|---------|
+| **1** | BaseOwnableService作成 | ✅ 完了 | Backend |
+| **2** | useMemoStore分割 | ✅ 完了 | Frontend |
+| **3** | AuthContext責務分離 | ✅ 完了 | Frontend |
+| **4** | React Query + Zustand二重管理解消 | ✅ 完了 | Frontend |
+
+### 🎯 達成内容
+
+#### 1. BaseOwnableService作成（Backend）
+
+**新規ファイル**: `backend/src/common/services/base-ownable.service.ts`
+
+共通のCRUDパターンを抽象化した基底クラスを作成:
+
+```typescript
+export abstract class BaseOwnableService<Entity extends OwnableEntity> {
+  protected abstract getModelDelegate(): PrismaModelDelegate<Entity>;
+  protected abstract getEntityName(): string;
+  protected getDefaultInclude(): object | undefined;
+  protected getDefaultOrderBy(): object;
+
+  async findAll(userId: string): Promise<Entity[]>;
+  async findOne(id: string, userId: string): Promise<Entity>;
+  async remove(id: string, userId: string): Promise<Entity>;
+  protected async updateBase(id: string, data: object, userId: string): Promise<Entity>;
+  protected async createBase(data: object): Promise<Entity>;
+}
+```
+
+**リファクタリングしたサービス**:
+- `MemoService` → `extends BaseOwnableService<MemoWithRelations>`
+- `NotebookService` → `extends BaseOwnableService<NotebookWithRelations>`
+- `TagService` → `extends BaseOwnableService<TagWithRelations>`
+
+**効果**:
+- 重複コード約100行削減
+- 所有者検証ロジックの一元化
+- 新しいエンティティ追加時の実装コスト削減
+
+#### 2. useMemoStore分割（Frontend）
+
+**新規ファイル**:
+- `frontend/src/stores/useViewStore.ts` - UI状態とナビゲーション
+- `frontend/src/stores/useMemoDataStore.ts` - メモデータとCRUD操作
+- `frontend/src/stores/usePaletteStore.ts` - パレット状態
+
+**分割内容**:
+
+| ストア | 責務 | 状態数 |
+|--------|------|--------|
+| useViewStore | UI状態、ナビゲーション | 7状態 + 9アクション |
+| useMemoDataStore | メモデータ、CRUD | 3状態 + 6アクション |
+| usePaletteStore | パレット状態 | 3状態 + 2アクション |
+
+**後方互換性**: `useMemoStore` は統合フックとして維持（内部で3つのストアを使用）
+
+#### 3. AuthContext責務分離（Frontend）
+
+**新規ファイル**:
+- `frontend/src/hooks/useOAuth.ts` - OAuth認証ロジック
+- `frontend/src/hooks/useEmailAuth.ts` - Email/Password認証ロジック
+
+**分離内容**:
+
+| フック | 責務 |
+|--------|------|
+| useOAuth | OAuth認証開始、コールバック処理、招待コード付き登録 |
+| useEmailAuth | ログイン、登録、パスワードリセット、パスワード変更 |
+
+**AuthContext**: 状態管理のみに集中、認証ロジックはカスタムフックに委譲
+
+#### 4. React Query + Zustand二重管理解消（Frontend）
+
+**Before（二重管理）**:
+```typescript
+// useMemoQueries.ts
+const query = useQuery({ ... });
+useEffect(() => {
+  if (query.data) {
+    setMemos(query.data); // Zustandにコピー
+  }
+}, [query.data]);
+```
+
+**After（単一の真実の源泉）**:
+```typescript
+// useMemoQueries.ts
+export const useMemos = () => {
+  return useQuery({ ... }); // React Queryのみ
+};
+
+// コンポーネント
+const { data: memos } = useMemos();
+```
+
+**変更したファイル**:
+- `useMemoQueries.ts` - useEffectコピー処理を削除
+- `useTagQueries.ts` - queryFn内のsetTagsを削除
+- `TagDropdownIcon.tsx` - useTagStore → useTagQueries
+- `MemoEditor.tsx` - useTagStore → useTagQueries
+- `NotebookEditor.tsx` - useTagStore/useMemoStore → useTagQueries/useViewStore
+
+### 📈 メトリクス
+
+#### コード品質
+- **新規抽象化**: 3ファイル（BaseOwnableService、useOAuth、useEmailAuth）
+- **分割されたストア**: 1 → 3（責務の明確化）
+- **二重管理解消**: 5箇所のuseEffect/コピー処理を削除
+
+#### アーキテクチャ改善
+- ✅ Backend: CRUDパターンの基底クラス化
+- ✅ Frontend: 状態管理の責務分離（UI/Data/Palette）
+- ✅ Frontend: 認証ロジックのカスタムフック化
+- ✅ Frontend: React Query単一の真実の源泉
+
+### 🏆 成果
+
+**Before（フェーズ2開始前）**:
+- 各サービスで独立したCRUD実装
+- 193行のモノリシックなuseMemoStore
+- 262行のAuthContext（4つの責務が混在）
+- React Query → Zustand への不要なデータコピー
+
+**After（フェーズ2完了後）**:
+- ✅ BaseOwnableServiceによる統一されたCRUDパターン
+- ✅ 3つの専門化されたストア（後方互換性維持）
+- ✅ 認証ロジックのカスタムフック分離
+- ✅ React Queryを唯一の真実の源泉として使用
+
+### 📌 技術的ハイライト
+
+#### Backend - BaseOwnableService
+```typescript
+// サービスの実装が簡潔に
+@Injectable()
+export class MemoService extends BaseOwnableService<MemoWithRelations> {
+  protected getModelDelegate() { return this.prisma.memo; }
+  protected getEntityName() { return 'Memo'; }
+  protected getDefaultInclude() { return { memoTags: {...}, notebook: {...} }; }
+  // カスタムメソッドのみ追加
+}
+```
+
+#### Frontend - ストア分割
+```typescript
+// 統合フックで後方互換性維持
+export const useMemoStore = (): MemoStore => {
+  const viewStore = useViewStore();
+  const dataStore = useMemoDataStore();
+  const paletteStore = usePaletteStore();
+  return { ...viewStore, ...dataStore, ...paletteStore };
+};
+```
+
+#### Frontend - 二重管理解消
+```typescript
+// コンポーネントはReact Queryから直接データ取得
+const { tagsQuery } = useTagQueries();
+const tags = tagsQuery.data ?? [];
+```
+
+### 🚀 次のステップ（フェーズ3）
+
+フェーズ2の成功を受けて、以下の改善が検討可能:
+
+1. **ページネーション実装** - 大量データ対応
+2. **キャッシング戦略の明文化** - staleTime/cacheTimeの統一設定
+3. **フィーチャーフラグシステム** - 機能の段階的リリース対応
+
+**推定期間**: 3-4週間
+**期待される効果**: スケーラビリティとリリース管理の改善
