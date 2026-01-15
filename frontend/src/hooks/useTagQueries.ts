@@ -3,6 +3,7 @@ import { apiClient } from '../utils/api';
 import type { CreateTagDto, UpdateTagDto, AssignTagsDto } from '../types/tag';
 import { logger } from '../utils/logger';
 import { queryKeys } from '../constants/queryKeys';
+import { ENTITY_CACHE_CONFIG, getDefaultQueryOptions } from '../constants/cacheConfig';
 
 /**
  * タグ関連のReact Query hooks
@@ -22,14 +23,8 @@ export const useTagQueries = () => {
 				throw error;
 			}
 		},
-		retry: (failureCount, error) => {
-			// 認証エラーの場合はリトライしない
-			if (error.message?.includes('認証') || error.message?.includes('401')) {
-				return false;
-			}
-			return failureCount < 2;
-		},
-		staleTime: 30000, // 30秒間はキャッシュを使用
+		...getDefaultQueryOptions(),
+		...ENTITY_CACHE_CONFIG.tags.list,
 	});
 
 	// タグ作成
@@ -72,6 +67,7 @@ export const useTagQueries = () => {
 			queryKey: queryKeys.tags.search(query),
 			queryFn: () => apiClient.searchTags(query),
 			enabled: !!query,
+			...ENTITY_CACHE_CONFIG.tags.search,
 		});
 
 	return {

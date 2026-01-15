@@ -9,6 +9,7 @@ import type {
 } from '../types/theme';
 import { logger } from '../utils/logger';
 import { queryKeys } from '../constants/queryKeys';
+import { ENTITY_CACHE_CONFIG } from '../constants/cacheConfig';
 
 // テーマ一覧取得（検索・フィルタリング対応）
 export const useThemes = (params?: ThemeSearchParams) => {
@@ -22,7 +23,7 @@ export const useThemes = (params?: ThemeSearchParams) => {
 				throw error;
 			}
 		},
-		staleTime: 5 * 60 * 1000, // 5分
+		...ENTITY_CACHE_CONFIG.themes.list,
 	});
 };
 
@@ -38,7 +39,7 @@ export const useSystemThemes = () => {
 				throw error;
 			}
 		},
-		staleTime: 10 * 60 * 1000, // 10分（システムテーマは変更頻度が低い）
+		...ENTITY_CACHE_CONFIG.themes.system,
 	});
 };
 
@@ -54,7 +55,7 @@ export const usePublicThemes = () => {
 				throw error;
 			}
 		},
-		staleTime: 5 * 60 * 1000, // 5分
+		...ENTITY_CACHE_CONFIG.themes.public,
 	});
 };
 
@@ -70,7 +71,7 @@ export const useThemesByCategory = (category: ThemeCategory) => {
 				throw error;
 			}
 		},
-		staleTime: 5 * 60 * 1000, // 5分
+		...ENTITY_CACHE_CONFIG.themes.list,
 	});
 };
 
@@ -87,7 +88,7 @@ export const useTheme = (id: string) => {
 			}
 		},
 		enabled: !!id,
-		staleTime: 5 * 60 * 1000, // 5分
+		...ENTITY_CACHE_CONFIG.themes.detail,
 	});
 };
 
@@ -103,7 +104,7 @@ export const useFavoriteThemes = () => {
 				throw error;
 			}
 		},
-		staleTime: 1 * 60 * 1000, // 1分（お気に入りは頻繁に変更される可能性）
+		...ENTITY_CACHE_CONFIG.themes.favorites,
 	});
 };
 

@@ -2,11 +2,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../utils/api';
 import type { CreateNotebookDto, UpdateNotebookDto } from '../types/notebook';
 import { queryKeys } from '../constants/queryKeys';
+import { ENTITY_CACHE_CONFIG } from '../constants/cacheConfig';
 
 export const useNotebooks = () => {
 	return useQuery({
 		queryKey: queryKeys.notebooks.all,
 		queryFn: () => apiClient.getNotebooks(),
+		...ENTITY_CACHE_CONFIG.notebooks.list,
 	});
 };
 
@@ -25,6 +27,7 @@ export const useNotebook = (id?: string, enabled: boolean = true) => {
 		queryKey: id ? queryKeys.notebooks.detail(id) : (['notebooks', '__none__'] as const),
 		queryFn: () => apiClient.getNotebook(id as string),
 		enabled: !!id && enabled,
+		...ENTITY_CACHE_CONFIG.notebooks.detail,
 	});
 };
 
