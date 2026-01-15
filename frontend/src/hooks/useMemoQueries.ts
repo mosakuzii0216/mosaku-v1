@@ -1,9 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { apiClient } from '../utils/api';
 import { useViewStore } from '../stores/useViewStore';
 import { useTagStore } from '../stores/useTagStore';
 import type { CreateMemoDto, UpdateMemoDto } from '../types/memo';
+import type { PaginationParams } from '../types/pagination';
 import { queryKeys } from '../constants/queryKeys';
+import { ENTITY_CACHE_CONFIG } from '../constants/cacheConfig';
 
 /**
  * メモ一覧取得
@@ -15,6 +17,25 @@ export const useMemos = () => {
 	return useQuery({
 		queryKey: queryKeys.memos.list(selectedTags),
 		queryFn: () => apiClient.getMemos(selectedTags.length > 0 ? selectedTags : undefined),
+		...ENTITY_CACHE_CONFIG.memos.list,
+	});
+};
+
+/**
+ * メモ一覧取得（ページネーション対応）
+ */
+export const useMemosPaginated = (pagination: PaginationParams = { page: 1, limit: 20 }) => {
+	const { selectedTags } = useTagStore();
+
+	return useQuery({
+		queryKey: [...queryKeys.memos.list(selectedTags), 'paginated', pagination],
+		queryFn: () =>
+			apiClient.getMemosPaginated(
+				pagination,
+				selectedTags.length > 0 ? selectedTags : undefined,
+			),
+		placeholderData: keepPreviousData,
+		...ENTITY_CACHE_CONFIG.memos.list,
 	});
 };
 
@@ -24,6 +45,7 @@ export const useMemo = (id: string) => {
 		queryKey: queryKeys.memos.detail(id),
 		queryFn: () => apiClient.getMemo(id),
 		enabled: !!id,
+		...ENTITY_CACHE_CONFIG.memos.detail,
 	});
 };
 
@@ -38,6 +60,30 @@ export const useSearchMemos = (query: string) => {
 		queryKey: queryKeys.memos.search(query, selectedTags),
 		queryFn: () => apiClient.searchMemos(query, selectedTags.length > 0 ? selectedTags : undefined),
 		enabled: query.length > 0,
+		...ENTITY_CACHE_CONFIG.memos.search,
+	});
+};
+
+/**
+ * メモ検索（ページネーション対応）
+ */
+export const useSearchMemosPaginated = (
+	query: string,
+	pagination: PaginationParams = { page: 1, limit: 20 },
+) => {
+	const { selectedTags } = useTagStore();
+
+	return useQuery({
+		queryKey: [...queryKeys.memos.search(query, selectedTags), 'paginated', pagination],
+		queryFn: () =>
+			apiClient.searchMemosPaginated(
+				query,
+				pagination,
+				selectedTags.length > 0 ? selectedTags : undefined,
+			),
+		enabled: query.length > 0,
+		placeholderData: keepPreviousData,
+		...ENTITY_CACHE_CONFIG.memos.search,
 	});
 };
 

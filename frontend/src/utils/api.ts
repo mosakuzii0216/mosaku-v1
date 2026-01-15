@@ -10,6 +10,7 @@ import type {
 import type { Theme, ThemeSearchParams, CreateThemeData, UpdateThemeData } from '../types/theme';
 import type { Notebook, CreateNotebookDto, UpdateNotebookDto } from '../types/notebook';
 import type { InvitationVerificationResponse } from '../types/invitation';
+import type { PaginationParams, PaginatedResult } from '../types/pagination';
 import { AuthTokenManager } from './auth';
 import { getBackendUrl } from './env';
 
@@ -134,6 +135,39 @@ class ApiClient {
 			tagIds.forEach((tagId) => params.append('tagIds', tagId));
 		}
 		return this.request<Memo[]>(`/memos/search?${params.toString()}`);
+	}
+
+	// メモ一覧取得（ページネーション対応）
+	async getMemosPaginated(
+		pagination?: PaginationParams,
+		tagIds?: string[],
+	): Promise<PaginatedResult<Memo>> {
+		const params = new URLSearchParams();
+		if (pagination?.page) params.append('page', pagination.page.toString());
+		if (pagination?.limit) params.append('limit', pagination.limit.toString());
+		if (tagIds && tagIds.length > 0) {
+			tagIds.forEach((tagId) => params.append('tagIds', tagId));
+		}
+		const queryString = params.toString();
+		return this.request<PaginatedResult<Memo>>(
+			`/memos/paginated${queryString ? `?${queryString}` : ''}`,
+		);
+	}
+
+	// メモ検索（ページネーション対応）
+	async searchMemosPaginated(
+		query: string,
+		pagination?: PaginationParams,
+		tagIds?: string[],
+	): Promise<PaginatedResult<Memo>> {
+		const params = new URLSearchParams();
+		if (query) params.append('q', query);
+		if (pagination?.page) params.append('page', pagination.page.toString());
+		if (pagination?.limit) params.append('limit', pagination.limit.toString());
+		if (tagIds && tagIds.length > 0) {
+			tagIds.forEach((tagId) => params.append('tagIds', tagId));
+		}
+		return this.request<PaginatedResult<Memo>>(`/memos/search/paginated?${params.toString()}`);
 	}
 
 	// タグ一覧取得
