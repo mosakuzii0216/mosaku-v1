@@ -2,6 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthorizationService } from '../common/services/authorization.service';
 import { BaseOwnableService, PrismaModelDelegate } from '../common/services/base-ownable.service';
+import {
+	PaginationQueryDto,
+	PaginatedResult,
+	createPaginatedResult,
+	calculateSkip,
+} from '../common/dto/pagination.dto';
 import { CreateMemoDto } from './dto/create-memo.dto';
 import { UpdateMemoDto } from './dto/update-memo.dto';
 import type { Memo, Prisma } from '@prisma/client';
@@ -68,6 +74,41 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 		});
 	}
 
+	/**
+	 * ページネーション付きでメモを取得
+	 */
+	async findAllPaginated(
+		userId: string,
+		pagination: PaginationQueryDto,
+		tagIds?: string[],
+	): Promise<PaginatedResult<MemoWithRelations>> {
+		const { page = 1, limit = 20 } = pagination;
+		const skip = calculateSkip(page, limit);
+
+		const whereClause: Prisma.MemoWhereInput = { userId };
+
+		if (tagIds && tagIds.length > 0) {
+			whereClause.memoTags = {
+				some: {
+					tagId: { in: tagIds },
+				},
+			};
+		}
+
+		const [data, total] = await Promise.all([
+			this.prisma.memo.findMany({
+				where: whereClause,
+				include: this.getDefaultInclude(),
+				orderBy: this.getDefaultOrderBy(),
+				skip,
+				take: limit,
+			}),
+			this.prisma.memo.count({ where: whereClause }),
+		]);
+
+		return createPaginatedResult(data as MemoWithRelations[], total, page, limit);
+	}
+
 	async create(createMemoDto: CreateMemoDto, userId: string) {
 		const createData: Prisma.MemoUncheckedCreateInput = {
 			title: createMemoDto.title,
@@ -127,19 +168,64 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 
 		return this.prisma.memo.findMany({
 			where: whereClause,
-			include: {
-				memoTags: {
-					include: {
-						tag: true,
+			include: this.getDefaultInclude(),
+			orderBy: this.getDefaultOrderBy(),
+		});
+	}
+
+	/**
+	 * ページネーション付きで検索
+	 */
+	async searchPaginated(
+		query: string,
+		userId: string,
+		pagination: PaginationQueryDto,
+		tagIds?: string[],
+	): Promise<PaginatedResult<MemoWithRelations>> {
+		if (!query) {
+			return this.findAllPaginated(userId, pagination, tagIds);
+		}
+
+		const { page = 1, limit = 20 } = pagination;
+		const skip = calculateSkip(page, limit);
+
+		const whereClause: Prisma.MemoWhereInput = {
+			userId,
+			OR: [
+				{
+					title: {
+						contains: query,
+						mode: 'insensitive',
 					},
 				},
-				notebook: {
-					select: NOTEBOOK_WITH_THEME_SELECT,
+				{
+					content: {
+						contains: query,
+						mode: 'insensitive',
+					},
 				},
-			},
-			orderBy: {
-				updatedAt: 'desc',
-			},
-		});
+			],
+		};
+
+		if (tagIds && tagIds.length > 0) {
+			whereClause.memoTags = {
+				some: {
+					tagId: { in: tagIds },
+				},
+			};
+		}
+
+		const [data, total] = await Promise.all([
+			this.prisma.memo.findMany({
+				where: whereClause,
+				include: this.getDefaultInclude(),
+				orderBy: this.getDefaultOrderBy(),
+				skip,
+				take: limit,
+			}),
+			this.prisma.memo.count({ where: whereClause }),
+		]);
+
+		return createPaginatedResult(data as MemoWithRelations[], total, page, limit);
 	}
 }
