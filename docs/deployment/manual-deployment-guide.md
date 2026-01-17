@@ -379,7 +379,7 @@ gcloud run deploy mosaku-backend \
   --min-instances=0 \
   --max-instances=10 \
   --timeout=300 \
-  --set-env-vars="NODE_ENV=production,SUPABASE_URL=https://ninyjmahwnbtgqqjxcli.supabase.co,FRONTEND_URL=https://frontend-mosakuziis-projects.vercel.app,CORS_ORIGINS=https://frontend-mosakuziis-projects.vercel.app,ADMIN_EMAIL=mosakuzii1928@gmail.com" \
+  --set-env-vars="NODE_ENV=production,SUPABASE_URL=https://dgyibghcbmwssafhlfol.supabase.co,FRONTEND_URL=https://frontend-mosakuziis-projects.vercel.app,CORS_ORIGINS=https://frontend-mosakuziis-projects.vercel.app,ADMIN_EMAIL=mosakuzii1928@gmail.com" \
   --set-secrets="DATABASE_URL=database-url:latest,DIRECT_URL=direct-url:latest,SUPABASE_ANON_KEY=supabase-anon-key:latest,JWT_SECRET=jwt-secret:latest,SESSION_SECRET=session-secret:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest,GITHUB_CLIENT_SECRET=github-client-secret:latest,X_CONSUMER_SECRET=x-consumer-secret:latest"
 ```
 
@@ -570,33 +570,87 @@ gcloud run services update mosaku-backend \
 
 デプロイ前またはデプロイ直後に、データベーススキーマをマイグレーションする必要があります。
 
+### 前提条件: schema.prismaの設定確認
+
+マイグレーション実行前に、`backend/prisma/schema.prisma`に`directUrl`設定があることを確認してください：
+
+```prisma
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")  // この行が必要
+}
+```
+
+もし`directUrl`の行がない場合は追加してください。
+
 ### ステップ4.5.1: マイグレーションの実行
 
-**ローカルからSupabaseに対してマイグレーション実行**:
+**方法A: Secret Managerから取得（推奨）**
+
+```bash
+# プロジェクトルートに移動
+cd /path/to/mosaku/backend
+
+# Secret Managerから接続文字列を取得してマイグレーション実行
+DATABASE_URL=$(gcloud secrets versions access latest --secret="database-url")
+DIRECT_URL=$(gcloud secrets versions access latest --secret="direct-url")
+
+# .envファイルを一時的にリネーム
+mv .env .env.backup
+
+# マイグレーション実行
+DATABASE_URL="$DATABASE_URL" DIRECT_URL="$DIRECT_URL" npx prisma migrate deploy
+
+# .envファイルを復元
+mv .env.backup .env
+
+# 成功すると以下のようなメッセージが表示される
+# ✔ All migrations have been successfully applied.
+```
+
+**方法B: 手動で接続文字列を指定**
 
 ```bash
 # プロジェクトルートに移動
 cd /path/to/mosaku/backend
 
 # 環境変数を設定してマイグレーション実行
-# DIRECT_URL（Session Pooler）を使用
-DIRECT_URL="postgresql://postgres.ninyjmahwnbtgqqjxcli:[PASSWORD]@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" \
+# DATABASE_URL: Transaction Pooler（ポート6543）
+# DIRECT_URL: Session Pooler（ポート5432）
+DATABASE_URL="postgresql://postgres.dgyibghcbmwssafhlfol:[PASSWORD]@aws-1-ap-south-1.pooler.supabase.com:6543/postgres" \
+DIRECT_URL="postgresql://postgres.dgyibghcbmwssafhlfol:[PASSWORD]@aws-1-ap-south-1.pooler.supabase.com:5432/postgres" \
 npx prisma migrate deploy
-
-# 成功すると以下のようなメッセージが表示される
-# ✔ All migrations have been successfully applied.
 ```
 
 **注意事項**:
 - `[PASSWORD]`は実際のSupabaseデータベースパスワードに置き換えてください
-- パスワードに特殊文字が含まれる場合はURLエンコードが必要です
-- マイグレーションはSession Pooler（ポート5432）を使用します
+- パスワードに特殊文字が含まれる場合はURLエンコードが必要です（`?` → `%3F`, `@` → `%40`など）
+- `DATABASE_URL`と`DIRECT_URL`の両方が必要です
+- マイグレーションは`DIRECT_URL`（Session Pooler、ポート5432）を使用します
+- 通常のクエリは`DATABASE_URL`（Transaction Pooler、ポート6543）を使用します
 
 ### ステップ4.5.2: マイグレーションの確認
 
+**方法A: Secret Managerから取得（推奨）**
+
+```bash
+# Secret Managerから取得
+DATABASE_URL=$(gcloud secrets versions access latest --secret="database-url")
+DIRECT_URL=$(gcloud secrets versions access latest --secret="direct-url")
+
+# Prisma Studioでデータベースの状態を確認
+DATABASE_URL="$DATABASE_URL" DIRECT_URL="$DIRECT_URL" npx prisma studio
+
+# ブラウザで http://localhost:5555 が開き、テーブルを確認できる
+```
+
+**方法B: 手動で接続文字列を指定**
+
 ```bash
 # Prisma Studioでデータベースの状態を確認
-DIRECT_URL="postgresql://postgres.ninyjmahwnbtgqqjxcli:[PASSWORD]@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" \
+DATABASE_URL="postgresql://postgres.dgyibghcbmwssafhlfol:[PASSWORD]@aws-1-ap-south-1.pooler.supabase.com:6543/postgres" \
+DIRECT_URL="postgresql://postgres.dgyibghcbmwssafhlfol:[PASSWORD]@aws-1-ap-south-1.pooler.supabase.com:5432/postgres" \
 npx prisma studio
 
 # ブラウザで http://localhost:5555 が開き、テーブルを確認できる
@@ -984,9 +1038,12 @@ vercel logs mosaku
 
 ```bash
 # pg_dumpを使用したバックアップ
-# Session Pooler（ポート5432）を使用
-pg_dump "postgresql://postgres.ninyjmahwnbtgqqjxcli:[PASSWORD]@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" \
-  > backup_$(date +%Y%m%d_%H%M%S).sql
+# Secret Managerから接続文字列を取得（推奨）
+DIRECT_URL=$(gcloud secrets versions access latest --secret="direct-url")
+pg_dump "$DIRECT_URL" > backup_$(date +%Y%m%d_%H%M%S).sql
+
+# または手動で接続文字列を指定
+# pg_dump "postgresql://postgres.dgyibghcbmwssafhlfol:[PASSWORD]@aws-1-ap-south-1.pooler.supabase.com:5432/postgres" > backup_$(date +%Y%m%d_%H%M%S).sql
 
 # バックアップファイルの確認
 ls -lh backup_*.sql
@@ -1114,8 +1171,9 @@ cd ../backend
 npx prisma migrate dev --name describe_your_changes
 
 # 本番環境にマイグレーションを適用
-DIRECT_URL="postgresql://postgres.ninyjmahwnbtgqqjxcli:[PASSWORD]@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" \
-npx prisma migrate deploy
+DATABASE_URL=$(gcloud secrets versions access latest --secret="database-url")
+DIRECT_URL=$(gcloud secrets versions access latest --secret="direct-url")
+DATABASE_URL="$DATABASE_URL" DIRECT_URL="$DIRECT_URL" npx prisma migrate deploy
 
 # Prisma Client再生成
 npx prisma generate
@@ -1186,10 +1244,11 @@ psql "postgresql://postgres.ninyjmahwnbtgqqjxcli:[PASSWORD]@aws-0-ap-northeast-1
 - **既存デプロイURL**: `https://mosaku-backend-129805115778.asia-northeast1.run.app`
 
 ### Supabase
-- **プロジェクトRef**: `ninyjmahwnbtgqqjxcli`
-- **プロジェクトURL**: `https://ninyjmahwnbtgqqjxcli.supabase.co`
+- **プロジェクトRef**: `dgyibghcbmwssafhlfol`
+- **プロジェクトURL**: `https://dgyibghcbmwssafhlfol.supabase.co`
 - **Connection Pooling (Transaction)**: ポート `6543`
 - **Connection Pooling (Session)**: ポート `5432`
+- **リージョン**: `aws-1-ap-south-1`
 
 ### Vercel
 - **既存デプロイURL**: `https://frontend-mosakuziis-projects.vercel.app`
@@ -1252,12 +1311,17 @@ vercel env ls
 **データベースマイグレーション**:
 ```bash
 cd backend
-DIRECT_URL="postgresql://postgres.ninyjmahwnbtgqqjxcli:[PASSWORD]@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" npx prisma migrate deploy
+# Secret Managerから取得（推奨）
+DATABASE_URL=$(gcloud secrets versions access latest --secret="database-url")
+DIRECT_URL=$(gcloud secrets versions access latest --secret="direct-url")
+DATABASE_URL="$DATABASE_URL" DIRECT_URL="$DIRECT_URL" npx prisma migrate deploy
 ```
 
 **バックアップ作成**:
 ```bash
-pg_dump "postgresql://postgres.ninyjmahwnbtgqqjxcli:[PASSWORD]@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" > backup_$(date +%Y%m%d_%H%M%S).sql
+# Secret Managerから取得（推奨）
+DIRECT_URL=$(gcloud secrets versions access latest --secret="direct-url")
+pg_dump "$DIRECT_URL" > backup_$(date +%Y%m%d_%H%M%S).sql
 ```
 
 ---
