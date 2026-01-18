@@ -11,7 +11,10 @@ interface OAuthProviderConfig {
 	utils: typeof GoogleAuthUtils | typeof GitHubAuthUtils | typeof XAuthUtils;
 	storageKey: string;
 	startAuth: () => void;
-	registerWithInvitation: (user: OAuthUserData, code: string) => Promise<{ accessToken: string; user: UserProfile }>;
+	registerWithInvitation: (
+		user: OAuthUserData,
+		code: string,
+	) => Promise<{ accessToken: string; user: UserProfile }>;
 	getUserData: (callback: any) => OAuthUserData | undefined;
 }
 

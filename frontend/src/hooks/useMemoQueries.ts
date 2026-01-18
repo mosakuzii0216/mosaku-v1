@@ -30,10 +30,7 @@ export const useMemosPaginated = (pagination: PaginationParams = { page: 1, limi
 	return useQuery({
 		queryKey: [...queryKeys.memos.list(selectedTags), 'paginated', pagination],
 		queryFn: () =>
-			apiClient.getMemosPaginated(
-				pagination,
-				selectedTags.length > 0 ? selectedTags : undefined,
-			),
+			apiClient.getMemosPaginated(pagination, selectedTags.length > 0 ? selectedTags : undefined),
 		placeholderData: keepPreviousData,
 		...ENTITY_CACHE_CONFIG.memos.list,
 	});

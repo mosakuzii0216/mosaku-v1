@@ -17,11 +17,8 @@ export default function AuthForm() {
 	const [loading, setLoading] = useState(false);
 	const [message, setMessage] = useState('');
 
-	const {
-		googleRegisterWithInvitation,
-		githubRegisterWithInvitation,
-		xRegisterWithInvitation,
-	} = useAuth();
+	const { googleRegisterWithInvitation, githubRegisterWithInvitation, xRegisterWithInvitation } =
+		useAuth();
 
 	// OAuthコールバックエラーの処理
 	useEffect(() => {
@@ -127,14 +124,10 @@ export default function AuthForm() {
 	if (mode === 'googleInvite' || mode === 'githubInvite' || mode === 'xInvite') {
 		return (
 			<div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
-				<h2 className="text-2xl font-bold mb-6 text-center">
-					{getProviderName()} アカウント登録
-				</h2>
+				<h2 className="text-2xl font-bold mb-6 text-center">{getProviderName()} アカウント登録</h2>
 
 				{message && (
-					<div className="mb-4 p-3 rounded-lg text-sm bg-red-100 text-red-700">
-						{message}
-					</div>
+					<div className="mb-4 p-3 rounded-lg text-sm bg-red-100 text-red-700">{message}</div>
 				)}
 
 				<OAuthInviteForm

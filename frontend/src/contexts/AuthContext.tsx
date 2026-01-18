@@ -24,15 +24,26 @@ export interface AuthState {
 export interface AuthActions {
 	// Email認証
 	login: (email: string, password: string) => Promise<void>;
-	register: (email: string, password: string, name?: string, invitationCode?: string) => Promise<void>;
+	register: (
+		email: string,
+		password: string,
+		name?: string,
+		invitationCode?: string,
+	) => Promise<void>;
 	resetPassword: (email: string) => Promise<void>;
 	changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 
 	// OAuth認証
 	googleLogin: () => void;
-	googleRegisterWithInvitation: (googleUser: OAuthUserData, invitationCode: string) => Promise<void>;
+	googleRegisterWithInvitation: (
+		googleUser: OAuthUserData,
+		invitationCode: string,
+	) => Promise<void>;
 	githubLogin: () => void;
-	githubRegisterWithInvitation: (githubUser: OAuthUserData, invitationCode: string) => Promise<void>;
+	githubRegisterWithInvitation: (
+		githubUser: OAuthUserData,
+		invitationCode: string,
+	) => Promise<void>;
 	xLogin: () => void;
 	xRegisterWithInvitation: (xUser: OAuthUserData, invitationCode: string) => Promise<void>;
 
@@ -64,9 +75,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	}, []);
 
 	// 招待コードが必要な場合のハンドラー（現在は何もしない - UIで処理）
-	const handleInvitationRequired = useCallback((_provider: OAuthProvider, _userData: OAuthUserData) => {
-		// 招待コード入力フォームはAuthFormコンポーネントで処理
-	}, []);
+	const handleInvitationRequired = useCallback(
+		(_provider: OAuthProvider, _userData: OAuthUserData) => {
+			// 招待コード入力フォームはAuthFormコンポーネントで処理
+		},
+		[],
+	);
 
 	// 初期化
 	useEffect(() => {
@@ -109,7 +123,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	);
 
 	const register = useCallback(
-		async (email: string, password: string, name?: string, invitationCode?: string): Promise<void> => {
+		async (
+			email: string,
+			password: string,
+			name?: string,
+			invitationCode?: string,
+		): Promise<void> => {
 			await emailAuth.register(email, password, name, invitationCode);
 		},
 		[emailAuth],

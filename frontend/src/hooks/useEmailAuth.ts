@@ -5,7 +5,12 @@ import { logger } from '../utils/logger';
 
 interface UseEmailAuthResult {
 	login: (email: string, password: string) => Promise<UserProfile>;
-	register: (email: string, password: string, name?: string, invitationCode?: string) => Promise<void>;
+	register: (
+		email: string,
+		password: string,
+		name?: string,
+		invitationCode?: string,
+	) => Promise<void>;
 	resetPassword: (email: string) => Promise<void>;
 	changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
@@ -26,7 +31,12 @@ export const useEmailAuth = (): UseEmailAuthResult => {
 	 * 新規ユーザー登録
 	 */
 	const register = useCallback(
-		async (email: string, password: string, name?: string, invitationCode?: string): Promise<void> => {
+		async (
+			email: string,
+			password: string,
+			name?: string,
+			invitationCode?: string,
+		): Promise<void> => {
 			await AuthAPI.register(email, password, name, invitationCode);
 			// 登録成功、ユーザーはログインが必要
 		},
@@ -43,9 +53,12 @@ export const useEmailAuth = (): UseEmailAuthResult => {
 	/**
 	 * パスワード変更
 	 */
-	const changePassword = useCallback(async (currentPassword: string, newPassword: string): Promise<void> => {
-		await AuthAPI.changePassword(currentPassword, newPassword);
-	}, []);
+	const changePassword = useCallback(
+		async (currentPassword: string, newPassword: string): Promise<void> => {
+			await AuthAPI.changePassword(currentPassword, newPassword);
+		},
+		[],
+	);
 
 	return {
 		login,

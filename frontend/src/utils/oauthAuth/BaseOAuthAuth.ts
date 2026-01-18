@@ -47,10 +47,7 @@ export abstract class BaseOAuthAuth {
 				try {
 					providerUser = JSON.parse(decodeURIComponent(providerUserParam));
 				} catch (parseError) {
-					logger.error(
-						`Failed to parse ${this.getProviderName()} user data:`,
-						parseError,
-					);
+					logger.error(`Failed to parse ${this.getProviderName()} user data:`, parseError);
 				}
 			}
 			// プロバイダー固有のキーで返す

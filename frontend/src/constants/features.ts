@@ -35,10 +35,7 @@ export const FEATURES = {
 	 * 環境変数: VITE_FEATURE_OAUTH_X
 	 * デフォルト: false（現在バックエンドで無効）
 	 */
-	OAUTH_X: getFeatureFlag(
-		import.meta.env.VITE_FEATURE_OAUTH_X,
-		false,
-	),
+	OAUTH_X: getFeatureFlag(import.meta.env.VITE_FEATURE_OAUTH_X, false),
 
 	/**
 	 * プレミアム機能のUI
@@ -48,10 +45,7 @@ export const FEATURES = {
 	 * 環境変数: VITE_FEATURE_PREMIUM_UI
 	 * デフォルト: false
 	 */
-	PREMIUM_UI: getFeatureFlag(
-		import.meta.env.VITE_FEATURE_PREMIUM_UI,
-		false,
-	),
+	PREMIUM_UI: getFeatureFlag(import.meta.env.VITE_FEATURE_PREMIUM_UI, false),
 
 	/**
 	 * ページネーションUI
@@ -61,10 +55,7 @@ export const FEATURES = {
 	 * 環境変数: VITE_FEATURE_PAGINATION_UI
 	 * デフォルト: true（実装済み）
 	 */
-	PAGINATION_UI: getFeatureFlag(
-		import.meta.env.VITE_FEATURE_PAGINATION_UI,
-		true,
-	),
+	PAGINATION_UI: getFeatureFlag(import.meta.env.VITE_FEATURE_PAGINATION_UI, true),
 
 	/**
 	 * 開発者ツール
@@ -74,10 +65,7 @@ export const FEATURES = {
 	 * 環境変数: VITE_FEATURE_DEV_TOOLS
 	 * デフォルト: 開発環境のみtrue
 	 */
-	DEV_TOOLS: getFeatureFlag(
-		import.meta.env.VITE_FEATURE_DEV_TOOLS,
-		import.meta.env.DEV,
-	),
+	DEV_TOOLS: getFeatureFlag(import.meta.env.VITE_FEATURE_DEV_TOOLS, import.meta.env.DEV),
 
 	/**
 	 * パスワードリセット機能のUI
@@ -87,10 +75,7 @@ export const FEATURES = {
 	 * 環境変数: VITE_FEATURE_PASSWORD_RESET
 	 * デフォルト: true（フォームは常に表示、バックエンドでメール送信を制御）
 	 */
-	PASSWORD_RESET_UI: getFeatureFlag(
-		import.meta.env.VITE_FEATURE_PASSWORD_RESET,
-		true,
-	),
+	PASSWORD_RESET_UI: getFeatureFlag(import.meta.env.VITE_FEATURE_PASSWORD_RESET, true),
 
 	/**
 	 * テーマカスタマイズ機能
@@ -100,10 +85,7 @@ export const FEATURES = {
 	 * 環境変数: VITE_FEATURE_THEME_CUSTOMIZATION
 	 * デフォルト: false（管理者のみテーマ作成可能）
 	 */
-	THEME_CUSTOMIZATION: getFeatureFlag(
-		import.meta.env.VITE_FEATURE_THEME_CUSTOMIZATION,
-		false,
-	),
+	THEME_CUSTOMIZATION: getFeatureFlag(import.meta.env.VITE_FEATURE_THEME_CUSTOMIZATION, false),
 } as const;
 
 /**

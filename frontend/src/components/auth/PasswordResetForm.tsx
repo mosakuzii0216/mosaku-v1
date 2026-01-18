@@ -75,10 +75,7 @@ export function PasswordResetForm({ onBackToLogin }: PasswordResetFormProps) {
 			</form>
 
 			<div className="text-center">
-				<button
-					onClick={onBackToLogin}
-					className="text-blue-500 hover:text-blue-600 text-sm"
-				>
+				<button onClick={onBackToLogin} className="text-blue-500 hover:text-blue-600 text-sm">
 					ログインページに戻る
 				</button>
 			</div>

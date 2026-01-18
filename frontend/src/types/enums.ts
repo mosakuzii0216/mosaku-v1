@@ -14,7 +14,7 @@ export const ObjectType = {
 	TAG: 'tag',
 } as const;
 
-export type ObjectType = typeof ObjectType[keyof typeof ObjectType];
+export type ObjectType = (typeof ObjectType)[keyof typeof ObjectType];
 
 /**
  * ビュータイプ
@@ -28,4 +28,4 @@ export const ViewType = {
 	CREATE: 'create',
 } as const;
 
-export type ViewType = typeof ViewType[keyof typeof ViewType];
+export type ViewType = (typeof ViewType)[keyof typeof ViewType];
