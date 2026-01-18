@@ -39,10 +39,7 @@ export const FEATURES = {
 	 * 環境変数: FEATURE_PASSWORD_RESET_EMAIL
 	 * デフォルト: false（開発環境ではメール送信しない）
 	 */
-	PASSWORD_RESET_EMAIL: getFeatureFlag(
-		process.env.FEATURE_PASSWORD_RESET_EMAIL,
-		false,
-	),
+	PASSWORD_RESET_EMAIL: getFeatureFlag(process.env.FEATURE_PASSWORD_RESET_EMAIL, false),
 
 	/**
 	 * X (Twitter) OAuth認証
@@ -52,10 +49,7 @@ export const FEATURES = {
 	 * 環境変数: FEATURE_OAUTH_X
 	 * デフォルト: false（現在無効）
 	 */
-	OAUTH_X: getFeatureFlag(
-		process.env.FEATURE_OAUTH_X,
-		false,
-	),
+	OAUTH_X: getFeatureFlag(process.env.FEATURE_OAUTH_X, false),
 
 	/**
 	 * プレミアム機能
@@ -65,10 +59,7 @@ export const FEATURES = {
 	 * 環境変数: FEATURE_PREMIUM
 	 * デフォルト: false
 	 */
-	PREMIUM_FEATURES: getFeatureFlag(
-		process.env.FEATURE_PREMIUM,
-		false,
-	),
+	PREMIUM_FEATURES: getFeatureFlag(process.env.FEATURE_PREMIUM, false),
 
 	/**
 	 * ページネーションAPI
@@ -78,10 +69,7 @@ export const FEATURES = {
 	 * 環境変数: FEATURE_PAGINATION
 	 * デフォルト: true（実装済み）
 	 */
-	PAGINATION: getFeatureFlag(
-		process.env.FEATURE_PAGINATION,
-		true,
-	),
+	PAGINATION: getFeatureFlag(process.env.FEATURE_PAGINATION, true),
 
 	/**
 	 * レガシーSyncエンドポイント
@@ -91,10 +79,7 @@ export const FEATURES = {
 	 * 環境変数: FEATURE_LEGACY_SYNC
 	 * デフォルト: true（移行期間中は有効）
 	 */
-	LEGACY_SYNC_ENDPOINTS: getFeatureFlag(
-		process.env.FEATURE_LEGACY_SYNC,
-		true,
-	),
+	LEGACY_SYNC_ENDPOINTS: getFeatureFlag(process.env.FEATURE_LEGACY_SYNC, true),
 
 	/**
 	 * 詳細ログ出力

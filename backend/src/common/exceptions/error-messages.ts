@@ -34,8 +34,10 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
 	[ERROR_CODES.VALIDATION.INVALID_INPUT]: '入力値が不正です',
 	[ERROR_CODES.VALIDATION.REQUIRED_FIELD]: '必須項目が入力されていません',
 	[ERROR_CODES.VALIDATION.INVALID_FORMAT]: '入力形式が正しくありません',
-	[ERROR_CODES.VALIDATION.MISSING_CSS_OR_STYLES]: 'CSSファイルパスまたは有効なスタイルデータが必要です',
-	[ERROR_CODES.VALIDATION.MISSING_REQUIRED_STYLE_FIELD]: 'スタイル設定に必須フィールドが含まれていません',
+	[ERROR_CODES.VALIDATION.MISSING_CSS_OR_STYLES]:
+		'CSSファイルパスまたは有効なスタイルデータが必要です',
+	[ERROR_CODES.VALIDATION.MISSING_REQUIRED_STYLE_FIELD]:
+		'スタイル設定に必須フィールドが含まれていません',
 	[ERROR_CODES.VALIDATION.INVALID_PAYLOAD]: 'ペイロードが無効です',
 
 	// 招待コードエラー

@@ -11,10 +11,7 @@ type NotebookWithRelations = Notebook & { userId: string };
 
 @Injectable()
 export class NotebookService extends BaseOwnableService<NotebookWithRelations> {
-	constructor(
-		prisma: PrismaService,
-		authorizationService: AuthorizationService,
-	) {
+	constructor(prisma: PrismaService, authorizationService: AuthorizationService) {
 		super(prisma, authorizationService);
 	}
 

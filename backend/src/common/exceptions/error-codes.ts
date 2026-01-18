@@ -61,10 +61,7 @@ export const ERROR_CODES = {
 } as const;
 
 // エラーコードの型を抽出
-type ExtractErrorCodes<T> = T extends Record<string, infer U>
-	? U extends Record<string, infer V>
-		? V
-		: never
-	: never;
+type ExtractErrorCodes<T> =
+	T extends Record<string, infer U> ? (U extends Record<string, infer V> ? V : never) : never;
 
 export type ErrorCode = ExtractErrorCodes<typeof ERROR_CODES>;

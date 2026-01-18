@@ -18,10 +18,7 @@ type MemoWithRelations = Memo & { userId: string };
 
 @Injectable()
 export class MemoService extends BaseOwnableService<MemoWithRelations> {
-	constructor(
-		prisma: PrismaService,
-		authorizationService: AuthorizationService,
-	) {
+	constructor(prisma: PrismaService, authorizationService: AuthorizationService) {
 		super(prisma, authorizationService);
 	}
 

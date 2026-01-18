@@ -7,10 +7,7 @@
  * bcryptのソルトラウンド数
  * 推奨値: 10-12（セキュリティと性能のバランス）
  */
-export const BCRYPT_SALT_ROUNDS = parseInt(
-	process.env.BCRYPT_SALT_ROUNDS || '12',
-	10,
-);
+export const BCRYPT_SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
 
 /**
  * JWT有効期限

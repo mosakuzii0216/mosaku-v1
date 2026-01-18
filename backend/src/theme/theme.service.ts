@@ -195,7 +195,10 @@ export class ThemeService {
 			const requiredFields = ['colors', 'typography', 'layout'];
 			for (const field of requiredFields) {
 				if (!createThemeDto.styles[field]) {
-					throwBadRequest(ERROR_CODES.VALIDATION.MISSING_REQUIRED_STYLE_FIELD, `スタイル設定に${field}が含まれている必要があります`);
+					throwBadRequest(
+						ERROR_CODES.VALIDATION.MISSING_REQUIRED_STYLE_FIELD,
+						`スタイル設定に${field}が含まれている必要があります`,
+					);
 				}
 			}
 		}

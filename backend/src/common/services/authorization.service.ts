@@ -26,7 +26,10 @@ export class AuthorizationService {
 		}
 
 		if (entity.userId !== userId) {
-			throwForbidden(ERROR_CODES.AUTHZ.NOT_OWNER, `You can only access your own ${entityName.toLowerCase()}s`);
+			throwForbidden(
+				ERROR_CODES.AUTHZ.NOT_OWNER,
+				`You can only access your own ${entityName.toLowerCase()}s`,
+			);
 		}
 
 		return entity;
@@ -62,7 +65,10 @@ export class AuthorizationService {
 		const unauthorizedEntity = entities.find((entity) => entity.userId !== userId);
 
 		if (unauthorizedEntity) {
-			throwForbidden(ERROR_CODES.AUTHZ.NOT_OWNER, `You can only access your own ${entityName.toLowerCase()}s`);
+			throwForbidden(
+				ERROR_CODES.AUTHZ.NOT_OWNER,
+				`You can only access your own ${entityName.toLowerCase()}s`,
+			);
 		}
 
 		return entities;

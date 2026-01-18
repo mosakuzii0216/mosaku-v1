@@ -12,10 +12,7 @@ type TagWithRelations = Tag & { userId: string };
 
 @Injectable()
 export class TagService extends BaseOwnableService<TagWithRelations> {
-	constructor(
-		prisma: PrismaService,
-		authorizationService: AuthorizationService,
-	) {
+	constructor(prisma: PrismaService, authorizationService: AuthorizationService) {
 		super(prisma, authorizationService);
 	}
 

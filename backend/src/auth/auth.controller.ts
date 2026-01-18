@@ -1,13 +1,10 @@
+import { Controller, Post, Body, Get, UseGuards, Request, Response } from '@nestjs/common';
 import {
-	Controller,
-	Post,
-	Body,
-	Get,
-	UseGuards,
-	Request,
-	Response,
-} from '@nestjs/common';
-import { ERROR_CODES, throwBadRequest, throwUnauthorized, throwNotFound } from '../common/exceptions';
+	ERROR_CODES,
+	throwBadRequest,
+	throwUnauthorized,
+	throwNotFound,
+} from '../common/exceptions';
 import { Throttle } from '@nestjs/throttler';
 import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import type { AuthenticatedRequest, OAuthRequest } from './types';
@@ -86,7 +83,9 @@ export class AuthController {
 	}
 
 	@Public()
-	@Throttle({ default: { limit: THROTTLE_CONFIG.REGISTER.LIMIT, ttl: THROTTLE_CONFIG.REGISTER.TTL } })
+	@Throttle({
+		default: { limit: THROTTLE_CONFIG.REGISTER.LIMIT, ttl: THROTTLE_CONFIG.REGISTER.TTL },
+	})
 	@Post('register')
 	async register(@Body() registerUserDto: RegisterUserDto) {
 		const { email, password, name, invitationCode } = registerUserDto;
