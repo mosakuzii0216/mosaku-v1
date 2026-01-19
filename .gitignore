@@ -4,7 +4,17 @@
 .env.development.local
 .env.test.local
 .env.production.local
+.env.production
 .env.supabase
+
+# Backend/Frontend specific .env files (use root .env for local dev)
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+frontend/.env.vercel*
+frontend/.env.production.*
 
 # Node.js
 node_modules/
