@@ -22,7 +22,7 @@ export class ConfigService {
 
 	// フロントエンド設定
 	get frontendUrl(): string {
-		return process.env.VITE_APP_URL || 'http://localhost';
+		return process.env.FRONTEND_URL || 'http://localhost';
 	}
 
 	// CORS設定
