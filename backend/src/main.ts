@@ -1,3 +1,11 @@
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Load environment variables from root .env (for local development)
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+// Also try loading from parent of backend (monorepo root)
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
