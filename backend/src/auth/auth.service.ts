@@ -188,8 +188,24 @@ export class AuthService {
 				},
 			});
 		} else {
-			// 新規ユーザーの場合は招待コードなしでは登録できない
-			throwBadRequest(ERROR_CODES.AUTH.INVITATION_REQUIRED);
+			// 新規ユーザーの場合
+			// 管理者メールアドレスの場合は招待コードなしで登録可能
+			const isAdmin = this.isAdminEmail(oauthUser.email);
+			if (isAdmin) {
+				// 管理者ユーザーを作成
+				user = await this.prisma.user.create({
+					data: {
+						oauthId: providerId,
+						email: oauthUser.email!,
+						name: oauthUser.name,
+						role: 'ADMIN',
+						emailVerified: !!oauthUser.email,
+					},
+				});
+			} else {
+				// 一般ユーザーは招待コードが必要
+				throwBadRequest(ERROR_CODES.AUTH.INVITATION_REQUIRED);
+			}
 		}
 
 		// JWTトークンを生成
