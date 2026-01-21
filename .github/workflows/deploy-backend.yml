@@ -1,0 +1,197 @@
+# =============================================================================
+# バックエンド自動デプロイワークフロー
+# =============================================================================
+#
+# 概要:
+#   backend/ 配下のコードが main ブランチにマージされたとき、
+#   自動的にテスト → ビルド → Cloud Run へデプロイを行う
+#
+# トリガー:
+#   - main ブランチへの push (backend/ 配下の変更時のみ)
+#   - 手動実行 (GitHub Actions の UI から)
+#
+# 前提条件:
+#   - GitHub Secrets に GCP_SA_KEY が登録されていること
+#   - サービスアカウントに必要な権限が付与されていること
+#     - roles/run.admin
+#     - roles/storage.admin
+#     - roles/iam.serviceAccountUser
+#
+# =============================================================================
+
+name: Deploy Backend to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      # backend/ 配下の変更時のみ実行（フロントエンドの変更では実行しない）
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+  # 手動実行を許可（GitHub Actions の UI から実行可能）
+  workflow_dispatch:
+
+# -----------------------------------------------------------------------------
+# 環境変数（ワークフロー全体で使用）
+# -----------------------------------------------------------------------------
+env:
+  PROJECT_ID: igneous-core-480923-j0          # GCP プロジェクトID
+  REGION: asia-northeast1                      # Cloud Run のリージョン（東京）
+  SERVICE_NAME: mosaku-backend                 # Cloud Run サービス名
+  IMAGE_NAME: gcr.io/igneous-core-480923-j0/mosaku-backend  # Docker イメージ名
+
+jobs:
+  # ===========================================================================
+  # Job 1: テスト & ビルド確認
+  # ===========================================================================
+  # デプロイ前にコードの品質をチェック
+  # このジョブが失敗すると、デプロイは実行されない
+  # ===========================================================================
+  test:
+    name: Test & Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend  # すべてのコマンドを backend/ で実行
+
+    steps:
+      # -----------------------------------------------------------------------
+      # Step 1: リポジトリのチェックアウト
+      # -----------------------------------------------------------------------
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # Step 2: Node.js 環境のセットアップ
+      # -----------------------------------------------------------------------
+      # package-lock.json をキーにして依存関係をキャッシュ
+      # 2回目以降のビルドが高速化される
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      # -----------------------------------------------------------------------
+      # Step 3: 依存関係のインストール
+      # -----------------------------------------------------------------------
+      # npm ci は package-lock.json に従って厳密にインストール
+      # npm install より高速で、CI/CD に適している
+      - name: Install dependencies
+        run: npm ci
+
+      # -----------------------------------------------------------------------
+      # Step 4: Prisma Client の生成
+      # -----------------------------------------------------------------------
+      # schema.prisma から TypeScript の型定義を生成
+      # これがないとビルドが失敗する
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # -----------------------------------------------------------------------
+      # Step 5: Lint チェック
+      # -----------------------------------------------------------------------
+      # コードスタイルと潜在的なバグをチェック
+      - name: Run linter
+        run: npm run lint
+
+      # -----------------------------------------------------------------------
+      # Step 6: テスト実行
+      # -----------------------------------------------------------------------
+      # --passWithNoTests: テストファイルがなくてもエラーにしない
+      - name: Run tests
+        run: npm run test --passWithNoTests
+
+      # -----------------------------------------------------------------------
+      # Step 7: TypeScript ビルド
+      # -----------------------------------------------------------------------
+      # 型エラーがないことを確認
+      - name: Build TypeScript
+        run: npm run build
+
+  # ===========================================================================
+  # Job 2: Cloud Run へデプロイ
+  # ===========================================================================
+  # test ジョブが成功した場合のみ実行
+  # Docker イメージをビルドして Cloud Run にデプロイ
+  # ===========================================================================
+  deploy:
+    name: Deploy to Cloud Run
+    needs: test  # test ジョブの成功が必須
+    runs-on: ubuntu-latest
+
+    steps:
+      # -----------------------------------------------------------------------
+      # Step 1: リポジトリのチェックアウト
+      # -----------------------------------------------------------------------
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # Step 2: GCP 認証
+      # -----------------------------------------------------------------------
+      # GitHub Secrets に保存したサービスアカウントキーで認証
+      # これにより gcloud コマンドが使用可能になる
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # -----------------------------------------------------------------------
+      # Step 3: Cloud SDK セットアップ
+      # -----------------------------------------------------------------------
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      # -----------------------------------------------------------------------
+      # Step 4: Docker 認証設定
+      # -----------------------------------------------------------------------
+      # Container Registry (gcr.io) にプッシュするための認証
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker --quiet
+
+      # -----------------------------------------------------------------------
+      # Step 5: Docker イメージのビルド & プッシュ
+      # -----------------------------------------------------------------------
+      # Cloud Build を使用してイメージをビルド
+      # タグ:
+      #   - コミットSHA: ロールバック時に特定バージョンを指定可能
+      #   - latest: 最新版として常に更新
+      - name: Build and push Docker image
+        run: |
+          cd backend
+          gcloud builds submit \
+            --tag ${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --tag ${{ env.IMAGE_NAME }}:latest \
+            --timeout=20m \
+            --quiet
+
+      # -----------------------------------------------------------------------
+      # Step 6: Cloud Run へデプロイ
+      # -----------------------------------------------------------------------
+      # コミットSHAタグのイメージを使用（トレーサビリティのため）
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image=${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --region=${{ env.REGION }} \
+            --platform=managed \
+            --quiet
+
+      # -----------------------------------------------------------------------
+      # Step 7: デプロイ結果の表示
+      # -----------------------------------------------------------------------
+      # GitHub Actions の Summary にデプロイ情報を表示
+      - name: Show deployment URL
+        run: |
+          URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --format='value(status.url)')
+          echo "## Deployment Successful! :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Service URL:** $URL" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** ${{ env.IMAGE_NAME }}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
