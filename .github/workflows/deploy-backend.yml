@@ -158,15 +158,12 @@ jobs:
       # Step 5: Docker イメージのビルド & プッシュ
       # -----------------------------------------------------------------------
       # Cloud Build を使用してイメージをビルド
-      # タグ:
-      #   - コミットSHA: ロールバック時に特定バージョンを指定可能
-      #   - latest: 最新版として常に更新
+      # コミットSHAをタグとして使用（ロールバック時に特定バージョンを指定可能）
       - name: Build and push Docker image
         run: |
           cd backend
           gcloud builds submit \
             --tag ${{ env.IMAGE_NAME }}:${{ github.sha }} \
-            --tag ${{ env.IMAGE_NAME }}:latest \
             --timeout=20m \
             --quiet
 
