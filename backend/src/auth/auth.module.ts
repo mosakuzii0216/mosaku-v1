@@ -7,9 +7,8 @@ import { GoogleStrategy } from './google.strategy';
 import { GitHubStrategy } from './github.strategy';
 // import { XStrategy } from './x.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { GoogleAuthGuard } from './google-auth.guard';
-import { GitHubAuthGuard } from './github-auth.guard';
-// import { XAuthGuard } from './x-auth.guard';
+import { GoogleAuthGuard, GitHubAuthGuard } from './oauth-auth.guards';
+// XAuthGuard も同ファイルからエクスポート可能
 import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ConfigService } from '../config/config.service';

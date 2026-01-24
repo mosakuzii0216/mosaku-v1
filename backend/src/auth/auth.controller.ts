@@ -20,9 +20,8 @@ import { GithubRegisterWithInvitationDto } from './dto/github-register-with-invi
 // import { XRegisterWithInvitationDto } from './dto/x-register-with-invitation.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { GoogleAuthGuard } from './google-auth.guard';
-import { GitHubAuthGuard } from './github-auth.guard';
-// import { XAuthGuard } from './x-auth.guard';
+import { GoogleAuthGuard, GitHubAuthGuard } from './oauth-auth.guards';
+// XAuthGuard も同ファイルからエクスポート可能
 import { Public } from './public.decorator';
 import { AuthService } from './auth.service';
 import { InvitationService } from '../invitation/invitation.service';
