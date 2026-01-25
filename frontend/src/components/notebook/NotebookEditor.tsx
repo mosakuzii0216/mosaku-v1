@@ -4,9 +4,9 @@ import { RichTextEditor } from '../editor/RichTextEditor';
 import { useCreateNotebook, useNotebook, useUpdateNotebook } from '../../hooks/useNotebookQueries';
 import { useSystemThemes, usePublicThemes } from '../../hooks/useThemeQueries';
 import { useTagQueries } from '../../hooks/useTagQueries';
+import { useThemeCSS } from '../../hooks/useThemeCSS';
 import { useViewStore } from '../../stores/useViewStore';
 import { apiClient } from '../../utils/api';
-import { loadThemeCSS } from '../../utils/themeLoader';
 import { logger } from '../../utils/logger';
 
 interface NotebookEditorProps {
@@ -61,13 +61,7 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 	}, [themeId, allThemes]);
 
 	// テーマCSSを読み込む
-	useEffect(() => {
-		if (selectedTheme?.cssFilePath) {
-			loadThemeCSS(selectedTheme.id, selectedTheme.cssFilePath).catch((error) => {
-				logger.error('Failed to load theme CSS:', error);
-			});
-		}
-	}, [selectedTheme]);
+	useThemeCSS(selectedTheme);
 
 	const handleSave = () => {
 		const payload = {
