@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useCreateMemo, useUpdateMemo, useDeleteMemo } from '../../hooks/useMemoQueries';
 import { useNotebooks } from '../../hooks/useNotebookQueries';
 import { useTagQueries } from '../../hooks/useTagQueries';
-import { loadThemeCSS } from '../../utils/themeLoader';
+import { useThemeCSS } from '../../hooks/useThemeCSS';
 import { TagDropdownIcon } from '../tag/TagDropdownIcon';
 import { RichTextEditor } from '../editor/RichTextEditor';
 import type { Memo } from '../../types/memo';
@@ -56,13 +56,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	}, [memo, isCreate]);
 
 	// テーマCSSの読み込み
-	useEffect(() => {
-		if (selectedTheme?.cssFilePath) {
-			loadThemeCSS(selectedTheme.id, selectedTheme.cssFilePath).catch((error) => {
-				logger.error('Failed to load theme CSS:', error);
-			});
-		}
-	}, [selectedTheme?.id, selectedTheme?.cssFilePath]);
+	useThemeCSS(selectedTheme);
 
 	// 変更検知
 	useEffect(() => {
