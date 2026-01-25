@@ -1,16 +1,27 @@
 import { useEffect } from 'react';
 import { logger } from '../utils/logger';
 
+interface ThemeForCSS {
+	id: string;
+	cssFilePath?: string | null;
+}
+
+type ThemeInput = ThemeForCSS | ThemeForCSS[] | null | undefined;
+
 /**
  * テーマのCSSファイルを動的に読み込み、スコープ化して適用するフック
- * @param themes - 読み込むテーマの配列 [{ id: 'aka', cssFilePath: 'aka/aka.css' }, ...]
+ * @param themes - 単一テーマまたはテーマの配列
  */
-export const useThemeCSS = (themes: Array<{ id: string; cssFilePath: string | null }>) => {
+export function useThemeCSS(themes: ThemeInput): void {
 	useEffect(() => {
+		// 単一テーマを配列に正規化
+		const themeArray = normalizeToArray(themes);
+		if (themeArray.length === 0) return;
+
 		const loadedStyleElements: HTMLStyleElement[] = [];
 
-		const loadThemeCSS = async () => {
-			for (const theme of themes) {
+		const loadAllThemeCSS = async () => {
+			for (const theme of themeArray) {
 				if (!theme.cssFilePath) continue;
 
 				try {
@@ -34,13 +45,21 @@ export const useThemeCSS = (themes: Array<{ id: string; cssFilePath: string | nu
 			}
 		};
 
-		loadThemeCSS();
+		loadAllThemeCSS();
 
 		// クリーンアップ: コンポーネントがアンマウントされたらスタイルを削除
 		return () => {
 			loadedStyleElements.forEach((element) => {
-				document.head.removeChild(element);
+				if (element.parentNode) {
+					document.head.removeChild(element);
+				}
 			});
 		};
 	}, [themes]);
-};
+}
+
+function normalizeToArray(input: ThemeInput): ThemeForCSS[] {
+	if (!input) return [];
+	if (Array.isArray(input)) return input;
+	return [input];
+}
