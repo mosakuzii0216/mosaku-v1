@@ -1,4 +1,5 @@
 #!/bin/bash
+# TODO: switch-to-supabase.shと切り替えできるように統合
 
 echo "🔄 Switching to LOCAL PostgreSQL environment..."
 echo ""
