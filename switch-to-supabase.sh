@@ -1,4 +1,5 @@
 #!/bin/bash
+# TODO: switch-to-local.shと切り替えできるように統合
 
 echo "🔄 Switching to SUPABASE environment..."
 echo ""
