@@ -1,11 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
+  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -14,185 +9,140 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model categories {
+  id        String   @id
+  name      String   @unique @db.VarChar(50)
+  slug      String?  @unique @db.VarChar(50)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  themes    themes[]
+}
+
+model invitation_codes {
+  id            String    @id
+  code          String    @unique @db.VarChar(50)
+  max_uses      Int       @default(1)
+  used_count    Int       @default(0)
+  expires_at    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  created_by_id String
+  users         users     @relation(fields: [created_by_id], references: [id], onDelete: Cascade)
+}
+
+model memo_tags {
+  memo_id String
+  tag_id  String
+  memos   memos  @relation(fields: [memo_id], references: [id], onDelete: Cascade)
+  tags    tags   @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@id([memo_id, tag_id])
+}
+
+model memos {
+  id          String      @id
+  title       String      @db.VarChar(100)
+  content     String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime
+  user_id     String
+  notebook_id String?
+  memo_tags   memo_tags[]
+  notebooks   notebooks?  @relation(fields: [notebook_id], references: [id])
+  users       users       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model notebook_tags {
+  notebook_id String
+  tag_id      String
+  notebooks   notebooks @relation(fields: [notebook_id], references: [id], onDelete: Cascade)
+  tags        tags      @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@id([notebook_id, tag_id])
+}
+
+model notebooks {
+  id            String          @id
+  name          String?         @db.VarChar(100)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  user_id       String
+  theme_id      String?
+  content       String?
+  memos         memos[]
+  notebook_tags notebook_tags[]
+  themes        themes?         @relation(fields: [theme_id], references: [id])
+  users         users           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, name])
+  @@index([user_id, updatedAt])
+}
+
+model tags {
+  id            String          @id
+  name          String          @db.VarChar(50)
+  color         String          @db.VarChar(7)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  user_id       String
+  memo_tags     memo_tags[]
+  notebook_tags notebook_tags[]
+  users         users           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model themes {
+  id                   String                 @id
+  name                 String                 @db.VarChar(50)
+  description          String?                @db.VarChar(200)
+  isSystem             Boolean                @default(false)
+  isPublic             Boolean                @default(false)
+  styles               Json?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime
+  created_by_id        String?
+  css_file_path        String?                @db.VarChar(255)
+  metadata             Json?                  @default("{}")
+  category_id          String?
+  notebooks            notebooks[]
+  categories           categories?            @relation(fields: [category_id], references: [id])
+  users                users?                 @relation(fields: [created_by_id], references: [id], onDelete: Cascade)
+  user_favorite_themes user_favorite_themes[]
+
+  @@index([category_id])
+}
+
+model user_favorite_themes {
+  user_id  String
+  theme_id String
+  themes   themes @relation(fields: [theme_id], references: [id], onDelete: Cascade)
+  users    users  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, theme_id])
+}
+
+model users {
+  id                       String                 @id
+  email                    String                 @unique
+  name                     String?
+  role                     UserRole               @default(FREE)
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime
+  email_verification_token String?
+  email_verified           Boolean                @default(false)
+  password                 String?
+  reset_password_expires   DateTime?
+  reset_password_token     String?
+  oauth_id                 String?                @unique
+  invitation_codes         invitation_codes[]
+  memos                    memos[]
+  notebooks                notebooks[]
+  tags                     tags[]
+  themes                   themes[]
+  user_favorite_themes     user_favorite_themes[]
+}
+
 enum UserRole {
   FREE
   PREMIUM
   ADMIN
-}
-
-model User {
-  id          String   @id @default(cuid())
-  oauthId     String?  @unique @map("oauth_id") // OAuth プロバイダーID (Google/GitHub/X)
-  email       String   @unique
-  password    String?  // 新規追加：ハッシュ化されたパスワード
-  name        String?
-  role        UserRole @default(FREE)
-  
-  // 認証関連フィールド
-  emailVerified        Boolean   @default(false) @map("email_verified")
-  emailVerificationToken String? @map("email_verification_token")
-  resetPasswordToken     String? @map("reset_password_token")
-  resetPasswordExpires   DateTime? @map("reset_password_expires")
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  memos             Memo[]
-  tags              Tag[]
-  notebooks         Notebook[]
-  createdInviteCodes InvitationCode[]
-  createdThemes     Theme[]
-  favoriteThemes    UserFavoriteTheme[]
-  
-  @@map("users")
-}
-
-model Memo {
-  id        String   @id @default(cuid())
-  title     String   @db.VarChar(100)
-  content   String   @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  userId    String   @map("user_id")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  notebookId  String?   @map("notebook_id")
-  notebook    Notebook? @relation(fields: [notebookId], references: [id], onDelete: SetNull)
-
-  memoTags  MemoTag[]
-
-  @@map("memos")
-}
-
-model Notebook {
-  id            String    @id @default(cuid())
-  name          String?   @db.VarChar(100)
-  content       String?   @db.Text
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  userId        String    @map("user_id")
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  themeId       String?   @map("theme_id")
-  theme         Theme?   @relation(fields: [themeId], references: [id], onDelete: SetNull)
-
-  memos         Memo[]
-  notebookTags  NotebookTag[]
-
-  @@index([userId, name])
-  @@index([userId, updatedAt])
-  @@map("notebooks")
-}
-
-model InvitationCode {
-  id          String    @id @default(cuid())
-  code        String    @unique @db.VarChar(50)
-  maxUses     Int       @default(1) @map("max_uses")
-  usedCount   Int       @default(0) @map("used_count")
-  expiresAt   DateTime? @map("expires_at")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  createdById String    @map("created_by_id")
-  createdBy   User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
-  
-  @@map("invitation_codes")
-}
-
-model Tag {
-  id        String   @id @default(cuid())
-  name      String   @db.VarChar(50)
-  color     String   @db.VarChar(7) // Hex color code like #FF5733
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  userId    String   @map("user_id")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  memoTags      MemoTag[]
-  notebookTags  NotebookTag[]
-  
-  @@map("tags")
-}
-
-model MemoTag {
-  memoId String @map("memo_id")
-  tagId  String @map("tag_id")
-  
-  memo   Memo   @relation(fields: [memoId], references: [id], onDelete: Cascade)
-  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
-  
-  @@id([memoId, tagId])
-  @@map("memo_tags")
-}
-
-model NotebookTag {
-  notebookId String  @map("notebook_id")
-  tagId      String  @map("tag_id")
-
-  notebook   Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
-  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@id([notebookId, tagId])
-  @@map("notebook_tags")
-}
-
-model Theme {
-  id          String   @id @default(cuid())
-  name        String   @db.VarChar(50)
-  description String?  @db.VarChar(200)
-  isSystem    Boolean  @default(false)
-  isPublic    Boolean  @default(false)
-  
-  // 後方互換性のためstylesカラムを残す（NULL許可）
-  styles      Json?
-  
-  // CSSファイルパス（相対パス）
-  cssFilePath String?  @map("css_file_path") @db.VarChar(255)
-  
-  // メタデータ（JSON形式）
-  metadata    Json?    @default("{}")
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // 作成者（システムテーマの場合はnull）
-  createdById String?  @map("created_by_id")
-  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: Cascade)
-
-  // カテゴリ（任意）
-  categoryId  String?   @map("category_id")
-  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-
-  // リレーション
-  notebooks       Notebook[]
-  userFavorites   UserFavoriteTheme[]
-
-  @@index([categoryId])
-  @@map("themes")
-}
-
-model Category {
-  id        String   @id @default(cuid())
-  name      String   @unique @db.VarChar(50)
-  slug      String?  @unique @db.VarChar(50)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  themes    Theme[]
-
-  @@map("categories")
-}
-
-model UserFavoriteTheme {
-  userId  String @map("user_id")
-  themeId String @map("theme_id")
-  
-  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  theme   Theme  @relation(fields: [themeId], references: [id], onDelete: Cascade)
-  
-  @@id([userId, themeId])
-  @@map("user_favorite_themes")
 }
