@@ -26,6 +26,23 @@ export class ThemeService {
 	}
 
 	/**
+	 * テーマへのアクセス権限を確認
+	 * システムテーマ、公開テーマ、または自分が作成したテーマにアクセス可能
+	 */
+	private canAccessTheme(theme: Theme, userId?: string): boolean {
+		return theme.isSystem || theme.isPublic || (!!userId && theme.createdById === userId);
+	}
+
+	/**
+	 * テーマへのアクセス権限を検証（権限がない場合は例外をスロー）
+	 */
+	private assertCanAccessTheme(theme: Theme, userId?: string): void {
+		if (!this.canAccessTheme(theme, userId)) {
+			throwForbidden(ERROR_CODES.AUTHZ.NO_PERMISSION, 'このテーマにアクセスする権限がありません');
+		}
+	}
+
+	/**
 	 * テーマ一覧を取得（検索・フィルタリング対応）
 	 */
 	async findMany(searchDto: SearchThemeDto, userId?: string) {
@@ -162,11 +179,7 @@ export class ThemeService {
 		}
 
 		// アクセス権限チェック
-		const hasAccess = theme.isSystem || theme.isPublic || (userId && theme.createdById === userId);
-
-		if (!hasAccess) {
-			throwForbidden(ERROR_CODES.AUTHZ.NO_PERMISSION, 'このテーマにアクセスする権限がありません');
-		}
+		this.assertCanAccessTheme(theme, userId);
 
 		return {
 			...theme,
@@ -306,11 +319,7 @@ export class ThemeService {
 		}
 
 		// アクセス権限チェック
-		const hasAccess = theme.isSystem || theme.isPublic || theme.createdById === userId;
-
-		if (!hasAccess) {
-			throwForbidden(ERROR_CODES.AUTHZ.NO_PERMISSION, 'このテーマにアクセスする権限がありません');
-		}
+		this.assertCanAccessTheme(theme, userId);
 
 		// 既にお気に入りかチェック
 		const existingFavorite = await this.prisma.userFavoriteTheme.findUnique({
