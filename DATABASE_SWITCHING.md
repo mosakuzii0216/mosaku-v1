@@ -1,74 +1,97 @@
 # データベース環境の切り替え方法
 
-このプロジェクトは、オフライン開発とオンライン開発の両方をサポートしています。
+このプロジェクトは、オフライン（ローカル）開発とオンライン（Supabase）環境を分けて運用します。ローカル開発では Supabase を使用しません。ローカルはローカルPostgreSQL を使うことを前提とします。
 
 ## 利用可能な環境
 
-### 1. ローカルPostgreSQL (オフライン開発用)
-- ローカルのDockerコンテナでPostgreSQLを実行
+### 1. ローカルPostgreSQL（開発用・既定）
+- ローカルの Docker コンテナで PostgreSQL を実行
 - インターネット接続不要
-- データはローカルに保存
+- 開発・デバッグは基本的にこの環境で行う
 
-### 2. Supabase PostgreSQL (オンライン開発用)
-- クラウドホストのPostgreSQL
-- 本番環境と同じ環境
-- インターネット接続必要
+### 2. Supabase PostgreSQL（オンライン／ステージング・本番相当）
+- クラウドホストの PostgreSQL（Supabase）
+- ステージングや本番に近い環境での検証や E2E テストに利用
+- インターネット接続が必要
 
 ## 環境の切り替え方法
 
-### Supabase環境に切り替え（デフォルト）
+> 注: 以前の切替スクリプトは削除されています。手動で .env を切り替えてください。
 
-**完全自動化 - 1コマンドで完結！**
+### ローカル開発（既定）に切り替える
+1. ルートと backend 用の .env をローカル設定に置き換えます:
+   ```bash
+   cp .env.local .env
+   cp .env.local backend/.env
+   ```
+2. ローカル DB コンテナを起動します（プロジェクトの docker-compose 設定に合わせてください）:
+   ```bash
+   docker-compose --profile local up -d
+   ```
+3. 必要ならマイグレーションを適用または確認します:
+   ```bash
+   cd backend
+   npx prisma migrate dev
+   ```
+4. バックエンドを起動または再起動します:
+   ```bash
+   docker-compose restart backend
+   ```
+5. 接続先を確認:
+   ```bash
+   grep DATABASE_URL .env
+   ```
 
-```bash
-./switch-to-supabase.sh
-```
-
-このスクリプトが自動的に:
-- ✅ 環境変数ファイルを切り替え
-- ✅ ローカルDBコンテナを停止
-- ✅ バックエンドを再起動
-
-### ローカルPostgreSQL環境に切り替え
-
-**完全自動化 - 1コマンドで完結！**
-
-```bash
-./switch-to-local.sh
-```
-
-このスクリプトが自動的に:
-- ✅ 環境変数ファイルを切り替え
-- ✅ ローカルDBコンテナを起動
-- ✅ マイグレーション状態を確認
-- ✅ バックエンドを再起動
-
-**手動でdocker-composeコマンドを実行する必要はありません！**
+### Supabase（クラウド）環境に切り替える（利用時のみ）
+1. ルートと backend 用の .env を Supabase 設定に置き換えます:
+   ```bash
+   cp .env.supabase .env
+   cp .env.supabase backend/.env
+   ```
+2. ローカル DB コンテナが動作している場合は停止します:
+   ```bash
+   docker-compose --profile local down
+   ```
+3. バックエンドを再起動します:
+   ```bash
+   docker-compose restart backend
+   ```
+4. 接続先を確認:
+   ```bash
+   grep DATABASE_URL .env
+   ```
 
 ## 環境ファイルの説明
 
 | ファイル | 用途 |
 |---------|------|
 | `.env` | 現在アクティブな環境設定 |
-| `.env.local` | ローカルPostgreSQL用設定 |
-| `.env.supabase` | Supabase用設定 |
+| `.env.local` | ローカルPostgreSQL用設定（開発用） |
+| `.env.supabase` | Supabase用設定（クラウド／ステージング／本番用） |
 | `.env.example` | 新規セットアップ用テンプレート |
 
-## 初回セットアップ（ローカルDB使用時のみ）
+## 初回セットアップ（ローカルDB使用時）
 
-ローカルPostgreSQLを初めて使う場合も、スクリプトが自動的にセットアップします:
+1. .env をローカル用にコピー:
+   ```bash
+   cp .env.local .env
+   cp .env.local backend/.env
+   ```
+2. DB コンテナを起動:
+   ```bash
+   docker-compose --profile local up -d
+   ```
+3. マイグレーションを適用:
+   ```bash
+   cd backend
+   npx prisma migrate dev
+   ```
+4. バックエンドを起動:
+   ```bash
+   docker-compose up -d backend
+   ```
 
-```bash
-# 1コマンドで完了！
-./switch-to-local.sh
-```
-
-スクリプトが自動的に:
-1. DBコンテナを起動
-2. マイグレーションをチェック
-3. バックエンドを再起動
-
-マイグレーションエラーが出た場合のみ手動で実行:
+マイグレーションエラーが出た場合:
 ```bash
 cd backend && npx prisma migrate dev
 ```
@@ -76,14 +99,21 @@ cd backend && npx prisma migrate dev
 ## コマンド早見表
 
 ```bash
-# Supabase環境に切り替え（完全自動）
-./switch-to-supabase.sh
+# ローカル開発に切り替え（既定）
+cp .env.local .env
+cp .env.local backend/.env
+docker-compose --profile local up -d
+cd backend && npx prisma migrate dev
+docker-compose restart backend
 
-# ローカル環境に切り替え（完全自動）
-./switch-to-local.sh
+# Supabase に切り替え（必要時のみ）
+cp .env.supabase .env
+cp .env.supabase backend/.env
+docker-compose --profile local down
+docker-compose restart backend
 
 # 現在の接続先を確認
-cat .env | grep DATABASE_URL
+grep DATABASE_URL .env
 
 # ログを確認
 docker-compose logs -f backend
@@ -99,7 +129,7 @@ docker-compose ps
 # DBコンテナが起動しているか確認
 docker ps | grep memo-app-db
 
-# profile指定を忘れていないか確認
+# プロファイル指定を忘れていないか確認
 docker-compose --profile local up
 ```
 
@@ -115,10 +145,9 @@ npx prisma migrate reset
 
 ### .envファイルが正しく切り替わらない
 ```bash
-# 手動でコピー
+# 手動でコピーして backend の .env も上書き
 cp .env.local .env
 cp .env.local backend/.env
-
 # または
 cp .env.supabase .env
 cp .env.supabase backend/.env
@@ -126,7 +155,7 @@ cp .env.supabase backend/.env
 
 ## ベストプラクティス
 
-1. **オフライン作業時**: ローカルPostgreSQLを使用
-2. **本番に近い環境でテスト時**: Supabaseを使用
-3. **環境切り替え後**: 必ずバックエンドを再起動
-4. **定期的に**: Supabase環境でテストしてデータ整合性を確認
+1. ローカル開発では常にローカルPostgreSQLを使用する（既定）
+2. ステージングや本番相当の検証は Supabase を使用する
+3. 環境切り替え後は必ずバックエンドを再起動する
+4. 定期的に Supabase 上で統合テストを行いデータ整合性を確認する
