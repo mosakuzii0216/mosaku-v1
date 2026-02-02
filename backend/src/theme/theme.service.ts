@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthorizationService } from '../common/services/authorization.service';
 import { ERROR_CODES, throwBadRequest, throwForbidden, throwNotFound } from '../common/exceptions';
-import type { Prisma, Theme } from '@prisma/client';
+import type { Prisma, themes } from '@prisma/client';
 import { CreateThemeDto } from './dto/create-theme.dto';
 import { UpdateThemeDto } from './dto/update-theme.dto';
 import { SearchThemeDto } from './dto/search-theme.dto';
@@ -17,7 +17,7 @@ export class ThemeService {
 	/**
 	 * テーマの編集権限を検証（システムテーマと所有者チェック）
 	 */
-	private validateThemeOwnership(theme: Theme | null, userId: string, action: string): void {
+	private validateThemeOwnership(theme: themes | null, userId: string, action: string): void {
 		const ensuredTheme = this.authorizationService.validateExistence(theme, 'テーマ');
 
 		if (ensuredTheme.isSystem || ensuredTheme.createdById !== userId) {
@@ -131,15 +131,15 @@ export class ThemeService {
 	}
 
 	private transformThemes(
-		themes: Array<
-			Theme & {
+		themeList: Array<
+			themes & {
 				userFavorites?: Array<{ userId: string }>;
 				_count?: { userFavorites: number; notebooks: number };
 			}
 		>,
 		userId?: string,
 	) {
-		return themes.map((theme) => ({
+		return themeList.map((theme) => ({
 			...theme,
 			isFavorited: userId && (theme.userFavorites?.length ?? 0) > 0,
 			favoriteCount: theme._count?.userFavorites ?? 0,

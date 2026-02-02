@@ -6,9 +6,9 @@ import { ERROR_CODES, throwForbidden, throwNotFound } from '../common/exceptions
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { AssignTagsDto } from './dto/assign-tags.dto';
-import type { Tag } from '@prisma/client';
+import type { tags } from '@prisma/client';
 
-type TagWithRelations = Tag & { userId: string };
+type TagWithRelations = tags & { userId: string };
 
 @Injectable()
 export class TagService extends BaseOwnableService<TagWithRelations> {

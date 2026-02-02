@@ -4,10 +4,10 @@ import { BaseOwnableService, PrismaModelDelegate } from 'src/common/services/bas
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateNotebookDto } from './dto/create-notebook.dto/create-notebook.dto';
 import { UpdateNotebookDto } from './dto/update-notebook.dto/update-notebook.dto';
-import type { Notebook, Prisma } from '@prisma/client';
+import type { notebooks, Prisma } from '@prisma/client';
 import { THEME_SELECT } from '../common/constants/prisma-selects';
 
-type NotebookWithRelations = Notebook & { userId: string };
+type NotebookWithRelations = notebooks & { userId: string };
 
 @Injectable()
 export class NotebookService extends BaseOwnableService<NotebookWithRelations> {

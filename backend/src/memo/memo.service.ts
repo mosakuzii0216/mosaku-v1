@@ -10,11 +10,11 @@ import {
 } from '../common/dto/pagination.dto';
 import { CreateMemoDto } from './dto/create-memo.dto';
 import { UpdateMemoDto } from './dto/update-memo.dto';
-import type { Memo, Prisma } from '@prisma/client';
+import type { memos, Prisma } from '@prisma/client';
 import { NOTEBOOK_WITH_THEME_SELECT } from '../common/constants/prisma-selects';
 
 // Memoエンティティ型（リレーション込み）
-type MemoWithRelations = Memo & { userId: string };
+type MemoWithRelations = memos & { userId: string };
 
 @Injectable()
 export class MemoService extends BaseOwnableService<MemoWithRelations> {
