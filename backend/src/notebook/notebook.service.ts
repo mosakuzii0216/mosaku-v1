@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { AuthorizationService } from 'src/common/services/authorization.service';
 import { BaseOwnableService, PrismaModelDelegate } from 'src/common/services/base-ownable.service';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateNotebookDto } from './dto/create-notebook.dto/create-notebook.dto';
-import { UpdateNotebookDto } from './dto/update-notebook.dto/update-notebook.dto';
+import { CreateNotebookDto } from './dto/create-notebook.dto';
+import { UpdateNotebookDto } from './dto/update-notebook.dto';
 import type { notebooks, Prisma } from '@prisma/client';
 import { THEME_SELECT } from '../common/constants/prisma-selects';
 

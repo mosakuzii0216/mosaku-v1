@@ -11,9 +11,9 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { NotebookService } from './notebook.service';
-import { CreateNotebookDto } from './dto/create-notebook.dto/create-notebook.dto';
+import { CreateNotebookDto } from './dto/create-notebook.dto';
 import { AuthenticatedRequest } from 'src/auth/types';
-import { UpdateNotebookDto } from './dto/update-notebook.dto/update-notebook.dto';
+import { UpdateNotebookDto } from './dto/update-notebook.dto';
 
 @Controller('notebooks')
 @UseGuards(JwtAuthGuard)
