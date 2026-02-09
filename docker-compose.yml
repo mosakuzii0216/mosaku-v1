@@ -18,6 +18,8 @@ services:
     ports:
       - "3000:3000"            # コンテナの3000番ポートをホストに公開（デバッグ用）
     env_file: ./.env             # .envファイルから環境変数を読み込む
+    environment:
+      - DATABASE_URL=postgresql://myuser:mypassword@db:5432/memodb?schema=public
     restart: unless-stopped      # コンテナが落ちたら自動で再起動
 
   # フロントエンド (React) サービス
