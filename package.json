@@ -17,8 +17,5 @@
     "format:check": "npm run -w backend format:check && npm run -w frontend format:check",
     "test": "npm run -w backend test && npm run -w backend test:e2e && npm run -w backend test:cov && npm run -w frontend --if-present test",
     "dev": "npm run -w backend start:dev & npm run -w frontend dev"
-  },
-  "dependencies": {
-    "@nestjs/throttler": "^6.5.0"
   }
 }
