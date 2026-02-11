@@ -4,9 +4,9 @@ services:
   # バックエンド (Nest.js) サービス
   backend:
     build:
-      context: ./backend      # ./backend ディレクトリのDockerfileを使う
-      target: development     # Dockerfile内の development ステージをビルド
-    container_name: memo-app-backend
+      context: ./backend # ./backend ディレクトリのDockerfileを使う
+      target: development # Dockerfile内の development ステージをビルド
+    container_name: mosaku-backend
     volumes:
       - ./backend/src:/usr/src/app/src
       - ./backend/prisma:/usr/src/app/prisma
@@ -16,23 +16,23 @@ services:
       - ./backend/tsconfig.build.json:/usr/src/app/tsconfig.build.json
       - ./backend/nest-cli.json:/usr/src/app/nest-cli.json
     ports:
-      - "3000:3000"            # コンテナの3000番ポートをホストに公開（デバッグ用）
-    env_file: ./.env             # .envファイルから環境変数を読み込む
+      - '3000:3000' # コンテナの3000番ポートをホストに公開（デバッグ用）
+    env_file: ./.env # .envファイルから環境変数を読み込む
     environment:
-      - DATABASE_URL=postgresql://myuser:mypassword@db:5432/memodb?schema=public
-    restart: unless-stopped      # コンテナが落ちたら自動で再起動
+      - DATABASE_URL=postgresql://mosakuzii:mosakuzii@db:5432/mosaku?schema=public
+    restart: unless-stopped # コンテナが落ちたら自動で再起動
 
   # フロントエンド (React) サービス
   frontend:
     build:
       context: ./frontend
       target: development
-    container_name: memo-app-frontend
+    container_name: mosaku-frontend
     volumes:
       - ./frontend:/usr/src/app
       - /usr/src/app/node_modules
     ports:
-      - "5173:5173"            # Viteの開発サーバーポートを公開
+      - '5173:5173' # Viteの開発サーバーポートを公開
     env_file: ./.env
     restart: unless-stopped
 
@@ -40,24 +40,24 @@ services:
   # オフライン開発用 - プロファイル "local" で起動
   db:
     image: postgres:16-alpine
-    container_name: memo-app-db
-    profiles: ["local"]  # --profile local で起動する
+    container_name: mosaku-db
+    profiles: ['local'] # --profile local で起動する
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - '5432:5432'
     environment:
-      POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: mypassword
-      POSTGRES_DB: memodb
+      POSTGRES_USER: mosakuzii
+      POSTGRES_PASSWORD: mosakuzii
+      POSTGRES_DB: mosaku
     restart: unless-stopped
 
   # リバースプロキシ (Nginx) サービス
   nginx:
-    build: ./nginx       # ./nginx ディレクトリのDockerfileを使う
-    container_name: memo-app-proxy
+    build: ./nginx # ./nginx ディレクトリのDockerfileを使う
+    container_name: mosaku-proxy
     ports:
-      - "80:80"                # 外部からの窓口となる80番ポートを公開
+      - '80:80' # 外部からの窓口となる80番ポートを公開
     depends_on:
       - frontend
       - backend
