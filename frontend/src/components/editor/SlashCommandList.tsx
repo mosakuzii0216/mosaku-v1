@@ -1,3 +1,6 @@
+// TODO: 必要そうなコマンドの列挙からやり直し
+// TODO: コマンドの設計からやり直し
+
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import type { Editor } from '@tiptap/react';
 
