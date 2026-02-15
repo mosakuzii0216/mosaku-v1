@@ -80,12 +80,6 @@ npx prisma migrate dev      # マイグレーション実行
 npx prisma generate         # Prismaクライアント生成
 ```
 
-## 環境
-
-- Node.js 18+
-- PostgreSQL 16
-- Docker & Docker Compose
-
 ## ドキュメント
 
 詳細な技術ドキュメントは[docs/](./docs)ディレクトリにあります。
