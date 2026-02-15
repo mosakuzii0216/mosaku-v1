@@ -1,6 +1,6 @@
 # Mosaku - メモアプリ
 
-フルスタックのメモ管理アプリケーション（React + NestJS + PostgreSQL）
+メモ管理アプリ（React + NestJS + PostgreSQL）
 
 ## 機能
 
