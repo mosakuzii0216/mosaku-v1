@@ -1,0 +1,100 @@
+# =============================================================================
+# セキュリティスキャンワークフロー
+# =============================================================================
+#
+# 概要:
+#   週次および PR 時に npm audit と CodeQL を実行し、
+#   脆弱性を検出する
+#
+# トリガー:
+#   - Pull Request (main ブランチ向け)
+#   - 毎週月曜 9:00 JST
+#   - 手動実行
+#
+# =============================================================================
+
+name: Security Scan
+
+on:
+  pull_request:
+    branches: [main]
+  schedule:
+    # 毎週月曜 9:00 JST (0:00 UTC)
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+jobs:
+  # ===========================================================================
+  # Job 1: npm audit による脆弱性チェック
+  # ===========================================================================
+  npm-audit:
+    name: npm audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # -----------------------------------------------------------------------
+      # 高・クリティカルの脆弱性のみ検出（低リスクは無視）
+      # continue-on-error で両ワークスペースを必ず実行
+      # -----------------------------------------------------------------------
+      - name: Backend npm audit
+        run: npm audit --audit-level=high --workspace=backend
+        continue-on-error: true
+
+      - name: Frontend npm audit
+        run: npm audit --audit-level=high --workspace=frontend
+        continue-on-error: true
+
+      # -----------------------------------------------------------------------
+      # 監査結果をGitHub Step Summaryに出力
+      # -----------------------------------------------------------------------
+      - name: Audit summary
+        if: always()
+        run: |
+          echo "## Security Audit Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Backend" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          npm audit --workspace=backend 2>&1 | tail -20 >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Frontend" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          npm audit --workspace=frontend 2>&1 | tail -20 >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Job 2: CodeQL 静的解析
+  # ===========================================================================
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3

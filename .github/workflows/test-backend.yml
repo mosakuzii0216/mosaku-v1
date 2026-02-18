@@ -91,3 +91,81 @@ jobs:
           name: coverage-report
           path: backend/coverage/
           retention-days: 7
+
+  # ===========================================================================
+  # Job 2: E2Eテスト実行
+  # ===========================================================================
+  # PostgreSQL サービスコンテナを使用して実際のDB接続でテスト
+  # ===========================================================================
+  e2e-test:
+    name: Run Backend E2E Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    # -----------------------------------------------------------------------
+    # PostgreSQL サービスコンテナ
+    # -----------------------------------------------------------------------
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: mosaku_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://testuser:testpass@localhost:5432/mosaku_test
+      DIRECT_URL: postgresql://testuser:testpass@localhost:5432/mosaku_test
+      JWT_SECRET: test-jwt-secret-for-ci
+      SESSION_SECRET: test-session-secret-for-ci
+      ADMIN_EMAIL: test@example.com
+
+    steps:
+      # -----------------------------------------------------------------------
+      # Step 1: リポジトリのチェックアウト
+      # -----------------------------------------------------------------------
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # Step 2: Node.js 環境のセットアップ
+      # -----------------------------------------------------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      # -----------------------------------------------------------------------
+      # Step 3: 依存関係のインストール
+      # -----------------------------------------------------------------------
+      - name: Install dependencies
+        run: npm ci
+
+      # -----------------------------------------------------------------------
+      # Step 4: Prisma Client の生成
+      # -----------------------------------------------------------------------
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # -----------------------------------------------------------------------
+      # Step 5: テスト用DBにマイグレーション適用
+      # -----------------------------------------------------------------------
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
+      # -----------------------------------------------------------------------
+      # Step 6: E2Eテスト実行
+      # -----------------------------------------------------------------------
+      - name: Run E2E tests
+        run: npm run test:e2e -- --passWithNoTests
