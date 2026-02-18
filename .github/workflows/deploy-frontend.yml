@@ -1,0 +1,142 @@
+# =============================================================================
+# フロントエンド自動デプロイワークフロー
+# =============================================================================
+#
+# 概要:
+#   frontend/ 配下のコードが main ブランチにマージされたとき、
+#   CI チェック通過後に Vercel へプロダクションデプロイを行う
+#
+# トリガー:
+#   - main ブランチへの push (frontend/ 配下の変更時のみ)
+#   - 手動実行
+#
+# 前提条件:
+#   - GitHub Secrets に以下が登録されていること:
+#     - VERCEL_TOKEN: Vercel APIトークン
+#     - VERCEL_ORG_ID: Vercel組織ID
+#     - VERCEL_PROJECT_ID: VercelプロジェクトID
+#   - Vercel Dashboard で Git 連携の自動デプロイを無効化していること
+#
+# =============================================================================
+
+name: Deploy Frontend to Vercel
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - 'vercel.json'
+      - '.github/workflows/deploy-frontend.yml'
+  workflow_dispatch:
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  # ===========================================================================
+  # Job 1: ビルド確認
+  # ===========================================================================
+  build-check:
+    name: Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lintチェック
+        run: npm run lint -w frontend
+
+      - name: ビルド確認
+        run: npm run build -w frontend
+
+  # ===========================================================================
+  # Job 2: Vercel へプロダクションデプロイ
+  # ===========================================================================
+  deploy:
+    name: Deploy to Vercel (Production)
+    needs: build-check
+    runs-on: ubuntu-latest
+
+    steps:
+      # -----------------------------------------------------------------------
+      # Step 1: リポジトリのチェックアウト
+      # -----------------------------------------------------------------------
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # Step 2: Node.js セットアップ
+      # -----------------------------------------------------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # -----------------------------------------------------------------------
+      # Step 3: Vercel CLI インストール
+      # -----------------------------------------------------------------------
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      # -----------------------------------------------------------------------
+      # Step 4: Vercel 環境取得
+      # -----------------------------------------------------------------------
+      - name: Pull Vercel Environment
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      # -----------------------------------------------------------------------
+      # Step 5: Vercel でビルド
+      # -----------------------------------------------------------------------
+      - name: Build with Vercel
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      # -----------------------------------------------------------------------
+      # Step 6: プロダクションデプロイ
+      # -----------------------------------------------------------------------
+      - name: Deploy to Vercel (Production)
+        id: deploy
+        run: |
+          URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          echo "deploy-url=$URL" >> $GITHUB_OUTPUT
+
+      # -----------------------------------------------------------------------
+      # Step 7: デプロイ結果の表示
+      # -----------------------------------------------------------------------
+      - name: デプロイ結果の表示
+        run: |
+          echo "## Frontend Deployment Successful! :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** ${{ steps.deploy.outputs.deploy-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Job 3: Slack通知
+  # ===========================================================================
+  notify:
+    name: Slack Notification
+    needs: deploy
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Slack通知
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ needs.deploy.result }}
+          fields: repo,message,commit,author,workflow
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
