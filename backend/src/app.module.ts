@@ -9,8 +9,10 @@ import { ConfigModule } from './config/config.module';
 import { NotebookModule } from './notebook/notebook.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { AppController } from './app.controller';
 
 @Module({
+	controllers: [AppController],
 	imports: [
 		// レート制限設定（グローバル）
 		ThrottlerModule.forRoot([
@@ -38,3 +40,4 @@ import { APP_GUARD } from '@nestjs/core';
 	],
 })
 export class AppModule {}
+
