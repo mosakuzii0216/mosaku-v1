@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node.js (root)
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
       - name: Install workspaces (root)
@@ -24,7 +24,7 @@ jobs:
       - name: Setup Node.js for frontend
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
 
       - name: Prettier format check
         run: npm run format:check
@@ -47,7 +47,7 @@ jobs:
       - name: Setup Node.js (root)
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
       - name: Install workspaces (root)
@@ -55,7 +55,7 @@ jobs:
       - name: Setup Node.js for backend
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
 
       - name: Prettier format check
         run: npm run format:check

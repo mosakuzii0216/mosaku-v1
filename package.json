@@ -7,7 +7,7 @@
     "frontend"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "scripts": {
     "build": "npm run -w backend build && npm run -w frontend build",
