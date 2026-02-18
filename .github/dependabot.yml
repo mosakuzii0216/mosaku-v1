@@ -1,0 +1,99 @@
+# =============================================================================
+# Dependabot 自動依存関係更新設定
+# =============================================================================
+#
+# 概要:
+#   ルート、backend、frontend の依存関係を週次でチェックし、
+#   更新がある場合にPRを自動作成する
+#
+# =============================================================================
+
+version: 2
+updates:
+  # -------------------------------------------------------------------------
+  # ルート package.json（npm workspaces）
+  # -------------------------------------------------------------------------
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # -------------------------------------------------------------------------
+  # Backend 依存関係
+  # -------------------------------------------------------------------------
+  - package-ecosystem: "npm"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "backend"
+    groups:
+      nestjs:
+        patterns:
+          - "@nestjs/*"
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+        exclude-patterns:
+          - "@nestjs/*"
+
+  # -------------------------------------------------------------------------
+  # Frontend 依存関係
+  # -------------------------------------------------------------------------
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "frontend"
+    groups:
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react*"
+      tiptap:
+        patterns:
+          - "@tiptap/*"
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+        exclude-patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react*"
+          - "@tiptap/*"
+
+  # -------------------------------------------------------------------------
+  # GitHub Actions のバージョン更新
+  # -------------------------------------------------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "ci"
