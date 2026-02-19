@@ -128,3 +128,6 @@ temp/
 
 # Private documentation
 docs/private/
+
+# Claude Code local settings (machine-specific)
+.claude/settings.local.json
