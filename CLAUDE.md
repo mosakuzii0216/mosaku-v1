@@ -304,6 +304,46 @@ Themes are CSS files in `frontend/public/themes/{category}/{theme-name}.css`. Th
 6. **Environment Variables**: Frontend variables MUST have `VITE_` prefix to be exposed
 7. **Supabase Connection**: Ensure `DATABASE_URL` uses pooling connection (port 6543) and `DIRECT_URL` uses direct connection (port 5432) for migrations
 
+## Spec Driven Development (SDD)
+
+本プロジェクトでは仕様駆動開発を採用しています。新機能の開発時は、実装前にステアリングファイル（仕様書）を作成します。
+
+### ワークフロー
+
+```
+/add-feature {機能名}
+```
+
+このコマンドで以下が自動実行されます:
+1. プロジェクト理解・既存パターン調査
+2. ステアリングファイル生成（requirements → design → tasklist）
+3. タスクリストに基づく実装
+4. コードレビュー・品質検証
+5. 振り返り記録
+
+### ディレクトリ構成
+
+```
+.claude/
+├── commands/add-feature.md       # 新機能開発コマンド
+├── skills/steering/              # ステアリング管理スキル
+│   ├── SKILL.md
+│   └── templates/                # 仕様書テンプレート
+└── agents/code-reviewer.md       # コードレビューエージェント
+
+.steering/                        # 生成された仕様書（Git管理対象）
+└── {YYYYMMDD}-{機能名}/
+    ├── requirements.md           # 要件定義
+    ├── design.md                 # 設計
+    └── tasklist.md               # タスクリスト + 振り返り
+```
+
+### 重要なルール
+
+- 新機能開発時は必ず `/add-feature` を使用する
+- 実装中は常に `tasklist.md` を参照し、完了タスクを `[x]` に更新する
+- ステアリングファイルはGit管理対象。仕様変更があれば反映する
+
 ## Documentation
 
 For detailed technical documentation, see the [docs/](./docs) directory:
