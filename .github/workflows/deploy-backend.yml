@@ -7,8 +7,8 @@
 #   自動的にテスト → ビルド → Cloud Run へデプロイを行う
 #
 # トリガー:
-#   - main ブランチへの push (backend/ 配下の変更時のみ)
 #   - 手動実行 (GitHub Actions の UI から)
+#   - ステージング確認後、手動で本番デプロイを実行する運用を想定
 #
 # 前提条件:
 #   - GitHub Secrets に GCP_SA_KEY が登録されていること
@@ -16,20 +16,14 @@
 #     - roles/run.admin
 #     - roles/storage.admin
 #     - roles/iam.serviceAccountUser
+#   - GitHub Environment 'production' が設定されていること（承認ゲート）
 #
 # =============================================================================
 
-name: Deploy Backend to Cloud Run
+name: Deploy Backend to Cloud Run (Production)
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      # backend/ 配下の変更時のみ実行（フロントエンドの変更では実行しない）
-      - 'backend/**'
-      - '.github/workflows/deploy-backend.yml'
-  # 手動実行を許可（GitHub Actions の UI から実行可能）
+  # 手動実行のみ（ステージング確認後にトリガー）
   workflow_dispatch:
 
 # -----------------------------------------------------------------------------
@@ -118,9 +112,10 @@ jobs:
   # Docker イメージをビルドして Cloud Run にデプロイ
   # ===========================================================================
   deploy:
-    name: Deploy to Cloud Run
+    name: Deploy to Cloud Run (Production)
     needs: test  # test ジョブの成功が必須
     runs-on: ubuntu-latest
+    environment: production  # GitHub Environment による承認ゲート
 
     steps:
       # -----------------------------------------------------------------------
@@ -192,3 +187,23 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Service URL:** $URL" >> $GITHUB_STEP_SUMMARY
           echo "**Image:** ${{ env.IMAGE_NAME }}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Job 3: Slack通知
+  # ===========================================================================
+  # デプロイの成功/失敗をSlackに通知
+  # ===========================================================================
+  notify:
+    name: Slack Notification
+    needs: deploy
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Slack通知
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ needs.deploy.result }}
+          fields: repo,message,commit,author,workflow
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
