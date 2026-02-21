@@ -11,7 +11,7 @@ import {
 	Request,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Public } from '../auth/public.decorator';
+import { Public } from '../common/decorators/public.decorator';
 import { ThemeService } from './theme.service';
 import { CreateThemeDto } from './dto/create-theme.dto';
 import { UpdateThemeDto } from './dto/update-theme.dto';
