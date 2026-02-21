@@ -2,13 +2,13 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
+import { JwtTokenService } from './jwt.service';
+import { OAuthService } from './oauth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { GoogleStrategy } from './google.strategy';
 import { GitHubStrategy } from './github.strategy';
-// import { XStrategy } from './x.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { GoogleAuthGuard, GitHubAuthGuard } from './oauth-auth.guards';
-// XAuthGuard も同ファイルからエクスポート可能
 import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ConfigService } from '../config/config.service';
@@ -30,16 +30,23 @@ import { JWT_EXPIRATION } from '../config/auth-constants';
 	controllers: [AuthController],
 	providers: [
 		AuthService,
+		JwtTokenService,
+		OAuthService,
 		JwtStrategy,
 		GoogleStrategy,
 		GitHubStrategy,
-		// XStrategy,
 		JwtAuthGuard,
 		GoogleAuthGuard,
 		GitHubAuthGuard,
-		// XAuthGuard,
 		InvitationService,
 	],
-	exports: [AuthService, JwtAuthGuard, GoogleAuthGuard, GitHubAuthGuard],
+	exports: [
+		AuthService,
+		JwtTokenService,
+		OAuthService,
+		JwtAuthGuard,
+		GoogleAuthGuard,
+		GitHubAuthGuard,
+	],
 })
 export class AuthModule {}
