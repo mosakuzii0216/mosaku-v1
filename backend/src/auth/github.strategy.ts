@@ -15,9 +15,16 @@ interface GitHubProfile {
 @Injectable()
 export class GitHubStrategy extends PassportStrategy(Strategy, 'github') {
 	constructor(private readonly configService: ConfigService) {
+		const clientID = configService.githubClientId;
+		const clientSecret = configService.githubClientSecret;
+		if (!clientID || !clientSecret) {
+			throw new Error(
+				'GitHub OAuth is not configured. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables.',
+			);
+		}
 		super({
-			clientID: configService.githubClientId,
-			clientSecret: configService.githubClientSecret,
+			clientID,
+			clientSecret,
 			callbackURL: configService.githubRedirectUri,
 			scope: ['user:email'],
 		} as StrategyOptions);

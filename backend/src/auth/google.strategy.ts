@@ -17,9 +17,16 @@ interface GoogleProfile {
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 	constructor(private readonly configService: ConfigService) {
+		const clientID = configService.googleClientId;
+		const clientSecret = configService.googleClientSecret;
+		if (!clientID || !clientSecret) {
+			throw new Error(
+				'Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables.',
+			);
+		}
 		super({
-			clientID: configService.googleClientId,
-			clientSecret: configService.googleClientSecret,
+			clientID,
+			clientSecret,
 			callbackURL: configService.googleRedirectUri,
 			scope: ['email', 'profile'],
 		} as StrategyOptions);
