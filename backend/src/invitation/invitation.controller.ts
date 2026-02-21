@@ -1,78 +1,55 @@
 import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
-import { ERROR_CODES, throwBadRequest, throwNotFound } from '../common/exceptions';
 import { InvitationService } from './invitation.service';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
 import { VerifyInvitationDto } from './dto/verify-invitation.dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { PrismaService } from '../prisma/prisma.service';
-import type { AuthenticatedRequest, AuthenticatedUser } from '../auth/types';
+import { AdminGuard } from '../common/guards/admin.guard';
+import { Public } from '../common/decorators/public.decorator';
+import type { AuthenticatedRequest } from '../auth/types';
 
 @Controller('invitation')
 export class InvitationController {
-	constructor(
-		private readonly invitationService: InvitationService,
-		private readonly prisma: PrismaService,
-	) {}
+	constructor(private readonly invitationService: InvitationService) {}
 
-	private async getLocalUser(jwtUser: AuthenticatedUser) {
-		const user = await this.prisma.user.findUnique({
-			where: { id: jwtUser.id },
-		});
-
-		if (!user) {
-			throwNotFound(ERROR_CODES.AUTH.USER_NOT_FOUND);
-		}
-
-		return user;
-	}
-
+	/**
+	 * 招待コードを作成（ADMIN 専用）
+	 * POST /invitation
+	 */
 	@Post()
-	@UseGuards(JwtAuthGuard)
+	@UseGuards(AdminGuard)
 	async createInvitation(
 		@Body() createInvitationDto: CreateInvitationDto,
 		@Request() req: AuthenticatedRequest,
 	) {
-		// Get local user data to check role
-		const localUser = await this.getLocalUser(req.user);
-
-		// Only admin users can create invitations
-		if (localUser.role !== 'ADMIN') {
-			throwBadRequest(ERROR_CODES.AUTHZ.ADMIN_ONLY);
-		}
-
-		return this.invitationService.createInvitation(createInvitationDto, localUser.id);
+		return this.invitationService.createInvitation(createInvitationDto, req.user.id);
 	}
 
+	/**
+	 * 招待コードを検証（認証不要）
+	 * POST /invitation/verify
+	 */
+	@Public()
 	@Post('verify')
 	async verifyInvitation(@Body() verifyInvitationDto: VerifyInvitationDto) {
 		return this.invitationService.verifyInvitation(verifyInvitationDto.code);
 	}
 
+	/**
+	 * 招待コード一覧を取得（ADMIN 専用）
+	 * GET /invitation
+	 */
 	@Get()
-	@UseGuards(JwtAuthGuard)
-	async getInvitations(@Request() req: AuthenticatedRequest) {
-		// Get local user data to check role
-		const localUser = await this.getLocalUser(req.user);
-
-		// Only admin users can view invitations
-		if (localUser.role !== 'ADMIN') {
-			throwBadRequest(ERROR_CODES.AUTHZ.ADMIN_ONLY);
-		}
-
+	@UseGuards(AdminGuard)
+	async getInvitations() {
 		return this.invitationService.getAllInvitations();
 	}
 
+	/**
+	 * 招待コードを削除（ADMIN 専用）
+	 * DELETE /invitation/:id
+	 */
 	@Delete(':id')
-	@UseGuards(JwtAuthGuard)
-	async deleteInvitation(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
-		// Get local user data to check role
-		const localUser = await this.getLocalUser(req.user);
-
-		// Only admin users can delete invitations
-		if (localUser.role !== 'ADMIN') {
-			throwBadRequest(ERROR_CODES.AUTHZ.ADMIN_ONLY);
-		}
-
+	@UseGuards(AdminGuard)
+	async deleteInvitation(@Param('id') id: string) {
 		return this.invitationService.deleteAnyInvitation(id);
 	}
 }
