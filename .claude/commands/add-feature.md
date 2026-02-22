@@ -33,6 +33,7 @@ Grep / Glob を使い、以下を調査してください:
 Skill('steering') を使ってステアリングファイルを生成してください。
 
 以下の3ファイルが `.steering/{日付}-{機能名}/` に作成されます:
+
 1. `requirements.md` - 要件定義
 2. `design.md` - 設計
 3. `tasklist.md` - タスクリスト
@@ -44,6 +45,7 @@ Skill('steering') を使ってステアリングファイルを生成してく�
 `tasklist.md` を開き、タスクを上から順に実装してください。
 
 **ルール:**
+
 - 各タスク完了時に `[ ]` → `[x]` に更新する
 - 全タスクが `[x]` になるまで繰り返す
 - タスクが大きすぎる場合はサブタスクに分割して `tasklist.md` に追記する
@@ -64,16 +66,19 @@ Task('code-reviewer') で今回の変更をレビュー
 以下のコマンドを実行し、すべてパスすることを確認:
 
 **バックエンド変更がある場合:**
+
 ```bash
 cd backend && npm run test && npm run lint && npm run build
 ```
 
 **フロントエンド変更がある場合:**
+
 ```bash
 cd frontend && npm run lint && npm run build
 ```
 
 **Prisma スキーマ変更がある場合:**
+
 ```bash
 cd backend && npx prisma generate
 ```
