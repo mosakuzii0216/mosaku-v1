@@ -24,6 +24,12 @@ description: ステアリングファイルの作成・実装管理・振り返�
 4. `.steering/{YYYYMMDD}-{機能名}/` ディレクトリを作成
 5. テンプレートのプレースホルダーを具体的な内容に置き換えて各ファイルを生成
 
+### MUST（必須）
+
+- **requirements.md・design.md・tasklist.md の3ファイルを必ずセットで作成する**
+- tasklist.md が未完成でも、空のテンプレート状態で構わないので必ず生成する
+- requirements.md だけで終わらない
+
 ### 生成時の注意
 
 - **requirements.md**: 曖昧な表現を避け、受け入れ基準を具体的に記述する
