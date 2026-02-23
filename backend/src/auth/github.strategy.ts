@@ -2,15 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, StrategyOptions } from 'passport-github2';
 import { ConfigService } from '../config/config.service';
-import type { GitHubStrategyUser } from './types/oauth.types';
-
-interface GitHubProfile {
-	id: string;
-	username?: string;
-	displayName?: string;
-	emails?: Array<{ value: string }>;
-	photos?: Array<{ value: string }>;
-}
+import type { GitHubProfile, GitHubStrategyUser } from './types/oauth.types';
 
 @Injectable()
 export class GitHubStrategy extends PassportStrategy(Strategy, 'github') {
