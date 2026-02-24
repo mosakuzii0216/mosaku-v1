@@ -12,6 +12,7 @@ interface RichTextEditorProps {
 	placeholder?: string;
 	className?: string;
 	autofocus?: boolean;
+	focusKey?: string;
 }
 
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({
@@ -20,6 +21,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 	placeholder = 'メモを入力...',
 	className = '',
 	autofocus = false,
+	focusKey,
 }) => {
 	// ノートブックデータを取得
 	const { data: notebooks = [] } = useNotebooks();
@@ -66,6 +68,14 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 			editor.commands.setContent(content);
 		}
 	}, [content, editor]);
+
+	const prevFocusKeyRef = React.useRef<string | undefined>(undefined);
+	React.useEffect(() => {
+		if (editor && focusKey !== undefined && focusKey !== prevFocusKeyRef.current) {
+			prevFocusKeyRef.current = focusKey;
+			editor.commands.focus('end');
+		}
+	}, [focusKey, editor]);
 
 	if (!editor) {
 		return null;

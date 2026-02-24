@@ -268,6 +268,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 							placeholder="メモを入力..."
 							className="h-full"
 							autofocus={isCreate}
+							focusKey={memo?.id || 'new'}
 						/>
 					</div>
 				</div>
