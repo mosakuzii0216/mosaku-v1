@@ -332,11 +332,16 @@ Themes are CSS files in `frontend/public/themes/{category}/{theme-name}.css`. Th
 └── agents/code-reviewer.md       # コードレビューエージェント
 
 .steering/                        # 生成された仕様書（Git管理対象）
-└── {YYYYMMDD}-{機能名}/
-    ├── requirements.md           # 要件定義
-    ├── design.md                 # 設計
-    └── tasklist.md               # タスクリスト + 振り返り
+├── {YYYYMMDD}-{機能名}/          # 機能開発ディレクトリ
+│   ├── brainstorm.md             # /brainstorm 経由の場合のみ
+│   ├── requirements.md           # 要件定義
+│   ├── design.md                 # 設計
+│   └── tasklist.md               # タスクリスト + 振り返り
+└── {YYYYMMDD}-explore/           # 機能未決のブレスト
+    └── brainstorm.md
 ```
+
+**命名規則**: 全エントリ `{YYYYMMDD}-{kebab-case-name}/` ディレクトリに統一
 
 ### 重要なルール
 
