@@ -1,193 +1,193 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+このファイルはリポジトリのコードを扱う際に Claude Code (claude.ai/code) へのガイダンスを提供します。
 
-## Architecture Overview
+## アーキテクチャ概要
 
-Mosaku is a full-stack memo/notebook application with multi-tenant support, OAuth authentication, and a theming system:
+Mosaku はマルチテナント対応・OAuth 認証・テーマシステムを備えたフルスタックのメモ/ノートブックアプリです:
 
-- **Frontend**: React 19 + TypeScript + Vite with Tailwind CSS
-- **Backend**: NestJS + TypeScript with Prisma ORM
-- **Database**: Supabase PostgreSQL (managed cloud database)
-- **Infrastructure**: Docker Compose (development), Vercel + Cloud Run + Supabase (production)
+- **フロントエンド**: React 19 + TypeScript + Vite（Tailwind CSS）
+- **バックエンド**: NestJS + TypeScript（Prisma ORM）
+- **データベース**: Supabase PostgreSQL（クラウドマネージド）
+- **インフラ**: Docker Compose（開発環境）、Vercel + Cloud Run + Supabase（本番）
 
-### Key Features
-- Multi-user memo and notebook management with tagging
-- JWT + OAuth authentication (Google, GitHub, X/Twitter)
-- Invitation code system for user registration
-- Custom theme system with CSS file-based themes
-- Role-based access control (FREE, PREMIUM, ADMIN)
-- Rich text editor (TipTap)
+### 主な機能
+- タグ付き対応のマルチユーザーメモ・ノートブック管理
+- JWT + OAuth 認証（Google、GitHub、X/Twitter）
+- ユーザー登録用招待コードシステム
+- CSS ファイルベースのカスタムテーマシステム
+- ロールベースアクセス制御（FREE、PREMIUM、ADMIN）
+- リッチテキストエディタ（TipTap）
 
-## Development Commands
+## 開発コマンド
 
-### Monorepo Commands (from root)
+### モノレポコマンド（ルートから実行）
 ```bash
-# Install all dependencies
+# 全依存関係をインストール
 npm install
 
-# Run both frontend and backend in development
+# フロントエンド・バックエンドを同時起動
 npm run dev
 
-# Build both projects
+# 両プロジェクトをビルド
 npm run build
 
-# Lint all code
+# 全コードをリント
 npm run lint
 
-# Format all code
+# 全コードをフォーマット
 npm run format
 ```
 
-### Docker Environment
+### Docker 環境
 ```bash
-# Start all services (backend:3000, frontend:5173, nginx:80)
-# Note: Database is now hosted on Supabase (cloud)
+# 全サービスを起動（backend:3000、frontend:5173、nginx:80）
+# 注意: データベースは Supabase（クラウド）でホスト
 docker-compose up
 
-# Stop all services
+# 全サービスを停止
 docker-compose down
 
-# Rebuild and restart
+# リビルドして再起動
 docker-compose up --build
 ```
 
-### Backend Development (NestJS)
+### バックエンド開発（NestJS）
 ```bash
 cd backend
 
-# Development
-npm run start:dev          # Watch mode with hot reload
-npm run start:debug        # Debug mode with watch
+# 開発
+npm run start:dev          # ホットリロード付きウォッチモード
+npm run start:debug        # デバッグモード（ウォッチ付き）
 
-# Build and Production
-npm run build              # Compile TypeScript
-npm run start:prod         # Run production build
+# ビルド・本番
+npm run build              # TypeScript コンパイル
+npm run start:prod         # 本番ビルドを実行
 
-# Testing
-npm run test               # Run unit tests
-npm run test:watch         # Watch mode for tests
-npm run test:e2e           # End-to-end tests
-npm run test:cov           # Generate coverage report
+# テスト
+npm run test               # ユニットテスト実行
+npm run test:watch         # ウォッチモードでテスト
+npm run test:e2e           # E2E テスト
+npm run test:cov           # カバレッジレポート生成
 
-# Code Quality
-npm run lint               # ESLint (auto-fix enabled)
-npm run lint:fix           # Explicit fix command
-npm run format             # Prettier format
-npm run format:check       # Check formatting without changes
+# コード品質
+npm run lint               # ESLint（自動修正あり）
+npm run lint:fix           # 明示的な修正コマンド
+npm run format             # Prettier フォーマット
+npm run format:check       # 変更なしでフォーマット確認
 
-# Database
-npx prisma migrate dev     # Create and apply migration
-npx prisma migrate deploy  # Apply migrations (production)
-npx prisma generate        # Generate Prisma client
-npx prisma studio          # Open Prisma Studio GUI
-npm run migration:apply    # Alias for migrate dev
-npm run migration:deploy   # Alias for migrate deploy
+# データベース
+npx prisma migrate dev     # マイグレーション作成・適用
+npx prisma migrate deploy  # マイグレーション適用（本番）
+npx prisma generate        # Prisma クライアント生成
+npx prisma studio          # Prisma Studio GUI を開く
+npm run migration:apply    # migrate dev のエイリアス
+npm run migration:deploy   # migrate deploy のエイリアス
 ```
 
-### Frontend Development (React + Vite)
+### フロントエンド開発（React + Vite）
 ```bash
 cd frontend
 
-# Development
-npm run dev                # Start dev server on port 5173
-npm run preview            # Preview production build
+# 開発
+npm run dev                # ポート 5173 で開発サーバー起動
+npm run preview            # 本番ビルドをプレビュー
 
-# Build
-npm run build              # TypeScript check + Vite build
+# ビルド
+npm run build              # TypeScript チェック + Vite ビルド
 
-# Code Quality
+# コード品質
 npm run lint               # ESLint
-npm run lint:fix           # ESLint with auto-fix
-npm run format             # Prettier format
-npm run format:check       # Check formatting
+npm run lint:fix           # ESLint（自動修正あり）
+npm run format             # Prettier フォーマット
+npm run format:check       # フォーマット確認
 ```
 
-## High-Level Architecture
+## アーキテクチャ詳細
 
-### Backend Module Structure
+### バックエンドモジュール構成
 
-The backend follows NestJS modular architecture with clear separation:
+バックエンドは NestJS のモジュラーアーキテクチャに従い、明確に分離されています:
 
 ```
 AppModule
-├── ConfigModule (Global) - Centralized environment configuration
-├── PrismaModule (Global) - Database access layer
-├── CommonModule - Shared services (AuthorizationService for ownership checks)
-├── AuthModule - Authentication & authorization (JWT + OAuth strategies)
-├── InvitationModule - Invitation code management
-├── MemoModule - Memo CRUD operations
-├── NotebookModule - Notebook management
-├── TagModule - Tag system with many-to-many relations
-└── ThemeModule - Theme management with CSS file support
+├── ConfigModule（グローバル）- 環境設定の一元管理
+├── PrismaModule（グローバル）- データベースアクセス層
+├── CommonModule - 共有サービス（所有権チェック用 AuthorizationService）
+├── AuthModule - 認証・認可（JWT + OAuth ストラテジー）
+├── InvitationModule - 招待コード管理
+├── MemoModule - メモの CRUD 操作
+├── NotebookModule - ノートブック管理
+├── TagModule - 多対多リレーション対応のタグシステム
+└── ThemeModule - CSS ファイル対応のテーマ管理
 ```
 
-**Key Patterns:**
-- All protected routes use `@UseGuards(JwtAuthGuard)`
-- Public endpoints marked with `@Public()` decorator
-- User ownership validation via `AuthorizationService.checkOwnership()`
-- DTOs use `class-validator` and `class-transformer`
-- All modules export services for cross-module dependencies
+**主なパターン:**
+- 保護ルートにはすべて `@UseGuards(JwtAuthGuard)` を使用
+- 公開エンドポイントは `@Public()` デコレータでマーク
+- ユーザー所有権の検証は `AuthorizationService.checkOwnership()` で実施
+- DTO は `class-validator` と `class-transformer` を使用
+- すべてのモジュールはクロスモジュール依存のためサービスをエクスポート
 
-### Frontend State Management
+### フロントエンド状態管理
 
-**Zustand Stores** (Client State):
-- `useMemoStore`: Memo data, selected memo, view state (list/edit/create), mobile/desktop mode
-- `useTagStore`: Tag data and management
+**Zustand ストア**（クライアント状態）:
+- `useMemoStore`: メモデータ、選択中メモ、表示状態（list/edit/create）、モバイル/デスクトップモード
+- `useTagStore`: タグデータと管理
 
 **React Context**:
-- `AuthContext`: User authentication state, login/logout/OAuth flows
+- `AuthContext`: ユーザー認証状態、ログイン/ログアウト/OAuth フロー
 
-**React Query** (Server State):
-- All API calls use React Query for caching and synchronization
-- Custom hooks like `useMemoQueries` wrap API endpoints
+**React Query**（サーバー状態）:
+- すべての API コールはキャッシュと同期のために React Query を使用
+- `useMemoQueries` などのカスタムフックが API エンドポイントをラップ
 
-**View State Flow**:
-The app uses an `ObjectType` ('memo' | 'notebook' | 'tag') and `ViewType` ('list' | 'edit' | 'create') state machine managed by `useMemoStore` to control what's displayed.
+**表示状態フロー**:
+アプリは `useMemoStore` で管理する `ObjectType`（'memo' | 'notebook' | 'tag'）と `ViewType`（'list' | 'edit' | 'create'）のステートマシンで表示を制御します。
 
-### Authentication Flow
+### 認証フロー
 
-**Backend:**
-1. Passport strategies (Google, GitHub, X) handle OAuth flow
-2. Successful auth returns JWT token with user payload
-3. `JwtAuthGuard` validates token on protected routes
-4. `JwtStrategy` extracts user from token and attaches to request
+**バックエンド:**
+1. Passport ストラテジー（Google、GitHub、X）が OAuth フローを処理
+2. 認証成功時にユーザーペイロード付き JWT トークンを返す
+3. `JwtAuthGuard` が保護ルートでトークンを検証
+4. `JwtStrategy` がトークンからユーザーを取り出してリクエストに付与
 
-**Frontend:**
-1. `AuthContext` manages authentication state
-2. JWT stored in localStorage via `AuthTokenManager`
-3. All API requests include `Authorization: Bearer <token>` header
-4. OAuth flows redirect to backend `/auth/{provider}` and return to frontend with token
+**フロントエンド:**
+1. `AuthContext` が認証状態を管理
+2. JWT は `AuthTokenManager` 経由で localStorage に保存
+3. すべての API リクエストに `Authorization: Bearer <token>` ヘッダーを付与
+4. OAuth フローはバックエンドの `/auth/{provider}` にリダイレクトし、トークン付きでフロントエンドに戻る
 
-**Invitation Code System:**
-- New users require invitation code (except admin email)
-- Codes have max uses and expiration
-- Validated before user creation
-- Admin role can create codes via `/admin/invitations`
+**招待コードシステム:**
+- 新規ユーザーには招待コードが必要（管理者メールを除く）
+- コードには最大使用回数と有効期限がある
+- ユーザー作成前に検証される
+- ADMIN ロールが `/admin/invitations` でコードを作成可能
 
-### Database Schema Highlights
+### データベーススキーマの要点
 
-**User Model:**
-- CUID primary key
-- Supports both OAuth (`oauthId`) and email/password (`password`)
-- Role-based access: `FREE`, `PREMIUM`, `ADMIN`
-- Admin determined by `ADMIN_EMAIL` environment variable
+**User モデル:**
+- CUID プライマリキー
+- OAuth（`oauthId`）とメール/パスワード（`password`）の両方をサポート
+- ロールベースアクセス: `FREE`、`PREMIUM`、`ADMIN`
+- 管理者は `ADMIN_EMAIL` 環境変数で決定
 
-**Memo ↔ Notebook ↔ Tag Relationships:**
-- Memos belong to one Notebook (optional, nullable)
-- Memos can have many Tags via `MemoTag` join table
-- Notebooks can have many Tags via `NotebookTag` join table
-- All entities scoped to User (cascade delete)
+**Memo ↔ Notebook ↔ Tag リレーション:**
+- メモは 1 つのノートブックに所属（任意、nullable）
+- メモは `MemoTag` 中間テーブルで複数のタグを持てる
+- ノートブックは `NotebookTag` 中間テーブルで複数のタグを持てる
+- すべてのエンティティはユーザーにスコープ（カスケード削除）
 
-**Theme System:**
-- `cssFilePath` points to CSS file in `frontend/public/themes/`
-- Themes can be system (`isSystem: true`) or user-created
-- Categories organize themes
-- Users can favorite themes
+**テーマシステム:**
+- `cssFilePath` は `frontend/public/themes/` 内の CSS ファイルを指す
+- テーマはシステム提供（`isSystem: true`）またはユーザー作成
+- カテゴリでテーマを整理
+- ユーザーはテーマをお気に入り登録可能
 
-### Prisma Client Location
+### Prisma クライアントの場所
 
-The Prisma client is generated to `backend/generated/prisma/` (not default `node_modules`). This is configured in `schema.prisma`:
+Prisma クライアントは `backend/generated/prisma/` に生成されます（デフォルトの `node_modules` ではありません）。`schema.prisma` で以下のように設定されています:
 
 ```prisma
 generator client {
@@ -196,65 +196,65 @@ generator client {
 }
 ```
 
-Always run `npx prisma generate` after schema changes.
+スキーマ変更後は必ず `npx prisma generate` を実行してください。
 
-## Deployment Architecture
+## デプロイアーキテクチャ
 
-The application supports two deployment modes:
+アプリケーションは 2 つのデプロイモードをサポートします:
 
-**Local Development:**
-- Docker Compose orchestrates all services
-- Nginx reverse proxy routes traffic
-- PostgreSQL in container
+**ローカル開発:**
+- Docker Compose が全サービスを統括
+- Nginx リバースプロキシがトラフィックをルーティング
+- PostgreSQL はコンテナ内
 
-**Production (Current Setup):**
-- **Frontend**: Vercel (static site)
-- **Backend**: Google Cloud Run (containerized NestJS)
-- **Database**: Supabase PostgreSQL
+**本番（現在の構成）:**
+- **フロントエンド**: Vercel（静的サイト）
+- **バックエンド**: Google Cloud Run（コンテナ化した NestJS）
+- **データベース**: Supabase PostgreSQL
 
-See [docs/deployment/](./docs/deployment/) for production deployment instructions.
+本番デプロイ手順は [docs/deployment/](./docs/deployment/) を参照してください。
 
-### Environment Variables
+### 環境変数
 
-**Critical Backend Variables:**
-- `DATABASE_URL` - PostgreSQL connection (with connection pooling for Supabase)
-- `DIRECT_URL` - Direct PostgreSQL connection (for migrations)
-- `JWT_SECRET` - JWT signing key
-- `CORS_ORIGINS` - Comma-separated allowed origins
-- OAuth credentials: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, etc.
+**バックエンドの重要な変数:**
+- `DATABASE_URL` - PostgreSQL 接続（Supabase のコネクションプーリング用）
+- `DIRECT_URL` - PostgreSQL 直接接続（マイグレーション用）
+- `JWT_SECRET` - JWT 署名キー
+- `CORS_ORIGINS` - 許可オリジンのカンマ区切りリスト
+- OAuth 認証情報: `GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET` など
 
-**Critical Frontend Variables (VITE_ prefix required):**
-- `VITE_BACKEND_URL` - Backend API URL
-- `VITE_SUPABASE_URL` - Supabase project URL
-- `VITE_SUPABASE_ANON_KEY` - Supabase anon key
-- OAuth client IDs for frontend: `VITE_GOOGLE_CLIENT_ID`, etc.
+**フロントエンドの重要な変数（`VITE_` プレフィックス必須）:**
+- `VITE_BACKEND_URL` - バックエンド API の URL
+- `VITE_SUPABASE_URL` - Supabase プロジェクトの URL
+- `VITE_SUPABASE_ANON_KEY` - Supabase 匿名キー
+- フロントエンド用 OAuth クライアント ID: `VITE_GOOGLE_CLIENT_ID` など
 
-## Important Implementation Notes
+## 実装上の重要な注意点
 
-### Adding New Protected Endpoints
+### 保護エンドポイントの追加
 
 ```typescript
 @Controller('resource')
-@UseGuards(JwtAuthGuard)  // Apply to all routes
+@UseGuards(JwtAuthGuard)  // 全ルートに適用
 export class ResourceController {
   @Get()
   findAll(@Request() req: AuthenticatedRequest) {
-    const userId = req.user.id;  // User from JWT
-    // ... implementation
+    const userId = req.user.id;  // JWT からのユーザー
+    // ... 実装
   }
 
-  @Public()  // Override guard for specific route
+  @Public()  // 特定ルートのガードを上書き
   @Get('public')
   publicEndpoint() {
-    // No authentication required
+    // 認証不要
   }
 }
 ```
 
-### Ownership Validation Pattern
+### 所有権バリデーションパターン
 
 ```typescript
-// In service
+// サービス内
 constructor(
   private prisma: PrismaService,
   private authService: AuthorizationService,
@@ -262,16 +262,16 @@ constructor(
 
 async update(id: string, userId: string, data: UpdateDto) {
   const resource = await this.prisma.resource.findUnique({ where: { id } });
-  // Throws ForbiddenException if user doesn't own resource
+  // ユーザーがリソースを所有していない場合 ForbiddenException をスロー
   this.authService.checkOwnership(resource, userId);
-  // ... update logic
+  // ... 更新ロジック
 }
 ```
 
-### Frontend API Calls Pattern
+### フロントエンド API コールパターン
 
 ```typescript
-// Use centralized API_BASE_URL from utils/api.ts
+// utils/api.ts の API_BASE_URL を使用
 const response = await fetch(`${API_BASE_URL}/endpoint`, {
   headers: {
     'Authorization': `Bearer ${AuthTokenManager.getAccessToken()}`,
@@ -280,31 +280,31 @@ const response = await fetch(`${API_BASE_URL}/endpoint`, {
 });
 ```
 
-### Theme System
+### テーマシステム
 
-Themes are CSS files in `frontend/public/themes/{category}/{theme-name}.css`. The theme service:
-1. Stores theme metadata in database (name, category, cssFilePath)
-2. Frontend loads CSS file dynamically when theme is selected
-3. CSS variables define colors, typography, layout, etc.
+テーマは `frontend/public/themes/{category}/{theme-name}.css` の CSS ファイルです。テーマサービスは:
+1. テーマのメタデータ（名前、カテゴリ、cssFilePath）をデータベースに保存
+2. テーマ選択時にフロントエンドが CSS ファイルを動的にロード
+3. CSS 変数で色・タイポグラフィ・レイアウトなどを定義
 
-### Testing Strategy
+### テスト戦略
 
-- **Backend**: Jest for unit tests, Supertest for E2E
-- **Frontend**: No test framework configured yet
-- Use `npm run test:watch` for TDD workflow
-- Coverage reports generated to `backend/coverage/`
+- **バックエンド**: ユニットテストに Jest、E2E に Supertest
+- **フロントエンド**: テストフレームワーク未導入
+- TDD ワークフローには `npm run test:watch` を使用
+- カバレッジレポートは `backend/coverage/` に生成
 
-## Common Gotchas
+## よくある落とし穴
 
-1. **Prisma Client Not Found**: Run `npx prisma generate` after pulling schema changes
-2. **CORS Errors**: Ensure `CORS_ORIGINS` includes your frontend URL
-3. **OAuth Redirect Mismatch**: OAuth provider callback URLs must match `{BACKEND_URL}/auth/{provider}/callback`
-4. **Migration Conflicts**: Always pull latest migrations before creating new ones
-5. **Docker Port Conflicts**: Ensure ports 80, 3000, 5173 are available
-6. **Environment Variables**: Frontend variables MUST have `VITE_` prefix to be exposed
-7. **Supabase Connection**: Ensure `DATABASE_URL` uses pooling connection (port 6543) and `DIRECT_URL` uses direct connection (port 5432) for migrations
+1. **Prisma クライアントが見つからない**: スキーマ変更のプル後に `npx prisma generate` を実行
+2. **CORS エラー**: `CORS_ORIGINS` にフロントエンドの URL が含まれているか確認
+3. **OAuth リダイレクト不一致**: OAuth プロバイダーのコールバック URL が `{BACKEND_URL}/auth/{provider}/callback` に一致しているか確認
+4. **マイグレーション競合**: 新しいマイグレーションを作成する前に最新のマイグレーションをプル
+5. **Docker ポート競合**: ポート 80、3000、5173 が使用可能か確認
+6. **環境変数**: フロントエンド変数は公開のために `VITE_` プレフィックスが必須
+7. **Supabase 接続**: マイグレーション用に `DATABASE_URL` はプーリング接続（ポート 6543）、`DIRECT_URL` は直接接続（ポート 5432）を使用していること
 
-## Spec Driven Development (SDD)
+## 仕様駆動開発（SDD）
 
 本プロジェクトでは仕様駆動開発を採用しています。新機能の開発時は、実装前にステアリングファイル（仕様書）を作成します。
 
@@ -350,12 +350,12 @@ Themes are CSS files in `frontend/public/themes/{category}/{theme-name}.css`. Th
 - ステアリングファイルはGit管理対象。仕様変更があれば反映する
 - **ファイルを変更したタスクの完了時は、必ずコミット分割案とメッセージを提案すること**
 
-## Documentation
+## ドキュメント
 
-For detailed technical documentation, see the [docs/](./docs) directory:
+詳細な技術ドキュメントは [docs/](./docs) ディレクトリを参照してください:
 
-- **[Migration Plans](./docs/migration/overview.md)** - Cloud migration roadmap and detailed plans
-- **[Deployment Guides](./docs/deployment/)** - Cloud Run and Vercel deployment instructions
-- **[Development Docs](./docs/development/)** - Development-related documentation
+- **[移行計画](./docs/migration/overview.md)** - クラウド移行ロードマップと詳細計画
+- **[デプロイガイド](./docs/deployment/)** - Cloud Run・Vercel のデプロイ手順
+- **[開発ドキュメント](./docs/development/)** - 開発関連のドキュメント
 
-All documentation is organized in [docs/README.md](./docs/README.md).
+全ドキュメントは [docs/README.md](./docs/README.md) に整理されています。
