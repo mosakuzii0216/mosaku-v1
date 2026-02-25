@@ -348,6 +348,7 @@ Themes are CSS files in `frontend/public/themes/{category}/{theme-name}.css`. Th
 - 新機能開発時は必ず `/add-feature` を使用する
 - 実装中は常に `tasklist.md` を参照し、完了タスクを `[x]` に更新する
 - ステアリングファイルはGit管理対象。仕様変更があれば反映する
+- **ファイルを変更したタスクの完了時は、必ずコミット分割案とメッセージを提案すること**
 
 ## Documentation
 
