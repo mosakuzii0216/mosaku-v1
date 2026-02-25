@@ -5,36 +5,61 @@ description: ステアリングファイルの作成・実装管理・振り返�
 
 # ステアリング管理スキル
 
-このスキルは3つのモードで動作します。コンテキストに応じて適切なモードを選択してください。
+このスキルは4つのモードで動作します。コンテキストに応じて適切なモードを選択してください。
 
 ---
 
-## モード1: ステアリングファイル作成（計画フェーズ）
+## モード1a: requirements.md のみ生成
 
-新機能の要件定義・設計・タスクリストを作成します。
+要件定義ファイルを単独で生成します（`/add-feature` フェーズ1 で使用）。
 
 ### 手順
 
 1. `CLAUDE.md` を読み、プロジェクトの規約とアーキテクチャを確認
-2. `docs/` ディレクトリで関連ドキュメントを確認
-3. 以下のテンプレートを読み込む:
-   - `./templates/requirements.md`
-   - `./templates/design.md`
-   - `./templates/tasklist.md`
-4. `.steering/{YYYYMMDD}-{機能名}/` ディレクトリを作成
-5. テンプレートのプレースホルダーを具体的な内容に置き換えて各ファイルを生成
-
-### MUST（必須）
-
-- **requirements.md・design.md・tasklist.md の3ファイルを必ずセットで作成する**
-- tasklist.md が未完成でも、空のテンプレート状態で構わないので必ず生成する
-- requirements.md だけで終わらない
+2. `.claude/skills/steering/templates/requirements.md` を参照
+3. `.steering/{YYYYMMDD}-{機能名}/requirements.md` を生成
 
 ### 生成時の注意
 
-- **requirements.md**: 曖昧な表現を避け、受け入れ基準を具体的に記述する
-- **design.md**: 新規ファイルと修正ファイルを明確に分ける。Prisma スキーマ変更がある場合は必ず記載する
-- **tasklist.md**: タスクは1つ30分以内で完了できる粒度に分割する。依存関係のあるタスクはフェーズで順序を制御する
+- brainstorm.md の有力候補・課題感を反映する
+- 曖昧な表現を避け、受け入れ基準を具体的に記述する
+- 機能スコープは「今回実装するもの」と「スコープ外」を明記する
+
+---
+
+## モード1b: design.md のみ生成
+
+設計ファイルを単独で生成します（`/add-feature` フェーズ2 で使用）。
+
+### 手順
+
+1. 承認済みの `.steering/{YYYYMMDD}-{機能名}/requirements.md` を読み込む
+2. `.claude/skills/steering/templates/design.md` を参照
+3. `.steering/{YYYYMMDD}-{機能名}/design.md` を生成
+
+### 生成時の注意
+
+- 新規ファイルと修正ファイルを明確に分ける
+- Prisma スキーマ変更がある場合は必ず記載する
+- API エンドポイント・コンポーネント構成を具体的に記述する
+
+---
+
+## モード1c: tasklist.md のみ生成
+
+タスクリストを単独で生成します（`/add-feature` フェーズ3 で使用）。
+
+### 手順
+
+1. 承認済みの `requirements.md` と `design.md` を読み込む
+2. `.claude/skills/steering/templates/tasklist.md` を参照
+3. `.steering/{YYYYMMDD}-{機能名}/tasklist.md` を生成
+
+### 生成時の注意
+
+- タスクは1つ30分以内で完了できる粒度に分割する
+- 依存関係のあるタスクはフェーズで順序を制御する
+- 各フェーズに「承認ゲート」の区切りが分かるようにコメントを入れる
 
 ---
 
