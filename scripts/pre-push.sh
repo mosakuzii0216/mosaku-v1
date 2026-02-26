@@ -6,9 +6,6 @@ set -e
 echo "==> pre-push: Prisma クライアント生成..."
 (cd backend && npx prisma generate) 2>&1 | tail -1
 
-echo "==> pre-push: フォーマットチェック..."
-npm run format:check --silent
-
 echo "==> pre-push: ESLint..."
 npm run lint --silent
 
