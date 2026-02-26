@@ -154,9 +154,7 @@ describe('OAuthService', () => {
 		});
 
 		it('should propagate error when invitation is invalid', async () => {
-			mockInvitationService.verifyInvitation.mockRejectedValue(
-				new AppException('INV001', 400),
-			);
+			mockInvitationService.verifyInvitation.mockRejectedValue(new AppException('INV001', 400));
 
 			await expect(
 				service.handleOAuthRegistrationWithInvitation(oauthUser, 'provider-id-456', 'INVALID'),

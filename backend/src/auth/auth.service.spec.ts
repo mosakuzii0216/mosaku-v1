@@ -170,9 +170,9 @@ describe('AuthService', () => {
 		it('should throw when email already exists', async () => {
 			mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
 
-			await expect(
-				service.register(mockUser.email, 'password', 'Name'),
-			).rejects.toBeInstanceOf(AppException);
+			await expect(service.register(mockUser.email, 'password', 'Name')).rejects.toBeInstanceOf(
+				AppException,
+			);
 		});
 
 		it('should use email as name when name is not provided', async () => {
