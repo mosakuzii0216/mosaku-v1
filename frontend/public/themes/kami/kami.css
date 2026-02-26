@@ -11,10 +11,10 @@
 
 	/* タイポグラフィ */
 	--theme-font-family:
-		'Noto Serif JP', 'ヒラギノ明朝 ProN', 'Hiragino Mincho ProN', 'Yu Mincho', '游明朝',
-		Georgia, serif;
+		'Noto Serif JP', 'ヒラギノ明朝 ProN', 'Hiragino Mincho ProN', 'Yu Mincho', '游明朝', Georgia,
+		serif;
 	--theme-font-size: 16px;
-	--theme-line-height: 2.0;
+	--theme-line-height: 2;
 
 	/* レイアウト */
 	--theme-padding: 3rem;

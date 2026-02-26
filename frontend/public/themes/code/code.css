@@ -11,8 +11,8 @@
 
 	/* タイポグラフィ */
 	--theme-font-family:
-		'Fira Code', 'JetBrains Mono', 'Consolas', 'Cascadia Code', 'Source Code Pro',
-		'Courier New', monospace;
+		'Fira Code', 'JetBrains Mono', 'Consolas', 'Cascadia Code', 'Source Code Pro', 'Courier New',
+		monospace;
 	--theme-font-size: 14px;
 	--theme-line-height: 1.6;
 
