@@ -1,14 +1,15 @@
 # =============================================================================
-# フロントエンド自動デプロイワークフロー
+# フロントエンド ステージングデプロイワークフロー
 # =============================================================================
 #
 # 概要:
 #   frontend/ 配下のコードが main ブランチにマージされたとき、
-#   CI チェック通過後に Vercel へプロダクションデプロイを行う
+#   CI チェック通過後に Vercel へ Preview デプロイを行う（stg 相当）
+#   本番デプロイは deploy-frontend-prod.yml（手動実行）を使用すること
 #
 # トリガー:
 #   - main ブランチへの push (frontend/ 配下の変更時のみ)
-#   - 手動実行
+#   - 手動実行（stg への再デプロイ用）
 #
 # 前提条件:
 #   - GitHub Secrets に以下が登録されていること:
@@ -19,7 +20,7 @@
 #
 # =============================================================================
 
-name: Deploy Frontend to Vercel
+name: Deploy Frontend to Vercel (Staging/Preview)
 
 on:
   push:
@@ -64,10 +65,10 @@ jobs:
         run: npm run build -w frontend
 
   # ===========================================================================
-  # Job 2: Vercel へプロダクションデプロイ
+  # Job 2: Vercel へ Preview デプロイ（stg 相当）
   # ===========================================================================
   deploy:
-    name: Deploy to Vercel (Production)
+    name: Deploy to Vercel (Preview/Staging)
     needs: build-check
     runs-on: ubuntu-latest
 
@@ -93,24 +94,24 @@ jobs:
         run: npm install -g vercel@latest
 
       # -----------------------------------------------------------------------
-      # Step 4: Vercel 環境取得
+      # Step 4: Vercel 環境取得（preview 環境）
       # -----------------------------------------------------------------------
       - name: Pull Vercel Environment
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
 
       # -----------------------------------------------------------------------
-      # Step 5: Vercel でビルド
+      # Step 5: Vercel でビルド（preview 用）
       # -----------------------------------------------------------------------
       - name: Build with Vercel
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
 
       # -----------------------------------------------------------------------
-      # Step 6: プロダクションデプロイ
+      # Step 6: Preview デプロイ（--prod なし）
       # -----------------------------------------------------------------------
-      - name: Deploy to Vercel (Production)
+      - name: Deploy to Vercel (Preview)
         id: deploy
         run: |
-          URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
           echo "deploy-url=$URL" >> $GITHUB_OUTPUT
 
       # -----------------------------------------------------------------------
@@ -118,10 +119,12 @@ jobs:
       # -----------------------------------------------------------------------
       - name: デプロイ結果の表示
         run: |
-          echo "## Frontend Deployment Successful! :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "## Frontend Staging Deployment Successful! :rocket:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**URL:** ${{ steps.deploy.outputs.deploy-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Preview URL:** ${{ steps.deploy.outputs.deploy-url }}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> 本番デプロイは deploy-frontend-prod.yml を手動実行してください" >> $GITHUB_STEP_SUMMARY
 
   # ===========================================================================
   # Job 3: Slack通知
