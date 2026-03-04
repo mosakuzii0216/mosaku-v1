@@ -1,4 +1,4 @@
-# Mosaku - メモアプリ
+# Mosaku
 
 メモ管理アプリ（React + NestJS + PostgreSQL）
 
