@@ -1,7 +1,5 @@
 # Mosaku
 
-メモ管理アプリ（React + NestJS + PostgreSQL）
-
 ## 機能
 
 - JWT認証（メール/パスワード）
