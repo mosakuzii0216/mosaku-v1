@@ -9,12 +9,12 @@
 
 | 環境     | 用途           | BE                                 | FE                    | DB                             |
 | -------- | -------------- | ---------------------------------- | --------------------- | ------------------------------ |
-| **dev**  | ローカル開発   | localhost:3000                     | localhost:5173        | Supabase **stg** プロジェクト  |
+| **dev**  | ローカル開発   | localhost:3000                     | localhost:5173        | **Docker** ローカル PostgreSQL |
 | **stg**  | 動作確認・検証 | Cloud Run `mosaku-backend-staging` | Vercel **Preview**    | Supabase **stg** プロジェクト  |
 | **prod** | 本番           | Cloud Run `mosaku-backend`         | Vercel **Production** | Supabase **prod** プロジェクト |
 
-> **dev が stg DB を共有する理由**: 個人開発規模では DB を3つ用意するコストが高い。
-> Supabase 無料枠は2プロジェクトのため、stg + prod で使い切る。
+> **dev は Docker ローカル DB を使用**: 開発環境を完全に独立させ、stg/prod DB への誤操作を防ぐ。
+> Supabase 無料枠（2プロジェクト）は stg + prod で使い切る。
 
 ---
 
@@ -83,30 +83,39 @@ feature/xxx ブランチ
 
 ---
 
-#### E-2: ローカル `.env` を Supabase stg に向ける
+#### E-2: ローカル `.env` を Docker ローカル DB に向ける
 
-**`/Users/onotakashi/mosaku/.env`** と **`backend/.env`** の先頭2行を変更:
+**`backend/.env`** の DB 接続先を Docker ローカル PostgreSQL に変更:
 
 ```
-# Supabase stg
-DATABASE_URL=postgresql://postgres.{stg_ref}:[PASSWORD]@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true
-DIRECT_URL=postgresql://postgres.{stg_ref}:[PASSWORD]@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres
+# Docker ローカル DB
+DATABASE_URL=postgresql://mosakuzii:mosakuzii@localhost:5432/mosaku?schema=public
+DIRECT_URL=postgresql://mosakuzii:mosakuzii@localhost:5432/mosaku
 ```
 
-取得場所: Supabase Dashboard → stg プロジェクト → Settings → Database → Connection string
+> docker-compose.yml の `backend` サービスは Docker 内では `db:5432` を自動参照する。
+> `backend/.env` はホストから `npm run dev` で起動する場合に使用される。
 
 ---
 
-#### E-3: Prisma マイグレーション状態を確認（stg + prod）
+#### E-3: ローカル DB の初期化とマイグレーション確認（stg + prod）
 
-E-2 完了後:
+**ローカル DB の初期化:**
+
+```bash
+# Docker ローカル DB を起動
+docker-compose --profile local up db -d
+
+# ローカル DB にマイグレーション適用
+cd backend && npx prisma migrate dev
+```
+
+**stg / prod の確認（接続文字列を一時的に切り替えて実行）:**
 
 ```bash
 # stg に全マイグレーション適用
-cd backend && npx prisma migrate deploy
+DATABASE_URL={stg_url} npx prisma migrate deploy
 ```
-
-prod Supabase でも同様に確認（接続文字列を一時的に prod に切り替えて実行）。
 
 > `20260224000000_add_kami_code_themes` が pending で出ても `ON CONFLICT DO NOTHING` で安全に適用可能。
 
@@ -241,17 +250,17 @@ MemoEditor に useDebounce（1〜2秒）を追加
 
 ## 全作業サマリー
 
-| #   | タスク                                         | 種別       | 規模   |
-| --- | ---------------------------------------------- | ---------- | ------ |
-| E-1 | Supabase stg プロジェクト作成                  | 環境構築   | 小     |
-| E-2 | ローカル .env を stg Supabase に向ける         | 環境構築   | 小     |
-| E-3 | Prisma マイグレーション確認（stg + prod）      | 環境構築   | 小     |
-| E-4 | FE デプロイを stg 経由に修正                   | CI/CD 修正 | 小     |
-| E-5 | Cloud Run staging の環境変数を stg DB に向ける | 環境構築   | 小     |
-| B-1 | 自動保存の実装                                 | 機能開発   | 小〜中 |
-| B-2 | ゴミ箱機能の実装                               | 機能開発   | 中     |
-| —   | リリース前チェックリスト                       | QA         | —      |
-| —   | 本番デプロイ                                   | デプロイ   | —      |
+| #   | タスク                                            | 種別       | 規模   |
+| --- | ------------------------------------------------- | ---------- | ------ |
+| E-1 | Supabase stg プロジェクト作成                     | 環境構築   | 小     |
+| E-2 | ローカル .env を Docker ローカル DB に向ける      | 環境構築   | 小     |
+| E-3 | ローカル DB 初期化・stg/prod マイグレーション確認 | 環境構築   | 小     |
+| E-4 | FE デプロイを stg 経由に修正                      | CI/CD 修正 | 小     |
+| E-5 | Cloud Run staging の環境変数を stg DB に向ける    | 環境構築   | 小     |
+| B-1 | 自動保存の実装                                    | 機能開発   | 小〜中 |
+| B-2 | ゴミ箱機能の実装                                  | 機能開発   | 中     |
+| —   | リリース前チェックリスト                          | QA         | —      |
+| —   | 本番デプロイ                                      | デプロイ   | —      |
 
 **推奨順序**: E-1 → E-2 → E-3 → E-4 → E-5 → B-1 → B-2 → チェックリスト → デプロイ
 
