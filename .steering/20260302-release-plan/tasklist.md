@@ -6,13 +6,13 @@
 
 ## フェーズ0: 環境構築
 
-| #   | タスク                                            | 状態      | 備考                                            |
-| --- | ------------------------------------------------- | --------- | ----------------------------------------------- |
-| E-1 | Supabase stg プロジェクト作成                     | ✅ 完了   | 手動作業（Supabase Dashboard）                  |
-| E-2 | ローカル `.env` を Docker ローカル DB に向ける    | ✅ 完了   | 既に設定済み                                    |
-| E-3 | ローカル DB 初期化・stg/prod マイグレーション確認 | ✅ 完了   | ローカル/stg/prod すべて 21 migrations 適用済み |
-| E-4 | FE デプロイを stg 経由に修正                      | ✅ 完了   | 2026-03-03                                      |
-| E-5 | Cloud Run staging の環境変数を stg DB に向ける    | ⬜ 未着手 | E-1 完了後（Cloud Run コンソール手動操作）      |
+| #   | タスク                                            | 状態      | 備考                                                                               |
+| --- | ------------------------------------------------- | --------- | ---------------------------------------------------------------------------------- |
+| E-1 | Supabase stg プロジェクト作成                     | ✅ 完了   | 手動作業（Supabase Dashboard）                                                     |
+| E-2 | ローカル `.env` を Docker ローカル DB に向ける    | ✅ 完了   | 既に設定済み                                                                       |
+| E-3 | ローカル DB 初期化・stg/prod マイグレーション確認 | ✅ 完了   | ローカル/stg/prod すべて 21 migrations 適用済み                                    |
+| E-4 | FE デプロイを stg 経由に修正                      | ✅ 完了   | 2026-03-03                                                                         |
+| E-5 | Cloud Run staging の環境変数を stg DB に向ける    | 🔄 進行中 | 詳細は下記サブタスク参照。ドメイン: `stg.mosaku.jp` / `api-stg.mosaku.jp` 確定済み |
 
 ---
 
@@ -76,16 +76,38 @@ main push → deploy-frontend.yml → Vercel Preview（stg 相当）
 
 ---
 
+## E-5 サブタスク（2026-03-08 詳細化）
+
+ドメイン確定: `mosaku.jp` 取得済み、stg は `stg.mosaku.jp` / `api-stg.mosaku.jp`
+
+| #     | 作業                                                           | 場所                  | 状態                      |
+| ----- | -------------------------------------------------------------- | --------------------- | ------------------------- |
+| E-5-1 | Supabase stg の Project Ref・パスワードを確認                  | Supabase Dashboard    | ✅ 完了（E-1 で取得済み） |
+| E-5-2 | Secret Manager に stg 用シークレット登録                       | gcloud CLI            | ⬜ 未着手                 |
+| E-5-3 | Cloud Run `mosaku-backend-staging` 初回デプロイ（stg DB 向け） | gcloud CLI            | ⬜ 未着手                 |
+| E-5-4 | Prisma マイグレーション（stg DB）                              | ローカル CLI          | ⬜ 未着手                 |
+| E-5-5 | Vercel に `stg.mosaku.jp` ドメイン割り当て                     | Vercel Dashboard      | ⬜ 未着手                 |
+| E-5-6 | DNS 設定（stg / api-stg サブドメイン追加）                     | DNS 管理画面          | ⬜ 未着手                 |
+| E-5-7 | OAuth 設定更新（Google / GitHub に stg URL 追加）              | Google Cloud / GitHub | ⬜ 未着手                 |
+| E-5-8 | 動作確認（`stg.mosaku.jp` でログイン・メモ操作）               | ブラウザ              | ⬜ 未着手                 |
+
+> 詳細コマンドは `docs/private/staging-setup-progress.md` を参照。
+
+---
+
 ## 次のステップ
 
-**手動作業が必要なもの（あなたが実施）:**
+**手動作業が必要なもの（E-5 完了まで）:**
 
 1. ~~**E-1**: Supabase Dashboard で `mosaku-stg` プロジェクト作成~~ ✅ 完了
 2. ~~**E-2**: `backend/.env` を Docker ローカル DB に向ける~~ ✅ 完了
-3. **E-5**: Cloud Run `mosaku-backend-staging` の環境変数を stg DB に更新（Cloud Run コンソール）
-4. **E-3（残り）**: stg/prod の pending マイグレーション確認
+3. **E-5-2**: `gcloud secrets create database-url-staging ...` で Secret Manager に stg シークレット登録
+4. **E-5-3**: `gcloud run deploy mosaku-backend-staging ...` で Cloud Run stg サービス初回デプロイ
+5. **E-5-4**: `npx prisma migrate deploy`（DIRECT_URL を stg に向けて実行）
+6. **E-5-5〜7**: Vercel / DNS / OAuth 設定
+7. **E-5-8**: `stg.mosaku.jp` で動作確認
 
-**機能開発（E-3/E-5 完了後）:**
+**機能開発（E-5 完了後）:**
 
-5. **B-1**: `/add-feature 自動保存` で着手
-6. **B-2**: `/add-feature ゴミ箱機能` で着手
+8. **B-1**: `/add-feature 自動保存` で着手
+9. **B-2**: `/add-feature ゴミ箱機能` で着手

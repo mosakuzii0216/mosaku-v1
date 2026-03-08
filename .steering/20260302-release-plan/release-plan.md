@@ -137,13 +137,59 @@ DATABASE_URL={stg_url} npx prisma migrate deploy
 
 ---
 
-#### E-5: Cloud Run staging の環境変数を stg Supabase に向ける
+#### E-5: Staging 環境を完全構築する
 
-Cloud Run `mosaku-backend-staging` サービスの環境変数を更新:
+**確定したドメイン** (`mosaku.jp` 取得済み):
 
-- `DATABASE_URL` → stg Supabase pooler URL
-- `DIRECT_URL` → stg Supabase direct URL
-- `CORS_ORIGINS` → stg フロントエンド URL（Vercel preview domain）
+- フロントエンド: `stg.mosaku.jp`（Vercel Preview）
+- バックエンド: `api-stg.mosaku.jp`（Cloud Run `mosaku-backend-staging`）
+
+**E-5-2: Secret Manager に stg 用シークレット登録**
+
+```bash
+# stg Supabase の接続文字列を登録（{STAGING_REF}, {STAGING_PASSWORD} を置換）
+echo -n "postgresql://postgres.{STAGING_REF}:{STAGING_PASSWORD}@aws-1-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true" | \
+  gcloud secrets create database-url-staging --project=igneous-core-480923-j0 --data-file=-
+
+echo -n "postgresql://postgres.{STAGING_REF}:{STAGING_PASSWORD}@aws-1-ap-south-1.pooler.supabase.com:5432/postgres" | \
+  gcloud secrets create direct-url-staging --project=igneous-core-480923-j0 --data-file=-
+
+echo -n "{STAGING_ANON_KEY}" | \
+  gcloud secrets create supabase-anon-key-staging --project=igneous-core-480923-j0 --data-file=-
+```
+
+**E-5-3: Cloud Run `mosaku-backend-staging` 初回デプロイ**
+
+```bash
+gcloud run deploy mosaku-backend-staging \
+  --project=igneous-core-480923-j0 \
+  --image=gcr.io/igneous-core-480923-j0/mosaku-backend:latest \
+  --region=asia-northeast1 \
+  --allow-unauthenticated \
+  --port=8080 --cpu=1 --memory=512Mi \
+  --min-instances=0 --max-instances=5 \
+  --set-env-vars="NODE_ENV=staging,FRONTEND_URL=https://stg.mosaku.jp,CORS_ORIGINS=https://stg.mosaku.jp,SUPABASE_URL=https://{STAGING_REF}.supabase.co,ADMIN_EMAIL=mosakuzii1928@gmail.com,GOOGLE_CLIENT_ID=...,GOOGLE_REDIRECT_URI=https://api-stg.mosaku.jp/auth/google/callback,GITHUB_CLIENT_ID=...,GITHUB_REDIRECT_URI=https://api-stg.mosaku.jp/auth/github/callback" \
+  --update-secrets="DATABASE_URL=database-url-staging:latest,DIRECT_URL=direct-url-staging:latest,SUPABASE_ANON_KEY=supabase-anon-key-staging:latest,JWT_SECRET=jwt-secret:latest,SESSION_SECRET=session-secret:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest,GITHUB_CLIENT_SECRET=github-client-secret:latest"
+```
+
+**E-5-4: Prisma マイグレーション（stg DB）**
+
+```bash
+cd backend
+DIRECT_URL=$(gcloud secrets versions access latest --secret=direct-url-staging --project=igneous-core-480923-j0) \
+DATABASE_URL=$(gcloud secrets versions access latest --secret=database-url-staging --project=igneous-core-480923-j0) \
+npx prisma migrate deploy
+```
+
+**E-5-5〜7: Vercel / DNS / OAuth 設定**
+
+- Vercel Dashboard → Domains → `stg.mosaku.jp` 追加
+- DNS: `CNAME stg → Vercel指定値`、`CNAME api-stg → ghs.googlehosted.com`
+- Cloud Run ドメインマッピング: `gcloud run domain-mappings create --service=mosaku-backend-staging --domain=api-stg.mosaku.jp`
+- Google OAuth: 承認済みオリジンに `https://stg.mosaku.jp`、コールバックに `https://api-stg.mosaku.jp/auth/google/callback` 追加
+- GitHub OAuth: コールバックに `https://api-stg.mosaku.jp/auth/github/callback` 追加
+
+> 詳細コマンドは `docs/private/staging-setup-progress.md` を参照。
 
 ---
 
