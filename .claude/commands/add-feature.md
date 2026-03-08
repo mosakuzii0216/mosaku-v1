@@ -1,3 +1,8 @@
+---
+description: 新機能開発（要件定義→設計→実装→レビューの全フロー）
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, WebSearch, TaskCreate, TaskUpdate, TaskList
+---
+
 # 新機能開発コマンド
 
 新機能「$ARGUMENTS」の開発を開始します。
