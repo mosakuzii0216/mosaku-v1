@@ -78,8 +78,6 @@ npx prisma generate         # Prismaクライアント生成
 
 ## ドキュメント
 
-詳細な技術ドキュメントは[docs/](./docs)ディレクトリにあります。
-
 - **[移行計画](./docs/migration/overview.md)** - クラウド移行の全体計画
 - **[デプロイ手順](./docs/deployment/)** - Cloud Run / Vercel へのデプロイ
 - **[開発ガイド](./docs/development/)** - 開発関連のドキュメント
