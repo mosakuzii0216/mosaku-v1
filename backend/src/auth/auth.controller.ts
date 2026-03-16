@@ -275,21 +275,6 @@ export class AuthController {
 		};
 	}
 
-	// 後方互換性のため一時的に保持（将来削除予定）
-	@Post('sync-user')
-	@UseGuards(JwtAuthGuard)
-	syncUser(@Request() req: AuthenticatedRequest) {
-		// 新しい認証システムでは不要だが、フロントエンドの移行期間中は保持
-		return req.user;
-	}
-
-	@Post('sync-user-with-invite')
-	@UseGuards(JwtAuthGuard)
-	syncUserWithInvite(@Request() req: AuthenticatedRequest) {
-		// 新しい認証システムでは不要だが、フロントエンドの移行期間中は保持
-		return req.user;
-	}
-
 	// Google OAuth エンドポイント
 	@Get('google')
 	@UseGuards(GoogleAuthGuard)
