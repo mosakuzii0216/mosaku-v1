@@ -151,11 +151,3 @@ export function getGithubClientId(): string {
 	}
 	return config.githubClientId;
 }
-
-export function getXConsumerKey(): string {
-	const config = envValidator.getConfig();
-	if (!config.xConsumerKey) {
-		throw new Error('X Consumer Key is not configured');
-	}
-	return config.xConsumerKey;
-}

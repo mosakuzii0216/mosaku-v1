@@ -1,4 +1,4 @@
-import { getBackendUrl, getGoogleClientId, getGithubClientId, getXConsumerKey } from './env';
+import { getBackendUrl, getGoogleClientId, getGithubClientId } from './env';
 import { BaseOAuthAuth } from './oauthAuth/BaseOAuthAuth';
 
 class GoogleAuthUtilsClass extends BaseOAuthAuth {
@@ -41,30 +41,9 @@ class GitHubAuthUtilsClass extends BaseOAuthAuth {
 	}
 }
 
-class XAuthUtilsClass extends BaseOAuthAuth {
-	protected getProviderName(): string {
-		return 'X';
-	}
-
-	protected getUserParamName(): string {
-		return 'x_user';
-	}
-
-	startAuth(): void {
-		// 環境変数の検証は getXConsumerKey() 内で行われる
-		getXConsumerKey(); // 環境変数が設定されているか検証
-		const backendUrl = getBackendUrl();
-
-		// バックエンドのX認証エンドポイントにリダイレクト
-		const xAuthUrl = `${backendUrl}/auth/x`;
-		window.location.href = xAuthUrl;
-	}
-}
-
 // 静的メソッドとして公開するためのラッパー
 const googleAuthUtils = new GoogleAuthUtilsClass();
 const githubAuthUtils = new GitHubAuthUtilsClass();
-const xAuthUtils = new XAuthUtilsClass();
 
 export const GoogleAuthUtils = {
 	startGoogleAuth: () => googleAuthUtils.startAuth(),
@@ -76,10 +55,4 @@ export const GitHubAuthUtils = {
 	startGitHubAuth: () => githubAuthUtils.startAuth(),
 	parseAuthCallback: () => githubAuthUtils.parseAuthCallback(),
 	clearAuthParams: () => githubAuthUtils.clearAuthParams(),
-};
-
-export const XAuthUtils = {
-	startXAuth: () => xAuthUtils.startAuth(),
-	parseAuthCallback: () => xAuthUtils.parseAuthCallback(),
-	clearAuthParams: () => xAuthUtils.clearAuthParams(),
 };

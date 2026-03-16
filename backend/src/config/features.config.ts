@@ -32,16 +32,6 @@ export const FEATURES = {
 	PASSWORD_RESET_EMAIL: getFeatureFlag(process.env.FEATURE_PASSWORD_RESET_EMAIL, false),
 
 	/**
-	 * X (Twitter) OAuth認証
-	 * - true: X OAuth有効
-	 * - false: X OAuth無効（コメントアウト中）
-	 *
-	 * 環境変数: FEATURE_OAUTH_X
-	 * デフォルト: false（現在無効）
-	 */
-	OAUTH_X: getFeatureFlag(process.env.FEATURE_OAUTH_X, false),
-
-	/**
 	 * ページネーションAPI
 	 * - true: ページネーション対応エンドポイント有効
 	 * - false: 従来の全件取得のみ

@@ -28,16 +28,6 @@ function getFeatureFlag(envVar: string | undefined, defaultValue: boolean): bool
  */
 export const FEATURES = {
 	/**
-	 * X (Twitter) OAuth認証
-	 * - true: X OAuthボタンを表示
-	 * - false: X OAuthボタンを非表示
-	 *
-	 * 環境変数: VITE_FEATURE_OAUTH_X
-	 * デフォルト: false（現在バックエンドで無効）
-	 */
-	OAUTH_X: getFeatureFlag(import.meta.env.VITE_FEATURE_OAUTH_X, false),
-
-	/**
 	 * ページネーションUI
 	 * - true: ページネーション対応UI有効
 	 * - false: 従来の全件表示のみ
