@@ -77,7 +77,7 @@ export class AuthService {
 				email,
 				password: hashedPassword,
 				name: name || email,
-				role: isAdmin ? 'ADMIN' : 'FREE',
+				role: isAdmin ? 'ADMIN' : 'USER',
 			},
 		});
 

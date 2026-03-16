@@ -42,16 +42,6 @@ export const FEATURES = {
 	OAUTH_X: getFeatureFlag(process.env.FEATURE_OAUTH_X, false),
 
 	/**
-	 * プレミアム機能
-	 * - true: プレミアム機能有効
-	 * - false: プレミアム機能無効
-	 *
-	 * 環境変数: FEATURE_PREMIUM
-	 * デフォルト: false
-	 */
-	PREMIUM_FEATURES: getFeatureFlag(process.env.FEATURE_PREMIUM, false),
-
-	/**
 	 * ページネーションAPI
 	 * - true: ページネーション対応エンドポイント有効
 	 * - false: 従来の全件取得のみ
@@ -60,16 +50,6 @@ export const FEATURES = {
 	 * デフォルト: true（実装済み）
 	 */
 	PAGINATION: getFeatureFlag(process.env.FEATURE_PAGINATION, true),
-
-	/**
-	 * レガシーSyncエンドポイント
-	 * - true: 後方互換性のためのエンドポイント有効
-	 * - false: レガシーエンドポイント無効
-	 *
-	 * 環境変数: FEATURE_LEGACY_SYNC
-	 * デフォルト: true（移行期間中は有効）
-	 */
-	LEGACY_SYNC_ENDPOINTS: getFeatureFlag(process.env.FEATURE_LEGACY_SYNC, true),
 
 	/**
 	 * 詳細ログ出力

@@ -108,7 +108,7 @@ export class OAuthService {
 				oauthId: providerId,
 				email: userEmail,
 				name: oauthUser.name,
-				role: isAdmin ? 'ADMIN' : 'FREE',
+				role: isAdmin ? 'ADMIN' : 'USER',
 				emailVerified: !!oauthUser.email,
 			},
 		});
