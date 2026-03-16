@@ -136,7 +136,7 @@ model User {
   id                     String              @id @default(cuid())
   email                  String              @unique
   name                   String?
-  role                   UserRole            @default(FREE)
+  role                   UserRole            @default(USER)
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
   emailVerificationToken String?             @map("email_verification_token")
@@ -156,7 +156,6 @@ model User {
 }
 
 enum UserRole {
-  FREE
-  PREMIUM
+  USER
   ADMIN
 }
