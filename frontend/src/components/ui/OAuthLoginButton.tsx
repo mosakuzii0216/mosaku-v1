@@ -1,6 +1,6 @@
 import { useAuth } from '../../contexts/AuthContext';
 
-type OAuthProvider = 'google' | 'github' | 'x';
+type OAuthProvider = 'google' | 'github';
 
 interface OAuthLoginButtonProps {
 	provider: OAuthProvider;
@@ -54,24 +54,13 @@ const GitHubIcon = () => (
 	</svg>
 );
 
-const XIcon = () => (
-	<svg
-		className="w-5 h-5 mr-3"
-		fill="currentColor"
-		viewBox="0 0 24 24"
-		xmlns="http://www.w3.org/2000/svg"
-	>
-		<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-	</svg>
-);
-
 export const OAuthLoginButton: React.FC<OAuthLoginButtonProps> = ({
 	provider,
 	className = '',
 	children,
 	mode = 'login',
 }) => {
-	const { googleLogin, githubLogin, xLogin } = useAuth();
+	const { googleLogin, githubLogin } = useAuth();
 
 	const providerConfigs: Record<OAuthProvider, ProviderConfig> = {
 		google: {
@@ -88,14 +77,6 @@ export const OAuthLoginButton: React.FC<OAuthLoginButtonProps> = ({
 			icon: <GitHubIcon />,
 			bgColor: 'bg-gray-900',
 			hoverColor: 'hover:bg-gray-800',
-			textColor: 'text-white',
-		},
-		x: {
-			name: 'X',
-			loginFn: xLogin,
-			icon: <XIcon />,
-			bgColor: 'bg-black',
-			hoverColor: 'hover:bg-gray-900',
 			textColor: 'text-white',
 		},
 	};

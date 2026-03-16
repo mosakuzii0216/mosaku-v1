@@ -1,14 +1,14 @@
 import { useCallback } from 'react';
 import { AuthAPI, AuthTokenManager } from '../utils/auth';
 import type { UserProfile, OAuthUserData } from '../utils/auth';
-import { GoogleAuthUtils, GitHubAuthUtils, XAuthUtils } from '../utils/oauthAuth';
+import { GoogleAuthUtils, GitHubAuthUtils } from '../utils/oauthAuth';
 import { logger } from '../utils/logger';
 
-export type OAuthProvider = 'google' | 'github' | 'x';
+export type OAuthProvider = 'google' | 'github';
 
 interface OAuthProviderConfig {
 	name: string;
-	utils: typeof GoogleAuthUtils | typeof GitHubAuthUtils | typeof XAuthUtils;
+	utils: typeof GoogleAuthUtils | typeof GitHubAuthUtils;
 	storageKey: string;
 	startAuth: () => void;
 	registerWithInvitation: (
@@ -35,14 +35,6 @@ export const OAUTH_PROVIDERS: Record<OAuthProvider, OAuthProviderConfig> = {
 		startAuth: GitHubAuthUtils.startGitHubAuth,
 		registerWithInvitation: AuthAPI.githubRegisterWithInvitation,
 		getUserData: (callback) => callback.githubUser,
-	},
-	x: {
-		name: 'X',
-		utils: XAuthUtils,
-		storageKey: 'pendingXUser',
-		startAuth: XAuthUtils.startXAuth,
-		registerWithInvitation: AuthAPI.xRegisterWithInvitation,
-		getUserData: (callback) => callback.xUser,
 	},
 };
 

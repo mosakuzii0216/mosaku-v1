@@ -7,7 +7,7 @@ import { OAuthInviteForm } from './OAuthInviteForm';
 import type { OAuthUserData } from '../../utils/auth';
 import { logger } from '../../utils/logger';
 
-type AuthMode = 'login' | 'signup' | 'resetPassword' | 'googleInvite' | 'githubInvite' | 'xInvite';
+type AuthMode = 'login' | 'signup' | 'resetPassword' | 'googleInvite' | 'githubInvite';
 
 export default function AuthForm() {
 	const [searchParams] = useSearchParams();
@@ -17,8 +17,7 @@ export default function AuthForm() {
 	const [loading, setLoading] = useState(false);
 	const [message, setMessage] = useState('');
 
-	const { googleRegisterWithInvitation, githubRegisterWithInvitation, xRegisterWithInvitation } =
-		useAuth();
+	const { googleRegisterWithInvitation, githubRegisterWithInvitation } = useAuth();
 
 	// OAuthコールバックエラーの処理
 	useEffect(() => {
@@ -27,7 +26,6 @@ export default function AuthForm() {
 			const providers = [
 				{ key: 'pendingGoogleUser', mode: 'googleInvite' as const },
 				{ key: 'pendingGitHubUser', mode: 'githubInvite' as const },
-				{ key: 'pendingXUser', mode: 'xInvite' as const },
 			];
 
 			let userFound = false;
@@ -70,8 +68,7 @@ export default function AuthForm() {
 			const registerFunction = {
 				googleInvite: googleRegisterWithInvitation,
 				githubInvite: githubRegisterWithInvitation,
-				xInvite: xRegisterWithInvitation,
-			}[mode as 'googleInvite' | 'githubInvite' | 'xInvite'];
+			}[mode as 'googleInvite' | 'githubInvite'];
 
 			if (!registerFunction) return;
 
@@ -90,8 +87,7 @@ export default function AuthForm() {
 			const providerKey = {
 				googleInvite: 'pendingGoogleUser',
 				githubInvite: 'pendingGitHubUser',
-				xInvite: 'pendingXUser',
-			}[mode as 'googleInvite' | 'githubInvite' | 'xInvite'];
+			}[mode as 'googleInvite' | 'githubInvite'];
 
 			if (providerKey) {
 				sessionStorage.removeItem(providerKey);
@@ -107,21 +103,19 @@ export default function AuthForm() {
 		clearPendingOAuthUser();
 	};
 
-	const getProviderName = (): 'Google' | 'GitHub' | 'X' => {
+	const getProviderName = (): 'Google' | 'GitHub' => {
 		switch (mode) {
 			case 'googleInvite':
 				return 'Google';
 			case 'githubInvite':
 				return 'GitHub';
-			case 'xInvite':
-				return 'X';
 			default:
 				return 'Google'; // フォールバック（実際にはここに到達しないはず）
 		}
 	};
 
 	// OAuth招待コードフォーム
-	if (mode === 'googleInvite' || mode === 'githubInvite' || mode === 'xInvite') {
+	if (mode === 'googleInvite' || mode === 'githubInvite') {
 		return (
 			<div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
 				<h2 className="text-2xl font-bold mb-6 text-center">{getProviderName()} アカウント登録</h2>
