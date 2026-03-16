@@ -14,7 +14,7 @@ describe('OAuthService', () => {
 		email: 'oauth@example.com',
 		password: null,
 		name: 'OAuth User',
-		role: 'FREE' as const,
+		role: 'USER' as const,
 		oauthId: 'provider-id-123',
 		emailVerified: true,
 		createdAt: new Date(),

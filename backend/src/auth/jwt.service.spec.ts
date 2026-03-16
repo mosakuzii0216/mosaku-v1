@@ -26,7 +26,7 @@ describe('JwtTokenService', () => {
 		it('should return an accessToken', () => {
 			mockJwtService.sign.mockReturnValue('generated-token');
 
-			const result = service.generateTokens('user-id', 'user@example.com', 'FREE');
+			const result = service.generateTokens('user-id', 'user@example.com', 'USER');
 
 			expect(result.accessToken).toBe('generated-token');
 		});
@@ -45,7 +45,7 @@ describe('JwtTokenService', () => {
 		});
 
 		it('should call sign once per generateTokens call', () => {
-			service.generateTokens('id', 'email@example.com', 'FREE');
+			service.generateTokens('id', 'email@example.com', 'USER');
 
 			expect(mockJwtService.sign).toHaveBeenCalledTimes(1);
 		});

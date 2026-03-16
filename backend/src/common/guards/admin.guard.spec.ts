@@ -26,14 +26,8 @@ describe('AdminGuard', () => {
 		expect(guard.canActivate(context)).toBe(true);
 	});
 
-	it('should throw AppException for FREE user', () => {
-		const context = createMockContext({ role: 'FREE' });
-
-		expect(() => guard.canActivate(context)).toThrow(AppException);
-	});
-
-	it('should throw AppException for PREMIUM user', () => {
-		const context = createMockContext({ role: 'PREMIUM' });
+	it('should throw AppException for USER user', () => {
+		const context = createMockContext({ role: 'USER' });
 
 		expect(() => guard.canActivate(context)).toThrow(AppException);
 	});

@@ -6,7 +6,7 @@ export interface UserProfile {
 	id: string;
 	email: string;
 	name: string | null;
-	role: 'FREE' | 'PREMIUM' | 'ADMIN';
+	role: 'USER' | 'ADMIN';
 	createdAt: string;
 	updatedAt: string;
 }
@@ -37,7 +37,7 @@ export interface TokenPayload {
 	sub: string;
 	email: string;
 	name: string;
-	role: 'FREE' | 'PREMIUM' | 'ADMIN';
+	role: 'USER' | 'ADMIN';
 	iat: number;
 	exp: number;
 }

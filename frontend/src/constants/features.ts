@@ -38,16 +38,6 @@ export const FEATURES = {
 	OAUTH_X: getFeatureFlag(import.meta.env.VITE_FEATURE_OAUTH_X, false),
 
 	/**
-	 * プレミアム機能のUI
-	 * - true: プレミアム機能関連のUIを表示
-	 * - false: プレミアム機能を非表示
-	 *
-	 * 環境変数: VITE_FEATURE_PREMIUM_UI
-	 * デフォルト: false
-	 */
-	PREMIUM_UI: getFeatureFlag(import.meta.env.VITE_FEATURE_PREMIUM_UI, false),
-
-	/**
 	 * ページネーションUI
 	 * - true: ページネーション対応UI有効
 	 * - false: 従来の全件表示のみ

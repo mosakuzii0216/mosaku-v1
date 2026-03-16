@@ -14,7 +14,7 @@ describe('AuthService', () => {
 		email: 'test@example.com',
 		password: 'hashed-password',
 		name: 'Test User',
-		role: 'FREE' as const,
+		role: 'USER' as const,
 		createdAt: new Date(),
 		updatedAt: new Date(),
 		oauthId: null,
@@ -138,16 +138,16 @@ describe('AuthService', () => {
 	});
 
 	describe('register', () => {
-		it('should create a new FREE user', async () => {
+		it('should create a new USER user', async () => {
 			mockPrismaService.user.findUnique.mockResolvedValue(null);
-			mockPrismaService.user.create.mockResolvedValue({ ...mockUser, role: 'FREE' });
+			mockPrismaService.user.create.mockResolvedValue({ ...mockUser, role: 'USER' });
 			mockConfigService.isAdminEmail.mockReturnValue(false);
 
 			const result = await service.register('new@example.com', 'password123', 'New User');
 
 			expect(mockPrismaService.user.create).toHaveBeenCalledWith(
 				expect.objectContaining({
-					data: expect.objectContaining({ role: 'FREE' }),
+					data: expect.objectContaining({ role: 'USER' }),
 				}),
 			);
 			expect(result).not.toHaveProperty('password');
