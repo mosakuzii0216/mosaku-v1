@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useMemoStore } from '../../stores/useMemoStore';
+import { useMemo as useMemoQuery } from '../../hooks/useMemoQueries';
 import { useAppInit } from '../../hooks/useAppInit';
 import { Header } from '../ui/Header';
 import { MemoEditor } from '../memo/MemoEditor';
@@ -25,7 +26,7 @@ export const DesktopLayout = () => {
 	const {
 		currentObject,
 		currentView,
-		selectedMemo,
+		selectedMemoId,
 		goToMemoCreate,
 		goToNotebookCreate,
 		selectedNotebookId,
@@ -34,6 +35,7 @@ export const DesktopLayout = () => {
 		closeMemoPalette,
 		openMemoPalette,
 	} = useMemoStore();
+	const { data: selectedMemo } = useMemoQuery(selectedMemoId ?? '');
 	useAppInit(); // アプリ初期化（タグロード等）
 
 	// ショートカットキーのハンドリング
