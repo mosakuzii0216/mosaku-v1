@@ -4,7 +4,7 @@
  * このファイルは後方互換性のために維持されています。
  * 新しいコードでは、個別のストアを直接使用することを推奨します：
  * - useViewStore: UI状態とナビゲーション
- * - useMemoDataStore: メモデータとCRUD操作
+ * - useMemoDataStore: 選択中メモ・ノートブックIDのUI状態
  * - usePaletteStore: パレット状態
  */
 import { useViewStore } from './useViewStore';
@@ -19,9 +19,8 @@ export { usePaletteStore, type PaletteMode } from './usePaletteStore';
 
 // 後方互換性のための統合インターフェース
 interface MemoStore {
-	// データ (from useMemoDataStore)
-	memos: Memo[];
-	selectedMemo: Memo | null;
+	// UI状態 (from useMemoDataStore)
+	selectedMemoId: string | null;
 	selectedNotebookId: string | null;
 
 	// UI状態 (from useViewStore)
@@ -37,13 +36,6 @@ interface MemoStore {
 	paletteOpen: boolean;
 	paletteMode: PaletteMode;
 	paletteNotebookFilter: string | null;
-
-	// Data Actions
-	setMemos: (memos: Memo[]) => void;
-	selectMemo: (memo: Memo | null) => void;
-	addMemo: (memo: Memo) => void;
-	updateMemo: (memo: Memo) => void;
-	deleteMemo: (id: string) => void;
 
 	// UI Actions
 	setIsMobile: (isMobile: boolean) => void;
@@ -80,9 +72,8 @@ export const useMemoStore = (): MemoStore => {
 	const paletteStore = usePaletteStore();
 
 	return {
-		// データ (from useMemoDataStore)
-		memos: dataStore.memos,
-		selectedMemo: dataStore.selectedMemo,
+		// UI状態 (from useMemoDataStore)
+		selectedMemoId: dataStore.selectedMemoId,
 		selectedNotebookId: dataStore.selectedNotebookId,
 
 		// UI状態 (from useViewStore)
@@ -99,13 +90,6 @@ export const useMemoStore = (): MemoStore => {
 		paletteMode: paletteStore.paletteMode,
 		paletteNotebookFilter: paletteStore.paletteNotebookFilter,
 
-		// Data Actions
-		setMemos: dataStore.setMemos,
-		selectMemo: dataStore.selectMemo,
-		addMemo: dataStore.addMemo,
-		updateMemo: dataStore.updateMemo,
-		deleteMemo: dataStore.deleteMemo,
-
 		// UI Actions
 		setIsMobile: viewStore.setIsMobile,
 		setCurrentObject: viewStore.setCurrentObject,
@@ -119,33 +103,33 @@ export const useMemoStore = (): MemoStore => {
 		openMemoPalette: paletteStore.openMemoPalette,
 		closeMemoPalette: paletteStore.closeMemoPalette,
 
-		// Navigation helpers (一部はデータストアとの連携が必要)
+		// Navigation helpers
 		goToList: () => {
 			viewStore.goToList();
-			dataStore.selectMemo(null);
+			dataStore.setSelectedMemoId(null);
 		},
 
 		goToEdit: (memo: Memo) => {
 			viewStore.setCurrentObject('memo');
 			viewStore.setCurrentView('edit');
 			viewStore.setIsEditing(true);
-			dataStore.selectMemo(memo);
+			dataStore.setSelectedMemoId(memo.id);
 		},
 
 		goToMemoCreate: () => {
 			viewStore.goToMemoCreate();
-			dataStore.selectMemo(null);
+			dataStore.setSelectedMemoId(null);
 		},
 
 		goToNotebookCreate: () => {
 			viewStore.goToNotebookCreate();
-			dataStore.selectMemo(null);
+			dataStore.setSelectedMemoId(null);
 			dataStore.setSelectedNotebookId(null);
 		},
 
 		goToNotebookList: () => {
 			viewStore.goToNotebookList();
-			dataStore.selectMemo(null);
+			dataStore.setSelectedMemoId(null);
 			dataStore.setSelectedNotebookId(null);
 		},
 
@@ -153,18 +137,18 @@ export const useMemoStore = (): MemoStore => {
 			viewStore.setCurrentObject('notebook');
 			viewStore.setCurrentView('edit');
 			viewStore.setIsEditing(true);
-			dataStore.selectMemo(null);
+			dataStore.setSelectedMemoId(null);
 			dataStore.setSelectedNotebookId(id);
 		},
 
 		goToMemosForNotebook: (filter: 'ALL' | 'INBOX' | string) => {
 			viewStore.goToMemosForNotebook(filter);
-			dataStore.selectMemo(null);
+			dataStore.setSelectedMemoId(null);
 		},
 
 		goToTags: () => {
 			viewStore.goToTags();
-			dataStore.selectMemo(null);
+			dataStore.setSelectedMemoId(null);
 		},
 
 		logCurrent: viewStore.logCurrent,
