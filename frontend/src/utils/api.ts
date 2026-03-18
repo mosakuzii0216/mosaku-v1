@@ -9,7 +9,11 @@ import type {
 } from '../types/tag';
 import type { Theme, ThemeSearchParams, CreateThemeData, UpdateThemeData } from '../types/theme';
 import type { Notebook, CreateNotebookDto, UpdateNotebookDto } from '../types/notebook';
-import type { InvitationVerificationResponse } from '../types/invitation';
+import type {
+	InvitationVerificationResponse,
+	InvitationCode,
+	CreateInvitationDto,
+} from '../types/invitation';
 import type { PaginationParams, PaginatedResult } from '../types/pagination';
 import { AuthTokenManager } from './auth';
 import { getBackendUrl } from './env';
@@ -269,6 +273,24 @@ class ApiClient {
 		}
 
 		return response.json();
+	}
+
+	// 招待コード一覧取得（ADMIN専用）
+	async getInvitations(): Promise<InvitationCode[]> {
+		return this.request<InvitationCode[]>('/invitation');
+	}
+
+	// 招待コード作成（ADMIN専用）
+	async createInvitation(data: CreateInvitationDto): Promise<InvitationCode> {
+		return this.request<InvitationCode>('/invitation', {
+			method: 'POST',
+			body: JSON.stringify(data),
+		});
+	}
+
+	// 招待コード削除（ADMIN専用）
+	async deleteInvitation(id: string): Promise<void> {
+		await this.request(`/invitation/${id}`, { method: 'DELETE' });
 	}
 
 	// ========== テーマ関連API ==========

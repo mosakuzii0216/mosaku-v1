@@ -1,17 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { AuthTokenManager } from '../../utils/auth';
+import { apiClient } from '../../utils/api';
+import type { InvitationCode } from '../../types/invitation';
 import { logger } from '../../utils/logger';
-
-interface InvitationCode {
-	id: string;
-	code: string;
-	maxUses: number;
-	usedCount: number;
-	expiresAt: string | null;
-	createdAt: string;
-	updatedAt: string;
-}
 
 export default function InvitationManager() {
 	const [invitations, setInvitations] = useState<InvitationCode[]>([]);
@@ -27,25 +18,7 @@ export default function InvitationManager() {
 
 	const loadInvitations = async () => {
 		try {
-			const token = AuthTokenManager.getAccessToken();
-
-			if (!token || AuthTokenManager.isTokenExpired(token)) {
-				setMessage('認証が必要です');
-				return;
-			}
-
-			const response = await fetch('http://localhost/api/invitation', {
-				headers: {
-					Authorization: `Bearer ${token}`,
-				},
-			});
-
-			if (!response.ok) {
-				const error = await response.json();
-				throw new Error(error.message || 'Failed to load invitations');
-			}
-
-			const data = await response.json();
+			const data = await apiClient.getInvitations();
 			setInvitations(data);
 		} catch (error) {
 			logger.error('Error loading invitations:', error);
@@ -61,31 +34,10 @@ export default function InvitationManager() {
 		setMessage('');
 
 		try {
-			const token = AuthTokenManager.getAccessToken();
-
-			if (!token || AuthTokenManager.isTokenExpired(token)) {
-				setMessage('認証が必要です');
-				return;
-			}
-
-			const response = await fetch('http://localhost/api/invitation', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${token}`,
-				},
-				body: JSON.stringify({
-					maxUses,
-					expiresAt: expiresAt || null,
-				}),
+			const newInvitation = await apiClient.createInvitation({
+				maxUses,
+				expiresAt: expiresAt || null,
 			});
-
-			if (!response.ok) {
-				const error = await response.json();
-				throw new Error(error.message || 'Failed to create invitation');
-			}
-
-			const newInvitation = await response.json();
 			setInvitations([newInvitation, ...invitations]);
 			setMaxUses(1);
 			setExpiresAt('');
@@ -102,25 +54,7 @@ export default function InvitationManager() {
 		if (!confirm('この招待コードを削除しますか？')) return;
 
 		try {
-			const token = AuthTokenManager.getAccessToken();
-
-			if (!token || AuthTokenManager.isTokenExpired(token)) {
-				setMessage('認証が必要です');
-				return;
-			}
-
-			const response = await fetch(`http://localhost/api/invitation/${id}`, {
-				method: 'DELETE',
-				headers: {
-					Authorization: `Bearer ${token}`,
-				},
-			});
-
-			if (!response.ok) {
-				const error = await response.json();
-				throw new Error(error.message || 'Failed to delete invitation');
-			}
-
+			await apiClient.deleteInvitation(id);
 			setInvitations(invitations.filter((inv) => inv.id !== id));
 			setMessage('招待コードが削除されました');
 		} catch (error) {
