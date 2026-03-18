@@ -30,7 +30,7 @@ cp .env.example .env
 
 ```bash
 # Docker Composeで全サービスを起動
-docker-compose up
+docker-compose up -d
 
 # アプリケーションにアクセス
 open http://localhost
