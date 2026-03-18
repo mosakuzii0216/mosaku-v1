@@ -3,6 +3,9 @@ import { useCreateMemo, useUpdateMemo, useDeleteMemo } from '../../hooks/useMemo
 import { useNotebooks } from '../../hooks/useNotebookQueries';
 import { useTagQueries } from '../../hooks/useTagQueries';
 import { useThemeCSS } from '../../hooks/useThemeCSS';
+import { useAutoSave } from '../../hooks/useAutoSave';
+import { useMemoDataStore } from '../../stores/useMemoDataStore';
+import { useViewStore } from '../../stores/useViewStore';
 import { TagDropdownIcon } from '../tag/TagDropdownIcon';
 import { RichTextEditor } from '../editor/RichTextEditor';
 import type { Memo } from '../../types/memo';
@@ -20,6 +23,8 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	const { assignTags, tagsQuery } = useTagQueries();
 	const tags = tagsQuery.data ?? [];
 	const { data: notebooks = [] } = useNotebooks();
+	const setSelectedMemoId = useMemoDataStore((s) => s.setSelectedMemoId);
+	const setCurrentView = useViewStore((s) => s.setCurrentView);
 
 	const [title, setTitle] = useState(memo?.title || '');
 	const [content, setContent] = useState(memo?.content || '');
@@ -35,8 +40,90 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	logger.debug('Selected Notebook:', selectedNotebook);
 	const selectedTheme = selectedNotebook?.theme || memo?.notebook?.theme || null;
 	logger.debug('Selected Theme:', selectedTheme);
-	// memo prop の変更を検知してエディタの状態を更新する
+
+	// useAutoSave に渡す派生値（レンダリング中に同期計算）
+	const isSaving = createMemo.isPending || updateMemo.isPending;
+	const canSave = hasChanges && (!!title.trim() || !!content.trim());
+
+	// 保存処理本体（エラーは呼び出し元に伝播させる）
+	const handleSave = useCallback(async () => {
+		if (!title.trim() && !content.trim()) {
+			return;
+		}
+
+		if (isCreate) {
+			const result = await new Promise<Memo>((resolve, reject) => {
+				createMemo.mutate(
+					{
+						title: title.trim() || '無題',
+						content: content.trim(),
+						notebookId: selectedNotebookId || null,
+					},
+					{
+						onSuccess: resolve,
+						onError: reject,
+					},
+				);
+			});
+
+			// 新規作成後にタグを割り当て
+			if (selectedTagIds.length > 0) {
+				assignTags({ memoId: result.id, data: { tagIds: selectedTagIds } });
+			}
+
+			// task 2.2: create 成功後に edit モードへ遷移（重複作成防止）
+			setSelectedMemoId(result.id);
+			setCurrentView('edit');
+		} else if (memo && hasChanges) {
+			await new Promise<Memo>((resolve, reject) => {
+				updateMemo.mutate(
+					{
+						id: memo.id,
+						data: {
+							title: title.trim() || '無題',
+							content: content.trim(),
+							notebookId: selectedNotebookId || null,
+						},
+					},
+					{
+						onSuccess: resolve,
+						onError: reject,
+					},
+				);
+			});
+
+			// タグの変更があれば更新
+			const originalTagIds = memo.memoTags?.map((mt) => mt.tag.id) || [];
+			const tagsChanged =
+				JSON.stringify(selectedTagIds.sort()) !== JSON.stringify(originalTagIds.sort());
+			if (tagsChanged) {
+				assignTags({ memoId: memo.id, data: { tagIds: selectedTagIds } });
+			}
+		}
+	}, [
+		title,
+		content,
+		selectedTagIds,
+		isCreate,
+		createMemo,
+		memo,
+		hasChanges,
+		updateMemo,
+		assignTags,
+		selectedNotebookId,
+		setSelectedMemoId,
+		setCurrentView,
+	]);
+
+	const { saveStatus, scheduleAutoSave, cancelDebounce } = useAutoSave({
+		canSave,
+		isSaving,
+		onSave: handleSave,
+	});
+
+	// memo prop の変更を検知してエディタの状態を更新し、デバウンスをリセットする
 	useEffect(() => {
+		cancelDebounce();
 		if (isCreate) {
 			// 新規作成モードの時は常に空にする
 			setTitle('');
@@ -53,7 +140,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 			// 新しいメモに切り替わったので、変更状態をリセット
 			setHasChanges(false);
 		}
-	}, [memo, isCreate]);
+	}, [memo, isCreate, cancelDebounce]);
 
 	// テーマCSSの読み込み
 	useThemeCSS(selectedTheme);
@@ -73,75 +160,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 			title !== originalTitle || content !== originalContent || tagsChanged || notebookChanged,
 		);
 	}, [title, content, selectedTagIds, selectedNotebookId, memo]);
-
-	const handleSave = useCallback(async () => {
-		if (!title.trim() && !content.trim()) {
-			return;
-		}
-
-		try {
-			if (isCreate) {
-				const result = await new Promise<Memo>((resolve, reject) => {
-					createMemo.mutate(
-						{
-							title: title.trim() || '無題',
-							content: content.trim(),
-							notebookId: selectedNotebookId || null,
-						},
-						{
-							onSuccess: resolve,
-							onError: reject,
-						},
-					);
-				});
-
-				// 新規作成後にタグを割り当て
-				if (selectedTagIds.length > 0) {
-					assignTags({ memoId: result.id, data: { tagIds: selectedTagIds } });
-				}
-			} else if (memo && hasChanges) {
-				await new Promise<Memo>((resolve, reject) => {
-					updateMemo.mutate(
-						{
-							id: memo.id,
-							data: {
-								title: title.trim() || '無題',
-								content: content.trim(),
-								notebookId: selectedNotebookId || null,
-							},
-						},
-						{
-							onSuccess: resolve,
-							onError: reject,
-						},
-					);
-				});
-
-				// タグの変更があれば更新
-				const originalTagIds = memo.memoTags?.map((mt) => mt.tag.id) || [];
-				const tagsChanged =
-					JSON.stringify(selectedTagIds.sort()) !== JSON.stringify(originalTagIds.sort());
-				if (tagsChanged) {
-					assignTags({ memoId: memo.id, data: { tagIds: selectedTagIds } });
-				}
-			}
-		} catch (error) {
-			logger.error('保存に失敗しました:', error);
-			// エラーハンドリング - ユーザーにエラーを通知
-			alert('保存に失敗しました。もう一度お試しください。');
-		}
-	}, [
-		title,
-		content,
-		selectedTagIds,
-		isCreate,
-		createMemo,
-		memo,
-		hasChanges,
-		updateMemo,
-		assignTags,
-		selectedNotebookId,
-	]);
 
 	const handleDelete = useCallback(async () => {
 		if (!memo) return;
@@ -165,14 +183,15 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 			if ((event.ctrlKey || event.metaKey) && event.key === 's') {
 				event.preventDefault();
 				if (hasChanges && (title.trim() || content.trim())) {
-					handleSave();
+					cancelDebounce();
+					handleSave().catch((error) => logger.error('保存に失敗しました:', error));
 				}
 			}
 		};
 
 		document.addEventListener('keydown', handleKeyDown);
 		return () => document.removeEventListener('keydown', handleKeyDown);
-	}, [hasChanges, title, content, handleSave]);
+	}, [hasChanges, title, content, handleSave, cancelDebounce]);
 
 	return (
 		<div
@@ -188,20 +207,29 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 							setSelectedTagIds((prev) =>
 								prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
 							);
+							scheduleAutoSave();
 						}}
 					/>
-					{hasChanges && <span className="text-sm text-gray-500">未保存の変更があります</span>}
+					{/* 保存状態インジケーター（task 3 で完成、暫定表示） */}
+					{saveStatus === 'pending' && <span className="text-sm text-gray-400">未保存</span>}
+					{saveStatus === 'saving' && <span className="text-sm text-blue-400">保存中...</span>}
+					{saveStatus === 'saved' && <span className="text-sm text-green-500">保存済み</span>}
+					{saveStatus === 'error' && (
+						<span className="text-sm text-red-500">保存失敗 — 手動保存してください</span>
+					)}
 					<button
-						onClick={handleSave}
-						disabled={
-							!hasChanges ||
-							(!title.trim() && !content.trim()) ||
-							createMemo.isPending ||
-							updateMemo.isPending
-						}
+						onClick={async () => {
+							cancelDebounce();
+							try {
+								await handleSave();
+							} catch (error) {
+								logger.error('手動保存に失敗しました:', error);
+							}
+						}}
+						disabled={!hasChanges || (!title.trim() && !content.trim()) || isSaving}
 						className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 					>
-						{createMemo.isPending || updateMemo.isPending ? '保存中...' : '保存'}
+						{isSaving ? '保存中...' : '保存'}
 					</button>
 					{!isCreate && memo && (
 						<button
@@ -227,7 +255,10 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 							type="text"
 							placeholder="タイトル"
 							value={title}
-							onChange={(e) => setTitle(e.target.value)}
+							onChange={(e) => {
+								setTitle(e.target.value);
+								scheduleAutoSave();
+							}}
 							className="memo-title text-2xl font-bold border-none outline-none placeholder-gray-400 bg-transparent w-full"
 						/>
 					</div>
@@ -235,7 +266,13 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 					{/* ノートブック選択 */}
 					<div className="mb-4">
 						<label className="block text-sm font-medium mb-2">ノートブック</label>
-						<NotebookSelect value={selectedNotebookId} onChange={setSelectedNotebookId} />
+						<NotebookSelect
+							value={selectedNotebookId}
+							onChange={(val) => {
+								setSelectedNotebookId(val);
+								scheduleAutoSave();
+							}}
+						/>
 					</div>
 
 					{/* 選択中タグの表示（小さめチップ） */}
@@ -264,7 +301,10 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 					<div className="memo-content relative flex-1 flex flex-col">
 						<RichTextEditor
 							content={content}
-							onChange={setContent}
+							onChange={(val) => {
+								setContent(val);
+								scheduleAutoSave();
+							}}
 							placeholder="メモを入力..."
 							className="h-full"
 							autofocus={isCreate}
