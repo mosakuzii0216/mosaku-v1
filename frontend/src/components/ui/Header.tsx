@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useMemoStore } from '../../stores/useMemoStore';
-import { LibraryBig, Tag, LogOut, Settings } from 'lucide-react';
+import { LibraryBig, Tag, LogOut, Settings, Trash2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 
@@ -10,7 +10,8 @@ interface HeaderProps {
 }
 
 export const Header = (_props?: HeaderProps) => {
-	const { currentView, currentObject, goToList, goToTags, goToNotebookList } = useMemoStore();
+	const { currentView, currentObject, goToList, goToTags, goToNotebookList, goToTrash } =
+		useMemoStore();
 	const { user, logout } = useAuth();
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const dropdownRef = useRef<HTMLDivElement>(null);
@@ -75,6 +76,16 @@ export const Header = (_props?: HeaderProps) => {
 						}`}
 					>
 						<Tag className="w-4 h-4 mr-1.5" /> タグ
+					</button>
+					<button
+						onClick={goToTrash}
+						className={`px-3 py-2 rounded text-sm font-medium transition-colors inline-flex items-center ${
+							currentView === 'trash'
+								? 'bg-blue-100 text-blue-800'
+								: 'text-gray-600 hover:text-gray-900'
+						}`}
+					>
+						<Trash2 className="w-4 h-4 mr-1.5" /> ゴミ箱
 					</button>
 				</div>
 			</div>

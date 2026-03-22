@@ -5,6 +5,7 @@ import { useAppInit } from '../../hooks/useAppInit';
 import { Header } from '../ui/Header';
 import { MemoEditor } from '../memo/MemoEditor';
 import { MemoList } from '../memo/MemoList';
+import { TrashView } from '../memo/TrashView';
 import { TagManager } from '../tag/TagManager';
 import { NotebookEditor } from '../notebook/NotebookEditor';
 import { NotebookList } from '../notebook/NotebookList';
@@ -86,6 +87,9 @@ export const DesktopLayout = () => {
 
 					case 'create':
 						return <MemoEditor isCreate />;
+
+					case 'trash':
+						return <TrashView />;
 
 					default:
 						return <EmptyMemoView />;

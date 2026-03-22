@@ -5,6 +5,7 @@ import { useAppInit } from '../../hooks/useAppInit';
 import { Header } from '../ui/Header';
 import { MemoEditor } from '../memo/MemoEditor';
 import { MemoList } from '../memo/MemoList';
+import { TrashView } from '../memo/TrashView';
 import { TagManager } from '../tag/TagManager';
 import { NotebookList } from '../notebook/NotebookList';
 import { NotebookEditor } from '../notebook/NotebookEditor';
@@ -79,6 +80,8 @@ export const MobileLayout = () => {
 						);
 					case 'create':
 						return <MemoEditor isCreate />;
+					case 'trash':
+						return <TrashView />;
 				}
 				// 内部switchが網羅的でも静的解析ではfallthroughと判断されるため明示的にbreak
 				break;

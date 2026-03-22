@@ -59,6 +59,7 @@ interface MemoStore {
 	goToNotebookEdit: (id: string) => void;
 	goToMemosForNotebook: (filter: 'ALL' | 'INBOX' | string) => void;
 	goToTags: () => void;
+	goToTrash: () => void;
 	logCurrent: () => void;
 }
 
@@ -148,6 +149,11 @@ export const useMemoStore = (): MemoStore => {
 
 		goToTags: () => {
 			viewStore.goToTags();
+			dataStore.setSelectedMemoId(null);
+		},
+
+		goToTrash: () => {
+			viewStore.goToTrash();
 			dataStore.setSelectedMemoId(null);
 		},
 

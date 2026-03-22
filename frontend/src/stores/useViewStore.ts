@@ -28,6 +28,7 @@ interface ViewState {
 	goToNotebookList: () => void;
 	goToMemosForNotebook: (filter: 'ALL' | 'INBOX' | string) => void;
 	goToTags: () => void;
+	goToTrash: () => void;
 	logCurrent: () => void;
 }
 
@@ -91,6 +92,13 @@ export const useViewStore = create<ViewState>((set, get) => ({
 		set({
 			currentObject: 'tag',
 			currentView: 'list',
+			isEditing: false,
+		}),
+
+	goToTrash: () =>
+		set({
+			currentObject: 'memo',
+			currentView: 'trash',
 			isEditing: false,
 		}),
 
