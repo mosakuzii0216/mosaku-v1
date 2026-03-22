@@ -49,6 +49,7 @@ model Memo {
   content    String
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
+  trashedAt  DateTime? @map("trashed_at")
   userId     String    @map("user_id")
   notebookId String?   @map("notebook_id")
   memoTags   MemoTag[]
