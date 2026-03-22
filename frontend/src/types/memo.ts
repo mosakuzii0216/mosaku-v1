@@ -8,6 +8,7 @@ export interface Memo {
 	content: string;
 	createdAt: string;
 	updatedAt: string;
+	trashedAt: string | null;
 	memoTags?: MemoTag[];
 	// ノートブック関連
 	notebookId?: string | null;
@@ -30,6 +31,6 @@ export interface UpdateMemoDto {
 	notebookId?: string | null;
 }
 
-export type ViewType = 'list' | 'detail' | 'edit' | 'create' | 'tags';
+export type ViewType = 'list' | 'detail' | 'edit' | 'create' | 'tags' | 'trash';
 
 export type ObjectType = 'memo' | 'notebook' | 'tag' | 'theme';

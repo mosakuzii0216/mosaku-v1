@@ -110,7 +110,7 @@ export const useUpdateMemo = () => {
 	});
 };
 
-// メモ削除
+// メモ削除（soft delete: ゴミ箱に移動）
 export const useDeleteMemo = () => {
 	const queryClient = useQueryClient();
 	const { goToList } = useViewStore();
@@ -120,6 +120,51 @@ export const useDeleteMemo = () => {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: queryKeys.memos.list() });
 			goToList();
+		},
+	});
+};
+
+// ゴミ箱内メモ一覧取得
+export const useTrashMemos = () => {
+	return useQuery({
+		queryKey: queryKeys.memos.trash(),
+		queryFn: () => apiClient.getTrashMemos(),
+		...ENTITY_CACHE_CONFIG.memos.list,
+	});
+};
+
+// ゴミ箱内メモを復元する
+export const useRestoreMemo = () => {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: (id: string) => apiClient.restoreMemo(id),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: queryKeys.memos.all });
+		},
+	});
+};
+
+// ゴミ箱内メモを完全削除する
+export const usePermanentDeleteMemo = () => {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: (id: string) => apiClient.permanentDeleteMemo(id),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: queryKeys.memos.trash() });
+		},
+	});
+};
+
+// ゴミ箱を空にする
+export const useEmptyTrash = () => {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: () => apiClient.emptyTrash(),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: queryKeys.memos.trash() });
 		},
 	});
 };

@@ -18,6 +18,7 @@ export const queryKeys = {
 		searches: () => [...queryKeys.memos.all, 'search'] as const,
 		search: (query: string, tagIds?: string[]) =>
 			[...queryKeys.memos.searches(), query, { tagIds }] as const,
+		trash: () => [...queryKeys.memos.all, 'trash'] as const,
 	},
 
 	// ノートブック関連

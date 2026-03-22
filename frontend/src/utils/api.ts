@@ -122,9 +122,35 @@ class ApiClient {
 		});
 	}
 
-	// メモ削除
-	async deleteMemo(id: string): Promise<void> {
-		await this.request(`/memos/${id}`, {
+	// メモ削除（soft delete: ゴミ箱に移動）
+	async deleteMemo(id: string): Promise<Memo> {
+		return this.request<Memo>(`/memos/${id}`, {
+			method: 'DELETE',
+		});
+	}
+
+	// ゴミ箱内メモ一覧取得
+	async getTrashMemos(): Promise<Memo[]> {
+		return this.request<Memo[]>('/memos/trash');
+	}
+
+	// ゴミ箱内メモを復元する
+	async restoreMemo(id: string): Promise<Memo> {
+		return this.request<Memo>(`/memos/${id}/restore`, {
+			method: 'PATCH',
+		});
+	}
+
+	// ゴミ箱内メモを完全削除する
+	async permanentDeleteMemo(id: string): Promise<Memo> {
+		return this.request<Memo>(`/memos/${id}/permanent`, {
+			method: 'DELETE',
+		});
+	}
+
+	// ゴミ箱を空にする
+	async emptyTrash(): Promise<{ count: number }> {
+		return this.request<{ count: number }>('/memos/trash', {
 			method: 'DELETE',
 		});
 	}
