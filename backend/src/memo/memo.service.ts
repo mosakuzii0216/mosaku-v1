@@ -48,21 +48,37 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 	}
 
 	/**
-	 * タグでフィルタリングして全メモを取得
+	 * IDで1件取得（所有者検証込み）
+	 * ゴミ箱内メモは返さない（trashedAt: null のみ対象）
+	 */
+	async findOne(id: string, userId: string): Promise<MemoWithRelations> {
+		const memo = await this.prisma.memo.findFirst({
+			where: { id, trashedAt: null },
+			include: this.getDefaultInclude(),
+		});
+		return this.authorizationService.validateOwnership(
+			memo as MemoWithRelations | null,
+			userId,
+			this.getEntityName(),
+		);
+	}
+
+	/**
+	 * タグでフィルタリングして全メモを取得（ゴミ箱内メモを除外）
 	 */
 	async findAll(userId: string, tagIds?: string[]) {
-		if (!tagIds || tagIds.length === 0) {
-			return super.findAll(userId);
-		}
-
 		const whereClause: Prisma.MemoWhereInput = {
 			userId,
-			memoTags: {
+			trashedAt: null,
+		};
+
+		if (tagIds && tagIds.length > 0) {
+			whereClause.memoTags = {
 				some: {
 					tagId: { in: tagIds },
 				},
-			},
-		};
+			};
+		}
 
 		return this.prisma.memo.findMany({
 			where: whereClause,
@@ -72,7 +88,7 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 	}
 
 	/**
-	 * ページネーション付きでメモを取得
+	 * ページネーション付きでメモを取得（ゴミ箱内メモを除外）
 	 */
 	async findAllPaginated(
 		userId: string,
@@ -82,7 +98,7 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 		const { page = 1, limit = 20 } = pagination;
 		const skip = calculateSkip(page, limit);
 
-		const whereClause: Prisma.MemoWhereInput = { userId };
+		const whereClause: Prisma.MemoWhereInput = { userId, trashedAt: null };
 
 		if (tagIds && tagIds.length > 0) {
 			whereClause.memoTags = {
@@ -138,6 +154,7 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 
 		const whereClause: Prisma.MemoWhereInput = {
 			userId,
+			trashedAt: null,
 			OR: [
 				{
 					title: {
@@ -154,7 +171,6 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 			],
 		};
 
-		// Filter by tags if provided
 		if (tagIds && tagIds.length > 0) {
 			whereClause.memoTags = {
 				some: {
@@ -171,7 +187,7 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 	}
 
 	/**
-	 * ページネーション付きで検索
+	 * ページネーション付きで検索（ゴミ箱内メモを除外）
 	 */
 	async searchPaginated(
 		query: string,
@@ -188,6 +204,7 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 
 		const whereClause: Prisma.MemoWhereInput = {
 			userId,
+			trashedAt: null,
 			OR: [
 				{
 					title: {
@@ -224,5 +241,77 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 		]);
 
 		return createPaginatedResult(data as MemoWithRelations[], total, page, limit);
+	}
+
+	// ─── ゴミ箱操作メソッド ───────────────────────────────────────────
+
+	/**
+	 * メモをゴミ箱に移動する（Requirements: 1.1, 1.3）
+	 */
+	async trash(id: string, userId: string): Promise<MemoWithRelations> {
+		await this.findOne(id, userId); // 所有者検証（ゴミ箱内メモはここで 404）
+		return this.prisma.memo.update({
+			where: { id },
+			data: { trashedAt: new Date() },
+			include: this.getDefaultInclude(),
+		}) as unknown as MemoWithRelations;
+	}
+
+	/**
+	 * ゴミ箱内メモを1件取得（所有者検証込み）
+	 * restore / permanentDelete から呼び出す
+	 */
+	async findOneTrashed(id: string, userId: string): Promise<MemoWithRelations> {
+		const memo = await this.prisma.memo.findFirst({
+			where: { id, trashedAt: { not: null } },
+			include: this.getDefaultInclude(),
+		});
+		return this.authorizationService.validateOwnership(
+			memo as MemoWithRelations | null,
+			userId,
+			this.getEntityName(),
+		);
+	}
+
+	/**
+	 * ゴミ箱内メモ一覧を取得（Requirements: 2.1）
+	 */
+	async findTrashed(userId: string): Promise<MemoWithRelations[]> {
+		return this.prisma.memo.findMany({
+			where: { userId, trashedAt: { not: null } },
+			include: this.getDefaultInclude(),
+			orderBy: { trashedAt: 'desc' },
+		}) as unknown as MemoWithRelations[];
+	}
+
+	/**
+	 * ゴミ箱内メモを復元する（Requirements: 3.1, 3.2, 3.3）
+	 */
+	async restore(id: string, userId: string): Promise<MemoWithRelations> {
+		await this.findOneTrashed(id, userId);
+		return this.prisma.memo.update({
+			where: { id },
+			data: { trashedAt: null },
+			include: this.getDefaultInclude(),
+		}) as unknown as MemoWithRelations;
+	}
+
+	/**
+	 * ゴミ箱内メモを完全削除する（Requirements: 4.1）
+	 */
+	async permanentDelete(id: string, userId: string): Promise<MemoWithRelations> {
+		await this.findOneTrashed(id, userId);
+		return this.prisma.memo.delete({
+			where: { id },
+		}) as unknown as MemoWithRelations;
+	}
+
+	/**
+	 * ゴミ箱を空にする（Requirements: 4.2）
+	 */
+	async emptyTrash(userId: string): Promise<Prisma.BatchPayload> {
+		return this.prisma.memo.deleteMany({
+			where: { userId, trashedAt: { not: null } },
+		});
 	}
 }

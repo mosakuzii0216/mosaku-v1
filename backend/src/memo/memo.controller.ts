@@ -84,6 +84,25 @@ export class MemoController {
 		);
 	}
 
+	/**
+	 * ゴミ箱内メモ一覧取得
+	 * GET /memos/trash（:id と衝突しないよう先に定義）
+	 */
+	@Get('trash')
+	findTrashed(@Request() req: AuthenticatedRequest) {
+		return this.memoService.findTrashed(req.user.id);
+	}
+
+	/**
+	 * ゴミ箱を空にする
+	 * DELETE /memos/trash（:id と衝突しないよう先に定義）
+	 */
+	@Delete('trash')
+	async emptyTrash(@Request() req: AuthenticatedRequest) {
+		const result = await this.memoService.emptyTrash(req.user.id);
+		return { count: result.count };
+	}
+
 	@Get(':id')
 	findOne(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
 		return this.memoService.findOne(id, req.user.id);
@@ -98,8 +117,30 @@ export class MemoController {
 		return this.memoService.update(id, updateMemoDto, req.user.id);
 	}
 
+	/**
+	 * メモをゴミ箱に移動（soft delete）
+	 * DELETE /memos/:id
+	 */
 	@Delete(':id')
 	remove(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
-		return this.memoService.remove(id, req.user.id);
+		return this.memoService.trash(id, req.user.id);
+	}
+
+	/**
+	 * ゴミ箱内メモを復元する
+	 * PATCH /memos/:id/restore
+	 */
+	@Patch(':id/restore')
+	restore(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
+		return this.memoService.restore(id, req.user.id);
+	}
+
+	/**
+	 * ゴミ箱内メモを完全削除する
+	 * DELETE /memos/:id/permanent
+	 */
+	@Delete(':id/permanent')
+	permanentDelete(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
+		return this.memoService.permanentDelete(id, req.user.id);
 	}
 }

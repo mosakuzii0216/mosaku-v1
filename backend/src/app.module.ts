@@ -8,6 +8,7 @@ import { ThemeModule } from './theme/theme.module';
 import { ConfigModule } from './config/config.module';
 import { NotebookModule } from './notebook/notebook.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 
@@ -22,6 +23,7 @@ import { AppController } from './app.controller';
 				limit: 30, // 60秒間に30リクエストまで
 			},
 		]),
+		ScheduleModule.forRoot(),
 		ConfigModule,
 		MemoModule,
 		AuthModule,
