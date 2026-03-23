@@ -68,6 +68,7 @@ npx prisma migrate dev      # マイグレーション実行
 npx prisma generate         # Prismaクライアント生成
 ```
 
+
 ## ドキュメント
 
 - **[移行計画](./docs/migration/overview.md)** - クラウド移行の全体計画
