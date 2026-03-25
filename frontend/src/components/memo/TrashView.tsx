@@ -68,7 +68,7 @@ export const TrashView = () => {
 											{memo.title || '（タイトルなし）'}
 										</p>
 										<p className="text-sm text-gray-500 mt-0.5">
-											削除日: {trashedDate}　自動削除まで{' '}
+											削除日: {trashedDate} 自動削除まで{' '}
 											<span className={daysRemaining <= 3 ? 'text-red-500 font-medium' : ''}>
 												{daysRemaining} 日
 											</span>
