@@ -1,4 +1,4 @@
-## セットアップ
+## 環境構築
 
 ### 1. 環境変数の設定
 
@@ -40,6 +40,7 @@ open http://localhost
 
 管理者ユーザーとして登録するには、`.env`ファイルの`ADMIN_EMAIL`に設定したメールアドレスでユーザー登録してください。
 
+
 ## 開発
 
 ### バックエンド開発
@@ -67,11 +68,9 @@ npx prisma migrate dev      # マイグレーション実行
 npx prisma generate         # Prismaクライアント生成
 ```
 
+
 ## ドキュメント
 
-- **[移行計画](./docs/migration/overview.md)** - クラウド移行の全体計画
 - **[デプロイ手順](./docs/deployment/)** - Cloud Run / Vercel へのデプロイ
 - **[開発ガイド](./docs/development/)** - 開発関連のドキュメント
 - **[CLAUDE.md](./CLAUDE.md)** - Claude Code向けのプロジェクト説明書
-
-すべてのドキュメントの目次は [docs/README.md](./docs/README.md) を参照してください。
