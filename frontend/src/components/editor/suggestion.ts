@@ -41,7 +41,7 @@ export const getSuggestionItems = (query: string): CommandItem[] => {
 				title: nb.name,
 				description: 'ノートブック',
 				type: 'notebook' as const,
-				command: ({ editor, range }: any) => {
+				command: ({ editor, range }: { editor: Editor; range: Range }) => {
 					editor.chain().focus().deleteRange(range).insertContent(`[[${nb.name}]]`).run();
 				},
 			}));

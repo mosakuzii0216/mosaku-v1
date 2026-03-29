@@ -15,7 +15,7 @@ interface OAuthProviderConfig {
 		user: OAuthUserData,
 		code: string,
 	) => Promise<{ accessToken: string; user: UserProfile }>;
-	getUserData: (callback: any) => OAuthUserData | undefined;
+	getUserData: (callback: Record<string, unknown>) => OAuthUserData | undefined;
 }
 
 // OAuthプロバイダの設定
