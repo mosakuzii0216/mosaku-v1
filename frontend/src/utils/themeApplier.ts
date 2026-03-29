@@ -79,7 +79,7 @@ export const themeApplier = new ThemeApplier();
  */
 export function applyThemeFromObject(theme: Theme): void {
 	if (!theme) {
-		console.warn('⚠️ テーマが指定されていません');
+		logger.warn('⚠️ テーマが指定されていません');
 		return;
 	}
 
@@ -96,7 +96,7 @@ export function applyThemeFromObject(theme: Theme): void {
 		return;
 	}
 
-	console.warn('⚠️ 未知のテーマ形式です:', theme);
+	logger.warn('⚠️ 未知のテーマ形式です:', theme);
 }
 
 /**
