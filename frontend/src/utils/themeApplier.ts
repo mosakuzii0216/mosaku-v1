@@ -3,6 +3,7 @@
  */
 
 import { logger } from './logger';
+import type { Theme } from '../types/theme';
 
 interface AppliedTheme {
 	id: string;
@@ -76,7 +77,7 @@ export const themeApplier = new ThemeApplier();
 /**
  * テーマオブジェクトからCSSを適用
  */
-export function applyThemeFromObject(theme: any): void {
+export function applyThemeFromObject(theme: Theme): void {
 	if (!theme) {
 		console.warn('⚠️ テーマが指定されていません');
 		return;
@@ -101,6 +102,7 @@ export function applyThemeFromObject(theme: any): void {
 /**
  * オブジェクト形式のテーマをCSS変数に変換
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function convertObjectToCSSVariables(theme: any): string {
 	const css = [];
 

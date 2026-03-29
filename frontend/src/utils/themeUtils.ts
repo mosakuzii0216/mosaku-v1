@@ -150,7 +150,7 @@ export const removeThemeFromElement = (element: HTMLElement): void => {
 /**
  * テーマが適用可能かチェックする
  */
-export const isValidTheme = (theme: any): theme is Theme => {
+export const isValidTheme = (theme: unknown): theme is Theme => {
 	return (
 		theme &&
 		typeof theme === 'object' &&
