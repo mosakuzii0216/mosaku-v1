@@ -151,14 +151,17 @@ export const removeThemeFromElement = (element: HTMLElement): void => {
  * テーマが適用可能かチェックする
  */
 export const isValidTheme = (theme: unknown): theme is Theme => {
+	if (!theme || typeof theme !== 'object') return false;
+	const t = theme as Record<string, unknown>;
+	const styles = t.styles as Record<string, unknown> | undefined;
+	const colors = styles?.colors as Record<string, unknown> | undefined;
+	const typography = styles?.typography as Record<string, unknown> | undefined;
 	return (
-		theme &&
-		typeof theme === 'object' &&
-		theme.id &&
-		theme.styles?.colors?.backgroundColor &&
-		theme.styles?.colors?.textColor &&
-		theme.styles?.typography?.fontFamily &&
-		theme.styles?.typography?.fontSize
+		!!t.id &&
+		!!colors?.backgroundColor &&
+		!!colors?.textColor &&
+		!!typography?.fontFamily &&
+		!!typography?.fontSize
 	);
 };
 

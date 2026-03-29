@@ -26,7 +26,7 @@ export const OAUTH_PROVIDERS: Record<OAuthProvider, OAuthProviderConfig> = {
 		storageKey: 'pendingGoogleUser',
 		startAuth: GoogleAuthUtils.startGoogleAuth,
 		registerWithInvitation: AuthAPI.googleRegisterWithInvitation,
-		getUserData: (callback) => callback.googleUser,
+		getUserData: (callback) => callback.googleUser as OAuthUserData | undefined,
 	},
 	github: {
 		name: 'GitHub',
@@ -34,7 +34,7 @@ export const OAUTH_PROVIDERS: Record<OAuthProvider, OAuthProviderConfig> = {
 		storageKey: 'pendingGitHubUser',
 		startAuth: GitHubAuthUtils.startGitHubAuth,
 		registerWithInvitation: AuthAPI.githubRegisterWithInvitation,
-		getUserData: (callback) => callback.githubUser,
+		getUserData: (callback) => callback.githubUser as OAuthUserData | undefined,
 	},
 };
 
