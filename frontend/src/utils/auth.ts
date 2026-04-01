@@ -104,11 +104,8 @@ export class AuthAPI {
 	}
 
 	static async login(email: string, password: string): Promise<LoginResponse> {
-		const response = await fetch(`${this.BASE_URL}/auth/login`, {
+		const response = await this.makeRequest('/auth/login', {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
 			body: JSON.stringify({ email, password }),
 		});
 
@@ -128,11 +125,8 @@ export class AuthAPI {
 		name?: string,
 		invitationCode?: string,
 	): Promise<RegisterResponse> {
-		const response = await fetch(`${this.BASE_URL}/auth/register`, {
+		const response = await this.makeRequest('/auth/register', {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
 			body: JSON.stringify({ email, password, name, invitationCode }),
 		});
 
@@ -170,11 +164,8 @@ export class AuthAPI {
 	}
 
 	static async resetPassword(email: string): Promise<{ message: string }> {
-		const response = await fetch(`${this.BASE_URL}/auth/reset-password`, {
+		const response = await this.makeRequest('/auth/reset-password', {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
 			body: JSON.stringify({ email }),
 		});
 
