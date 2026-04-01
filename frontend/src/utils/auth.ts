@@ -198,11 +198,8 @@ export class AuthAPI {
 		googleUser: OAuthUserData,
 		invitationCode: string,
 	): Promise<LoginResponse> {
-		const response = await fetch(`${this.BASE_URL}/auth/google/register-with-invitation`, {
+		const response = await this.makeRequest('/auth/google/register-with-invitation', {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
 			body: JSON.stringify({ googleUser, invitationCode }),
 		});
 
@@ -220,17 +217,72 @@ export class AuthAPI {
 		githubUser: OAuthUserData,
 		invitationCode: string,
 	): Promise<LoginResponse> {
-		const response = await fetch(`${this.BASE_URL}/auth/github/register-with-invitation`, {
+		const response = await this.makeRequest('/auth/github/register-with-invitation', {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
 			body: JSON.stringify({ githubUser, invitationCode }),
 		});
 
 		if (!response.ok) {
 			const error = await response.json();
 			throw new Error(error.message || 'GitHub registration failed');
+		}
+
+		const data = await response.json();
+		AuthTokenManager.setAccessToken(data.accessToken);
+		return data;
+	}
+
+	static async lineRegisterWithInvitation(
+		lineUser: OAuthUserData,
+		invitationCode: string,
+	): Promise<LoginResponse> {
+		const response = await this.makeRequest('/auth/line/register-with-invitation', {
+			method: 'POST',
+			body: JSON.stringify({ lineUser, invitationCode }),
+		});
+
+		if (!response.ok) {
+			const error = await response.json();
+			throw new Error(error.message || 'LINE registration failed');
+		}
+
+		const data = await response.json();
+		AuthTokenManager.setAccessToken(data.accessToken);
+		return data;
+	}
+
+	static async appleRegisterWithInvitation(
+		appleUser: OAuthUserData,
+		invitationCode: string,
+		fallbackEmail?: string,
+	): Promise<LoginResponse> {
+		const response = await this.makeRequest('/auth/apple/register-with-invitation', {
+			method: 'POST',
+			body: JSON.stringify({ appleUser, invitationCode, fallbackEmail }),
+		});
+
+		if (!response.ok) {
+			const error = await response.json();
+			throw new Error(error.message || 'Apple registration failed');
+		}
+
+		const data = await response.json();
+		AuthTokenManager.setAccessToken(data.accessToken);
+		return data;
+	}
+
+	static async xRegisterWithInvitation(
+		xUser: OAuthUserData,
+		invitationCode: string,
+	): Promise<LoginResponse> {
+		const response = await this.makeRequest('/auth/x/register-with-invitation', {
+			method: 'POST',
+			body: JSON.stringify({ xUser, invitationCode }),
+		});
+
+		if (!response.ok) {
+			const error = await response.json();
+			throw new Error(error.message || 'X registration failed');
 		}
 
 		const data = await response.json();
