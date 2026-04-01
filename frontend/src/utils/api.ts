@@ -73,7 +73,21 @@ class ApiClient {
 			if (response.status === 401 && authLevel === 'REQUIRED') {
 				throw new Error('認証エラー: ログインし直してください');
 			}
-			throw new Error(`HTTP error! status: ${response.status}`);
+
+			let errorMessage = `HTTP error! status: ${response.status}`;
+			const contentType = response.headers.get('content-type');
+			if (contentType && contentType.includes('application/json')) {
+				try {
+					const errorBody = await response.json();
+					if (errorBody.message) {
+						errorMessage = errorBody.message;
+					}
+				} catch {
+					// JSON パース失敗時はフォールバックメッセージを使用
+				}
+			}
+
+			throw new Error(errorMessage);
 		}
 
 		return response.json();
