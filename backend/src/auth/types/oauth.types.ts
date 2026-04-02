@@ -1,4 +1,4 @@
-export type OAuthProvider = 'google' | 'github';
+export type OAuthProvider = 'google' | 'github' | 'line' | 'apple' | 'x';
 
 export interface GoogleProfile {
 	id: string;
@@ -58,7 +58,36 @@ export interface GitHubStrategyUser {
 	refreshToken?: string;
 }
 
-export type OAuthStrategyUser = GoogleStrategyUser | GitHubStrategyUser;
+export interface LineStrategyUser {
+	lineId: string;
+	name: string;
+	email?: string;
+	picture?: string;
+	accessToken?: string;
+}
+
+export interface AppleStrategyUser {
+	appleId: string;
+	name: string;
+	email?: string;
+	accessToken?: string;
+}
+
+export interface XStrategyUser {
+	xId: string;
+	name: string;
+	username?: string;
+	email?: string;
+	picture?: string;
+	accessToken?: string;
+}
+
+export type OAuthStrategyUser =
+	| GoogleStrategyUser
+	| GitHubStrategyUser
+	| LineStrategyUser
+	| AppleStrategyUser
+	| XStrategyUser;
 
 export interface OAuthConfig {
 	getProviderId: (user: OAuthStrategyUser) => string;

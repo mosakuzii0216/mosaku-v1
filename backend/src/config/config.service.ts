@@ -87,6 +87,55 @@ export class ConfigService {
 		return process.env.GITHUB_REDIRECT_URI || 'http://localhost:3000/auth/github/callback';
 	}
 
+	// OAuth LINE設定
+	get lineClientId(): string | undefined {
+		return process.env.LINE_CLIENT_ID;
+	}
+
+	get lineClientSecret(): string | undefined {
+		return process.env.LINE_CLIENT_SECRET;
+	}
+
+	get lineRedirectUri(): string {
+		return process.env.LINE_REDIRECT_URI || 'http://localhost:3000/auth/line/callback';
+	}
+
+	// OAuth Apple設定
+	get appleClientId(): string | undefined {
+		return process.env.APPLE_CLIENT_ID;
+	}
+
+	get appleTeamId(): string | undefined {
+		return process.env.APPLE_TEAM_ID;
+	}
+
+	get appleKeyId(): string | undefined {
+		return process.env.APPLE_KEY_ID;
+	}
+
+	get applePrivateKey(): string | undefined {
+		const key = process.env.APPLE_PRIVATE_KEY;
+		if (!key) return undefined;
+		return key.replace(/\\n/g, '\n');
+	}
+
+	get appleRedirectUri(): string {
+		return process.env.APPLE_REDIRECT_URI || 'http://localhost:3000/auth/apple/callback';
+	}
+
+	// OAuth X設定
+	get xClientId(): string | undefined {
+		return process.env.X_CLIENT_ID;
+	}
+
+	get xClientSecret(): string | undefined {
+		return process.env.X_CLIENT_SECRET;
+	}
+
+	get xRedirectUri(): string {
+		return process.env.X_REDIRECT_URI || 'http://localhost:3000/auth/x/callback';
+	}
+
 	// データベース設定
 	get databaseUrl(): string {
 		const url = process.env.DATABASE_URL;
