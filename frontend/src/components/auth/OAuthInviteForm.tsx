@@ -2,7 +2,7 @@ import React from 'react';
 import type { OAuthUserData } from '../../utils/auth';
 
 interface OAuthInviteFormProps {
-	providerName: 'Google' | 'GitHub' | 'X';
+	providerName: 'Google' | 'GitHub' | 'LINE' | 'Apple' | 'X';
 	pendingUser: OAuthUserData | null;
 	invitationCode: string;
 	setInvitationCode: (code: string) => void;
@@ -24,6 +24,20 @@ const providerStyles = {
 		textSubColor: 'text-gray-600',
 		buttonColor: 'bg-gray-900',
 		buttonHoverColor: 'hover:bg-gray-800',
+	},
+	LINE: {
+		bgColor: 'bg-green-50',
+		textColor: 'text-green-700',
+		textSubColor: 'text-green-600',
+		buttonColor: 'bg-green-500',
+		buttonHoverColor: 'hover:bg-green-600',
+	},
+	Apple: {
+		bgColor: 'bg-gray-900',
+		textColor: 'text-white',
+		textSubColor: 'text-gray-300',
+		buttonColor: 'bg-black',
+		buttonHoverColor: 'hover:bg-gray-900',
 	},
 	X: {
 		bgColor: 'bg-black',

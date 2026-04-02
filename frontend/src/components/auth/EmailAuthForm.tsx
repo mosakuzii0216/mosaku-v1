@@ -153,6 +153,9 @@ export function EmailAuthForm({ mode, onSwitchMode, onForgotPassword }: EmailAut
 			<div className="space-y-3">
 				<OAuthLoginButton provider="google" mode={mode} />
 				<OAuthLoginButton provider="github" mode={mode} />
+				<OAuthLoginButton provider="line" mode={mode} />
+				<OAuthLoginButton provider="apple" mode={mode} />
+				<OAuthLoginButton provider="x" mode={mode} />
 			</div>
 
 			<div className="text-center mt-4">

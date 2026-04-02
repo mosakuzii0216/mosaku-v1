@@ -8,6 +8,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { AuthAPI, AuthTokenManager } from '../utils/auth';
+// AuthAPI は appleRegisterWithInvitation で直接使用（fallbackEmail パラメータのため）
 import type { UserProfile, OAuthUserData } from '../utils/auth';
 import { useEmailAuth, initializeEmailAuth, performLogout } from '../hooks/useEmailAuth';
 import { useOAuth, type OAuthProvider } from '../hooks/useOAuth';
@@ -44,6 +45,16 @@ export interface AuthActions {
 		githubUser: OAuthUserData,
 		invitationCode: string,
 	) => Promise<void>;
+	lineLogin: () => void;
+	lineRegisterWithInvitation: (lineUser: OAuthUserData, invitationCode: string) => Promise<void>;
+	appleLogin: () => void;
+	appleRegisterWithInvitation: (
+		appleUser: OAuthUserData,
+		invitationCode: string,
+		fallbackEmail?: string,
+	) => Promise<void>;
+	xLogin: () => void;
+	xRegisterWithInvitation: (xUser: OAuthUserData, invitationCode: string) => Promise<void>;
 	// 共通
 	logout: () => Promise<void>;
 	refreshUser: () => Promise<void>;
@@ -168,6 +179,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	// OAuthアクション
 	const googleLogin = useCallback(() => oauth.startLogin('google'), [oauth]);
 	const githubLogin = useCallback(() => oauth.startLogin('github'), [oauth]);
+	const lineLogin = useCallback(() => oauth.startLogin('line'), [oauth]);
+	const appleLogin = useCallback(() => oauth.startLogin('apple'), [oauth]);
+	const xLogin = useCallback(() => oauth.startLogin('x'), [oauth]);
 
 	const googleRegisterWithInvitation = useCallback(
 		async (googleUser: OAuthUserData, invitationCode: string): Promise<void> => {
@@ -180,6 +194,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	const githubRegisterWithInvitation = useCallback(
 		async (githubUser: OAuthUserData, invitationCode: string): Promise<void> => {
 			const response = await oauth.registerWithInvitation('github', githubUser, invitationCode);
+			handleAuthSuccess(response.accessToken, response.user);
+		},
+		[oauth, handleAuthSuccess],
+	);
+
+	const lineRegisterWithInvitation = useCallback(
+		async (lineUser: OAuthUserData, invitationCode: string): Promise<void> => {
+			const response = await oauth.registerWithInvitation('line', lineUser, invitationCode);
+			handleAuthSuccess(response.accessToken, response.user);
+		},
+		[oauth, handleAuthSuccess],
+	);
+
+	const appleRegisterWithInvitation = useCallback(
+		async (
+			appleUser: OAuthUserData,
+			invitationCode: string,
+			fallbackEmail?: string,
+		): Promise<void> => {
+			const response = await AuthAPI.appleRegisterWithInvitation(
+				appleUser,
+				invitationCode,
+				fallbackEmail,
+			);
+			handleAuthSuccess(response.accessToken, response.user);
+			sessionStorage.removeItem('pendingAppleUser');
+		},
+		[handleAuthSuccess],
+	);
+
+	const xRegisterWithInvitation = useCallback(
+		async (xUser: OAuthUserData, invitationCode: string): Promise<void> => {
+			const response = await oauth.registerWithInvitation('x', xUser, invitationCode);
 			handleAuthSuccess(response.accessToken, response.user);
 		},
 		[oauth, handleAuthSuccess],
@@ -202,6 +249,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		googleRegisterWithInvitation,
 		githubLogin,
 		githubRegisterWithInvitation,
+		lineLogin,
+		lineRegisterWithInvitation,
+		appleLogin,
+		appleRegisterWithInvitation,
+		xLogin,
+		xRegisterWithInvitation,
 
 		// 共通
 		logout,

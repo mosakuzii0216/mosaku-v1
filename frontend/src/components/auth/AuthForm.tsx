@@ -7,17 +7,32 @@ import { OAuthInviteForm } from './OAuthInviteForm';
 import type { OAuthUserData } from '../../utils/auth';
 import { logger } from '../../utils/logger';
 
-type AuthMode = 'login' | 'signup' | 'resetPassword' | 'googleInvite' | 'githubInvite';
+type AuthMode =
+	| 'login'
+	| 'signup'
+	| 'resetPassword'
+	| 'googleInvite'
+	| 'githubInvite'
+	| 'lineInvite'
+	| 'appleInvite'
+	| 'xInvite';
 
 export default function AuthForm() {
 	const [searchParams] = useSearchParams();
 	const [mode, setMode] = useState<AuthMode>('login');
 	const [pendingOAuthUser, setPendingOAuthUser] = useState<OAuthUserData | null>(null);
 	const [invitationCode, setInvitationCode] = useState('');
+	const [fallbackEmail, setFallbackEmail] = useState('');
 	const [loading, setLoading] = useState(false);
 	const [message, setMessage] = useState('');
 
-	const { googleRegisterWithInvitation, githubRegisterWithInvitation } = useAuth();
+	const {
+		googleRegisterWithInvitation,
+		githubRegisterWithInvitation,
+		lineRegisterWithInvitation,
+		appleRegisterWithInvitation,
+		xRegisterWithInvitation,
+	} = useAuth();
 
 	// OAuthコールバックエラーの処理
 	useEffect(() => {
@@ -26,6 +41,9 @@ export default function AuthForm() {
 			const providers = [
 				{ key: 'pendingGoogleUser', mode: 'googleInvite' as const },
 				{ key: 'pendingGitHubUser', mode: 'githubInvite' as const },
+				{ key: 'pendingLineUser', mode: 'lineInvite' as const },
+				{ key: 'pendingAppleUser', mode: 'appleInvite' as const },
+				{ key: 'pendingXUser', mode: 'xInvite' as const },
 			];
 
 			let userFound = false;
@@ -65,14 +83,27 @@ export default function AuthForm() {
 		setMessage('');
 
 		try {
-			const registerFunction = {
-				googleInvite: googleRegisterWithInvitation,
-				githubInvite: githubRegisterWithInvitation,
-			}[mode as 'googleInvite' | 'githubInvite'];
-
-			if (!registerFunction) return;
-
-			await registerFunction(pendingOAuthUser, invitationCode);
+			switch (mode) {
+				case 'googleInvite':
+					await googleRegisterWithInvitation(pendingOAuthUser, invitationCode);
+					break;
+				case 'githubInvite':
+					await githubRegisterWithInvitation(pendingOAuthUser, invitationCode);
+					break;
+				case 'lineInvite':
+					await lineRegisterWithInvitation(pendingOAuthUser, invitationCode);
+					break;
+				case 'appleInvite':
+					await appleRegisterWithInvitation(
+						pendingOAuthUser,
+						invitationCode,
+						fallbackEmail || undefined,
+					);
+					break;
+				case 'xInvite':
+					await xRegisterWithInvitation(pendingOAuthUser, invitationCode);
+					break;
+			}
 		} catch (error: unknown) {
 			logger.error(`${mode}登録エラー:`, error);
 			const errorMessage = error instanceof Error ? error.message : `${mode} registration failed`;
@@ -84,13 +115,17 @@ export default function AuthForm() {
 
 	const clearPendingOAuthUser = () => {
 		if (pendingOAuthUser) {
-			const providerKey = {
+			const providerKey: Partial<Record<AuthMode, string>> = {
 				googleInvite: 'pendingGoogleUser',
 				githubInvite: 'pendingGitHubUser',
-			}[mode as 'googleInvite' | 'githubInvite'];
+				lineInvite: 'pendingLineUser',
+				appleInvite: 'pendingAppleUser',
+				xInvite: 'pendingXUser',
+			};
 
-			if (providerKey) {
-				sessionStorage.removeItem(providerKey);
+			const key = providerKey[mode];
+			if (key) {
+				sessionStorage.removeItem(key);
 			}
 			setPendingOAuthUser(null);
 		}
@@ -100,32 +135,66 @@ export default function AuthForm() {
 		setMode(newMode);
 		setMessage('');
 		setInvitationCode('');
+		setFallbackEmail('');
 		clearPendingOAuthUser();
 	};
 
-	const getProviderName = (): 'Google' | 'GitHub' => {
+	const getProviderName = (): 'Google' | 'GitHub' | 'LINE' | 'Apple' | 'X' => {
 		switch (mode) {
 			case 'googleInvite':
 				return 'Google';
 			case 'githubInvite':
 				return 'GitHub';
+			case 'lineInvite':
+				return 'LINE';
+			case 'appleInvite':
+				return 'Apple';
+			case 'xInvite':
+				return 'X';
 			default:
 				return 'Google'; // フォールバック（実際にはここに到達しないはず）
 		}
 	};
 
+	const isOAuthInviteMode =
+		mode === 'googleInvite' ||
+		mode === 'githubInvite' ||
+		mode === 'lineInvite' ||
+		mode === 'appleInvite' ||
+		mode === 'xInvite';
+
 	// OAuth招待コードフォーム
-	if (mode === 'googleInvite' || mode === 'githubInvite') {
+	if (isOAuthInviteMode) {
+		const providerName = getProviderName();
+		const needsFallbackEmail = mode === 'appleInvite' && !pendingOAuthUser?.email;
+
 		return (
 			<div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
-				<h2 className="text-2xl font-bold mb-6 text-center">{getProviderName()} アカウント登録</h2>
+				<h2 className="text-2xl font-bold mb-6 text-center">{providerName} アカウント登録</h2>
 
 				{message && (
 					<div className="mb-4 p-3 rounded-lg text-sm bg-red-100 text-red-700">{message}</div>
 				)}
 
+				{needsFallbackEmail && (
+					<div className="mb-4">
+						<label htmlFor="fallbackEmail" className="block text-sm font-medium text-gray-700 mb-1">
+							メールアドレス（必須）
+						</label>
+						<input
+							type="email"
+							id="fallbackEmail"
+							value={fallbackEmail}
+							onChange={(e) => setFallbackEmail(e.target.value)}
+							required
+							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+							placeholder="メールアドレスを入力してください"
+						/>
+					</div>
+				)}
+
 				<OAuthInviteForm
-					providerName={getProviderName()}
+					providerName={providerName}
 					pendingUser={pendingOAuthUser}
 					invitationCode={invitationCode}
 					setInvitationCode={setInvitationCode}

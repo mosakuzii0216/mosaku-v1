@@ -1,10 +1,16 @@
 import { useCallback } from 'react';
 import { AuthAPI, AuthTokenManager } from '../utils/auth';
 import type { UserProfile, OAuthUserData } from '../utils/auth';
-import { GoogleAuthUtils, GitHubAuthUtils } from '../utils/oauthAuth';
+import {
+	GoogleAuthUtils,
+	GitHubAuthUtils,
+	LineAuthUtils,
+	AppleAuthUtils,
+	XAuthUtils,
+} from '../utils/oauthAuth';
 import { logger } from '../utils/logger';
 
-export type OAuthProvider = 'google' | 'github';
+export type OAuthProvider = 'google' | 'github' | 'line' | 'apple' | 'x';
 
 interface OAuthProviderConfig {
 	name: string;
@@ -35,6 +41,30 @@ export const OAUTH_PROVIDERS: Record<OAuthProvider, OAuthProviderConfig> = {
 		startAuth: GitHubAuthUtils.startGitHubAuth,
 		registerWithInvitation: AuthAPI.githubRegisterWithInvitation,
 		getUserData: (callback) => callback.githubUser as OAuthUserData | undefined,
+	},
+	line: {
+		name: 'LINE',
+		utils: LineAuthUtils,
+		storageKey: 'pendingLineUser',
+		startAuth: LineAuthUtils.startLineAuth,
+		registerWithInvitation: AuthAPI.lineRegisterWithInvitation,
+		getUserData: (callback) => callback.lineUser as OAuthUserData | undefined,
+	},
+	apple: {
+		name: 'Apple',
+		utils: AppleAuthUtils,
+		storageKey: 'pendingAppleUser',
+		startAuth: AppleAuthUtils.startAppleAuth,
+		registerWithInvitation: AuthAPI.appleRegisterWithInvitation,
+		getUserData: (callback) => callback.appleUser as OAuthUserData | undefined,
+	},
+	x: {
+		name: 'X',
+		utils: XAuthUtils,
+		storageKey: 'pendingXUser',
+		startAuth: XAuthUtils.startXAuth,
+		registerWithInvitation: AuthAPI.xRegisterWithInvitation,
+		getUserData: (callback) => callback.xUser as OAuthUserData | undefined,
 	},
 };
 

@@ -56,3 +56,67 @@ export const GitHubAuthUtils = {
 	parseAuthCallback: () => githubAuthUtils.parseAuthCallback(),
 	clearAuthParams: () => githubAuthUtils.clearAuthParams(),
 };
+
+class LineAuthUtilsClass extends BaseOAuthAuth {
+	protected getProviderName(): string {
+		return 'LINE';
+	}
+
+	protected getUserParamName(): string {
+		return 'line_user';
+	}
+
+	startAuth(): void {
+		window.location.href = `${getBackendUrl()}/auth/line`;
+	}
+}
+
+class AppleAuthUtilsClass extends BaseOAuthAuth {
+	protected getProviderName(): string {
+		return 'Apple';
+	}
+
+	protected getUserParamName(): string {
+		return 'apple_user';
+	}
+
+	startAuth(): void {
+		window.location.href = `${getBackendUrl()}/auth/apple`;
+	}
+}
+
+class XAuthUtilsClass extends BaseOAuthAuth {
+	protected getProviderName(): string {
+		return 'X';
+	}
+
+	protected getUserParamName(): string {
+		return 'x_user';
+	}
+
+	startAuth(): void {
+		window.location.href = `${getBackendUrl()}/auth/x`;
+	}
+}
+
+const lineAuthUtils = new LineAuthUtilsClass();
+const appleAuthUtils = new AppleAuthUtilsClass();
+const xAuthUtils = new XAuthUtilsClass();
+
+export const LineAuthUtils = {
+	startLineAuth: () => lineAuthUtils.startAuth(),
+	parseAuthCallback: () => lineAuthUtils.parseAuthCallback(),
+	clearAuthParams: () => lineAuthUtils.clearAuthParams(),
+};
+
+export const AppleAuthUtils = {
+	startAppleAuth: () => appleAuthUtils.startAuth(),
+	parseAuthCallback: () => appleAuthUtils.parseAuthCallback(),
+	clearAuthParams: () => appleAuthUtils.clearAuthParams(),
+};
+
+export const XAuthUtils = {
+	startXAuth: () => xAuthUtils.startAuth(),
+	parseAuthCallback: () => xAuthUtils.parseAuthCallback(),
+	clearAuthParams: () => xAuthUtils.clearAuthParams(),
+};
