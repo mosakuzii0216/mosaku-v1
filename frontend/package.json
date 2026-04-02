@@ -19,6 +19,7 @@
 	},
 	"dependencies": {
 		"@hookform/resolvers": "^5.1.1",
+		"@sentry/react": "^10.47.0",
 		"@tanstack/react-query": "^5.81.2",
 		"@tiptap/extension-mention": "^3.0.7",
 		"@tiptap/extension-placeholder": "^3.0.7",

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { SentryModule } from '@sentry/nestjs/setup';
 import { MemoModule } from './memo/memo.module';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -9,12 +10,14 @@ import { ConfigModule } from './config/config.module';
 import { NotebookModule } from './notebook/notebook.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_FILTER } from '@nestjs/core';
+import { SentryGlobalFilter } from '@sentry/nestjs/setup';
 import { AppController } from './app.controller';
 
 @Module({
 	controllers: [AppController],
 	imports: [
+		SentryModule.forRoot(),
 		// レート制限設定（グローバル）
 		ThrottlerModule.forRoot([
 			{
@@ -34,6 +37,7 @@ import { AppController } from './app.controller';
 		NotebookModule,
 	],
 	providers: [
+		{ provide: APP_FILTER, useClass: SentryGlobalFilter },
 		// グローバルにThrottlerGuardを適用
 		{
 			provide: APP_GUARD,
