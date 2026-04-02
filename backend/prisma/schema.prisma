@@ -146,6 +146,9 @@ model User {
   resetPasswordExpires   DateTime?           @map("reset_password_expires")
   resetPasswordToken     String?             @map("reset_password_token")
   oauthId                String?             @unique @map("oauth_id")
+  lineId                 String?             @unique @map("line_id")
+  appleId                String?             @unique @map("apple_id")
+  xId                    String?             @unique @map("x_id")
   invitationCodes        InvitationCode[]
   memos                  Memo[]
   notebooks              Notebook[]

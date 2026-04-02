@@ -7,11 +7,11 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$SCRIPT_DIR/../backend"
 
-ENV_FILE="$BACKEND_DIR/.env.staging"
+ENV_FILE="$BACKEND_DIR/.env.stg"
 
 if [ ! -f "$ENV_FILE" ]; then
   echo "Error: $ENV_FILE が見つかりません"
-  echo "backend/.env.staging に DIRECT_URL と DATABASE_URL を設定してください"
+  echo "backend/.env.stg に DIRECT_URL と DATABASE_URL を設定してください"
   exit 1
 fi
 
