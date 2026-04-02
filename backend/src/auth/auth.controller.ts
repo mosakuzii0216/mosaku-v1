@@ -11,14 +11,26 @@ import type { AuthenticatedRequest, OAuthRequest } from './types';
 import type {
 	GitHubStrategyUser,
 	GoogleStrategyUser,
+	LineStrategyUser,
+	AppleStrategyUser,
+	XStrategyUser,
 	OAuthStrategyUser,
 } from './types/oauth.types';
 import { ConfigService } from '../config/config.service';
 import { GoogleRegisterWithInvitationDto } from './dto/google-register-with-invitation.dto';
 import { GithubRegisterWithInvitationDto } from './dto/github-register-with-invitation.dto';
+import { LineRegisterWithInvitationDto } from './dto/line-register-with-invitation.dto';
+import { AppleRegisterWithInvitationDto } from './dto/apple-register-with-invitation.dto';
+import { XRegisterWithInvitationDto } from './dto/x-register-with-invitation.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { GoogleAuthGuard, GitHubAuthGuard } from './oauth-auth.guards';
+import {
+	GoogleAuthGuard,
+	GitHubAuthGuard,
+	LineAuthGuard,
+	AppleAuthGuard,
+	XAuthGuard,
+} from './oauth-auth.guards';
 import { Public } from '../common/decorators/public.decorator';
 import { AuthService } from './auth.service';
 import { OAuthService } from './oauth.service';
@@ -401,6 +413,154 @@ export class AuthController {
 			picture: typeof value.picture === 'string' ? value.picture : undefined,
 			accessToken: typeof value.accessToken === 'string' ? value.accessToken : undefined,
 			refreshToken: typeof value.refreshToken === 'string' ? value.refreshToken : undefined,
+		};
+	}
+
+	// LINE OAuth エンドポイント
+	@Get('line')
+	@UseGuards(LineAuthGuard)
+	lineAuth(@Request() _req: ExpressRequest) {
+		// LINE認証画面にリダイレクト
+	}
+
+	@Get('line/callback')
+	@UseGuards(LineAuthGuard)
+	async lineAuthCallback(
+		@Request() req: OAuthRequest<LineStrategyUser>,
+		@Response() res: ExpressResponse,
+	) {
+		return this.handleOAuthCallback((user) => this.oauthService.lineLogin(user), req, res, 'LINE');
+	}
+
+	@Public()
+	@Post('line/register-with-invitation')
+	async lineRegisterWithInvitation(@Body() body: LineRegisterWithInvitationDto) {
+		const { lineUser, invitationCode } = body;
+		return this.handleOAuthRegisterWithInvitation(
+			lineUser,
+			invitationCode,
+			this.parseLineUser.bind(this),
+			this.oauthService.lineRegisterWithInvitation.bind(this.oauthService),
+		);
+	}
+
+	// Apple OAuth エンドポイント
+	@Get('apple')
+	@UseGuards(AppleAuthGuard)
+	appleAuth(@Request() _req: ExpressRequest) {
+		// Apple認証画面にリダイレクト
+	}
+
+	@Public()
+	@Post('apple/callback')
+	@UseGuards(AppleAuthGuard)
+	async appleAuthCallback(
+		@Request() req: OAuthRequest<AppleStrategyUser>,
+		@Response() res: ExpressResponse,
+	) {
+		return this.handleOAuthCallback(
+			(user) => this.oauthService.appleLogin(user),
+			req,
+			res,
+			'Apple',
+		);
+	}
+
+	@Public()
+	@Post('apple/register-with-invitation')
+	async appleRegisterWithInvitation(@Body() body: AppleRegisterWithInvitationDto) {
+		const { appleUser, invitationCode, fallbackEmail } = body;
+		const parsedUser = this.parseAppleUser(appleUser);
+
+		try {
+			const result = await this.oauthService.appleRegisterWithInvitation(
+				parsedUser,
+				invitationCode,
+				fallbackEmail,
+			);
+			return {
+				message: 'Registration successful',
+				...result,
+			};
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : 'Registration failed';
+			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_INPUT, message);
+		}
+	}
+
+	// X OAuth エンドポイント
+	@Get('x')
+	@UseGuards(XAuthGuard)
+	xAuth(@Request() _req: ExpressRequest) {
+		// X認証画面にリダイレクト
+	}
+
+	@Get('x/callback')
+	@UseGuards(XAuthGuard)
+	async xAuthCallback(
+		@Request() req: OAuthRequest<XStrategyUser>,
+		@Response() res: ExpressResponse,
+	) {
+		return this.handleOAuthCallback((user) => this.oauthService.xLogin(user), req, res, 'X');
+	}
+
+	@Public()
+	@Post('x/register-with-invitation')
+	async xRegisterWithInvitation(@Body() body: XRegisterWithInvitationDto) {
+		const { xUser, invitationCode } = body;
+		return this.handleOAuthRegisterWithInvitation(
+			xUser,
+			invitationCode,
+			this.parseXUser.bind(this),
+			this.oauthService.xRegisterWithInvitation.bind(this.oauthService),
+		);
+	}
+
+	private parseLineUser(value: Record<string, unknown>): LineStrategyUser {
+		const lineId = value.lineId;
+		const name = value.name;
+		if (typeof lineId !== 'string' || typeof name !== 'string') {
+			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_PAYLOAD);
+		}
+
+		return {
+			lineId,
+			name,
+			email: typeof value.email === 'string' ? value.email : undefined,
+			picture: typeof value.picture === 'string' ? value.picture : undefined,
+			accessToken: typeof value.accessToken === 'string' ? value.accessToken : undefined,
+		};
+	}
+
+	private parseAppleUser(value: Record<string, unknown>): AppleStrategyUser {
+		const appleId = value.appleId;
+		const name = value.name;
+		if (typeof appleId !== 'string' || typeof name !== 'string') {
+			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_PAYLOAD);
+		}
+
+		return {
+			appleId,
+			name,
+			email: typeof value.email === 'string' ? value.email : undefined,
+			accessToken: typeof value.accessToken === 'string' ? value.accessToken : undefined,
+		};
+	}
+
+	private parseXUser(value: Record<string, unknown>): XStrategyUser {
+		const xId = value.xId;
+		const name = value.name;
+		if (typeof xId !== 'string' || typeof name !== 'string') {
+			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_PAYLOAD);
+		}
+
+		return {
+			xId,
+			name,
+			username: typeof value.username === 'string' ? value.username : undefined,
+			email: typeof value.email === 'string' ? value.email : undefined,
+			picture: typeof value.picture === 'string' ? value.picture : undefined,
+			accessToken: typeof value.accessToken === 'string' ? value.accessToken : undefined,
 		};
 	}
 }

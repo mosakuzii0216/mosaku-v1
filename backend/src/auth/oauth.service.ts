@@ -4,9 +4,18 @@ import { ConfigService } from '../config/config.service';
 import { InvitationService } from '../invitation/invitation.service';
 import { JwtTokenService } from './jwt.service';
 import type { AuthTokens } from './jwt.service';
-import type { BaseOAuthUser, GitHubStrategyUser, GoogleStrategyUser } from './types/oauth.types';
+import type {
+	BaseOAuthUser,
+	GitHubStrategyUser,
+	GoogleStrategyUser,
+	LineStrategyUser,
+	AppleStrategyUser,
+	XStrategyUser,
+} from './types/oauth.types';
 import type { AuthenticatedUser } from './types';
 import { ERROR_CODES, throwBadRequest } from '../common/exceptions';
+
+type UserProviderField = 'oauthId' | 'lineId' | 'appleId' | 'xId';
 
 @Injectable()
 export class OAuthService {
@@ -32,31 +41,31 @@ export class OAuthService {
 	async handleOAuthLogin(
 		oauthUser: BaseOAuthUser,
 		providerId: string,
+		providerField: UserProviderField = 'oauthId',
 	): Promise<AuthTokens & { user: AuthenticatedUser }> {
-		// OAuth IDまたはメールアドレスでユーザーを検索
 		let user = await this.prisma.user.findFirst({
 			where: {
-				OR: [...(oauthUser.email ? [{ email: oauthUser.email }] : []), { oauthId: providerId }],
+				OR: [
+					...(oauthUser.email ? [{ email: oauthUser.email }] : []),
+					{ [providerField]: providerId },
+				],
 			},
 		});
 
 		if (user) {
-			// 既存ユーザーの場合、OAuth IDと名前を更新
 			user = await this.prisma.user.update({
 				where: { id: user.id },
 				data: {
-					oauthId: providerId,
+					[providerField]: providerId,
 					name: oauthUser.name,
 				},
 			});
 		} else {
-			// 新規ユーザーの場合
-			// 管理者メールアドレスの場合は招待コードなしで登録可能
 			const isAdmin = this.isAdminEmail(oauthUser.email);
 			if (isAdmin) {
 				user = await this.prisma.user.create({
 					data: {
-						oauthId: providerId,
+						[providerField]: providerId,
 						email: oauthUser.email!,
 						name: oauthUser.name,
 						role: 'ADMIN',
@@ -64,7 +73,6 @@ export class OAuthService {
 					},
 				});
 			} else {
-				// 一般ユーザーは招待コードが必要
 				throwBadRequest(ERROR_CODES.AUTH.INVITATION_REQUIRED);
 			}
 		}
@@ -81,11 +89,10 @@ export class OAuthService {
 		providerId: string,
 		invitationCode: string,
 		fallbackEmail?: string,
+		providerField: UserProviderField = 'oauthId',
 	): Promise<AuthTokens & { user: AuthenticatedUser }> {
-		// 招待コードの検証
 		await this.invitationService.verifyInvitation(invitationCode);
 
-		// 既存ユーザーチェック
 		const userEmail = oauthUser.email || fallbackEmail;
 		if (!userEmail) {
 			throwBadRequest(ERROR_CODES.VALIDATION.REQUIRED_FIELD, 'メールアドレスは必須です');
@@ -93,7 +100,7 @@ export class OAuthService {
 
 		const existingUser = await this.prisma.user.findFirst({
 			where: {
-				OR: [{ email: userEmail }, { oauthId: providerId }],
+				OR: [{ email: userEmail }, { [providerField]: providerId }],
 			},
 		});
 
@@ -105,7 +112,7 @@ export class OAuthService {
 
 		const user = await this.prisma.user.create({
 			data: {
-				oauthId: providerId,
+				[providerField]: providerId,
 				email: userEmail,
 				name: oauthUser.name,
 				role: isAdmin ? 'ADMIN' : 'USER',
@@ -113,12 +120,13 @@ export class OAuthService {
 			},
 		});
 
-		// 招待コード使用回数を更新
 		await this.invitationService.useInvitation(invitationCode);
 
 		const tokens = this.jwtTokenService.generateTokens(user.id, user.email, user.role);
 		return { ...tokens, user: this.excludePassword(user) };
 	}
+
+	// ─── Google ─────────────────────────────────────────────────────────────
 
 	async googleLogin(
 		googleUser: GoogleStrategyUser,
@@ -129,7 +137,7 @@ export class OAuthService {
 			name: googleUser.name,
 			provider: 'google',
 		};
-		return this.handleOAuthLogin(normalizedUser, googleUser.googleId);
+		return this.handleOAuthLogin(normalizedUser, googleUser.googleId, 'oauthId');
 	}
 
 	async googleRegisterWithInvitation(
@@ -146,8 +154,12 @@ export class OAuthService {
 			normalizedUser,
 			googleUser.googleId,
 			invitationCode,
+			undefined,
+			'oauthId',
 		);
 	}
+
+	// ─── GitHub ─────────────────────────────────────────────────────────────
 
 	async githubLogin(
 		githubUser: GitHubStrategyUser,
@@ -158,7 +170,7 @@ export class OAuthService {
 			name: githubUser.name,
 			provider: 'github',
 		};
-		return this.handleOAuthLogin(normalizedUser, githubUser.githubId);
+		return this.handleOAuthLogin(normalizedUser, githubUser.githubId, 'oauthId');
 	}
 
 	async githubRegisterWithInvitation(
@@ -175,6 +187,104 @@ export class OAuthService {
 			normalizedUser,
 			githubUser.githubId,
 			invitationCode,
+			undefined,
+			'oauthId',
+		);
+	}
+
+	// ─── LINE ────────────────────────────────────────────────────────────────
+
+	async lineLogin(lineUser: LineStrategyUser): Promise<AuthTokens & { user: AuthenticatedUser }> {
+		const normalizedUser: BaseOAuthUser = {
+			id: lineUser.lineId,
+			email: lineUser.email,
+			name: lineUser.name,
+			provider: 'line',
+		};
+		return this.handleOAuthLogin(normalizedUser, lineUser.lineId, 'lineId');
+	}
+
+	async lineRegisterWithInvitation(
+		lineUser: LineStrategyUser,
+		invitationCode: string,
+	): Promise<AuthTokens & { user: AuthenticatedUser }> {
+		const normalizedUser: BaseOAuthUser = {
+			id: lineUser.lineId,
+			email: lineUser.email,
+			name: lineUser.name,
+			provider: 'line',
+		};
+		return this.handleOAuthRegistrationWithInvitation(
+			normalizedUser,
+			lineUser.lineId,
+			invitationCode,
+			undefined,
+			'lineId',
+		);
+	}
+
+	// ─── Apple ──────────────────────────────────────────────────────────────
+
+	async appleLogin(
+		appleUser: AppleStrategyUser,
+	): Promise<AuthTokens & { user: AuthenticatedUser }> {
+		const normalizedUser: BaseOAuthUser = {
+			id: appleUser.appleId,
+			email: appleUser.email,
+			name: appleUser.name,
+			provider: 'apple',
+		};
+		return this.handleOAuthLogin(normalizedUser, appleUser.appleId, 'appleId');
+	}
+
+	async appleRegisterWithInvitation(
+		appleUser: AppleStrategyUser,
+		invitationCode: string,
+		fallbackEmail?: string,
+	): Promise<AuthTokens & { user: AuthenticatedUser }> {
+		const normalizedUser: BaseOAuthUser = {
+			id: appleUser.appleId,
+			email: appleUser.email,
+			name: appleUser.name,
+			provider: 'apple',
+		};
+		return this.handleOAuthRegistrationWithInvitation(
+			normalizedUser,
+			appleUser.appleId,
+			invitationCode,
+			fallbackEmail,
+			'appleId',
+		);
+	}
+
+	// ─── X ──────────────────────────────────────────────────────────────────
+
+	async xLogin(xUser: XStrategyUser): Promise<AuthTokens & { user: AuthenticatedUser }> {
+		const normalizedUser: BaseOAuthUser = {
+			id: xUser.xId,
+			email: xUser.email,
+			name: xUser.name,
+			provider: 'x',
+		};
+		return this.handleOAuthLogin(normalizedUser, xUser.xId, 'xId');
+	}
+
+	async xRegisterWithInvitation(
+		xUser: XStrategyUser,
+		invitationCode: string,
+	): Promise<AuthTokens & { user: AuthenticatedUser }> {
+		const normalizedUser: BaseOAuthUser = {
+			id: xUser.xId,
+			email: xUser.email,
+			name: xUser.name,
+			provider: 'x',
+		};
+		return this.handleOAuthRegistrationWithInvitation(
+			normalizedUser,
+			xUser.xId,
+			invitationCode,
+			undefined,
+			'xId',
 		);
 	}
 }

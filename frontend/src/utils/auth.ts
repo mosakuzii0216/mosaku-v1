@@ -27,8 +27,8 @@ export interface RegisterResponse {
 }
 
 export interface OAuthUserData {
-	oauthId: string;
-	email: string;
+	oauthId?: string;
+	email?: string;
 	name: string;
 	picture?: string;
 }
