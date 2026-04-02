@@ -50,7 +50,7 @@
   - create モードで自動保存後に edit モードへ遷移し重複作成が起きないことを確認する
   - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 4.3, 4.4_
 
-- [ ]\* 5. `useAutoSave` のユニットテストを追加する（任意）
+- [x]\* 5. `useAutoSave` のユニットテストを追加する（任意）
   - Jest fake timers を使って `scheduleAutoSave()` 後2000ms で `onSave` が呼ばれることを確認する
   - `canSave = false` の場合 `onSave` が呼ばれないことを確認する
   - `isSaving = true` の場合タイマー発火時にスキップされることを確認する
