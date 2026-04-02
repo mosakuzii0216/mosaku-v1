@@ -14,7 +14,7 @@
 
 ---
 
-- [ ] 2. OAuth 型定義と ConfigService を拡張する
+- [x] 2. OAuth 型定義と ConfigService を拡張する
 - [x] 2.1 (P) OAuthProvider 型と各プロバイダーの StrategyUser 型を追加する
   - `OAuthProvider` 型に `'line'`・`'apple'`・`'x'` を追加する
   - `LineStrategyUser`・`AppleStrategyUser`・`XStrategyUser` インターフェースを定義する
@@ -152,22 +152,22 @@
 
 ---
 
-- [ ] 10. ユニットテストとインテグレーションテストを実装する
-- [ ] 10.1 (P) 各 Strategy の unit テストを実装する
+- [x] 10. ユニットテストとインテグレーションテストを実装する
+- [x] 10.1 (P) 各 Strategy の unit テストを実装する
   - `LineStrategy.validate()` が LINE プロフィールを正しく `LineStrategyUser` に変換することをテストする
   - `AppleStrategy.validate()` を email あり・なし（2回目以降）の両パターンでテストする
   - `XStrategy.validate()` が X プロフィールを正しく `XStrategyUser` に変換することをテストする
   - ConfigService の getter が未設定時に適切なエラーを返すことをテストする（Apple privateKey の `\n` 変換を含む）
   - _Requirements: 1.4, 2.4, 2.5, 3.4_
 
-- [ ] 10.2 (P) OAuthService の unit テストを実装する
+- [x] 10.2 (P) OAuthService の unit テストを実装する
   - `lineLogin`・`appleLogin`・`xLogin` の既存ユーザー・新規ユーザー分岐をテストする
   - `appleRegisterWithInvitation` の `fallbackEmail` あり・なしの両パターンをテストする
   - 無効な招待コード時に 400 エラーがスローされることをテストする
   - `handleOAuthLogin` がプロバイダーフィールド（`lineId`・`appleId`・`xId`）を正しく使用することをテストする
   - _Requirements: 1.2, 1.3, 2.2, 2.3, 2.4, 3.2, 3.3, 5.1, 5.2, 5.3_
 
-- [ ] 10.3 AuthController のインテグレーションテストを実装する
+- [x] 10.3 AuthController のインテグレーションテストを実装する
   - `POST /auth/line/register-with-invitation` の有効・無効な招待コードをテストする
   - `POST /auth/apple/callback` が POST リクエストを正しく処理することをテストする
   - `POST /auth/apple/register-with-invitation` で `fallbackEmail` を含むリクエストをテストする
