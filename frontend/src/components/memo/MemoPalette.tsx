@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNotebooks } from '../../hooks/useNotebookQueries';
 import { useMemos } from '../../hooks/useMemoQueries';
-import { useMemoStore } from '../../stores/useMemoStore';
+import { usePaletteStore } from '../../stores/usePaletteStore';
+import { useNavigation } from '../../hooks/useNavigation';
 import type { Memo } from '../../types/memo';
 import { logger } from '../../utils/logger';
 
@@ -20,7 +21,8 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 	const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 
-	const { goToEdit, paletteNotebookFilter } = useMemoStore();
+	const { paletteNotebookFilter } = usePaletteStore();
+	const { goToEdit } = useNavigation();
 	const { data: notebooks = [] } = useNotebooks();
 	const { data: memos = [] } = useMemos();
 

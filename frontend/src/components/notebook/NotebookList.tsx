@@ -1,10 +1,10 @@
 import { useNotebooks } from '../../hooks/useNotebookQueries';
-import { useMemoStore } from '../../stores/useMemoStore';
+import { useNavigation } from '../../hooks/useNavigation';
 import { useThemeCSS } from '../../hooks/useThemeCSS';
 
 export const NotebookList = () => {
 	const { data: notebooks = [], isLoading, error } = useNotebooks();
-	const { goToMemosForNotebook, goToNotebookEdit, goToNotebookCreate } = useMemoStore();
+	const { goToMemosForNotebook, goToNotebookEdit, goToNotebookCreate } = useNavigation();
 
 	// テーマCSSを読み込む
 	const themesToLoad = notebooks

@@ -1,11 +1,13 @@
 import { useMemo } from 'react';
 import { useMemos } from '../../hooks/useMemoQueries';
-import { useMemoStore } from '../../stores/useMemoStore';
+import { useViewStore } from '../../stores/useViewStore';
+import { useNavigation } from '../../hooks/useNavigation';
 import { MemoItem } from './MemoItem';
 
 export const MemoList = () => {
 	const { data: memos = [], isLoading, error } = useMemos();
-	const { notebookFilter, goToEdit } = useMemoStore();
+	const { notebookFilter } = useViewStore();
+	const { goToEdit } = useNavigation();
 
 	// notebookFilterに基づいてメモをフィルタリング
 	const filteredMemos = useMemo(() => {

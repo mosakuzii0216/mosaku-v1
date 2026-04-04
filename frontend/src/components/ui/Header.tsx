@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { useMemoStore } from '../../stores/useMemoStore';
+import { useViewStore } from '../../stores/useViewStore';
+import { useNavigation } from '../../hooks/useNavigation';
 import { LibraryBig, Tag, LogOut, Settings, Trash2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
@@ -10,8 +11,8 @@ interface HeaderProps {
 }
 
 export const Header = (_props?: HeaderProps) => {
-	const { currentView, currentObject, goToList, goToTags, goToNotebookList, goToTrash } =
-		useMemoStore();
+	const { currentView, currentObject } = useViewStore();
+	const { goToList, goToTags, goToNotebookList, goToTrash } = useNavigation();
 	const { user, logout } = useAuth();
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const dropdownRef = useRef<HTMLDivElement>(null);
