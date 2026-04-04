@@ -1,5 +1,8 @@
 import { useEffect } from 'react';
-import { useMemoStore } from '../../stores/useMemoStore';
+import { useViewStore } from '../../stores/useViewStore';
+import { useMemoDataStore } from '../../stores/useMemoDataStore';
+import { usePaletteStore } from '../../stores/usePaletteStore';
+import { useNavigation } from '../../hooks/useNavigation';
 import { useMemo as useMemoQuery } from '../../hooks/useMemoQueries';
 import { useAppInit } from '../../hooks/useAppInit';
 import { Header } from '../ui/Header';
@@ -12,18 +15,10 @@ import { NotebookEditor } from '../notebook/NotebookEditor';
 import { MemoPalette } from '../memo/MemoPalette';
 
 export const MobileLayout = () => {
-	const {
-		currentObject,
-		currentView,
-		selectedMemoId,
-		goToMemoCreate,
-		goToNotebookCreate,
-		selectedNotebookId,
-		paletteOpen,
-		paletteMode,
-		closeMemoPalette,
-		openMemoPalette,
-	} = useMemoStore();
+	const { currentObject, currentView } = useViewStore();
+	const { selectedMemoId, selectedNotebookId } = useMemoDataStore();
+	const { paletteOpen, paletteMode, closeMemoPalette, openMemoPalette } = usePaletteStore();
+	const { goToMemoCreate, goToNotebookCreate } = useNavigation();
 	const { data: selectedMemo } = useMemoQuery(selectedMemoId ?? '');
 	useAppInit(); // アプリ初期化（タグロード等）
 
