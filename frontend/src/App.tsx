@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
-import { useMemoStore } from './stores/useMemoStore';
+import { useViewStore } from './stores/useViewStore';
 import { useWindowSize } from './hooks/useWindowSize';
 import { MobileLayout } from './components/layouts/MobileLayout';
 import { DesktopLayout } from './components/layouts/DesktopLayout';
@@ -23,7 +23,7 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
-	const { isMobile, setIsMobile } = useMemoStore();
+	const { isMobile, setIsMobile } = useViewStore();
 	const { width } = useWindowSize();
 
 	// レスポンシブ判定

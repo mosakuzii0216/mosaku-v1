@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useMemoStore } from '../../stores/useMemoStore';
+import { useViewStore } from '../../stores/useViewStore';
 import { useSearchMemos } from '../../hooks/useMemoQueries';
 
 export const MemoSearch = () => {
-	const { searchQuery, setSearchQuery } = useMemoStore();
+	const { searchQuery, setSearchQuery } = useViewStore();
 	const [localQuery, setLocalQuery] = useState(searchQuery);
 
 	// デバウンス処理
