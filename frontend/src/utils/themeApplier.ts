@@ -102,8 +102,7 @@ export function applyThemeFromObject(theme: Theme): void {
 /**
  * オブジェクト形式のテーマをCSS変数に変換
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function convertObjectToCSSVariables(theme: any): string {
+function convertObjectToCSSVariables(theme: Theme): string {
 	const css = [];
 
 	css.push(`/* ${theme.name} - 動的生成 */`);

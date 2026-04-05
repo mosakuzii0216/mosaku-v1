@@ -90,8 +90,6 @@ export const MobileLayout = () => {
 						return <NotebookEditor notebookId={selectedNotebookId ?? undefined} />;
 				}
 				break;
-				// fallthrough防止のため明示的にbreak
-				break;
 			case 'tag':
 				return <TagManager />;
 
