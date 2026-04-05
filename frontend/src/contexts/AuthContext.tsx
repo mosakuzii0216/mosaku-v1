@@ -119,7 +119,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		};
 
 		initialize();
-	}, [oauth, handleAuthSuccess, handleInvitationRequired]);
+	}, [oauth.handleCallback, handleAuthSuccess, handleInvitationRequired]);
 
 	// Email認証アクション
 	const login = useCallback(
