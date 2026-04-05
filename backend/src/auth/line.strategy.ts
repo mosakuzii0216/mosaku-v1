@@ -22,8 +22,8 @@ export class LineStrategy extends PassportStrategy(Strategy, 'line') {
 		const clientID = configService.lineClientId;
 		const clientSecret = configService.lineClientSecret;
 		super({
-			channelID: clientID ?? 'unconfigured',
-			channelSecret: clientSecret ?? 'unconfigured',
+			channelID: clientID || 'unconfigured',
+			channelSecret: clientSecret || 'unconfigured',
 			callbackURL: configService.lineRedirectUri,
 			scope: ['profile', 'email'],
 		});
