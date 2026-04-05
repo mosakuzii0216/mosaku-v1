@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { apiClient } from '../../utils/api';
 import type { InvitationCode } from '../../types/invitation';
 import { logger } from '../../utils/logger';

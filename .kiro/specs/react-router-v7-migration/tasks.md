@@ -21,14 +21,14 @@
   - _Requirements: 1.2, 1.4, 3.4, 4.2, 4.3_
 
 - [ ] 2. Step 2 — v7 へパッケージ更新・import 変更・型整理をしてコミットする
-- [ ] 2.1 (P) パッケージを react-router v7 に入れ替える
+- [x] 2.1 (P) パッケージを react-router v7 に入れ替える
   - `frontend/` で `npm uninstall react-router-dom` を実行し `react-router-dom` を削除する
   - `npm install react-router@latest` を実行して `react-router` v7 をインストールする
   - `npm uninstall -D @types/react-router-dom` を実行して不要な型パッケージを削除する
   - `package-lock.json` に依存競合がないことを確認する（React 19 は v7 の要件を満たすため競合しないはず）
   - _Requirements: 2.1, 2.2, 4.1, 5.3_
 
-- [ ] 2.2 (P) 全 6 ファイルの import パスを react-router に変更する
+- [x] 2.2 (P) 全 6 ファイルの import パスを react-router に変更する
   - `src/App.tsx` の `from 'react-router-dom'` を `from 'react-router'` に変更する
   - `src/components/auth/AuthCallback.tsx` の import を `from 'react-router'` に変更する（`useNavigate` は v7 で維持されている）
   - `src/components/auth/AuthForm.tsx` の import を `from 'react-router'` に変更する（`useSearchParams` は v7 で維持されている）
@@ -40,7 +40,7 @@
   - 変更は `frontend/src/` 内のみ（バックエンドには一切触れない）
   - _Requirements: 2.4, 3.1, 3.2, 3.3, 4.4, 5.1, 5.2, 5.4_
 
-- [ ] 2.3 Step 2 完了後のビルド・lint・動作確認を行う
+- [x] 2.3 Step 2 完了後のビルド・lint・動作確認を行う
   - `cd frontend && npm run build` を実行して TypeScript エラーゼロ・Vite ビルド成功を確認する
   - `cd frontend && npm run lint` を実行して ESLint 警告・エラーがゼロであることを確認する
   - ブラウザで `/auth/callback` にアクセスして `/auth` へのリダイレクトが正常に動作することを確認する

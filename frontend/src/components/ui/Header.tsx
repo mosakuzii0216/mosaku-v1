@@ -3,7 +3,7 @@ import { useViewStore } from '../../stores/useViewStore';
 import { useNavigation } from '../../hooks/useNavigation';
 import { LibraryBig, Tag, LogOut, Settings, Trash2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 interface HeaderProps {
 	onMemoCreateClick?: () => void;

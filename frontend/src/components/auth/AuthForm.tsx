@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { EmailAuthForm } from './EmailAuthForm';
 import { PasswordResetForm } from './PasswordResetForm';

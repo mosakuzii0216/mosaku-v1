@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { useViewStore } from './stores/useViewStore';
@@ -42,7 +42,7 @@ function App() {
 	return (
 		<QueryClientProvider client={queryClient}>
 			<AuthProvider>
-				<Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+				<Router>
 					<Routes>
 						<Route path="/auth/callback" element={<AuthCallback />} />
 						<Route path="/auth/reset-password" element={<PasswordReset />} />
