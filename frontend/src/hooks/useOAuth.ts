@@ -14,7 +14,12 @@ export type OAuthProvider = 'google' | 'github' | 'line' | 'apple' | 'x';
 
 interface OAuthProviderConfig {
 	name: string;
-	utils: typeof GoogleAuthUtils | typeof GitHubAuthUtils;
+	utils:
+		| typeof GoogleAuthUtils
+		| typeof GitHubAuthUtils
+		| typeof LineAuthUtils
+		| typeof AppleAuthUtils
+		| typeof XAuthUtils;
 	storageKey: string;
 	startAuth: () => void;
 	registerWithInvitation: (

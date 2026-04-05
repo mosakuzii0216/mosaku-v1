@@ -109,8 +109,10 @@ function convertObjectToCSSVariables(theme: Theme): string {
 	css.push('');
 	css.push(':root {');
 
+	const styles = theme.styles;
+
 	// Colors
-	if (theme.styles.colors) {
+	if (styles?.colors) {
 		css.push('  /* Colors */');
 		const colorMap = {
 			backgroundColor: '--theme-bg-color',
@@ -123,17 +125,17 @@ function convertObjectToCSSVariables(theme: Theme): string {
 			mutedTextColor: '--theme-muted-text-color',
 			dividerColor: '--theme-divider-color',
 		};
-
+		const colors = styles.colors as unknown as Record<string, string | undefined>;
 		Object.entries(colorMap).forEach(([key, cssVar]) => {
-			if (theme.styles.colors[key]) {
-				css.push(`  ${cssVar}: ${theme.styles.colors[key]};`);
+			if (colors[key]) {
+				css.push(`  ${cssVar}: ${colors[key]};`);
 			}
 		});
 		css.push('');
 	}
 
 	// Typography
-	if (theme.styles.typography) {
+	if (styles?.typography) {
 		css.push('  /* Typography */');
 		const typographyMap = {
 			fontFamily: '--theme-font-family',
@@ -145,17 +147,17 @@ function convertObjectToCSSVariables(theme: Theme): string {
 			boldFontWeight: '--theme-bold-font-weight',
 			lineHeight: '--theme-line-height',
 		};
-
+		const typography = styles.typography as unknown as Record<string, string | undefined>;
 		Object.entries(typographyMap).forEach(([key, cssVar]) => {
-			if (theme.styles.typography[key]) {
-				css.push(`  ${cssVar}: ${theme.styles.typography[key]};`);
+			if (typography[key]) {
+				css.push(`  ${cssVar}: ${typography[key]};`);
 			}
 		});
 		css.push('');
 	}
 
 	// Layout
-	if (theme.styles.layout) {
+	if (styles?.layout) {
 		css.push('  /* Layout */');
 		const layoutMap = {
 			padding: '--theme-padding',
@@ -164,26 +166,26 @@ function convertObjectToCSSVariables(theme: Theme): string {
 			borderWidth: '--theme-border-width',
 			boxShadow: '--theme-box-shadow',
 		};
-
+		const layout = styles.layout as unknown as Record<string, string | undefined>;
 		Object.entries(layoutMap).forEach(([key, cssVar]) => {
-			if (theme.styles.layout[key]) {
-				css.push(`  ${cssVar}: ${theme.styles.layout[key]};`);
+			if (layout[key]) {
+				css.push(`  ${cssVar}: ${layout[key]};`);
 			}
 		});
 		css.push('');
 	}
 
 	// Animations
-	if (theme.styles.animations) {
+	if (styles?.animations) {
 		css.push('  /* Animations */');
 		const animationsMap = {
 			transitionDuration: '--theme-transition-duration',
 			hoverTransition: '--theme-hover-transition',
 		};
-
+		const animations = styles.animations as unknown as Record<string, string | undefined>;
 		Object.entries(animationsMap).forEach(([key, cssVar]) => {
-			if (theme.styles.animations[key]) {
-				css.push(`  ${cssVar}: ${theme.styles.animations[key]};`);
+			if (animations[key]) {
+				css.push(`  ${cssVar}: ${animations[key]};`);
 			}
 		});
 		css.push('');
