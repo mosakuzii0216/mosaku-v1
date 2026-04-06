@@ -11,6 +11,8 @@ import AuthCallback from './components/auth/AuthCallback';
 import PasswordReset from './components/auth/PasswordReset';
 import InvitationManager from './components/admin/InvitationManager';
 
+const MOBILE_BREAKPOINT = 768;
+
 const queryClient = new QueryClient({
 	defaultOptions: {
 		queries: {
@@ -28,7 +30,7 @@ function AppContent() {
 
 	// レスポンシブ判定
 	useEffect(() => {
-		setIsMobile(width < 768);
+		setIsMobile(width < MOBILE_BREAKPOINT);
 	}, [width, setIsMobile]);
 
 	if (isMobile) {

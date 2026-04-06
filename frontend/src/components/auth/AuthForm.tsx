@@ -156,12 +156,14 @@ export default function AuthForm() {
 		}
 	};
 
-	const isOAuthInviteMode =
-		mode === 'googleInvite' ||
-		mode === 'githubInvite' ||
-		mode === 'lineInvite' ||
-		mode === 'appleInvite' ||
-		mode === 'xInvite';
+	const oauthInviteModes: AuthMode[] = [
+		'googleInvite',
+		'githubInvite',
+		'lineInvite',
+		'appleInvite',
+		'xInvite',
+	];
+	const isOAuthInviteMode = oauthInviteModes.includes(mode);
 
 	// OAuth招待コードフォーム
 	if (isOAuthInviteMode) {
