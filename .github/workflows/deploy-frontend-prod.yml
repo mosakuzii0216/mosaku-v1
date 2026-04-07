@@ -25,6 +25,11 @@ name: Deploy Frontend to Vercel (Production)
 on:
   # 手動実行のみ（stg 確認後にトリガー）
   workflow_dispatch:
+    inputs:
+      ref:
+        description: 'デプロイするブランチ or コミットSHA（省略時は main HEAD）'
+        required: false
+        default: 'main'
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -41,6 +46,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || 'main' }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -73,6 +80,8 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || 'main' }}
 
       # -----------------------------------------------------------------------
       # Step 2: Node.js セットアップ
