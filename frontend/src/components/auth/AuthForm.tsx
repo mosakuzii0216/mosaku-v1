@@ -230,7 +230,7 @@ export default function AuthForm() {
 	// Email/Password認証フォーム
 	return (
 		<EmailAuthForm
-			mode={mode}
+			mode={mode as 'login' | 'signup'}
 			onSwitchMode={() => switchMode(mode === 'login' ? 'signup' : 'login')}
 			onForgotPassword={() => switchMode('resetPassword')}
 		/>
