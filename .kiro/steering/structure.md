@@ -30,6 +30,12 @@
 **Purpose**: React Query の `useQuery` / `useMutation` をドメインごとにまとめる。APIコールはここに集約
 **Example**: `useMemoQueries.ts` → `useMemos()`, `useCreateMemo()`, `useUpdateMemo()`
 
+### Frontend: ナビゲーションフック
+
+**Location**: `frontend/src/hooks/useNavigation.ts`
+**Purpose**: 複合ナビゲーションアクション（`goToEdit`, `goToList` 等）をまとめたフック。useViewStore + useMemoDataStore を組み合わせて状態遷移を一元化
+**Pattern**: 複数ストアをまたぐナビゲーションは useNavigation 経由で呼び出す。コンポーネントが複数ストアに直接依存しないよう抽象化
+
 ### Frontend: クライアント状態ストア
 
 **Location**: `frontend/src/stores/use{Domain}Store.ts`
