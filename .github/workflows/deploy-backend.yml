@@ -25,6 +25,11 @@ name: Deploy Backend to Cloud Run (Production)
 on:
   # 手動実行のみ（ステージング確認後にトリガー）
   workflow_dispatch:
+    inputs:
+      ref:
+        description: 'デプロイするブランチ or コミットSHA（省略時は main HEAD）'
+        required: false
+        default: 'main'
 
 # -----------------------------------------------------------------------------
 # 環境変数（ワークフロー全体で使用）
@@ -55,6 +60,8 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || 'main' }}
 
       # -----------------------------------------------------------------------
       # Step 2: Node.js 環境のセットアップ
@@ -106,14 +113,51 @@ jobs:
         run: npm run build
 
   # ===========================================================================
-  # Job 2: Cloud Run へデプロイ
+  # Job 2: DBマイグレーション（本番）
   # ===========================================================================
-  # test ジョブが成功した場合のみ実行
+  migrate:
+    name: DB Migration (Production)
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production  # 本番マイグレーションも承認ゲートを通す
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || 'main' }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run DB migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.PROD_DIRECT_URL }}
+
+  # ===========================================================================
+  # Job 3: Cloud Run へデプロイ
+  # ===========================================================================
+  # test・migrate ジョブが成功した場合のみ実行
   # Docker イメージをビルドして Cloud Run にデプロイ
   # ===========================================================================
   deploy:
     name: Deploy to Cloud Run (Production)
-    needs: test  # test ジョブの成功が必須
+    needs: migrate
     runs-on: ubuntu-latest
     environment: production  # GitHub Environment による承認ゲート
 
@@ -123,6 +167,8 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || 'main' }}
 
       # -----------------------------------------------------------------------
       # Step 2: GCP 認証
@@ -195,7 +241,7 @@ jobs:
   # ===========================================================================
   notify:
     name: Slack Notification
-    needs: deploy
+    needs: [migrate, deploy]
     if: always()
     runs-on: ubuntu-latest
 
