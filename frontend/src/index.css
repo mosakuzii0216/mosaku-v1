@@ -50,3 +50,65 @@ body {
 	transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 	transition-duration: 150ms;
 }
+
+/* ===== 森テーマ: ログイン画面アニメーション ===== */
+
+/* 霧の流れ: 横方向スライド + opacity 変化 */
+@keyframes fog-drift {
+	0% {
+		transform: translateX(-20%);
+		opacity: 0;
+	}
+	20% {
+		opacity: 0.3;
+	}
+	80% {
+		opacity: 0.2;
+	}
+	100% {
+		transform: translateX(110%);
+		opacity: 0;
+	}
+}
+
+/* 葉の漂い: 上から下へゆっくり流れ、横揺れを加える */
+@keyframes leaf-float {
+	0% {
+		transform: translateY(-10%) translateX(0) rotate(0deg);
+		opacity: 0;
+	}
+	10% {
+		opacity: 0.6;
+	}
+	50% {
+		transform: translateY(50%) translateX(30px) rotate(180deg);
+	}
+	90% {
+		opacity: 0.4;
+	}
+	100% {
+		transform: translateY(110%) translateX(-20px) rotate(360deg);
+		opacity: 0;
+	}
+}
+
+/* 波打ち: 背景グラデーションの位置変化 */
+@keyframes wave-pulse {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
+}
+
+/* reduced-motion: 全アニメーションを停止 */
+@media (prefers-reduced-motion: reduce) {
+	.forest-animation * {
+		animation: none !important;
+		transition: none !important;
+	}
+}
