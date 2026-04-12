@@ -12,39 +12,39 @@ interface OAuthInviteFormProps {
 
 const providerStyles = {
 	Google: {
-		bgColor: 'bg-blue-50',
-		textColor: 'text-blue-700',
-		textSubColor: 'text-blue-600',
-		buttonColor: 'bg-blue-500',
-		buttonHoverColor: 'hover:bg-blue-600',
+		bgColor: 'bg-black/40',
+		textColor: 'text-green-100',
+		textSubColor: 'text-green-300',
+		buttonColor: 'bg-black/40',
+		buttonHoverColor: 'hover:bg-black/60',
 	},
 	GitHub: {
-		bgColor: 'bg-gray-50',
-		textColor: 'text-gray-700',
-		textSubColor: 'text-gray-600',
-		buttonColor: 'bg-gray-900',
-		buttonHoverColor: 'hover:bg-gray-800',
+		bgColor: 'bg-black/40',
+		textColor: 'text-green-100',
+		textSubColor: 'text-green-300',
+		buttonColor: 'bg-black/40',
+		buttonHoverColor: 'hover:bg-black/60',
 	},
 	LINE: {
-		bgColor: 'bg-green-50',
-		textColor: 'text-green-700',
-		textSubColor: 'text-green-600',
-		buttonColor: 'bg-green-500',
-		buttonHoverColor: 'hover:bg-green-600',
+		bgColor: 'bg-black/40',
+		textColor: 'text-green-100',
+		textSubColor: 'text-green-300',
+		buttonColor: 'bg-black/40',
+		buttonHoverColor: 'hover:bg-black/60',
 	},
 	Apple: {
-		bgColor: 'bg-gray-900',
-		textColor: 'text-white',
-		textSubColor: 'text-gray-300',
-		buttonColor: 'bg-black',
-		buttonHoverColor: 'hover:bg-gray-900',
+		bgColor: 'bg-black/40',
+		textColor: 'text-green-100',
+		textSubColor: 'text-green-300',
+		buttonColor: 'bg-black/40',
+		buttonHoverColor: 'hover:bg-black/60',
 	},
 	X: {
-		bgColor: 'bg-black',
-		textColor: 'text-white',
-		textSubColor: 'text-gray-300',
-		buttonColor: 'bg-black',
-		buttonHoverColor: 'hover:bg-gray-900',
+		bgColor: 'bg-black/40',
+		textColor: 'text-green-100',
+		textSubColor: 'text-green-300',
+		buttonColor: 'bg-black/40',
+		buttonHoverColor: 'hover:bg-black/60',
 	},
 };
 
@@ -72,7 +72,7 @@ export const OAuthInviteForm: React.FC<OAuthInviteFormProps> = ({
 			)}
 
 			<div>
-				<label htmlFor="invitationCode" className="block text-sm font-medium text-gray-700 mb-1">
+				<label htmlFor="invitationCode" className="block text-sm font-medium text-green-200 mb-1">
 					招待コード（必須）
 				</label>
 				<input
@@ -81,7 +81,7 @@ export const OAuthInviteForm: React.FC<OAuthInviteFormProps> = ({
 					value={invitationCode}
 					onChange={(e) => setInvitationCode(e.target.value)}
 					required
-					className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+					className="w-full px-3 py-2 bg-black/40 border border-green-700 text-green-100 placeholder-green-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
 					placeholder="招待コードを入力してください"
 				/>
 			</div>
@@ -89,7 +89,7 @@ export const OAuthInviteForm: React.FC<OAuthInviteFormProps> = ({
 			<button
 				type="submit"
 				disabled={loading}
-				className={`w-full ${styles.buttonColor} ${styles.buttonHoverColor} text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50`}
+				className={`w-full ${styles.buttonColor} ${styles.buttonHoverColor} border border-green-700 text-green-100 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50`}
 			>
 				{loading ? '登録中...' : `${providerName}で登録`}
 			</button>

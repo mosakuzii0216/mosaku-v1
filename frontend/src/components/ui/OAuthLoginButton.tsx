@@ -7,6 +7,7 @@ interface OAuthLoginButtonProps {
 	className?: string;
 	children?: React.ReactNode;
 	mode?: 'login' | 'signup';
+	variant?: 'default' | 'forest';
 }
 
 interface ProviderConfig {
@@ -92,6 +93,7 @@ export const OAuthLoginButton: React.FC<OAuthLoginButtonProps> = ({
 	className = '',
 	children,
 	mode = 'login',
+	variant = 'default',
 }) => {
 	const { googleLogin, githubLogin, lineLogin, appleLogin, xLogin } = useAuth();
 
@@ -141,13 +143,17 @@ export const OAuthLoginButton: React.FC<OAuthLoginButtonProps> = ({
 	const config = providerConfigs[provider];
 	const defaultText = mode === 'signup' ? `${config.name}で登録` : `${config.name}でログイン`;
 
+	const forestStyles = 'bg-black/40 border border-green-700 text-green-100 hover:bg-black/60';
+	const defaultStyles = `border border-gray-300 shadow-sm ${config.bgColor} ${config.textColor} ${config.hoverColor}`;
+	const variantStyles = variant === 'forest' ? forestStyles : defaultStyles;
+
 	return (
 		<button
 			onClick={config.loginFn}
 			className={`
-        flex items-center justify-center w-full px-4 py-2 border border-gray-300
-        rounded-lg shadow-sm ${config.bgColor} text-sm font-medium ${config.textColor}
-        ${config.hoverColor} transition-colors duration-200
+        flex items-center justify-center w-full px-4 py-2
+        rounded-lg text-sm font-medium
+        ${variantStyles} transition-colors duration-200
         ${className}
       `}
 		>

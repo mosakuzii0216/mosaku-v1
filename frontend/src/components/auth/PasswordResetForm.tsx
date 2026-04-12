@@ -35,15 +35,15 @@ export function PasswordResetForm({ onBackToLogin }: PasswordResetFormProps) {
 	};
 
 	return (
-		<div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
-			<h2 className="text-2xl font-bold mb-6 text-center">パスワードリセット</h2>
+		<div className="max-w-md mx-auto mt-8 p-6 bg-black/75 rounded-lg border border-green-300/30 shadow-2xl backdrop-blur-sm">
+			<h2 className="text-2xl font-bold mb-6 text-center text-green-100">パスワードリセット</h2>
 
 			{message && (
 				<div
 					className={`mb-4 p-3 rounded-lg text-sm ${
 						message.includes('送信しました')
-							? 'bg-green-100 text-green-700'
-							: 'bg-red-100 text-red-700'
+							? 'bg-emerald-900/50 text-emerald-300 border border-emerald-700'
+							: 'bg-red-900/50 text-red-300 border border-red-700'
 					}`}
 				>
 					{message}
@@ -52,7 +52,7 @@ export function PasswordResetForm({ onBackToLogin }: PasswordResetFormProps) {
 
 			<form onSubmit={handleSubmit} className="space-y-4 mb-6">
 				<div>
-					<label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+					<label htmlFor="email" className="block text-sm font-medium text-green-200 mb-1">
 						メールアドレス
 					</label>
 					<input
@@ -61,21 +61,25 @@ export function PasswordResetForm({ onBackToLogin }: PasswordResetFormProps) {
 						value={email}
 						onChange={(e) => setEmail(e.target.value)}
 						required
-						className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+						className="w-full px-3 py-2 bg-black/40 border border-green-700 text-green-100 placeholder-green-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
 						placeholder="登録時のメールアドレスを入力"
 					/>
 				</div>
 				<button
 					type="submit"
 					disabled={loading}
-					className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
+					className="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
 				>
 					{loading ? '送信中...' : 'パスワードリセットメールを送信'}
 				</button>
 			</form>
 
 			<div className="text-center">
-				<button onClick={onBackToLogin} className="text-blue-500 hover:text-blue-600 text-sm">
+				<button
+					type="button"
+					onClick={onBackToLogin}
+					className="text-emerald-400 hover:text-emerald-300 text-sm"
+				>
 					ログインページに戻る
 				</button>
 			</div>
