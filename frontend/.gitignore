@@ -30,3 +30,7 @@ dev-dist
 .env*.local
 .env.production
 .env.supabase
+
+# Playwright
+test-results/
+playwright-report/
