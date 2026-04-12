@@ -8,6 +8,7 @@
 cp .env.example .env
 ```
 
+
 ### 2. Google OAuth設定
 
 1. [Google Cloud Console](https://console.cloud.google.com/)にアクセス
