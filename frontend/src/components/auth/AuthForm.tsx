@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { EmailAuthForm } from './EmailAuthForm';
 import { PasswordResetForm } from './PasswordResetForm';
 import { OAuthInviteForm } from './OAuthInviteForm';
+import { LoginPageLayout } from './LoginPageLayout';
 import type { OAuthUserData } from '../../utils/auth';
 import { logger } from '../../utils/logger';
 
@@ -171,68 +172,83 @@ export default function AuthForm() {
 		const needsFallbackEmail = mode === 'appleInvite' && !pendingOAuthUser?.email;
 
 		return (
-			<div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
-				<h2 className="text-2xl font-bold mb-6 text-center">{providerName} アカウント登録</h2>
+			<LoginPageLayout>
+				<div className="max-w-md w-full mx-auto p-6 bg-black/75 rounded-lg border border-green-300/30 shadow-2xl backdrop-blur-sm">
+					<h2 className="text-2xl font-bold mb-6 text-center text-green-100">
+						{providerName} アカウント登録
+					</h2>
 
-				{message && (
-					<div className="mb-4 p-3 rounded-lg text-sm bg-red-100 text-red-700">{message}</div>
-				)}
+					{message && (
+						<div className="mb-4 p-3 rounded-lg text-sm bg-red-900/50 text-red-300 border border-red-700">
+							{message}
+						</div>
+					)}
 
-				{needsFallbackEmail && (
-					<div className="mb-4">
-						<label htmlFor="fallbackEmail" className="block text-sm font-medium text-gray-700 mb-1">
-							メールアドレス（必須）
-						</label>
-						<input
-							type="email"
-							id="fallbackEmail"
-							value={fallbackEmail}
-							onChange={(e) => setFallbackEmail(e.target.value)}
-							required
-							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-							placeholder="メールアドレスを入力してください"
-						/>
+					{needsFallbackEmail && (
+						<div className="mb-4">
+							<label
+								htmlFor="fallbackEmail"
+								className="block text-sm font-medium text-green-200 mb-1"
+							>
+								メールアドレス（必須）
+							</label>
+							<input
+								type="email"
+								id="fallbackEmail"
+								value={fallbackEmail}
+								onChange={(e) => setFallbackEmail(e.target.value)}
+								required
+								className="w-full px-3 py-2 bg-black/40 border border-green-700 text-green-100 placeholder-green-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+								placeholder="メールアドレスを入力してください"
+							/>
+						</div>
+					)}
+
+					<OAuthInviteForm
+						providerName={providerName}
+						pendingUser={pendingOAuthUser}
+						invitationCode={invitationCode}
+						setInvitationCode={setInvitationCode}
+						onSubmit={handleOAuthRegistration}
+						loading={loading}
+					/>
+
+					<div className="text-center mt-4 space-y-2">
+						<button
+							onClick={() => switchMode('login')}
+							className="text-emerald-400 hover:text-emerald-300 text-sm block w-full"
+						>
+							ログインページに戻る
+						</button>
+						<button
+							onClick={() => switchMode('signup')}
+							className="text-green-500 hover:text-green-400 text-sm block w-full"
+						>
+							メール/パスワードで新規登録
+						</button>
 					</div>
-				)}
-
-				<OAuthInviteForm
-					providerName={providerName}
-					pendingUser={pendingOAuthUser}
-					invitationCode={invitationCode}
-					setInvitationCode={setInvitationCode}
-					onSubmit={handleOAuthRegistration}
-					loading={loading}
-				/>
-
-				<div className="text-center mt-4 space-y-2">
-					<button
-						onClick={() => switchMode('login')}
-						className="text-blue-500 hover:text-blue-600 text-sm block w-full"
-					>
-						ログインページに戻る
-					</button>
-					<button
-						onClick={() => switchMode('signup')}
-						className="text-gray-500 hover:text-gray-600 text-sm block w-full"
-					>
-						メール/パスワードで新規登録
-					</button>
 				</div>
-			</div>
+			</LoginPageLayout>
 		);
 	}
 
 	// パスワードリセットフォーム
 	if (mode === 'resetPassword') {
-		return <PasswordResetForm onBackToLogin={() => switchMode('login')} />;
+		return (
+			<LoginPageLayout>
+				<PasswordResetForm onBackToLogin={() => switchMode('login')} />
+			</LoginPageLayout>
+		);
 	}
 
 	// Email/Password認証フォーム
 	return (
-		<EmailAuthForm
-			mode={mode as 'login' | 'signup'}
-			onSwitchMode={() => switchMode(mode === 'login' ? 'signup' : 'login')}
-			onForgotPassword={() => switchMode('resetPassword')}
-		/>
+		<LoginPageLayout>
+			<EmailAuthForm
+				mode={mode as 'login' | 'signup'}
+				onSwitchMode={() => switchMode(mode === 'login' ? 'signup' : 'login')}
+				onForgotPassword={() => switchMode('resetPassword')}
+			/>
+		</LoginPageLayout>
 	);
 }
