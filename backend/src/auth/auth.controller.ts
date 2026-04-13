@@ -34,7 +34,6 @@ import {
 import { Public } from '../common/decorators/public.decorator';
 import { AuthService } from './auth.service';
 import { OAuthService } from './oauth.service';
-import { InvitationService } from '../invitation/invitation.service';
 import { RegisterUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResetPasswordRequestDto, ChangePasswordDto } from './dto/reset-password.dto';
@@ -49,7 +48,6 @@ export class AuthController {
 		private readonly prisma: PrismaService,
 		private readonly authService: AuthService,
 		private readonly oauthService: OAuthService,
-		private readonly invitationService: InvitationService,
 		private readonly configService: ConfigService,
 	) {
 		this.logger.setContext('AuthController');
@@ -101,14 +99,7 @@ export class AuthController {
 		const { email, password, name, invitationCode } = registerUserDto;
 
 		try {
-			// 招待コードを検証
-			await this.invitationService.verifyInvitation(invitationCode);
-
-			// ユーザー登録
 			const user = await this.authService.register(email, password, name, invitationCode);
-
-			// 招待コードの使用回数を増やす
-			await this.invitationService.useInvitation(invitationCode);
 
 			return {
 				message: 'Registration successful. You can now login.',
