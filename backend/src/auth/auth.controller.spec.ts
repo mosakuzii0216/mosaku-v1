@@ -64,6 +64,50 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 		expect(controller).toBeDefined();
 	});
 
+	// ─── register ────────────────────────────────────────────────────────────
+
+	describe('register', () => {
+		it('authService.register のみを呼び出し、invitationService を直接呼び出さないこと', async () => {
+			mockAuthService.register.mockResolvedValue({
+				id: 'user-1',
+				email: 'user@example.com',
+				name: 'User',
+				role: 'USER',
+			});
+
+			const result = await controller.register({
+				email: 'user@example.com',
+				password: 'password123',
+				name: 'User',
+				invitationCode: 'VALID-CODE',
+			} as never);
+
+			expect(mockAuthService.register).toHaveBeenCalledWith(
+				'user@example.com',
+				'password123',
+				'User',
+				'VALID-CODE',
+			);
+			expect(mockInvitationService.verifyInvitation).not.toHaveBeenCalled();
+			expect(mockInvitationService.useInvitation).not.toHaveBeenCalled();
+			expect(result).toMatchObject({ message: 'Registration successful. You can now login.' });
+		});
+
+		it('authService.register が例外をスローした場合に AppException として伝播すること', async () => {
+			mockAuthService.register.mockRejectedValue(
+				new AppException('AUTH001', 400, 'Email already exists'),
+			);
+
+			await expect(
+				controller.register({
+					email: 'existing@example.com',
+					password: 'password123',
+					invitationCode: 'VALID-CODE',
+				} as never),
+			).rejects.toBeInstanceOf(AppException);
+		});
+	});
+
 	// ─── LINE ───────────────────────────────────────────────────────────────
 
 	describe('lineRegisterWithInvitation', () => {

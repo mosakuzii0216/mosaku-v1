@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '../config/config.service';
 import { JwtTokenService } from './jwt.service';
+import { InvitationService } from '../invitation/invitation.service';
 import { AppException } from '../common/exceptions';
 
 describe('AuthService', () => {
@@ -37,6 +38,11 @@ describe('AuthService', () => {
 		generateTokens: jest.fn().mockReturnValue({ accessToken: 'mock-token' }),
 	};
 
+	const mockInvitationService = {
+		verifyInvitation: jest.fn(),
+		useInvitation: jest.fn(),
+	};
+
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
@@ -44,6 +50,7 @@ describe('AuthService', () => {
 				{ provide: PrismaService, useValue: mockPrismaService },
 				{ provide: ConfigService, useValue: mockConfigService },
 				{ provide: JwtTokenService, useValue: mockJwtTokenService },
+				{ provide: InvitationService, useValue: mockInvitationService },
 			],
 		}).compile();
 
@@ -53,6 +60,10 @@ describe('AuthService', () => {
 
 	it('should be defined', () => {
 		expect(service).toBeDefined();
+	});
+
+	it('should have InvitationService injected', () => {
+		expect(service['invitationService']).toBeDefined();
 	});
 
 	describe('hashPassword', () => {
@@ -186,6 +197,68 @@ describe('AuthService', () => {
 					data: expect.objectContaining({ name: mockUser.email }),
 				}),
 			);
+		});
+
+		it('should call verifyInvitation and useInvitation when a valid invitation code is provided', async () => {
+			const invitationCode = 'VALID-CODE';
+			const mockInvitation = { id: 'inv-1', code: invitationCode };
+
+			mockPrismaService.user.findUnique.mockResolvedValue(null);
+			mockPrismaService.user.create.mockResolvedValue({ ...mockUser, role: 'USER' });
+			mockConfigService.isAdminEmail.mockReturnValue(false);
+			mockInvitationService.verifyInvitation.mockResolvedValue(mockInvitation);
+			mockInvitationService.useInvitation.mockResolvedValue(mockInvitation);
+
+			await service.register('new@example.com', 'password123', 'New User', invitationCode);
+
+			expect(mockInvitationService.verifyInvitation).toHaveBeenCalledWith(invitationCode);
+			expect(mockInvitationService.useInvitation).toHaveBeenCalledWith(invitationCode);
+		});
+
+		it('should not create user and not call useInvitation when verifyInvitation throws', async () => {
+			const invitationCode = 'INVALID-CODE';
+
+			mockPrismaService.user.findUnique.mockResolvedValue(null);
+			mockConfigService.isAdminEmail.mockReturnValue(false);
+			mockInvitationService.verifyInvitation.mockRejectedValue(
+				new AppException('INV001', 400, 'Invalid code'),
+			);
+
+			await expect(
+				service.register('new@example.com', 'password123', 'New User', invitationCode),
+			).rejects.toBeInstanceOf(AppException);
+
+			expect(mockPrismaService.user.create).not.toHaveBeenCalled();
+			expect(mockInvitationService.useInvitation).not.toHaveBeenCalled();
+		});
+
+		it('should not call verifyInvitation or useInvitation for admin email', async () => {
+			mockPrismaService.user.findUnique.mockResolvedValue(null);
+			mockPrismaService.user.create.mockResolvedValue({ ...mockUser, role: 'ADMIN' });
+			mockConfigService.isAdminEmail.mockReturnValue(true);
+
+			await service.register('admin@example.com', 'password123', 'Admin');
+
+			expect(mockInvitationService.verifyInvitation).not.toHaveBeenCalled();
+			expect(mockInvitationService.useInvitation).not.toHaveBeenCalled();
+		});
+
+		it('should not call useInvitation when user creation fails', async () => {
+			const invitationCode = 'VALID-CODE';
+
+			mockPrismaService.user.findUnique.mockResolvedValue(null);
+			mockConfigService.isAdminEmail.mockReturnValue(false);
+			mockInvitationService.verifyInvitation.mockResolvedValue({
+				id: 'inv-1',
+				code: invitationCode,
+			});
+			mockPrismaService.user.create.mockRejectedValue(new Error('DB error'));
+
+			await expect(
+				service.register('new@example.com', 'password123', 'New User', invitationCode),
+			).rejects.toThrow();
+
+			expect(mockInvitationService.useInvitation).not.toHaveBeenCalled();
 		});
 	});
 
