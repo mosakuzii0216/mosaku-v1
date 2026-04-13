@@ -7,6 +7,7 @@ import { JwtTokenService } from './jwt.service';
 import type { AuthTokens } from './jwt.service';
 import { BCRYPT_SALT_ROUNDS } from '../config/auth-constants';
 import { ERROR_CODES, throwUnauthorized, throwBadRequest } from '../common/exceptions';
+import { InvitationService } from '../invitation/invitation.service';
 
 export type { JwtPayload, AuthTokens } from './jwt.service';
 
@@ -16,6 +17,7 @@ export class AuthService {
 		private readonly prisma: PrismaService,
 		private readonly jwtTokenService: JwtTokenService,
 		private readonly configService: ConfigService,
+		private readonly invitationService: InvitationService,
 	) {}
 
 	async hashPassword(password: string): Promise<string> {
@@ -59,7 +61,7 @@ export class AuthService {
 		email: string,
 		password: string,
 		name?: string,
-		_invitationCode?: string,
+		invitationCode?: string,
 	): Promise<AuthenticatedUser> {
 		const existingUser = await this.prisma.user.findUnique({
 			where: { email },
@@ -72,14 +74,34 @@ export class AuthService {
 		const hashedPassword = await this.hashPassword(password);
 		const isAdmin = this.configService.isAdminEmail(email);
 
+		if (isAdmin) {
+			const user = await this.prisma.user.create({
+				data: {
+					email,
+					password: hashedPassword,
+					name: name || email,
+					role: 'ADMIN',
+				},
+			});
+			return this.excludePassword(user);
+		}
+
+		if (invitationCode) {
+			await this.invitationService.verifyInvitation(invitationCode);
+		}
+
 		const user = await this.prisma.user.create({
 			data: {
 				email,
 				password: hashedPassword,
 				name: name || email,
-				role: isAdmin ? 'ADMIN' : 'USER',
+				role: 'USER',
 			},
 		});
+
+		if (invitationCode) {
+			await this.invitationService.useInvitation(invitationCode);
+		}
 
 		return this.excludePassword(user);
 	}
