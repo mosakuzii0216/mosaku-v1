@@ -38,7 +38,8 @@ env:
   PROJECT_ID: igneous-core-480923-j0          # GCP プロジェクトID
   REGION: asia-northeast1                      # Cloud Run のリージョン（東京）
   SERVICE_NAME: mosaku-backend                 # Cloud Run サービス名
-  IMAGE_NAME: gcr.io/igneous-core-480923-j0/mosaku-backend  # Docker イメージ名
+  # Artifact Registry のイメージパス（asia-northeast1 の mosaku-backend リポジトリ配下の api イメージ）
+  IMAGE_NAME: asia-northeast1-docker.pkg.dev/igneous-core-480923-j0/mosaku-backend/api
 
 jobs:
   # ===========================================================================
@@ -191,9 +192,9 @@ jobs:
       # -----------------------------------------------------------------------
       # Step 4: Docker 認証設定
       # -----------------------------------------------------------------------
-      # Container Registry (gcr.io) にプッシュするための認証
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker --quiet
+      # Artifact Registry (asia-northeast1-docker.pkg.dev) にプッシュするための認証
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker asia-northeast1-docker.pkg.dev --quiet
 
       # -----------------------------------------------------------------------
       # Step 5: Docker イメージのビルド & プッシュ
