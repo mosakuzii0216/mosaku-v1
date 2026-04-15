@@ -52,9 +52,14 @@ Mosakuの差別化軸は「ハイセンスなデザイン・テーマ数の多�
 
 本スペックは、ログイン画面で確立した「深緑の森」の世界観をMosaku本体アプリに拡張し、`mori` テーマをMosakuのフラッグシップ（＝ブランドの顔）テーマとして整備するものである。Phase A では純CSSのみでリライトとスコープ拡張を行い、Phase B ではテーマシステム側に汎用的なJSエフェクト基盤を追加して、`mori` 選択時のみログイン画面と同じアニメーションレイヤー（葉の漂い・マウス追跡パーティクル）を動的マウントする。軽量メモアプリとしての品質を維持するため、他テーマへの影響ゼロ・バンドル分離・編集中の自動停止・アクセシビリティ対応を必須制約として定義する。
 
+### Requirement Grouping
+
+- **Phase A（CSS完結・低コスト / 先行リリース可能）**: Requirement 1 / Requirement 2 / Requirement 3 / Requirement 4 の CSS 側条件
+- **Phase B（JSエフェクト基盤 / Phase A 完了後に着手）**: Requirement 5 / Requirement 6 / Requirement 7 / Requirement 4 の JS 側条件
+
 ## Requirements
 
-### Requirement 1: 深緑森テーマ CSS の全面リライト
+### Requirement 1: 深緑森テーマ CSS の全面リライト（Phase A）
 
 **Objective:** As a Mosakuユーザー, I want `mori` テーマ選択時にログイン画面と同じ深緑の森の世界観をアプリ本体でも体験できる, so that ログイン前後で一貫したブランド体験を味わえる
 
@@ -66,7 +71,7 @@ Mosakuの差別化軸は「ハイセンスなデザイン・テーマ数の多�
 4. The Mosaku Theme System shall カード・入力欄・ボタン・リンク等のフォーム風UI要素の色味（背景色・文字色・ボーダー色・フォーカスリング色）を森テーマのパレットに統一する
 5. The Mosaku Theme System shall 上記をすべて CSS のみで実装し、`mori.css` 以外のファイルを変更せずに Phase A の視覚効果を完成させる
 
-### Requirement 2: テーマ適用スコープのアプリ全体への拡張
+### Requirement 2: テーマ適用スコープのアプリ全体への拡張（Phase A）
 
 **Objective:** As a Mosakuユーザー, I want テーマの背景・色味がメモ本文だけでなくサイドバー・ヘッダーを含むアプリ全体に適用される, so that 画面のどこを見ても森の世界観に没入できる
 
@@ -77,7 +82,7 @@ Mosakuの差別化軸は「ハイセンスなデザイン・テーマ数の多�
 3. The Mosaku Theme System shall テーマ適用スコープの拡張によって既存のレイアウト構造（コンポーネント階層・DOM構造）を破壊しない
 4. While テーマが切り替え中の状態で, the Mosaku Theme System shall スコープ拡張前と同じようにチラつきなくテーマを切り替える
 
-### Requirement 3: 他テーマへの非干渉保証
+### Requirement 3: 他テーマへの非干渉保証（Phase A / Phase B 共通）
 
 **Objective:** As a Mosakuユーザー, I want `mori` 以外のテーマ（kami/aka/kuro/siro/ao/code）を選んだときに今まで通りの見た目で使える, so that 既存のお気に入りテーマが壊れない
 
@@ -88,7 +93,7 @@ Mosakuの差別化軸は「ハイセンスなデザイン・テーマ数の多�
 3. If ユーザーが `mori` 以外のテーマを選択した状態である時, the Mosaku Theme System shall `fog-drift` / `wave-pulse` / JSエフェクトレイヤーを DOM に追加せず、かつ関連する `requestAnimationFrame` も起動しない
 4. The Mosaku Theme System shall 他テーマ適用時のバンドルサイズを本スペック実装前と比較して増加させない
 
-### Requirement 4: アクセシビリティ（prefers-reduced-motion）対応
+### Requirement 4: アクセシビリティ（prefers-reduced-motion）対応（Phase A / Phase B 共通）
 
 **Objective:** As a 視覚刺激を抑えたいユーザー, I want OS の「動きを減らす」設定を有効にしたときにアニメーションが停止する, so that めまい・体調不良を避けながら Mosaku を安全に使える
 
@@ -99,7 +104,7 @@ Mosakuの差別化軸は「ハイセンスなデザイン・テーマ数の多�
 3. Where Phase B の JSエフェクトが含まれる場合, the Mosaku Theme System shall login-visual-redesign 由来の `useReducedMotion` フックを再利用して OS 設定を検出する
 4. While `prefers-reduced-motion: reduce` が有効な状態で, the Mosaku Theme System shall アニメーション停止後も森テーマの配色（背景グラデーション・フォーム色味）は維持する
 
-### Requirement 5: テーマシステムのJSエフェクト基盤化
+### Requirement 5: テーマシステムのJSエフェクト基盤化（Phase B）
 
 **Objective:** As a Mosaku開発者, I want テーマが任意で JSエフェクトコンポーネントを持てる汎用設計にしたい, so that 将来の夜空テーマ（流れ星）や桜テーマ（花びらパーティクル）でも同じ仕組みを再利用できる
 
@@ -111,7 +116,7 @@ Mosakuの差別化軸は「ハイセンスなデザイン・テーマ数の多�
 4. The Mosaku Theme System shall 本基盤を追加するにあたり、`mori` 以外の既存テーマ（kami/aka/kuro/siro/ao/code）の定義を変更しない
 5. The Mosaku Theme System shall 新規 JSライブラリを追加せず、React と既存フック（login-visual-redesign 由来の `ForestAnimationLayer` / `ParticleCanvas` / `useReducedMotion`）のみで基盤を実現する
 
-### Requirement 6: `mori` 選択時の JSエフェクト動的マウント（コード分割）
+### Requirement 6: `mori` 選択時の JSエフェクト動的マウント（Phase B / コード分割）
 
 **Objective:** As a 他テーマ利用者, I want `mori` テーマを使わない限り JSエフェクトのコードが自分のバンドルに混ざらない, so that 軽量メモアプリとしての読み込み速度を維持できる
 
@@ -123,7 +128,7 @@ Mosakuの差別化軸は「ハイセンスなデザイン・テーマ数の多�
 4. When `mori` テーマから他テーマに切り替えた時, the Mosaku Theme System shall マウント済みの JSエフェクトコンポーネントを DOM から除去し、起動中の `requestAnimationFrame` をすべて `cancelAnimationFrame` で停止する
 5. The Mosaku Theme System shall JSエフェクトのマウント・アンマウントにあたって既存の認証フローおよびメモ編集ロジックに副作用を与えない
 
-### Requirement 7: JSエフェクトのパフォーマンス自動制御
+### Requirement 7: JSエフェクトのパフォーマンス自動制御（Phase B）
 
 **Objective:** As a 執筆中のMosakuユーザー, I want メモを書いている間・タブを閉じている間・触っていない間はエフェクトが止まる, so that バッテリー・CPU を無駄に消費せず執筆体験が妨げられない
 

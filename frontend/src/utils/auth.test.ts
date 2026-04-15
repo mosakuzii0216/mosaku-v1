@@ -131,12 +131,10 @@ describe('AuthAPI.register()', () => {
 	it('正しいエンドポイントを呼び出す', async () => {
 		const mockFetch = vi.fn().mockResolvedValue({
 			ok: true,
-			json: vi
-				.fn()
-				.mockResolvedValue({
-					message: 'ok',
-					user: { id: '1', email: 'e', name: 'n', role: 'USER', createdAt: '', updatedAt: '' },
-				}),
+			json: vi.fn().mockResolvedValue({
+				message: 'ok',
+				user: { id: '1', email: 'e', name: 'n', role: 'USER', createdAt: '', updatedAt: '' },
+			}),
 		});
 		vi.stubGlobal('fetch', mockFetch);
 

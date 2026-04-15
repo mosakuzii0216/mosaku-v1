@@ -35,7 +35,8 @@ env:
   PROJECT_ID: igneous-core-480923-j0
   REGION: asia-northeast1
   SERVICE_NAME: mosaku-backend-staging
-  IMAGE_NAME: gcr.io/igneous-core-480923-j0/mosaku-backend
+  # Artifact Registry のイメージパス（asia-northeast1 の mosaku-backend リポジトリ配下の api イメージ）
+  IMAGE_NAME: asia-northeast1-docker.pkg.dev/igneous-core-480923-j0/mosaku-backend/api
 
 jobs:
   # ===========================================================================
@@ -130,8 +131,8 @@ jobs:
         with:
           project_id: ${{ env.PROJECT_ID }}
 
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker --quiet
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker asia-northeast1-docker.pkg.dev --quiet
 
       # -----------------------------------------------------------------------
       # staging- プレフィックス付きタグでビルド
