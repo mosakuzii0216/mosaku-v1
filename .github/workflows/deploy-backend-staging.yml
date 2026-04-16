@@ -116,15 +116,21 @@ jobs:
     name: Deploy to Staging
     needs: migrate-staging
     runs-on: ubuntu-latest
+    # Workload Identity Federation で OIDC トークンを発行するために必要
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # GitHub Actions の OIDC トークンを GCP が検証して、SA の短寿命トークンを発行
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          workload_identity_provider: projects/129805115778/locations/global/workloadIdentityPools/github/providers/github
+          service_account: github-actions@igneous-core-480923-j0.iam.gserviceaccount.com
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
