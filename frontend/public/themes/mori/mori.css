@@ -1,39 +1,154 @@
-/* mori: 緑系のテーマ */
+/* mori: Mosaku ブランドテーマ（ログイン画面と同じ深緑の森の世界観） */
 
-/* 1. CSS変数の定義とベーススタイル */
+/* 1. ルートトークンとベーススタイル */
 .theme-root {
-	/* カラー */
-	--theme-bg: linear-gradient(70deg, #00552e, #47885e);
-	--theme-text-color: #86efac;
-	--theme-heading-color: #86efac;
-	--theme-accent-color: #22c55e;
-	--theme-border-color: #86efac;
+	/* カラー（login-visual-redesign と同トーン） */
+	--theme-bg: linear-gradient(135deg, #00552e, #1a4d2e, #47885e, #1a4d2e, #00552e);
+	--theme-text-color: #e7f5ec;
+	--theme-heading-color: #f0fdf4;
+	--theme-accent-color: #86efac;
+	--theme-border-color: rgba(134, 239, 172, 0.35);
 
 	/* タイポグラフィ */
 	--theme-font-family:
 		'游明朝', 'Yu Mincho', 'YuMincho', 'ヒラギノ明朝 ProN', 'Hiragino Mincho ProN',
 		'Times New Roman', serif;
 	--theme-font-size: 16px;
-	--theme-line-height: 2;
+	--theme-line-height: 1.9;
 
 	/* レイアウト */
 	--theme-padding: 2rem;
 	--theme-margin: 1rem;
-	--theme-border-radius: 0.5rem;
+	--theme-border-radius: 0.75rem;
 
-	/* ベーススタイルの適用 */
+	position: relative;
 	background: var(--theme-bg);
-	background-size: 200% 200%;
-	animation: gradientShift 10s ease infinite;
+	background-size: 400% 400%;
 	color: var(--theme-text-color);
-	padding: var(--theme-padding);
-	border-radius: var(--theme-border-radius);
 	font-family: var(--theme-font-family);
 	font-size: var(--theme-font-size);
 	line-height: var(--theme-line-height);
+	animation: wave-pulse 12s ease-in-out infinite;
 }
 
-/* 2. タイトル */
+/* 2. 霧（fog-drift）擬似要素 2 層 */
+.theme-root::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+	filter: blur(40px);
+	pointer-events: none;
+	animation: fog-drift 22s ease-in-out infinite;
+	z-index: 0;
+}
+
+.theme-root::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+	filter: blur(30px);
+	pointer-events: none;
+	animation: fog-drift 28s ease-in-out infinite;
+	animation-delay: 9s;
+	z-index: 0;
+}
+
+/* 3. サイドバー */
+.theme-root .app-sidebar {
+	background: rgba(0, 41, 21, 0.55);
+	color: var(--theme-text-color);
+	border-right: 1px solid var(--theme-border-color);
+	backdrop-filter: blur(8px);
+}
+
+.theme-root .app-sidebar__item {
+	color: var(--theme-text-color);
+	border-radius: 0.375rem;
+	transition:
+		background-color 150ms ease,
+		color 150ms ease;
+}
+
+.theme-root .app-sidebar__item:hover {
+	background-color: rgba(134, 239, 172, 0.12);
+	color: var(--theme-heading-color);
+}
+
+/* 4. ヘッダー */
+.theme-root .app-header {
+	background: rgba(0, 41, 21, 0.55);
+	color: var(--theme-text-color);
+	border-bottom: 1px solid var(--theme-border-color);
+	backdrop-filter: blur(8px);
+}
+
+.theme-root .app-header__brand {
+	color: var(--theme-heading-color);
+	font-weight: 700;
+	letter-spacing: 0.03em;
+}
+
+/* 5. フォーム系 UI */
+.theme-root input,
+.theme-root textarea {
+	background-color: rgba(255, 255, 255, 0.08);
+	color: var(--theme-text-color);
+	border: 1px solid var(--theme-border-color);
+	border-radius: var(--theme-border-radius);
+	caret-color: var(--theme-accent-color);
+}
+
+.theme-root input::placeholder,
+.theme-root textarea::placeholder {
+	color: rgba(231, 245, 236, 0.55);
+}
+
+.theme-root input:focus,
+.theme-root input:focus-visible,
+.theme-root textarea:focus,
+.theme-root textarea:focus-visible {
+	outline: 2px solid var(--theme-accent-color);
+	outline-offset: 2px;
+	border-color: var(--theme-accent-color);
+}
+
+.theme-root button {
+	background-color: rgba(134, 239, 172, 0.18);
+	color: var(--theme-heading-color);
+	border: 1px solid var(--theme-border-color);
+	border-radius: var(--theme-border-radius);
+	transition:
+		background-color 150ms ease,
+		border-color 150ms ease;
+}
+
+.theme-root button:hover {
+	background-color: rgba(134, 239, 172, 0.28);
+	border-color: var(--theme-accent-color);
+}
+
+.theme-root button:focus-visible {
+	outline: 2px solid var(--theme-accent-color);
+	outline-offset: 2px;
+}
+
+.theme-root a {
+	color: var(--theme-accent-color);
+	text-decoration: underline;
+}
+
+.theme-root a:hover {
+	color: #bbf7d0;
+}
+
+.theme-root a:focus-visible {
+	outline: 2px solid var(--theme-accent-color);
+	outline-offset: 2px;
+}
+
+/* 6. メモタイトル */
 .theme-root .memo-title {
 	color: var(--theme-heading-color);
 	font-size: 2rem;
@@ -44,41 +159,21 @@
 }
 
 .theme-root .memo-title::placeholder {
-	color: rgba(21, 128, 61, 0.5);
+	color: rgba(231, 245, 236, 0.5);
 }
 
-/* 3. コンテンツエリア */
+/* 7. メモ本文 */
 .theme-root .memo-content {
 	color: var(--theme-text-color);
 	font-size: var(--theme-font-size);
 	line-height: var(--theme-line-height);
+	position: relative;
+	z-index: 1;
 }
 
-/* 4. 見出し */
-.theme-root .memo-content h1 {
-	color: var(--theme-heading-color);
-	font-size: 2rem;
-	font-weight: 600;
-	margin-top: 1.5rem;
-	margin-bottom: 0.75rem;
-}
-
-.theme-root .memo-content h2 {
-	color: var(--theme-heading-color);
-	font-size: 1.5rem;
-	font-weight: 600;
-	margin-top: 1.5rem;
-	margin-bottom: 0.75rem;
-}
-
-.theme-root .memo-content h3 {
-	color: var(--theme-heading-color);
-	font-size: 1.25rem;
-	font-weight: 600;
-	margin-top: 1.5rem;
-	margin-bottom: 0.75rem;
-}
-
+.theme-root .memo-content h1,
+.theme-root .memo-content h2,
+.theme-root .memo-content h3,
 .theme-root .memo-content h4,
 .theme-root .memo-content h5,
 .theme-root .memo-content h6 {
@@ -88,12 +183,22 @@
 	margin-bottom: 0.75rem;
 }
 
-/* 5. 段落 */
+.theme-root .memo-content h1 {
+	font-size: 2rem;
+}
+
+.theme-root .memo-content h2 {
+	font-size: 1.5rem;
+}
+
+.theme-root .memo-content h3 {
+	font-size: 1.25rem;
+}
+
 .theme-root .memo-content p {
 	margin-bottom: 1rem;
 }
 
-/* 6. 強調・斜体・取消線 */
 .theme-root .memo-content strong {
 	font-weight: 700;
 	color: var(--theme-heading-color);
@@ -108,7 +213,6 @@
 	opacity: 0.7;
 }
 
-/* 7. リスト */
 .theme-root .memo-content ul,
 .theme-root .memo-content ol {
 	margin-left: 1.5rem;
@@ -119,52 +223,48 @@
 	margin-bottom: 0.5rem;
 }
 
-/* 8. 引用 */
 .theme-root .memo-content blockquote {
 	border-left: 4px solid var(--theme-accent-color);
 	padding-left: 1rem;
 	margin-left: 0;
 	margin-bottom: 1rem;
-	color: rgba(13, 43, 26, 0.8);
+	color: rgba(231, 245, 236, 0.8);
 	font-style: italic;
 }
 
-/* 9. コードブロック */
 .theme-root .memo-content pre {
-	background-color: rgba(34, 197, 94, 0.1);
+	background-color: rgba(0, 41, 21, 0.55);
 	border: 1px solid var(--theme-border-color);
-	border-radius: 0.25rem;
+	border-radius: 0.375rem;
 	padding: 1rem;
 	overflow-x: auto;
 	margin-bottom: 1rem;
 }
 
 .theme-root .memo-content code {
-	background-color: rgba(34, 197, 94, 0.1);
+	background-color: rgba(0, 41, 21, 0.55);
 	padding: 0.2rem 0.4rem;
-	border-radius: 0.25rem;
+	border-radius: 0.375rem;
 	font-family: 'Monaco', 'Courier New', monospace;
 	font-size: 0.9em;
 }
 
-/* 10. 水平線 */
 .theme-root .memo-content hr {
 	border: none;
 	border-top: 2px solid var(--theme-border-color);
 	margin: 2rem 0;
 }
 
-/* 11. リンク */
 .theme-root .memo-content a {
 	color: var(--theme-accent-color);
 	text-decoration: underline;
 }
 
 .theme-root .memo-content a:hover {
-	color: var(--theme-heading-color);
+	color: #bbf7d0;
 }
 
-/* 12. レスポンシブ */
+/* 8. レスポンシブ */
 @media (max-width: 768px) {
 	.theme-root {
 		padding: 1rem;
@@ -187,8 +287,19 @@
 	}
 }
 
-/* 13. アニメーション */
-@keyframes gradientShift {
+/* 9. アクセシビリティ（prefers-reduced-motion: reduce）
+   アニメーションだけ停止し、森パレット・背景グラデは維持 */
+@media (prefers-reduced-motion: reduce) {
+	.theme-root,
+	.theme-root::before,
+	.theme-root::after {
+		animation: none;
+	}
+}
+
+/* 10. keyframes — `.theme-root` スコープ外に展開される前提でも、
+   他テーマは mori.css を読み込まないため名前衝突は発生しない */
+@keyframes wave-pulse {
 	0% {
 		background-position: 0% 50%;
 	}
@@ -197,5 +308,22 @@
 	}
 	100% {
 		background-position: 0% 50%;
+	}
+}
+
+@keyframes fog-drift {
+	0% {
+		transform: translateX(-10%);
+		opacity: 0;
+	}
+	30% {
+		opacity: 0.35;
+	}
+	70% {
+		opacity: 0.25;
+	}
+	100% {
+		transform: translateX(15%);
+		opacity: 0;
 	}
 }
