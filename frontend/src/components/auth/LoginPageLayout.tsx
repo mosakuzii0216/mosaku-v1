@@ -1,6 +1,6 @@
 import React from 'react';
-import { ForestAnimationLayer } from './ForestAnimationLayer';
-import { ParticleCanvas } from './ParticleCanvas';
+import { ForestAnimationLayer } from '../effects/ForestAnimationLayer';
+import { ParticleCanvas } from '../effects/ParticleCanvas';
 
 interface LoginPageLayoutProps {
 	children: React.ReactNode;
