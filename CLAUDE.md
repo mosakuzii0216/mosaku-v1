@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-このファイルはリポジトリのコードを扱う際に Claude Code (claude.ai/code) へのガイダンスを提供します。
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 アーキテクチャ・技術スタック・ディレクトリ構成の詳細は `.kiro/steering/` を参照してください。
 
@@ -9,11 +9,13 @@
 ### モノレポコマンド（ルートから実行）
 
 ```bash
-npm install       # 全依存関係をインストール
-npm run dev       # フロントエンド・バックエンドを同時起動
-npm run build     # 両プロジェクトをビルド
-npm run lint      # 全コードをリント
-npm run format    # 全コードをフォーマット
+npm install          # 全依存関係をインストール
+npm run dev          # フロントエンド・バックエンドを同時起動
+npm run build        # 両プロジェクトをビルド
+npm run lint         # 全コードをリント
+npm run format       # 全コードをフォーマット
+npm run format:check # フォーマットチェック（CIと同等）
+npm run setup-hooks  # Git フック（pre-commit / pre-push）をインストール
 ```
 
 ### Docker 環境
@@ -29,7 +31,8 @@ docker-compose up --build  # リビルドして再起動
 ```bash
 cd backend
 npm run start:dev     # ホットリロード付き開発サーバー
-npm run test          # ユニットテスト
+npm run test          # 全ユニットテスト
+npm run test -- --testPathPattern=memo.service  # 単一ファイルのテスト
 npm run test:e2e      # E2E テスト
 npm run test:cov      # カバレッジレポート
 npx prisma migrate dev    # マイグレーション作成・適用
@@ -45,6 +48,9 @@ cd frontend
 npm run dev       # ポート 5173 で開発サーバー起動
 npm run build     # TypeScript チェック + Vite ビルド
 npm run preview   # 本番ビルドをプレビュー
+npm run test      # Vitest で全テスト実行
+npm run test -- src/hooks/useAutoSave.test.ts  # 単一ファイルのテスト
+npm run test:e2e  # Playwright E2E テスト
 ```
 
 ## デプロイアーキテクチャ
@@ -72,9 +78,16 @@ npm run preview   # 本番ビルドをプレビュー
 - `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`
 - `VITE_GOOGLE_CLIENT_ID` / `VITE_GITHUB_CLIENT_ID`
 
+## Git フック
+
+`npm run setup-hooks` で以下のフックがインストールされる:
+
+- **pre-commit**: ステージ済みファイルを Prettier で自動フォーマットし再ステージ
+- **pre-push**: `prisma generate` → ESLint → TypeScript 型チェック（frontend）を実行。いずれかが失敗すると push がブロックされる
+
 ## よくある落とし穴
 
-1. **Prisma クライアントが見つからない**: スキーマ変更後に `npx prisma generate` を実行（生成先は `backend/generated/prisma/`）
+1. **Prisma クライアントが見つからない**: スキーマ変更後に `npx prisma generate` を実行（生成先は `node_modules/@prisma/client`）
 2. **CORS エラー**: `CORS_ORIGINS` にフロントエンドの URL が含まれているか確認
 3. **OAuth リダイレクト不一致**: コールバック URL が `{BACKEND_URL}/auth/{provider}/callback` に一致しているか確認
 4. **マイグレーション競合**: 新しいマイグレーションを作成する前に最新のマイグレーションをプル
