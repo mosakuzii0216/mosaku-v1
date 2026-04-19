@@ -5,6 +5,9 @@ import { usePaletteStore } from '../../stores/usePaletteStore';
 import { useNavigation } from '../../hooks/useNavigation';
 import { useMemo as useMemoQuery } from '../../hooks/useMemoQueries';
 import { useAppInit } from '../../hooks/useAppInit';
+import { useActiveTheme } from '../../hooks/useActiveTheme';
+import { useThemeCSS } from '../../hooks/useThemeCSS';
+import { ThemeEffectHost } from '../effects/ThemeEffectHost';
 import { Header } from '../ui/Header';
 import { MemoEditor } from '../memo/MemoEditor';
 import { MemoList } from '../memo/MemoList';
@@ -20,6 +23,8 @@ export const MobileLayout = () => {
 	const { paletteOpen, paletteMode, closeMemoPalette, openMemoPalette } = usePaletteStore();
 	const { goToMemoCreate, goToNotebookCreate } = useNavigation();
 	const { data: selectedMemo } = useMemoQuery(selectedMemoId ?? '');
+	const activeTheme = useActiveTheme();
+	useThemeCSS(activeTheme);
 	useAppInit(); // アプリ初期化（タグロード等）
 
 	// ショートカットキーのハンドリング
@@ -103,8 +108,12 @@ export const MobileLayout = () => {
 	};
 
 	return (
-		<div className="h-screen flex flex-col bg-white">
+		<div
+			className={`h-screen flex flex-col bg-white ${activeTheme ? 'theme-root' : ''}`}
+			data-theme-id={activeTheme?.id}
+		>
 			<Header onMemoCreateClick={goToMemoCreate} onNotebookCreateClick={goToNotebookCreate} />
+			<ThemeEffectHost theme={activeTheme} />
 			<main className="flex-1 overflow-hidden">{renderContent()}</main>
 
 			{/* メモパレット */}

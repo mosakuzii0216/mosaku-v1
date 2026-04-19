@@ -5,6 +5,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import Mention from '@tiptap/extension-mention';
 import { suggestion, setNotebooksData } from './suggestion';
 import { useNotebooks } from '../../hooks/useNotebookQueries';
+import { useEditorFocusStore } from '../../stores/useEditorFocusStore';
 
 interface RichTextEditorProps {
 	content: string;
@@ -34,6 +35,8 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 		setNotebooksData(validNotebooks);
 	}, [notebooks]);
 
+	const setEditorFocused = useEditorFocusStore((s) => s.setEditorFocused);
+
 	const editor = useEditor({
 		extensions: [
 			StarterKit,
@@ -55,6 +58,12 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 		onUpdate: ({ editor }) => {
 			onChange(editor.getHTML());
 		},
+		onFocus: () => {
+			setEditorFocused(true);
+		},
+		onBlur: () => {
+			setEditorFocused(false);
+		},
 		editorProps: {
 			attributes: {
 				class:
@@ -62,6 +71,12 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 			},
 		},
 	});
+
+	React.useEffect(() => {
+		return () => {
+			setEditorFocused(false);
+		};
+	}, [setEditorFocused]);
 
 	React.useEffect(() => {
 		if (editor && content !== editor.getHTML()) {

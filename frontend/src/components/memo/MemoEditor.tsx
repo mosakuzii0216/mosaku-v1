@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useCreateMemo, useUpdateMemo, useDeleteMemo } from '../../hooks/useMemoQueries';
 import { useNotebooks } from '../../hooks/useNotebookQueries';
 import { useTagQueries } from '../../hooks/useTagQueries';
-import { useThemeCSS } from '../../hooks/useThemeCSS';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import { useMemoDataStore } from '../../stores/useMemoDataStore';
 import { useViewStore } from '../../stores/useViewStore';
@@ -22,7 +21,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	const deleteMemo = useDeleteMemo();
 	const { assignTags, tagsQuery } = useTagQueries();
 	const tags = tagsQuery.data ?? [];
-	const { data: notebooks = [] } = useNotebooks();
 	const setSelectedMemoId = useMemoDataStore((s) => s.setSelectedMemoId);
 	const setCurrentView = useViewStore((s) => s.setCurrentView);
 
@@ -34,12 +32,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	const [selectedNotebookId, setSelectedNotebookId] = useState<string>(memo?.notebookId || '');
 
 	const [hasChanges, setHasChanges] = useState(false);
-
-	// 選択されたノートブックのテーマを動的に取得
-	const selectedNotebook = notebooks.find((nb) => nb.id === selectedNotebookId);
-	logger.debug('Selected Notebook:', selectedNotebook);
-	const selectedTheme = selectedNotebook?.theme || memo?.notebook?.theme || null;
-	logger.debug('Selected Theme:', selectedTheme);
 
 	// useAutoSave に渡す派生値（レンダリング中に同期計算）
 	const isSaving = createMemo.isPending || updateMemo.isPending;
@@ -142,9 +134,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 		}
 	}, [memo, isCreate, cancelDebounce]);
 
-	// テーマCSSの読み込み
-	useThemeCSS(selectedTheme);
-
 	// 変更検知
 	useEffect(() => {
 		const originalTitle = memo?.title || '';
@@ -194,10 +183,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	}, [hasChanges, title, content, handleSave, cancelDebounce]);
 
 	return (
-		<div
-			className={`flex flex-col h-full ${selectedTheme ? 'theme-root' : ''}`}
-			data-theme-id={selectedTheme?.id}
-		>
+		<div className="flex flex-col h-full">
 			{/* ヘッダー */}
 			<div className="border-b border-gray-200 p-4 flex items-center justify-end">
 				<div className="flex items-center space-x-2">
