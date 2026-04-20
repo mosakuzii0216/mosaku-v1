@@ -36,19 +36,19 @@
 
 ### 今週やったこと
 
-- **`mosaku-brand-theme` 実装完了**（28/28 タスク完了）
+- **`mosaku-brand-theme` 実装完了 → `implementation-validated` で確定**（28/28 タスク完了、2026-04-21 検証）
   - `mori` テーマを深緑の森ブランドテーマに全面リライト
   - テーマエフェクト基盤を新設（`ThemeEffectKey` 契約 / `themeEffectRegistry` / `ThemeEffectHost` / `useEditorFocusStore` / `useMoriEffectControl` / `useActiveTheme`）
   - エフェクトコンポーネントを `frontend/src/components/effects/` に集約（共通: `ForestAnimationLayer` / `ParticleCanvas`、mori専用: `mori/MoriEffectLayer`）
   - mori テーマレコードに `effectKey: 'mori'` メタデータを追加するマイグレーションを backend に投入
   - バンドル分離・ライフサイクル・a11y 検証テストを追加
+  - `/kiro:validate-impl` 結果: Vitest 256/256 緑、`MoriEffectLayer-*.js` が独立チャンク化、要件 1〜7 全トレース可能 → GO
 - **`auth-register-invitation-refactor`** が `implementation-validated` で完了
 - **CLAUDE.md 更新**（コミット `70431de`）
 - **CI 改善**: Backend デプロイ認証を Workload Identity Federation に移行 / Artifact Registry 移行 / Slack 通知の安全化
 
 ### 来週の予定
 
-- `mosaku-brand-theme` の `/kiro:validate-impl` 実行 → `spec.json` を `completed` に
 - `/kiro:steering` で steering ファイルを再同期（今回手動で更新したが、コード進化に追従するため）
 - Phase 1 の spec 3 本を `spec-init`：
   - `dogfooding-friction-log`（ドッグフーディング摩擦記録の運用と仕組み）

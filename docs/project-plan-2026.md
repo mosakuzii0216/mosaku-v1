@@ -1,7 +1,7 @@
 # Mosaku プロジェクト計画（2026年3月〜12月）
 
 作成日: 2026-03-14
-最終更新: 2026-04-20
+最終更新: 2026-04-21
 
 ---
 
@@ -145,11 +145,11 @@
 
 #### 4月追加（計画外ボーナス）✅
 
-| タスク                                                                | cc-sddフロー                                                | 時間 | 状況                                 |
-| --------------------------------------------------------------------- | ----------------------------------------------------------- | ---- | ------------------------------------ |
-| ログイン画面ビジュアルリデザイン（深緑の森テーマ）                    | spec-init → requirements → design → tasks → impl            | —    | ✅                                   |
-| 招待コード登録フローのリファクタ（auth-register-invitation-refactor） | spec-init → requirements → design → tasks → impl → validate | —    | ✅                                   |
-| Mosaku ブランドテーマ（mori 全面リライト + エフェクト基盤）           | spec-init → requirements → design → tasks → impl            | —    | ✅（28/28 完了、validate-impl 待ち） |
+| タスク                                                                | cc-sddフロー                                                | 時間 | 状況                                    |
+| --------------------------------------------------------------------- | ----------------------------------------------------------- | ---- | --------------------------------------- |
+| ログイン画面ビジュアルリデザイン（深緑の森テーマ）                    | spec-init → requirements → design → tasks → impl            | —    | ✅                                      |
+| 招待コード登録フローのリファクタ（auth-register-invitation-refactor） | spec-init → requirements → design → tasks → impl → validate | —    | ✅                                      |
+| Mosaku ブランドテーマ（mori 全面リライト + エフェクト基盤）           | spec-init → requirements → design → tasks → impl → validate | —    | ✅（28/28、`implementation-validated`） |
 
 > `login-visual-redesign`: 深緑グラデーション背景 + CSS 霧/葉/波アニメーション + マウスパーティクル（Canvas API）+ 森テーマフォーム。外部ライブラリ追加ゼロ。`useReducedMotion` フック + タッチデバイス検出でアクセシビリティ対応。テスト 167/167 passed、FCP 2084ms。
 >
