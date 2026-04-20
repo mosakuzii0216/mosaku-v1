@@ -48,6 +48,19 @@
 **Purpose**: テーマごとの CSS 変数定義。DBにはパス・メタデータのみ保存
 **Example**: `themes/nature/ocean-breeze.css`
 
+### テーマエフェクト基盤
+
+**Location**:
+
+- `frontend/src/components/effects/` — エフェクトコンポーネント（共通: `ForestAnimationLayer` / `ParticleCanvas` / `ThemeEffectHost`、テーマ専用: `mori/MoriEffectLayer`）
+- `frontend/src/themes/themeEffectRegistry.ts` — `effectKey → () => Promise<{ default: ComponentType }>` の静的マッピング（Vite のコード分割が効くよう import パスを文字列リテラルで固定）
+- `frontend/src/hooks/useActiveTheme.ts` — 編集中メモ → 選択中ノートブック → null の優先順でアクティブテーマを解決
+- `frontend/src/hooks/useMoriEffectControl.ts` — `prefers-reduced-motion` / エディタフォーカス / `visibilityState` / マウスアイドル の 4 条件を監視して `shouldRun` を返す
+- `frontend/src/stores/useEditorFocusStore.ts` — TipTap のフォーカス状態を保持する Zustand ストア
+
+**Purpose**: テーマごとの追加 JS エフェクト（背景・パーティクル等）をテーマ単位で動的ロードする。非エフェクトテーマには独立チャンクをロードしないことでバンドルを汚さない
+**Pattern**: テーマ定義の `metadata.effectKey` でエフェクトを宣言 → `ThemeEffectHost` がレジストリ経由で `React.lazy` マウント → 共通エフェクトコンポーネントは `paused` prop で停止可能
+
 ## Naming Conventions
 
 - **ファイル**: `kebab-case.ts`（バックエンド）、`PascalCase.tsx`（Reactコンポーネント）、`camelCase.ts`（hooks/stores/utils）

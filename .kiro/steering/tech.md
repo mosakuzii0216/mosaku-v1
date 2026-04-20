@@ -7,7 +7,7 @@ TypeScriptモノレポ。`backend/`（NestJS API）と `frontend/`（React SPA�
 ## Core Technologies
 
 - **Language**: TypeScript（backend・frontend 共通）
-- **Backend**: NestJS 11、Prisma ORM、Node.js 20+
+- **Backend**: NestJS 11、Prisma ORM、Node.js 22+（ルート `package.json` の `engines` で統一）
 - **Frontend**: React 19、Vite 6、Tailwind CSS 3
 - **Database**: PostgreSQL（Supabase）、Prisma client は `node_modules/@prisma/client` に生成（デフォルト）
 
@@ -44,7 +44,7 @@ TypeScriptモノレポ。`backend/`（NestJS API）と `frontend/`（React SPA�
 
 ### Required Tools
 
-- Node.js 20+
+- Node.js 22+
 - Docker（ローカル開発用）
 
 ### Common Commands
@@ -74,6 +74,8 @@ cd backend && npx prisma generate
 - **Prisma client の生成場所**: `node_modules/@prisma/client`（デフォルト）。スキーマ変更後は `npx prisma generate` 必須
 - **テーマは CSS ファイルで管理**: `frontend/public/themes/{category}/{name}.css`。CSS 変数で色・タイポグラフィを定義し、DBにはメタデータのみ保存
 - **AuthService の責務分離**: `AuthService`（ユーザー管理）、`JwtTokenService`（JWT発行・検証）、`OAuthService`（OAuth処理）の3クラスに分離済み
+- **テーマエフェクトはコード分割でロード**: `themeEffectRegistry` の動的 import を `React.lazy` で遅延ロードし、エフェクト未指定テーマでは独立チャンクをネットワーク層でも取得しない。エフェクト用の新規 JS ライブラリは追加しない方針（CSS keyframes + Canvas API のみで完結させる）
+- **テーマエフェクトの自動停止条件**: `prefers-reduced-motion` / エディタフォーカス中 / タブ非表示 / マウス3秒アイドル のいずれかで RAF を停止し、CPU・GPU負荷をエディタ作業時に渡す
 
 ---
 
