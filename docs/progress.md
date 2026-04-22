@@ -32,6 +32,31 @@
 
 ---
 
+## 2026-04-23（Phase 1 spec 整理）
+
+### 今週やったこと
+
+- **`dogfooding-friction-log` を archive**（`.kiro/specs/_archived/dogfooding-friction-log/` に移動）
+  - 要件・設計・タスク生成まで進めたが、永続性レビューで「Mosaku 本体に残すべき機能が無い」と判断
+  - 摩擦ログは既存 `memo` + `notebook` + `tag` で運用ルール（タグ命名規約 `#blocker` / `#major` / `#spec-done` 等、`Friction Log` ノートブック手動作成、金曜トリアージ）として達成可能
+  - 専用機能（Slack 通知 / トリアージ UI / クイックキャプチャショートカット / ADMIN ゲート）はドッグフーディング期間限定でユーザー公開後にテックデブト化するため不採用
+  - 汎用価値がありそうな「ノートブック単位のテンプレート」機能は、必要になった時点で別 spec として再起票
+
+### 来週の予定
+
+- `sentry-integration`・`uptime-monitoring` の spec-init / requirements に着手
+- ドッグフーディング運用ルールを `.kiro/steering/` または `CLAUDE.md` に短く追記するか検討
+
+### ブロッカー・懸念
+
+- なし
+
+### メモ
+
+- 「あとで削除するのが面倒」を判断軸にすると、Phase 1 ドッグフーディング期間中の自分専用機能は基本的に作らない方が筋が良いと再確認
+
+---
+
 ## 2026-04-20（Phase 0完了 → Phase 1移行間）
 
 ### 今週やったこと
