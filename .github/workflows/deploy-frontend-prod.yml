@@ -3,12 +3,12 @@
 # =============================================================================
 #
 # 概要:
-#   stg（Vercel Preview）での動作確認後、手動で Vercel Production へデプロイする
-#   main push による自動デプロイは deploy-frontend.yml（Preview/Staging）を使用
+#   frontend/ 配下のコードが main ブランチにマージされたとき、
+#   CI チェック通過後に Vercel Production へデプロイする
 #
 # トリガー:
-#   - 手動実行のみ（GitHub Actions UI から Run workflow）
-#   - ステージング確認後にトリガーすること
+#   - main ブランチへの push (frontend/ 配下の変更時)
+#   - 手動実行 (GitHub Actions UI から Run workflow)
 #
 # 前提条件:
 #   - GitHub Secrets に以下が登録されていること:
@@ -23,7 +23,13 @@
 name: Deploy Frontend to Vercel (Production)
 
 on:
-  # 手動実行のみ（stg 確認後にトリガー）
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - 'vercel.json'
+      - '.github/workflows/deploy-frontend-prod.yml'
   workflow_dispatch:
     inputs:
       ref:
@@ -127,6 +133,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**URL:** ${{ steps.deploy.outputs.deploy-url }}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Ref:** ${{ github.event.inputs.ref || github.ref }}" >> $GITHUB_STEP_SUMMARY
 
   # ===========================================================================
   # Job 3: Slack通知

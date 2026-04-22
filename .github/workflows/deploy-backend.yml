@@ -1,5 +1,5 @@
 # =============================================================================
-# バックエンド自動デプロイワークフロー
+# バックエンド本番デプロイワークフロー
 # =============================================================================
 #
 # 概要:
@@ -7,11 +7,11 @@
 #   自動的にテスト → ビルド → Cloud Run へデプロイを行う
 #
 # トリガー:
+#   - main ブランチへの push (backend/ 配下の変更時)
 #   - 手動実行 (GitHub Actions の UI から)
-#   - ステージング確認後、手動で本番デプロイを実行する運用を想定
 #
 # 前提条件:
-#   - GitHub Secrets に GCP_SA_KEY が登録されていること
+#   - Workload Identity Federation が設定されていること
 #   - サービスアカウントに必要な権限が付与されていること
 #     - roles/run.admin
 #     - roles/storage.admin
@@ -23,7 +23,12 @@
 name: Deploy Backend to Cloud Run (Production)
 
 on:
-  # 手動実行のみ（ステージング確認後にトリガー）
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
   workflow_dispatch:
     inputs:
       ref:
