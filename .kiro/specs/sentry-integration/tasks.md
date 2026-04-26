@@ -48,27 +48,27 @@
   - 認証済み `/memo` と公開 `/auth/invitation-validate` に対する e2e テストで scope 挙動（ユーザー ID 付与 / 匿名維持）を検証する
   - _Requirements: 1.2, 1.4, 1.5, 1.6, 2.1, 2.2, 2.5, 2.6, 3.4, 4.3, 4.4, 5.3, 5.6, 7.2, 7.5, 10.3_
 
-- [ ] 3. Frontend Sentry 共通コンポーネント層の実装
-- [ ] 3.1 (P) Frontend の PII スクラブ純関数を実装し TipTap JSON ドキュメント・React Query cache snapshot・form state を `[REDACTED]` 化する
+- [x] 3. Frontend Sentry 共通コンポーネント層の実装
+- [x] 3.1 (P) Frontend の PII スクラブ純関数を実装し TipTap JSON ドキュメント・React Query cache snapshot・form state を `[REDACTED]` 化する
   - Backend scrubber と同じ契約（キー名ブラックリスト + 値の正規表現）を共有し、`breadcrumbs[].data` と `formData` も走査対象とする
   - TipTap の `content` プロパティ（JSON ドキュメント）は深さ制限 4 階層で text ノードを `[REDACTED]` に置換する
   - メモ本文を含む event と招待コードを含む event それぞれが redact されるユニットテストを追加する
   - _Requirements: 3.2, 3.3, 3.6_
 
-- [ ] 3.2 (P) envValidator を拡張し Sentry 関連 env を optional 型安全に取得できるようにする
+- [x] 3.2 (P) envValidator を拡張し Sentry 関連 env を optional 型安全に取得できるようにする
   - `sentryDsn` / `sentryEnvironment` / `sentryRelease` / `sentryTracesSampleRate` を `EnvConfig` に追加する
   - DSN のみ存在し environment 未指定の場合は `production` に fallback するバリデーションを入れる
   - 既存 env の挙動に regression が出ないことをユニットテストで担保する
   - _Requirements: 1.3, 2.5_
 
-- [ ] 3.3 (P) React Router v7 の pathname 変化を Sentry タグ `route` に同期する `useSentryRouteTag` フックを実装する
+- [x] 3.3 (P) React Router v7 の pathname 変化を Sentry タグ `route` に同期する `useSentryRouteTag` フックを実装する
   - `useLocation` + `useEffect` で pathname を監視し `Sentry.getCurrentScope().setTag('route', pathname)` を呼ぶ
   - 2 route 遷移で setTag が 2 回呼ばれることを vitest + react-router test utilities で検証する
   - 動的セグメントの high-cardinality 問題は MVP では pathname そのまま送信し、パターン化は後続改善として detail コメントに残す
   - _Requirements: 9.1, 9.3_
 
-- [ ] 4. Frontend Sentry SDK 初期化と認証 / ルーティング層への統合
-- [ ] 4.1 (P) `main.tsx` の `Sentry.init` を Production 運用レベルに拡張する
+- [x] 4. Frontend Sentry SDK 初期化と認証 / ルーティング層への統合
+- [x] 4.1 (P) `main.tsx` の `Sentry.init` を Production 運用レベルに拡張する
   - `enabled: !!VITE_SENTRY_DSN` ガードを維持し、未設定時は初期化スキップと `Sentry disabled: VITE_SENTRY_DSN not set` の 1 行ログを出力する
   - `environment` / `release` / `tracesSampleRate` / `sendDefaultPii: false` を env 経由で設定し、ローカル開発は既定でサンプリング 0
   - `reactRouterV7BrowserTracingIntegration` を組み込み route ベース transaction を開始する
@@ -77,13 +77,13 @@
   - Vercel Preview でも `environment: production` で初期化し `release` タグ（git sha）でメインラインと識別できる構成にする
   - _Requirements: 1.3, 1.4, 1.5, 1.6, 2.3, 2.4, 2.5, 2.6, 3.4, 5.4, 5.6, 7.1, 7.3, 7.5, 10.3_
 
-- [ ] 4.2 (P) `AuthContext` の認証フローに `Sentry.setUser` 副作用を追加する
+- [x] 4.2 (P) `AuthContext` の認証フローに `Sentry.setUser` 副作用を追加する
   - `handleAuthSuccess` 成功後に `Sentry.setUser({ id: userProfile.id })` のみを呼び、email / OAuth provider / display name を絶対に渡さない
   - `logout` と token refresh 失敗ルートで `Sentry.setUser(null)` を呼び scope を明示的にクリアする
   - login → logout のフローで id → null の順に呼ばれること、email / OAuth 情報が引数に含まれないことを単体テストで検証する
   - _Requirements: 4.1, 4.2, 4.5_
 
-- [ ] 4.3 (P) `App.tsx` で `useSentryRouteTag` を配置し実行時に route タグを継続反映する
+- [x] 4.3 (P) `App.tsx` で `useSentryRouteTag` を配置し実行時に route タグを継続反映する
   - `RouterProvider` 配下で 1 回だけ呼び出し、各画面遷移で setTag が自動更新される状態にする
   - 既存の App 初期化ロジックや Suspense 境界と干渉しないことを smoke レベルで確認する
   - _Requirements: 9.1, 9.3_
