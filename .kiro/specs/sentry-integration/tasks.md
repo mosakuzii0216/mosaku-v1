@@ -88,22 +88,22 @@
   - 既存の App 初期化ロジックや Suspense 境界と干渉しないことを smoke レベルで確認する
   - _Requirements: 9.1, 9.3_
 
-- [ ] 5. (P) Vite ビルドに `@sentry/vite-plugin` を組み込み Source Map を Sentry にアップロードしつつ公開物から削除する
+- [x] 5. (P) Vite ビルドに `@sentry/vite-plugin` を組み込み Source Map を Sentry にアップロードしつつ公開物から削除する
   - `vite.config.ts` の plugins に `@sentry/vite-plugin` を `VitePWA` の後に追加し、`VITE_SENTRY_RELEASE` を release 名として渡す
   - `build.sourcemap: true` を有効化しつつ `sourcemaps.filesToDeleteAfterUpload: ['**/*.js.map']` で最終成果物から `.map` を除去する
   - `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT` 未設定時は `disable: true` で plugin を自動無効化し、ローカルビルドや PR プレビューを壊さない
   - source map upload 失敗は CI の warning に留めデプロイをブロックしない挙動を確認する
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-- [ ] 6. CI ワークフローに Sentry リリース情報とトークン管理を注入する
-- [ ] 6.1 (P) Backend デプロイワークフロー（`deploy-backend.yml`）を拡張し Cloud Run に `SENTRY_RELEASE` / `SENTRY_ENVIRONMENT` / サンプリング率 env を投入する
+- [x] 6. CI ワークフローに Sentry リリース情報とトークン管理を注入する
+- [x] 6.1 (P) Backend デプロイワークフロー（`deploy-backend.yml`）を拡張し Cloud Run に `SENTRY_RELEASE` / `SENTRY_ENVIRONMENT` / サンプリング率 env を投入する
   - Cloud Run の `--set-env-vars` に `SENTRY_RELEASE=${{ github.sha }}` / `SENTRY_ENVIRONMENT=production` / `SENTRY_TRACES_SAMPLE_RATE=0.1` / `SENTRY_PROFILES_SAMPLE_RATE=0.1` を追加する
   - deploy 後に `npx @sentry/cli releases new` → `set-commits --auto` → `finalize` を実行する release ジョブを追加する
   - 新規 GitHub Secrets（`SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT_BACKEND`）を参照できるよう env を定義する
   - 既存 `SLACK_WEBHOOK_URL` は CI 通知専用として触らない（Sentry → Slack はネイティブ統合側に寄せる）
   - _Requirements: 5.1, 5.5_
 
-- [ ] 6.2 (P) Frontend デプロイワークフロー（`deploy-frontend-prod.yml`）を拡張し Vercel ビルドに `VITE_SENTRY_RELEASE` と `SENTRY_AUTH_TOKEN` を渡す
+- [x] 6.2 (P) Frontend デプロイワークフロー（`deploy-frontend-prod.yml`）を拡張し Vercel ビルドに `VITE_SENTRY_RELEASE` と `SENTRY_AUTH_TOKEN` を渡す
   - `build-check` と `deploy` の両ジョブに `VITE_SENTRY_RELEASE: ${{ github.sha }}` / `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT_FRONTEND` を export する
   - vite-plugin がリリース登録と source map upload を担うため CLI 呼び出しは fallback 用にのみ残し、失敗時は warning ログだけに留めデプロイを止めない
   - build 後の post-check で `dist/**/*.map` が空であることを確認し、万一 map が残っている場合はジョブを fail させる
