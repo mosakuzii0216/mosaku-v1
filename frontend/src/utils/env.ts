@@ -4,6 +4,8 @@
 
 import { logger } from './logger';
 
+export type SentryEnvironment = 'development' | 'production';
+
 interface EnvConfig {
 	// バックエンドURL
 	backendUrl: string;
@@ -16,6 +18,11 @@ interface EnvConfig {
 	googleClientId?: string;
 	githubClientId?: string;
 	xConsumerKey?: string;
+	// Sentry 関連（オプショナル - DSN を起点に有効化される）
+	sentryDsn?: string;
+	sentryEnvironment?: SentryEnvironment;
+	sentryRelease?: string;
+	sentryTracesSampleRate?: number;
 }
 
 class EnvironmentValidator {
@@ -52,6 +59,40 @@ class EnvironmentValidator {
 	}
 
 	/**
+	 * Sentry environment を型安全に解決する。DSN ありで未指定なら production に fallback。
+	 */
+	private resolveSentryEnvironment(
+		raw: string | undefined,
+		dsn: string | undefined,
+	): SentryEnvironment | undefined {
+		if (!raw) {
+			return dsn ? 'production' : undefined;
+		}
+		if (raw !== 'development' && raw !== 'production') {
+			throw new Error(
+				`Sentry Environment must be "development" or "production" (received "${raw}"). Please set VITE_SENTRY_ENVIRONMENT.`,
+			);
+		}
+		return raw;
+	}
+
+	/**
+	 * Sentry traces sample rate を数値として安全に解決する。
+	 */
+	private resolveSentryTracesSampleRate(raw: string | undefined): number | undefined {
+		if (!raw) {
+			return undefined;
+		}
+		const parsed = Number.parseFloat(raw);
+		if (!Number.isFinite(parsed)) {
+			throw new Error(
+				`Sentry Traces Sample Rate must be a finite number (received "${raw}"). Please set VITE_SENTRY_TRACES_SAMPLE_RATE.`,
+			);
+		}
+		return parsed;
+	}
+
+	/**
 	 * 環境変数を検証して設定オブジェクトを初期化
 	 */
 	validate(): EnvConfig {
@@ -60,6 +101,15 @@ class EnvironmentValidator {
 		}
 
 		try {
+			const sentryDsn = this.getOptionalEnv('VITE_SENTRY_DSN');
+			const sentryEnvironment = this.resolveSentryEnvironment(
+				this.getOptionalEnv('VITE_SENTRY_ENVIRONMENT'),
+				sentryDsn,
+			);
+			const sentryTracesSampleRate = this.resolveSentryTracesSampleRate(
+				this.getOptionalEnv('VITE_SENTRY_TRACES_SAMPLE_RATE'),
+			);
+
 			this.config = {
 				// 必須の環境変数
 				backendUrl: this.getRequiredEnv('Backend URL', 'VITE_BACKEND_URL'),
@@ -70,6 +120,11 @@ class EnvironmentValidator {
 				googleClientId: this.getOptionalEnv('VITE_GOOGLE_CLIENT_ID'),
 				githubClientId: this.getOptionalEnv('VITE_GITHUB_CLIENT_ID'),
 				xConsumerKey: this.getOptionalEnv('VITE_X_CONSUMER_KEY'),
+				// Sentry 関連
+				sentryDsn,
+				sentryEnvironment,
+				sentryRelease: this.getOptionalEnv('VITE_SENTRY_RELEASE'),
+				sentryTracesSampleRate,
 			};
 
 			// 開発環境でのデバッグログ
@@ -81,6 +136,8 @@ class EnvironmentValidator {
 					hasGoogleClientId: !!this.config.googleClientId,
 					hasGithubClientId: !!this.config.githubClientId,
 					hasXConsumerKey: !!this.config.xConsumerKey,
+					hasSentryDsn: !!this.config.sentryDsn,
+					sentryEnvironment: this.config.sentryEnvironment,
 				});
 			}
 
@@ -108,6 +165,13 @@ class EnvironmentValidator {
 			return this.validate();
 		}
 		return this.config;
+	}
+
+	/**
+	 * テスト用にキャッシュをクリアする。プロダクションコードからは呼ばないこと。
+	 */
+	reset(): void {
+		this.config = null;
 	}
 }
 
