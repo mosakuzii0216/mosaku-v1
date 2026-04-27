@@ -1,4 +1,14 @@
 import { Injectable } from '@nestjs/common';
+import { SENTRY_ENV_KEYS } from '../common/sentry/sentry-env-keys';
+
+export interface SentryConfig {
+	readonly dsn?: string;
+	readonly environment: 'development' | 'production';
+	readonly release?: string;
+	readonly tracesSampleRate: number;
+	readonly profilesSampleRate: number;
+	readonly debugEnabled: boolean;
+}
 
 @Injectable()
 export class ConfigService {
@@ -146,15 +156,53 @@ export class ConfigService {
 	}
 
 	// URL生成ヘルパー
-	generateSuccessRedirectUrl(accessToken: string, user: any): string {
+	generateSuccessRedirectUrl(accessToken: string, user: unknown): string {
 		return `${this.frontendUrl}?token=${accessToken}&user=${encodeURIComponent(JSON.stringify(user))}`;
 	}
 
-	generateInvitationRequiredUrl(providerName: string, userData: any): string {
+	generateInvitationRequiredUrl(providerName: string, userData: unknown): string {
 		return `${this.frontendUrl}?error=invitation_required&${providerName.toLowerCase()}_user=${encodeURIComponent(JSON.stringify(userData))}`;
 	}
 
 	generateAuthFailedUrl(): string {
 		return `${this.frontendUrl}?error=auth_failed`;
+	}
+
+	// Sentry 設定
+	get sentry(): SentryConfig {
+		const environment = this.resolveSentryEnvironment();
+		const defaultSampleRate = environment === 'production' ? 0.1 : 0;
+		const release = process.env[SENTRY_ENV_KEYS.RELEASE];
+
+		return {
+			dsn: process.env[SENTRY_ENV_KEYS.DSN],
+			environment,
+			release: release && release.length > 0 ? release : undefined,
+			tracesSampleRate: this.parseSampleRate(
+				process.env[SENTRY_ENV_KEYS.TRACES_SAMPLE_RATE],
+				defaultSampleRate,
+			),
+			profilesSampleRate: this.parseSampleRate(
+				process.env[SENTRY_ENV_KEYS.PROFILES_SAMPLE_RATE],
+				defaultSampleRate,
+			),
+			debugEnabled: process.env[SENTRY_ENV_KEYS.DEBUG_ENABLED] === 'true',
+		};
+	}
+
+	private resolveSentryEnvironment(): 'development' | 'production' {
+		const explicit = process.env[SENTRY_ENV_KEYS.ENVIRONMENT];
+		if (explicit === 'production' || explicit === 'development') {
+			return explicit;
+		}
+		return process.env.NODE_ENV === 'production' ? 'production' : 'development';
+	}
+
+	private parseSampleRate(raw: string | undefined, fallback: number): number {
+		if (raw === undefined || raw.length === 0) {
+			return fallback;
+		}
+		const parsed = Number.parseFloat(raw);
+		return Number.isFinite(parsed) ? parsed : fallback;
 	}
 }
