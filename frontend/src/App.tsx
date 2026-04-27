@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { useViewStore } from './stores/useViewStore';
 import { useWindowSize } from './hooks/useWindowSize';
+import { useSentryRouteTag } from './hooks/useSentryRouteTag';
 import { MobileLayout } from './components/layouts/MobileLayout';
 import { DesktopLayout } from './components/layouts/DesktopLayout';
 import AuthGuard from './components/auth/AuthGuard';
@@ -23,6 +24,11 @@ const queryClient = new QueryClient({
 		},
 	},
 });
+
+function RouteTracker() {
+	useSentryRouteTag();
+	return null;
+}
 
 function AppContent() {
 	const { isMobile, setIsMobile } = useViewStore();
@@ -45,6 +51,7 @@ function App() {
 		<QueryClientProvider client={queryClient}>
 			<AuthProvider>
 				<Router>
+					<RouteTracker />
 					<Routes>
 						<Route path="/auth/callback" element={<AuthCallback />} />
 						<Route path="/auth/reset-password" element={<PasswordReset />} />

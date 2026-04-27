@@ -12,6 +12,7 @@ import { AuthAPI, AuthTokenManager } from '../utils/auth';
 import type { UserProfile, OAuthUserData } from '../utils/auth';
 import { useEmailAuth, initializeEmailAuth, performLogout } from '../hooks/useEmailAuth';
 import { useOAuth, type OAuthProvider } from '../hooks/useOAuth';
+import { useSentryAuthSync } from '../hooks/useSentryAuthSync';
 import { logger } from '../utils/logger';
 
 // 状態の型定義
@@ -75,6 +76,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	// カスタムフックを使用
 	const emailAuth = useEmailAuth();
 	const oauth = useOAuth();
+
+	// Sentry scope を user state に同期する（id のみ。email / provider は渡さない）
+	useSentryAuthSync(user);
 
 	// 認証成功時のハンドラー
 	const handleAuthSuccess = useCallback((token: string, userProfile: UserProfile) => {
