@@ -10,9 +10,10 @@ import { ConfigModule } from './config/config.module';
 import { NotebookModule } from './notebook/notebook.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
-import { APP_GUARD, APP_FILTER } from '@nestjs/core';
+import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { SentryGlobalFilter } from '@sentry/nestjs/setup';
 import { AppController } from './app.controller';
+import { SentryUserContextInterceptor } from './common/sentry/sentry-user-context.interceptor';
 
 @Module({
 	controllers: [AppController],
@@ -42,6 +43,11 @@ import { AppController } from './app.controller';
 		{
 			provide: APP_GUARD,
 			useClass: ThrottlerGuard,
+		},
+		// 認証済みリクエストの間だけ Sentry scope に { id } を載せる side-car
+		{
+			provide: APP_INTERCEPTOR,
+			useClass: SentryUserContextInterceptor,
 		},
 	],
 })
