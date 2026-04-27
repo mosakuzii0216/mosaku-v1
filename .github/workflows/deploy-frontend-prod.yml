@@ -48,6 +48,14 @@ jobs:
   build-check:
     name: Build Check
     runs-on: ubuntu-latest
+    env:
+      # @sentry/vite-plugin がリリース登録 + source map upload を行うために必要な 4 点
+      # SENTRY_AUTH_TOKEN 未設定時はプラグインが自動 disable されるため、
+      # build-check 自体は forks / シークレット未配布の環境でも壊れない
+      VITE_SENTRY_RELEASE: ${{ github.sha }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT_FRONTEND }}
 
     steps:
       - name: Checkout code
@@ -71,6 +79,17 @@ jobs:
       - name: ビルド確認
         run: npm run build -w frontend
 
+      # vite-plugin の filesToDeleteAfterUpload で .map は削除される想定だが、
+      # plugin disable / 設定ミスで .map が公開物に混入すると内部コードが流出する
+      # ため CI で必ず post-check し、残っていたらジョブを fail させる
+      - name: Verify source maps are removed from dist
+        run: |
+          if find frontend/dist -name "*.map" -type f | grep -q .; then
+            echo "::error::Source map files were not removed from frontend/dist"
+            find frontend/dist -name "*.map" -type f
+            exit 1
+          fi
+
   # ===========================================================================
   # Job 2: Vercel へプロダクションデプロイ
   # ===========================================================================
@@ -79,6 +98,14 @@ jobs:
     needs: build-check
     runs-on: ubuntu-latest
     environment: production  # GitHub Environment による承認ゲート
+    env:
+      # vercel build → vite build に process.env として継承される
+      # SENTRY_AUTH_TOKEN 未設定時は @sentry/vite-plugin が自動 disable
+      # アップロード失敗は CI の warning に留めデプロイをブロックしない（Req 6.4）
+      VITE_SENTRY_RELEASE: ${{ github.sha }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT_FRONTEND }}
 
     steps:
       # -----------------------------------------------------------------------

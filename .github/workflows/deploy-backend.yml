@@ -223,12 +223,18 @@ jobs:
       # Step 6: Cloud Run へデプロイ
       # -----------------------------------------------------------------------
       # コミットSHAタグのイメージを使用（トレーサビリティのため）
+      # --update-env-vars で Sentry 用 env を「上書きせず追記」する
+      #   - SENTRY_RELEASE: Sentry のリリース突合キー (= git sha)
+      #   - SENTRY_ENVIRONMENT: 単一プロジェクト運用なので production 固定
+      #   - SENTRY_TRACES_SAMPLE_RATE / SENTRY_PROFILES_SAMPLE_RATE: 月次 quota を超えないため 0.1 既定
+      # SENTRY_DSN は Secret Manager から `--set-secrets` で別途投入（Task 7.1）
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image=${{ env.IMAGE_NAME }}:${{ github.sha }} \
             --region=${{ env.REGION }} \
             --platform=managed \
+            --update-env-vars="SENTRY_RELEASE=${{ github.sha }},SENTRY_ENVIRONMENT=production,SENTRY_TRACES_SAMPLE_RATE=0.1,SENTRY_PROFILES_SAMPLE_RATE=0.1" \
             --quiet
 
       # -----------------------------------------------------------------------
@@ -246,9 +252,57 @@ jobs:
           echo "**Image:** ${{ env.IMAGE_NAME }}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
 
   # ===========================================================================
-  # Job 3: Slack通知
+  # Job 4: Sentry リリース登録
   # ===========================================================================
-  # デプロイの成功/失敗をSlackに通知
+  # Cloud Run デプロイが成功した後、Sentry に release タグを作成 → コミット紐付け → finalize
+  # 失敗してもデプロイ自体は成功扱いとする（observability は correctness を妨げない）
+  # ===========================================================================
+  sentry-release:
+    name: Sentry Release Tracking
+    needs: deploy
+    if: success()
+    runs-on: ubuntu-latest
+    env:
+      # Sentry CLI が参照する 3 点セット。Project は backend 専用 secret を流す
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT_BACKEND }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || 'main' }}
+          # set-commits --auto がコミット履歴を解析するため shallow clone では不足
+          fetch-depth: 0
+
+      # シークレット未設定の組織でもワークフロー全体を fail させない fallback
+      - name: Detect missing Sentry secrets
+        id: gate
+        run: |
+          if [ -z "$SENTRY_AUTH_TOKEN" ] || [ -z "$SENTRY_ORG" ] || [ -z "$SENTRY_PROJECT" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::Sentry release tracking skipped: SENTRY_AUTH_TOKEN / SENTRY_ORG / SENTRY_PROJECT_BACKEND が未設定"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Sentry release
+        if: steps.gate.outputs.skip == 'false'
+        run: npx --yes @sentry/cli releases new ${{ github.sha }}
+
+      - name: Associate commits with release
+        if: steps.gate.outputs.skip == 'false'
+        run: npx --yes @sentry/cli releases set-commits ${{ github.sha }} --auto
+
+      - name: Finalize Sentry release
+        if: steps.gate.outputs.skip == 'false'
+        run: npx --yes @sentry/cli releases finalize ${{ github.sha }}
+
+  # ===========================================================================
+  # Job 5: Slack通知
+  # ===========================================================================
+  # デプロイの成功/失敗をSlackに通知（Sentry → Slack はネイティブ統合側で処理）
   # ===========================================================================
   notify:
     name: Slack Notification
