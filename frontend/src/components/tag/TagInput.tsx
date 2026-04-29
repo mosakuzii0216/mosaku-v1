@@ -33,14 +33,12 @@ export const TagInput = ({
 	const { data: tags = [] } = useTags();
 	const createTag = useCreateTag();
 
-	// 検索とフィルタリング
 	const filteredTags = tags.filter(
 		(tag) =>
 			tag.name.toLowerCase().includes(input.toLowerCase()) &&
 			!selectedTags.some((selected) => selected.id === tag.id),
 	);
 
-	// 外部クリックでドロップダウンを閉じる
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
 			if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -96,7 +94,6 @@ export const TagInput = ({
 
 	return (
 		<div className="relative" ref={dropdownRef}>
-			{/* 選択されたタグ表示 */}
 			<div className="flex flex-wrap gap-2 mb-2">
 				{selectedTags.map((tag) => (
 					<span
@@ -116,7 +113,6 @@ export const TagInput = ({
 				))}
 			</div>
 
-			{/* 入力フィールド */}
 			<div className="relative">
 				<input
 					ref={inputRef}
@@ -129,10 +125,8 @@ export const TagInput = ({
 					className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 				/>
 
-				{/* ドロップダウン */}
 				{isOpen && (
 					<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
-						{/* 既存タグ */}
 						{filteredTags.map((tag) => (
 							<button
 								key={tag.id}
@@ -148,7 +142,6 @@ export const TagInput = ({
 							</button>
 						))}
 
-						{/* 新規タグ作成 */}
 						{input.trim() &&
 							!tags.some((tag) => tag.name.toLowerCase() === input.toLowerCase()) && (
 								<button
@@ -161,7 +154,6 @@ export const TagInput = ({
 								</button>
 							)}
 
-						{/* 空の状態 */}
 						{filteredTags.length === 0 && !input.trim() && (
 							<div className="px-3 py-2 text-gray-500 text-center">タグを入力してください</div>
 						)}
