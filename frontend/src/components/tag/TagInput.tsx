@@ -1,12 +1,24 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTags, useCreateTag } from '../../hooks/useTagQueries';
 import type { Tag } from '../../types/memo';
+import { logger } from '../../utils/logger';
 
 interface TagInputProps {
 	selectedTags: Tag[];
 	onTagsChange: (tags: Tag[]) => void;
 	placeholder?: string;
 }
+
+const DEFAULT_TAG_COLORS = [
+	'#3B82F6',
+	'#EF4444',
+	'#10B981',
+	'#F59E0B',
+	'#8B5CF6',
+	'#F97316',
+	'#06B6D4',
+	'#84CC16',
+] as const;
 
 export const TagInput = ({
 	selectedTags,
@@ -20,18 +32,6 @@ export const TagInput = ({
 
 	const { data: tags = [] } = useTags();
 	const createTag = useCreateTag();
-
-	// タグの色のデフォルト
-	const defaultColors = [
-		'#3B82F6',
-		'#EF4444',
-		'#10B981',
-		'#F59E0B',
-		'#8B5CF6',
-		'#F97316',
-		'#06B6D4',
-		'#84CC16',
-	];
 
 	// 検索とフィルタリング
 	const filteredTags = tags.filter(
@@ -66,7 +66,7 @@ export const TagInput = ({
 		if (!input.trim()) return;
 
 		try {
-			const randomColor = defaultColors[Math.floor(Math.random() * defaultColors.length)];
+			const randomColor = DEFAULT_TAG_COLORS[Math.floor(Math.random() * DEFAULT_TAG_COLORS.length)];
 			const newTag = await createTag.mutateAsync({
 				name: input.trim(),
 				color: randomColor,
@@ -74,7 +74,7 @@ export const TagInput = ({
 
 			handleTagSelect(newTag);
 		} catch (error) {
-			console.error('Failed to create tag:', error);
+			logger.error('Failed to create tag:', error);
 		}
 	};
 
