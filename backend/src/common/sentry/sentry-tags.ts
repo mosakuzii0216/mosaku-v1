@@ -1,11 +1,3 @@
-/**
- * Sentry beforeSend 内で event に構造化タグを付与する純関数群。
- * - feature_area: URL prefix から推定
- * - user_facing: 5xx のみ true
- * - controller / handler: NestJS の transaction プロパティから抽出
- * - route: pathname （クエリ文字列除外）
- */
-
 export type FeatureArea =
 	| 'memo'
 	| 'notebook'

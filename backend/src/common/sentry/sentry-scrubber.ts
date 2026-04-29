@@ -1,11 +1,3 @@
-/**
- * Sentry beforeSend フック内で event の PII をマスクする純関数群。
- * - キー名ブラックリスト + 値の正規表現の二軸で redact する
- * - 元 event を破壊変更しない（新規オブジェクトを返す）
- * - WeakSet で循環参照をガードする
- * - 10KB を超える文字列は truncate してから redact する
- */
-
 export const DEFAULT_REDACTABLE_KEYS: ReadonlySet<string> = new Set([
 	'content',
 	'body',
