@@ -8,7 +8,6 @@
 import type { ThemeSearchParams } from '../types/theme';
 
 export const queryKeys = {
-	// メモ関連
 	memos: {
 		all: ['memos'] as const,
 		lists: () => [...queryKeys.memos.all, 'list'] as const,
@@ -21,21 +20,18 @@ export const queryKeys = {
 		trash: () => [...queryKeys.memos.all, 'trash'] as const,
 	},
 
-	// ノートブック関連
 	notebooks: {
 		all: ['notebooks'] as const,
 		details: () => [...queryKeys.notebooks.all, 'detail'] as const,
 		detail: (id: string) => [...queryKeys.notebooks.details(), id] as const,
 	},
 
-	// タグ関連
 	tags: {
 		all: ['tags'] as const,
 		searches: () => [...queryKeys.tags.all, 'search'] as const,
 		search: (query: string) => [...queryKeys.tags.searches(), query] as const,
 	},
 
-	// テーマ関連
 	themes: {
 		all: ['themes'] as const,
 		lists: () => [...queryKeys.themes.all, 'list'] as const,

@@ -15,14 +15,12 @@ import { useOAuth, type OAuthProvider } from '../hooks/useOAuth';
 import { useSentryAuthSync } from '../hooks/useSentryAuthSync';
 import { logger } from '../utils/logger';
 
-// 状態の型定義
 export interface AuthState {
 	user: UserProfile | null;
 	loading: boolean;
 	isAuthenticated: boolean;
 }
 
-// アクションの型定義
 export interface AuthActions {
 	// Email認証
 	login: (email: string, password: string) => Promise<void>;
@@ -73,14 +71,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	const [user, setUser] = useState<UserProfile | null>(null);
 	const [loading, setLoading] = useState(true);
 
-	// カスタムフックを使用
 	const emailAuth = useEmailAuth();
 	const oauth = useOAuth();
 
 	// Sentry scope を user state に同期する（id のみ。email / provider は渡さない）
 	useSentryAuthSync(user);
 
-	// 認証成功時のハンドラー
 	const handleAuthSuccess = useCallback((token: string, userProfile: UserProfile) => {
 		AuthTokenManager.setAccessToken(token);
 		setUser(userProfile);
@@ -125,7 +121,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		initialize();
 	}, [oauth.handleCallback, handleAuthSuccess, handleInvitationRequired]);
 
-	// Email認証アクション
 	const login = useCallback(
 		async (email: string, password: string): Promise<void> => {
 			const userProfile = await emailAuth.login(email, password);
@@ -160,13 +155,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		[emailAuth],
 	);
 
-	// ログアウト
 	const logout = useCallback(async (): Promise<void> => {
 		setUser(null);
 		await performLogout();
 	}, []);
 
-	// ユーザー情報更新
 	const refreshUser = useCallback(async (): Promise<void> => {
 		try {
 			if (AuthTokenManager.isAuthenticated()) {
@@ -180,7 +173,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		}
 	}, []);
 
-	// OAuthアクション
 	const googleLogin = useCallback(() => oauth.startLogin('google'), [oauth]);
 	const githubLogin = useCallback(() => oauth.startLogin('github'), [oauth]);
 	const lineLogin = useCallback(() => oauth.startLogin('line'), [oauth]);
@@ -237,18 +229,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	);
 
 	const value: AuthContextType = {
-		// 状態
 		user,
 		loading,
 		isAuthenticated: !!user && AuthTokenManager.isAuthenticated(),
-
-		// Email認証
 		login,
 		register,
 		resetPassword,
 		changePassword,
-
-		// OAuth認証
 		googleLogin,
 		googleRegisterWithInvitation,
 		githubLogin,
@@ -259,8 +246,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		appleRegisterWithInvitation,
 		xLogin,
 		xRegisterWithInvitation,
-
-		// 共通
 		logout,
 		refreshUser,
 	};
