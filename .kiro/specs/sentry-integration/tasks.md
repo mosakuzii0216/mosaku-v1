@@ -110,11 +110,15 @@
   - _Requirements: 5.2, 5.5, 6.4_
 
 - [ ] 7. Sentry Platform 設定と Production 初回 smoke test
+  - **状態**: コード/ドキュメント側準備は完了。Sentry / Cloud Run / Vercel / Slack の管理画面操作はユーザー手動対応待ち。
+  - runbook: `docs/deployment/sentry.md`（§1〜§4 を参照）
+
 - [ ] 7.1 Sentry Production プロジェクトを作成し DSN / Auth Token を Cloud Run Secret Manager / Vercel / GitHub Secrets に投入する
   - 単一 Sentry プロジェクトを作成し Vercel Preview も相乗りで `environment: production` タグ運用とする
   - Cloud Run 側は Secret Manager に `sentry-dsn` を登録し `deploy-backend.yml` から参照する
   - Vercel 側は `VITE_SENTRY_DSN` / `VITE_SENTRY_ENVIRONMENT` を Production / Preview 両方の環境変数に登録する
   - `SENTRY_AUTH_TOKEN` は Release Management 権限のみに絞り GitHub Secrets に登録する
+  - **完了条件**: `docs/deployment/sentry.md` §1〜§2 の手順をユーザーが実施し、対応 Secret/Env がすべて登録済みであること
   - _Requirements: 1.1, 1.7_
 
 - [ ] 7.2 Sentry Alert Rule と Slack ネイティブ統合を Production 環境限定で設定する
@@ -122,6 +126,7 @@
   - alert payload に issue title / environment / release / 影響ユーザー数 / Sentry リンクが含まれることを確認する
   - Slack rate-limit 時のリトライは Sentry 側に任せる fire-and-forget 構成とし、per-`release` のチャネル分岐は行わない
   - Webhook / Issue-created event の受け口を有効化し Phase 2 の AI pipeline が後付けで subscribe できる状態にする（本スペックでは AI ロジックは実装しない）
+  - **完了条件**: `docs/deployment/sentry.md` §3 の手順をユーザーが実施し、Alert Rule 2 件と Slack 統合と Internal Integration（Webhook 受け口）が稼働していること
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 9.4, 9.5_
 
 - [ ] 7.3 Production 初回デプロイ後の smoke test を実施して release タグ・可読スタック・Slack 通知を検証する
@@ -129,6 +134,10 @@
   - Sentry UI 上で `environment: production` / `release: <git-sha>` / `feature_area` / `route` タグと source map による可読スタックトレースが 10 分以内に揃うことを確認する
   - Slack `#mosaku-alerts` に通知が届き、issue link から直接 Sentry Issue に到達できることを確認する
   - PII マスク漏れが無いこと（メモ本文 / 招待コード / JWT が `[REDACTED]` になっていること）を event payload で目視確認する
+  - **コード側準備完了**:
+    - Backend: `GET /debug-sentry`（`SENTRY_DEBUG_ENABLED=true` のときだけ稼働、平常時は 404）を `backend/src/app.controller.ts` に実装。`SentrySmokeTestError` は `instrument.ts` の `ignoreErrors` に該当しないため Sentry に確実に届く。
+    - Tests: `backend/src/app.controller.spec.ts` / `backend/test/debug-sentry.e2e-spec.ts` で 4xx/500 挙動を担保。
+  - **完了条件**: `docs/deployment/sentry.md` §4 の手順をユーザーが実施し、§4.5 のチェックリストがすべて埋まること
   - _Requirements: 6.5_
 
 - [ ] 8. ドキュメントと Steering の最新化
