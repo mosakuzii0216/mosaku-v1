@@ -1,4 +1,4 @@
-import type { Tag, MemoTag } from '../../types/memo';
+import type { Tag, MemoTag } from '../../types/tag';
 
 interface TagDisplayProps {
 	tags?: MemoTag[];

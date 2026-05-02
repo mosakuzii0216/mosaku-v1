@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { useTags, useCreateTag } from '../../hooks/useTagQueries';
-import type { Tag } from '../../types/memo';
+import { useTagQueries } from '../../hooks/useTagQueries';
+import type { Tag } from '../../types/tag';
 import { logger } from '../../utils/logger';
 
 interface TagInputProps {
@@ -30,11 +30,11 @@ export const TagInput = ({
 	const inputRef = useRef<HTMLInputElement>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 
-	const { data: tags = [] } = useTags();
-	const createTag = useCreateTag();
+	const { tagsQuery, createTag, isCreating } = useTagQueries();
+	const tags = tagsQuery.data ?? [];
 
 	const filteredTags = tags.filter(
-		(tag) =>
+		(tag: Tag) =>
 			tag.name.toLowerCase().includes(input.toLowerCase()) &&
 			!selectedTags.some((selected) => selected.id === tag.id),
 	);
@@ -65,7 +65,7 @@ export const TagInput = ({
 
 		try {
 			const randomColor = DEFAULT_TAG_COLORS[Math.floor(Math.random() * DEFAULT_TAG_COLORS.length)];
-			const newTag = await createTag.mutateAsync({
+			const newTag = await createTag({
 				name: input.trim(),
 				color: randomColor,
 			});
@@ -127,7 +127,7 @@ export const TagInput = ({
 
 				{isOpen && (
 					<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
-						{filteredTags.map((tag) => (
+						{filteredTags.map((tag: Tag) => (
 							<button
 								key={tag.id}
 								type="button"
@@ -143,11 +143,11 @@ export const TagInput = ({
 						))}
 
 						{input.trim() &&
-							!tags.some((tag) => tag.name.toLowerCase() === input.toLowerCase()) && (
+							!tags.some((tag: Tag) => tag.name.toLowerCase() === input.toLowerCase()) && (
 								<button
 									type="button"
 									onClick={handleCreateTag}
-									disabled={createTag.isPending}
+									disabled={isCreating}
 									className="w-full px-3 py-2 text-left hover:bg-gray-100 text-blue-600 font-medium border-t border-gray-200"
 								>
 									+ 「{input}」を作成
