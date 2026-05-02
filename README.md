@@ -68,10 +68,3 @@ npx prisma studio          # Prisma Studio起動
 npx prisma migrate dev      # マイグレーション実行
 npx prisma generate         # Prismaクライアント生成
 ```
-
-
-## ドキュメント
-
-- **[デプロイ手順](./docs/deployment/)** - Cloud Run / Vercel へのデプロイ
-- **[開発ガイド](./docs/development/)** - 開発関連のドキュメント
-- **[CLAUDE.md](./CLAUDE.md)** - Claude Code向けのプロジェクト説明書
