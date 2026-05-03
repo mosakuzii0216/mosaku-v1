@@ -223,11 +223,12 @@ jobs:
       # Step 6: Cloud Run へデプロイ
       # -----------------------------------------------------------------------
       # コミットSHAタグのイメージを使用（トレーサビリティのため）
-      # --update-env-vars で Sentry 用 env を「上書きせず追記」する
+      # --update-env-vars / --update-secrets で「上書きせず追記」する
+      # （--set-env-vars / --set-secrets は既存設定を全削除するため絶対に使わない）
       #   - SENTRY_RELEASE: Sentry のリリース突合キー (= git sha)
       #   - SENTRY_ENVIRONMENT: 単一プロジェクト運用なので production 固定
       #   - SENTRY_TRACES_SAMPLE_RATE / SENTRY_PROFILES_SAMPLE_RATE: 月次 quota を超えないため 0.1 既定
-      # SENTRY_DSN は Secret Manager の `sentry-dsn` から `--set-secrets` で投入
+      # SENTRY_DSN は Secret Manager の `sentry-dsn` から `--update-secrets` で投入
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
@@ -235,7 +236,7 @@ jobs:
             --region=${{ env.REGION }} \
             --platform=managed \
             --update-env-vars="SENTRY_RELEASE=${{ github.sha }},SENTRY_ENVIRONMENT=production,SENTRY_TRACES_SAMPLE_RATE=0.1,SENTRY_PROFILES_SAMPLE_RATE=0.1" \
-            --set-secrets="SENTRY_DSN=sentry-dsn:latest" \
+            --update-secrets="SENTRY_DSN=sentry-dsn:latest" \
             --quiet
 
       # -----------------------------------------------------------------------

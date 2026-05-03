@@ -13,6 +13,9 @@ export default defineConfig({
 			includeAssets: ['vite.svg', 'themes/*.css', 'apple-touch-icon.png'],
 			devOptions: { enabled: false },
 			workbox: {
+				// Service Worker / workbox runtime の .map は Sentry vite-plugin の削除対象外で
+				// dist に残ってしまうため、生成自体を抑止する（SW は数十行で source map 不要）
+				sourcemap: false,
 				globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}', 'themes/*.css'],
 				navigateFallback: '/index.html',
 				runtimeCaching: [
