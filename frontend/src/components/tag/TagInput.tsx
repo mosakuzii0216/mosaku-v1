@@ -2,23 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { useTagQueries } from '../../hooks/useTagQueries';
 import type { Tag } from '../../types/tag';
 import { logger } from '../../utils/logger';
+import { DEFAULT_TAG_COLORS, FALLBACK_TAG_COLOR } from './tagColors';
 
 interface TagInputProps {
 	selectedTags: Tag[];
 	onTagsChange: (tags: Tag[]) => void;
 	placeholder?: string;
 }
-
-const DEFAULT_TAG_COLORS = [
-	'#3B82F6',
-	'#EF4444',
-	'#10B981',
-	'#F59E0B',
-	'#8B5CF6',
-	'#F97316',
-	'#06B6D4',
-	'#84CC16',
-] as const;
 
 export const TagInput = ({
 	selectedTags,
@@ -99,7 +89,7 @@ export const TagInput = ({
 					<span
 						key={tag.id}
 						className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium text-white"
-						style={{ backgroundColor: tag.color || '#6B7280' }}
+						style={{ backgroundColor: tag.color || FALLBACK_TAG_COLOR }}
 					>
 						{tag.name}
 						<button
@@ -136,7 +126,7 @@ export const TagInput = ({
 							>
 								<span
 									className="w-3 h-3 rounded-full"
-									style={{ backgroundColor: tag.color || '#6B7280' }}
+									style={{ backgroundColor: tag.color || FALLBACK_TAG_COLOR }}
 								/>
 								{tag.name}
 							</button>

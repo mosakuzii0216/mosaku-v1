@@ -1,4 +1,5 @@
 import type { Tag, MemoTag } from '../../types/tag';
+import { FALLBACK_TAG_COLOR } from './tagColors';
 
 interface TagDisplayProps {
 	tags?: MemoTag[];
@@ -32,7 +33,7 @@ export const TagDisplay = ({ tags = [], size = 'md', maxTags, onClick }: TagDisp
             ${sizeClasses[size]}
             ${onClick ? 'cursor-pointer hover:opacity-80' : ''}
           `}
-					style={{ backgroundColor: tag.color || '#6B7280' }}
+					style={{ backgroundColor: tag.color || FALLBACK_TAG_COLOR }}
 					title={tag.name}
 				>
 					{tag.name}
