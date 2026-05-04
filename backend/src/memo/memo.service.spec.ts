@@ -3,12 +3,6 @@ import { HttpStatus } from '@nestjs/common';
 import { MemoService } from './memo.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthorizationService } from '../common/services/authorization.service';
-import { AppException } from '../common/exceptions/app.exception';
-
-const MEMO_WITH_INCLUDE = {
-	memoTags: { include: { tag: true } },
-	notebook: { select: expect.any(Object) },
-};
 
 const mockMemo = (overrides = {}) => ({
 	id: 'memo-1',
@@ -38,7 +32,6 @@ const mockPrismaService = {
 
 describe('MemoService', () => {
 	let service: MemoService;
-	let authorizationService: AuthorizationService;
 
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
@@ -50,7 +43,6 @@ describe('MemoService', () => {
 		}).compile();
 
 		service = module.get<MemoService>(MemoService);
-		authorizationService = module.get<AuthorizationService>(AuthorizationService);
 		jest.clearAllMocks();
 	});
 
