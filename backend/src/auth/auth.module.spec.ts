@@ -6,8 +6,8 @@ import { XStrategy } from './x.strategy';
 import { LineAuthGuard, AppleAuthGuard, XAuthGuard } from './oauth-auth.guards';
 
 describe('AuthModule - 新プロバイダー登録', () => {
-	const providers: unknown[] = Reflect.getMetadata('providers', AuthModule) ?? [];
-	const exports: unknown[] = Reflect.getMetadata('exports', AuthModule) ?? [];
+	const providers = (Reflect.getMetadata('providers', AuthModule) as unknown[]) ?? [];
+	const exports = (Reflect.getMetadata('exports', AuthModule) as unknown[]) ?? [];
 
 	it('LineStrategy が providers に登録されていること', () => {
 		expect(providers).toContain(LineStrategy);
