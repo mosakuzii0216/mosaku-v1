@@ -224,7 +224,7 @@ export class ThemeService {
 				isPublic: createThemeDto.isPublic || false,
 				styles: (createThemeDto.styles as any) || null,
 				cssFilePath: createThemeDto.cssFilePath || null,
-				metadata: (createThemeDto.metadata as any) || {},
+				metadata: (createThemeDto.metadata as Prisma.InputJsonValue) || {},
 				createdById: userId,
 			},
 			include: {
@@ -264,9 +264,11 @@ export class ThemeService {
 				...(updateThemeDto.isPublic !== undefined && {
 					isPublic: updateThemeDto.isPublic,
 				}),
-				...(updateThemeDto.styles && { styles: updateThemeDto.styles as any }),
+				...(updateThemeDto.styles && { styles: updateThemeDto.styles as Prisma.InputJsonValue }),
 				...(updateThemeDto.cssFilePath && { cssFilePath: updateThemeDto.cssFilePath }),
-				...(updateThemeDto.metadata && { metadata: updateThemeDto.metadata as any }),
+				...(updateThemeDto.metadata && {
+					metadata: updateThemeDto.metadata as Prisma.InputJsonValue,
+				}),
 			},
 			include: {
 				createdBy: {

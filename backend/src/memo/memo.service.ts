@@ -277,11 +277,12 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 	 * ゴミ箱内メモ一覧を取得（Requirements: 2.1）
 	 */
 	async findTrashed(userId: string): Promise<MemoWithRelations[]> {
-		return this.prisma.memo.findMany({
+		const memos = await this.prisma.memo.findMany({
 			where: { userId, trashedAt: { not: null } },
 			include: this.getDefaultInclude(),
 			orderBy: { trashedAt: 'desc' },
-		}) as unknown as MemoWithRelations[];
+		});
+		return memos as unknown as MemoWithRelations[];
 	}
 
 	/**
