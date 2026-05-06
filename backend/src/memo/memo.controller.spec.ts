@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MemoController } from './memo.controller';
 import { MemoService } from './memo.service';
+import type { AuthenticatedRequest } from '../auth/types';
 
 const mockMemoService = {
 	create: jest.fn(),
@@ -18,7 +19,7 @@ const mockMemoService = {
 	emptyTrash: jest.fn(),
 };
 
-const mockReq = { user: { id: 'user-1' } };
+const mockReq = { user: { id: 'user-1' } } as unknown as AuthenticatedRequest;
 
 describe('MemoController', () => {
 	let controller: MemoController;
@@ -38,7 +39,7 @@ describe('MemoController', () => {
 			const trashedMemo = { id: 'memo-1', trashedAt: new Date() };
 			mockMemoService.trash.mockResolvedValue(trashedMemo);
 
-			const result = await controller.remove('memo-1', mockReq as any);
+			const result = await controller.remove('memo-1', mockReq);
 
 			expect(mockMemoService.trash).toHaveBeenCalledWith('memo-1', 'user-1');
 			expect(mockMemoService.remove).not.toHaveBeenCalled();
@@ -51,7 +52,7 @@ describe('MemoController', () => {
 			const trashedMemos = [{ id: 'memo-1', trashedAt: new Date() }];
 			mockMemoService.findTrashed.mockResolvedValue(trashedMemos);
 
-			const result = await controller.findTrashed(mockReq as any);
+			const result = await controller.findTrashed(mockReq);
 
 			expect(mockMemoService.findTrashed).toHaveBeenCalledWith('user-1');
 			expect(result).toEqual(trashedMemos);
@@ -63,7 +64,7 @@ describe('MemoController', () => {
 			const restoredMemo = { id: 'memo-1', trashedAt: null };
 			mockMemoService.restore.mockResolvedValue(restoredMemo);
 
-			const result = await controller.restore('memo-1', mockReq as any);
+			const result = await controller.restore('memo-1', mockReq);
 
 			expect(mockMemoService.restore).toHaveBeenCalledWith('memo-1', 'user-1');
 			expect(result).toEqual(restoredMemo);
@@ -75,7 +76,7 @@ describe('MemoController', () => {
 			const deletedMemo = { id: 'memo-1' };
 			mockMemoService.permanentDelete.mockResolvedValue(deletedMemo);
 
-			const result = await controller.permanentDelete('memo-1', mockReq as any);
+			const result = await controller.permanentDelete('memo-1', mockReq);
 
 			expect(mockMemoService.permanentDelete).toHaveBeenCalledWith('memo-1', 'user-1');
 			expect(result).toEqual(deletedMemo);
@@ -86,7 +87,7 @@ describe('MemoController', () => {
 		it('should empty the trash and return count', async () => {
 			mockMemoService.emptyTrash.mockResolvedValue({ count: 3 });
 
-			const result = await controller.emptyTrash(mockReq as any);
+			const result = await controller.emptyTrash(mockReq);
 
 			expect(mockMemoService.emptyTrash).toHaveBeenCalledWith('user-1');
 			expect(result).toEqual({ count: 3 });
