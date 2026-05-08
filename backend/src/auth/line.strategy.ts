@@ -1,5 +1,4 @@
-import { Injectable } from '@nestjs/common';
-import { ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-line-auth';
 import { ConfigService } from '../config/config.service';
