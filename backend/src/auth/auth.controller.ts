@@ -330,8 +330,8 @@ export class AuthController {
 		return this.handleOAuthRegisterWithInvitation(
 			googleUser,
 			invitationCode,
-			this.parseGoogleUser.bind(this),
-			this.oauthService.googleRegisterWithInvitation.bind(this.oauthService),
+			(value) => this.parseGoogleUser(value),
+			(user, code) => this.oauthService.googleRegisterWithInvitation(user, code),
 		);
 	}
 
@@ -363,8 +363,8 @@ export class AuthController {
 		return this.handleOAuthRegisterWithInvitation(
 			githubUser,
 			invitationCode,
-			this.parseGithubUser.bind(this),
-			this.oauthService.githubRegisterWithInvitation.bind(this.oauthService),
+			(value) => this.parseGithubUser(value),
+			(user, code) => this.oauthService.githubRegisterWithInvitation(user, code),
 		);
 	}
 
@@ -430,8 +430,8 @@ export class AuthController {
 		return this.handleOAuthRegisterWithInvitation(
 			lineUser,
 			invitationCode,
-			this.parseLineUser.bind(this),
-			this.oauthService.lineRegisterWithInvitation.bind(this.oauthService),
+			(value) => this.parseLineUser(value),
+			(user, code) => this.oauthService.lineRegisterWithInvitation(user, code),
 		);
 	}
 
@@ -502,8 +502,8 @@ export class AuthController {
 		return this.handleOAuthRegisterWithInvitation(
 			xUser,
 			invitationCode,
-			this.parseXUser.bind(this),
-			this.oauthService.xRegisterWithInvitation.bind(this.oauthService),
+			(value) => this.parseXUser(value),
+			(user, code) => this.oauthService.xRegisterWithInvitation(user, code),
 		);
 	}
 
