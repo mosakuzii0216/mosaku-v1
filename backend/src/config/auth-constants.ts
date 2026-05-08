@@ -15,6 +15,8 @@ export const BCRYPT_SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12
  */
 export const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '24h';
 
+const MS_PER_MINUTE = 60_000;
+
 /**
  * レート制限設定
  */
@@ -25,7 +27,7 @@ export const THROTTLE_CONFIG = {
 	 */
 	REGISTER: {
 		LIMIT: parseInt(process.env.REGISTER_THROTTLE_LIMIT || '5', 10),
-		TTL: parseInt(process.env.REGISTER_THROTTLE_TTL || '60000', 10), // 1分
+		TTL: parseInt(process.env.REGISTER_THROTTLE_TTL || String(1 * MS_PER_MINUTE), 10),
 	},
 	/**
 	 * ログインのレート制限（ブルートフォース対策）
@@ -33,6 +35,6 @@ export const THROTTLE_CONFIG = {
 	 */
 	LOGIN: {
 		LIMIT: parseInt(process.env.LOGIN_THROTTLE_LIMIT || '5', 10),
-		TTL: parseInt(process.env.LOGIN_THROTTLE_TTL || '900000', 10), // 15分
+		TTL: parseInt(process.env.LOGIN_THROTTLE_TTL || String(15 * MS_PER_MINUTE), 10),
 	},
 } as const;

@@ -1,5 +1,6 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { ERROR_CODES, throwForbidden } from '../exceptions';
+import type { MaybeAuthRequest } from '../../auth/types';
 
 /**
  * ADMIN ロールを持つユーザーのみアクセスを許可するガード
@@ -10,7 +11,7 @@ import { ERROR_CODES, throwForbidden } from '../exceptions';
 @Injectable()
 export class AdminGuard implements CanActivate {
 	canActivate(context: ExecutionContext): boolean {
-		const request = context.switchToHttp().getRequest<{ user?: { role?: string } }>();
+		const request = context.switchToHttp().getRequest<MaybeAuthRequest>();
 		const user = request.user;
 
 		if (!user || user.role !== 'ADMIN') {
