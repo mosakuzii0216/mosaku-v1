@@ -71,12 +71,28 @@ npm run test:e2e  # Playwright E2E テスト
 - `JWT_SECRET` - JWT 署名キー
 - `CORS_ORIGINS` - 許可オリジンのカンマ区切りリスト
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`、`GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`
+- `SENTRY_DSN` - Sentry プロジェクトの DSN（未設定時は SDK 起動スキップ）
+- `SENTRY_ENVIRONMENT` - `production` / `development`。未指定時は `NODE_ENV` から推定
+- `SENTRY_RELEASE` - リリース識別子（CI から `${{ github.sha }}` を注入）
+- `SENTRY_TRACES_SAMPLE_RATE` / `SENTRY_PROFILES_SAMPLE_RATE` - 既定は本番 `0.1` / development `0`
 
 **フロントエンド（`VITE_` プレフィックス必須）:**
 
 - `VITE_BACKEND_URL` - バックエンド API の URL
 - `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`
 - `VITE_GOOGLE_CLIENT_ID` / `VITE_GITHUB_CLIENT_ID`
+- `VITE_SENTRY_DSN` - Frontend Sentry プロジェクトの DSN
+- `VITE_SENTRY_ENVIRONMENT` - `production` / `development`（未指定時は `production`）
+- `VITE_SENTRY_RELEASE` - CI から `${{ github.sha }}` を注入（Vercel Env には登録不要）
+- `VITE_SENTRY_TRACES_SAMPLE_RATE` - 既定は本番 `0.1` / development `0`
+
+**CI（GitHub Secrets）:**
+
+- `SENTRY_AUTH_TOKEN` - `@sentry/cli` / `@sentry/vite-plugin` のリリース登録 + source map upload 用（scope は `project:releases` のみ）
+- `SENTRY_ORG` - Sentry organization slug
+- `SENTRY_PROJECT_BACKEND` / `SENTRY_PROJECT_FRONTEND` - プロジェクト slug
+
+> Sentry 運用の詳細は [`docs/deployment/sentry.md`](./docs/deployment/sentry.md) を参照。
 
 ## Git フック
 

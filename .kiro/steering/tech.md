@@ -82,6 +82,10 @@ cd backend && npx prisma generate
 - **テーマエフェクトはコード分割でロード**: `themeEffectRegistry` の動的 import を `React.lazy` で遅延ロードし、エフェクト未指定テーマでは独立チャンクをネットワーク層でも取得しない。エフェクト用の新規 JS ライブラリは追加しない方針（CSS keyframes + Canvas API のみで完結させる）
 - **テーマエフェクトの自動停止条件**: `prefers-reduced-motion` / エディタフォーカス中 / タブ非表示 / マウス3秒アイドル のいずれかで RAF を停止し、CPU・GPU負荷をエディタ作業時に渡す
 - **Sentry 初期化は最初の import**: `backend/src/main.ts` の先頭で `import './instrument'` を行い、NestFactory 生成より前に Sentry を起動する（プロセス起動初期からの捕捉を担保）
+- **Sentry は Production 単一プロジェクト運用**: Backend / Frontend それぞれの Sentry プロジェクトを 1 つずつ持ち、Vercel Preview も同じ Frontend プロジェクトに `environment: production` で相乗りする。Preview / Production の識別は `release` タグ（git sha）で行う。詳細は [`docs/deployment/sentry.md`](../../docs/deployment/sentry.md)
+- **Sentry サンプリング戦略**: エラーは全件（`sampleRate: 1.0`）、Trace / Profile は本番 `0.1` / development `0` を既定とする。サンプリング率は env のみで調整可能（コード変更なし）。月次 quota 逼迫時は §5.3 のプレイブック（0.1 → 0.05 → 0.02 → 0）に従う
+- **Sentry PII ポリシー**: `sendDefaultPii: false` を両 SDK で固定し、`beforeSend` 内のスクラバ（`backend/src/common/sentry/sentry-scrubber.ts` / `frontend/src/utils/sentry/sentry-scrubber.ts`）で「キー名ブラックリスト + 値正規表現（JWT / UUID）」の二軸 redact を行う。`setUser` には **id 以外を絶対に渡さない**（email / OAuth provider / IP は禁止）
+- **Sentry 構造化タグ契約**: 全イベントに `environment` / `release` / `feature_area` / `route` / `user_facing` の 5 タグを必ず付与する。Phase 2 AI 障害自動調査 pipeline の triage 粒度として固定契約（`feature_area` の enum は `memo` / `notebook` / `tag` / `theme` / `auth` / `invitation` / `system` / `unknown`）
 - **ゴミ箱は Soft Delete + スケジュール削除**: `trashedAt` カラムで論理削除し、`@nestjs/schedule` の cron（毎日 JST 02:00）で 30 日経過後に物理削除する。クライアントは `/trash` エンドポイント経由で復元・完全削除を行う
 
 ---
