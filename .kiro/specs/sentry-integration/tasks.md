@@ -109,11 +109,13 @@
   - build 後の post-check で `dist/**/*.map` が空であることを確認し、万一 map が残っている場合はジョブを fail させる
   - _Requirements: 5.2, 5.5, 6.4_
 
-- [ ] 7. Sentry Platform 設定と Production 初回 smoke test
-  - **状態**: コード/ドキュメント側準備は完了。Sentry / Cloud Run / Vercel / Slack の管理画面操作はユーザー手動対応待ち。
+- [x] 7. Sentry Platform 設定と Production 初回 smoke test
+  - **状態**: 完了（2026-05-09）。release: 5161df2 で artifact bundle (debug-id) 経由の symbolicated stack trace を確認、Slack `#mosaku-alerts` 通知も着弾済み。
   - runbook: `docs/deployment/sentry.md`（§1〜§4 を参照）
+  - **smoke test 中の修正**: scrubber が Sentry 予約 ID（debug_id / event_id / trace_id 等）の UUID 値を誤って redact し sourcemap 解決を壊す bug を発見、TDD で `DEFAULT_PATTERN_EXEMPT_KEYS` を追加して修正（commit 5161df2）。
+  - **CI 二重デプロイ修正**: `vercel.json` の `git.deploymentEnabled: true` で Vercel Git Integration が GitHub Actions と並走し、後発の Vercel auto deploy が SENTRY_AUTH_TOKEN なしで artifact bundle を上書きしていた問題を `false` に変更して解消（commit fdb9ef4）。
 
-- [ ] 7.1 Sentry Production プロジェクトを作成し DSN / Auth Token を Cloud Run Secret Manager / Vercel / GitHub Secrets に投入する
+- [x] 7.1 Sentry Production プロジェクトを作成し DSN / Auth Token を Cloud Run Secret Manager / Vercel / GitHub Secrets に投入する
   - 単一 Sentry プロジェクトを作成し Vercel Preview も相乗りで `environment: production` タグ運用とする
   - Cloud Run 側は Secret Manager に `sentry-dsn` を登録し `deploy-backend.yml` から参照する
   - Vercel 側は `VITE_SENTRY_DSN` / `VITE_SENTRY_ENVIRONMENT` を Production / Preview 両方の環境変数に登録する
@@ -121,7 +123,7 @@
   - **完了条件**: `docs/deployment/sentry.md` §1〜§2 の手順をユーザーが実施し、対応 Secret/Env がすべて登録済みであること
   - _Requirements: 1.1, 1.7_
 
-- [ ] 7.2 Sentry Alert Rule と Slack ネイティブ統合を Production 環境限定で設定する
+- [x] 7.2 Sentry Alert Rule と Slack ネイティブ統合を Production 環境限定で設定する
   - first-seen（Production の新規 issue）と regression（Production の再発 issue）の 2 ルールを作成し Slack `#mosaku-alerts` に通知させる
   - alert payload に issue title / environment / release / 影響ユーザー数 / Sentry リンクが含まれることを確認する
   - Slack rate-limit 時のリトライは Sentry 側に任せる fire-and-forget 構成とし、per-`release` のチャネル分岐は行わない
@@ -129,7 +131,7 @@
   - **完了条件**: `docs/deployment/sentry.md` §3 の手順をユーザーが実施し、Alert Rule 2 件と Slack 統合と Internal Integration（Webhook 受け口）が稼働していること
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 9.4, 9.5_
 
-- [ ] 7.3 Production 初回デプロイ後の smoke test を実施して release タグ・可読スタック・Slack 通知を検証する
+- [x] 7.3 Production 初回デプロイ後の smoke test を実施して release タグ・可読スタック・Slack 通知を検証する
   - Vercel Preview または Production で意図的なエラー（一時エンドポイントまたはブラウザコンソールからの `throw`）を発生させる
   - Sentry UI 上で `environment: production` / `release: <git-sha>` / `feature_area` / `route` タグと source map による可読スタックトレースが 10 分以内に揃うことを確認する
   - Slack `#mosaku-alerts` に通知が届き、issue link から直接 Sentry Issue に到達できることを確認する
@@ -140,8 +142,8 @@
   - **完了条件**: `docs/deployment/sentry.md` §4 の手順をユーザーが実施し、§4.5 のチェックリストがすべて埋まること
   - _Requirements: 6.5_
 
-- [ ] 8. ドキュメントと Steering の最新化
-- [ ] 8.1 (P) `docs/deployment/sentry.md` を新規作成し Sentry 運用の single source of truth にする
+- [x] 8. ドキュメントと Steering の最新化
+- [x] 8.1 (P) `docs/deployment/sentry.md` を新規作成し Sentry 運用の single source of truth にする
   - Sentry プロジェクトセットアップ手順 / DSN 登録手順（Cloud Run Secret Manager + Vercel Env） / DSN ローテ手順を記載する
   - サンプリング率調整方法（env のみで変更可能なことと月次 quota 逼迫時の下げ方）を記載する
   - PII スクラブの対象キー一覧と「新規 DTO 追加時のチェックリスト」を記載する
@@ -151,12 +153,12 @@
   - Sentry Webhook / Issue-created event の受け口設定と Phase 2 AI pipeline 連携時の参照ポイントを記載する
   - _Requirements: 1.1, 1.7, 3.5, 6.5, 7.4, 8.5, 9.4, 10.1_
 
-- [ ] 8.2 (P) `.kiro/steering/tech.md` と `CLAUDE.md` に最終構成を反映する
+- [x] 8.2 (P) `.kiro/steering/tech.md` と `CLAUDE.md` に最終構成を反映する
   - tech.md に Sentry 初期化パターン（Production 単一運用 / サンプリング戦略 / PII ポリシー / 構造化タグ契約）を追記する
   - `CLAUDE.md` の環境変数セクションに `SENTRY_DSN` / `VITE_SENTRY_DSN` / `SENTRY_ENVIRONMENT` / `VITE_SENTRY_ENVIRONMENT` / `SENTRY_RELEASE` / `VITE_SENTRY_RELEASE` / `SENTRY_TRACES_SAMPLE_RATE` / `SENTRY_PROFILES_SAMPLE_RATE` / `VITE_SENTRY_TRACES_SAMPLE_RATE` / `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT_BACKEND` / `SENTRY_PROJECT_FRONTEND` を追記する
   - _Requirements: 10.2, 10.4_
 
-- [ ] 8.3 (P) `docs/deployment/cloud-run.md` と `docs/deployment/vercel.md` の旧 Sentry セクションを整理し `sentry.md` へ誘導する
+- [x] 8.3 (P) `docs/deployment/cloud-run.md` と `docs/deployment/vercel.md` の旧 Sentry セクションを整理し `sentry.md` へ誘導する
   - cloud-run.md §C6.2 と vercel.md §V5.3 の古い内容を削除または要約し、詳細は `docs/deployment/sentry.md` を参照する構成に切り替える
   - 残す記述は Cloud Run / Vercel 固有の env 投入チェックリストのみに絞る
   - _Requirements: 10.5_

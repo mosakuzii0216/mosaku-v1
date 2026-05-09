@@ -6,7 +6,7 @@ Cloud Run / Vercel / GitHub Actions / Slack の統合手順、Production 初回�
 
 > [!NOTE]
 > 本ドキュメントは `.kiro/specs/sentry-integration` の Task 7（Sentry Platform 設定 + Production smoke test）と Task 8.1（ドキュメント整備）の成果物。
-> Task 7 完了時点では「セットアップ / Secret 登録 / Alert Rule / Smoke test」までを記載し、Task 8.1 で「サンプリング率調整 / PII チェックリスト / ノイズ除外運用」を追記する。
+> §1〜§4 がセットアップ / Secret 登録 / Alert Rule / Smoke test、§5〜§7 がサンプリング率 / PII / ノイズ除外の運用ガイド、§8 が Phase 2 AI pipeline の参照ポイント。
 
 ---
 
@@ -340,37 +340,177 @@ Sentry Issue の **JSON Payload** タブで以下を目視確認する:
 
 ## 5. サンプリング率の調整
 
-> [!NOTE]
-> 本セクションは Task 8.1 で詳細を追記する。MVP では「env で変更できる」という最低限の情報のみ記載する。
+> Task 8.1（Requirements 2.1〜2.6）
 
-サンプリング率は env で動的に変更可能（再デプロイ不要、Cloud Run の env 更新で即時反映）:
+### 5.1 既定値とコントロール変数
 
-- Backend: `SENTRY_TRACES_SAMPLE_RATE` / `SENTRY_PROFILES_SAMPLE_RATE`
-- Frontend: `VITE_SENTRY_TRACES_SAMPLE_RATE`（Vercel Env、再 build が必要）
+| 環境変数                         | 既定値                                          | 反映タイミング                  |
+| -------------------------------- | ----------------------------------------------- | ------------------------------- |
+| `SENTRY_TRACES_SAMPLE_RATE`      | 本番 `0.1` / development `0`                    | Cloud Run の env 更新で即時反映 |
+| `SENTRY_PROFILES_SAMPLE_RATE`    | 本番 `0.1` / development `0`                    | 同上                            |
+| `VITE_SENTRY_TRACES_SAMPLE_RATE` | 本番 `0.1`（Vite ビルド時に `import.meta.env`） | Vercel Env 更新 + **再 build**  |
 
-月次 quota 逼迫時は 0.1 → 0.05 → 0.02 と段階的に下げる。
+> エラーイベント自体は `sampleRate: 1.0`（全件）。サンプリングが効くのは Trace / Profile のみ。
+
+### 5.2 月次 quota の確認手順（毎月 1 日）
+
+1. **Sentry → Stats** で当月の `Errors` / `Transactions` / `Profiles` の usage をチェック
+2. Developer プラン無料枠は `Errors` 5K / `Transactions` 10K / `Profiles` 10K（2026-05 時点）
+3. 当月 50% を超えていたら §5.3 のレート調整を検討する
+
+### 5.3 段階的レート引き下げのプレイブック
+
+quota 逼迫時は **以下の順** で対処する:
+
+```
+0.1 → 0.05 → 0.02 → 0
+```
+
+- **0.05**: Trace / Profile を半減。Issue 単発の調査には十分
+- **0.02**: 「この週はとりあえず止血」モード。傾向把握は可能
+- **0**: Trace / Profile を完全停止（エラー本体は引き続き全件送信）
+
+調整は env 更新のみで完結する。コード変更不要。
+
+```bash
+# Backend（即時反映、再 build 不要）
+gcloud run services update mosaku-backend \
+  --region=asia-northeast1 \
+  --update-env-vars=SENTRY_TRACES_SAMPLE_RATE=0.05,SENTRY_PROFILES_SAMPLE_RATE=0.05 \
+  --project=mosaku-prod
+
+# Frontend（Vercel Env 更新後に再 build を trigger）
+vercel env add VITE_SENTRY_TRACES_SAMPLE_RATE production
+# → 値: 0.05 を入力
+# → その後、最新の main HEAD で再デプロイ
+```
+
+### 5.4 引き下げ後の振り返り
+
+引き下げから 1 週間後、`docs/progress.md` に以下を記録:
+
+- 引き下げ前後の usage 推移
+- アラート検知遅延が起きていないか（Slack 通知の取りこぼしを目視）
+- 元のレートに戻すかの判断
 
 ---
 
 ## 6. PII スクラブ運用
 
-> [!NOTE]
-> 本セクションは Task 8.1 で詳細を追記する（対象キー一覧 / 新規 DTO 追加チェックリスト）。
+> Task 8.1（Requirements 3.1〜3.6）
 
-スクラブ実装は以下:
+### 6.1 スクラブ実装の所在
 
-- Backend: `backend/src/common/sentry/sentry-scrubber.ts`
-- Frontend: `frontend/src/utils/sentry/sentry-scrubber.ts`
+| 層       | ファイル                                       | テスト                                              |
+| -------- | ---------------------------------------------- | --------------------------------------------------- |
+| Backend  | `backend/src/common/sentry/sentry-scrubber.ts` | `backend/src/common/sentry/sentry-scrubber.spec.ts` |
+| Frontend | `frontend/src/utils/sentry/sentry-scrubber.ts` | `frontend/src/utils/sentry/sentry-scrubber.test.ts` |
+
+### 6.2 対象キーブラックリスト（共通）
+
+| キー                                           | 出所              | 根拠           |
+| ---------------------------------------------- | ----------------- | -------------- |
+| `content` / `body` / `html`                    | メモ DTO / TipTap | メモ本文       |
+| `code`                                         | 招待コード DTO    | 招待コード     |
+| `password` / `newPassword` / `currentPassword` | auth DTO          | パスワード     |
+| `token` / `accessToken` / `refreshToken`       | JWT / OAuth       | 認証トークン   |
+| `invitationCode`                               | 招待フロー        | 招待コード     |
+| `clientSecret` / `privateKey`                  | OAuth プロバイダ  | プロバイダ機密 |
+
+### 6.3 値パターン redact（共通）
+
+- **JWT パターン**: `eyJ` で始まる 3 セグメントの base64url 文字列
+- **UUID パターン**: `8-4-4-4-12` の 16 進文字列
+
+### 6.4 Sentry 予約 ID の例外（Frontend のみ）
+
+UUID パターン redact が誤爆して sourcemap 解決や trace 連結が壊れる事故（commit `5161df2`）を受け、以下のキー直下の値は redact しない:
+
+```
+debug_id / event_id / trace_id / span_id / parent_span_id / profile_id / replay_id
+```
+
+Backend は `@sentry/nestjs` がイベントを正規化したあとに値パターンを当てるが、生イベント payload（特に `breadcrumbs`）に sourcemap 由来の `debug_id` が UUID として乗るのは Frontend のみのため Backend には例外キーを設けない。
+
+### 6.5 TipTap ドキュメントの redact（Frontend）
+
+メモエディタの JSON ドキュメントは深さ 4 階層まで再帰し、`text` ノードを `[REDACTED]` に置換する（`redactTipTapDocument`）。深さ制限は循環参照ガードと巨大ドキュメントによる CPU 暴走を抑える保険。
+
+### 6.6 新規 DTO / フォームフィールド追加チェックリスト
+
+PII を含む可能性のあるフィールドを追加する際は **マージ前** に以下をチェック:
+
+```
+[ ] 追加フィールドのキー名がブラックリスト（§6.2）でカバーされているか
+    - されていない場合 → DEFAULT_REDACTABLE_KEYS にキーを追加 + テスト追加
+[ ] フィールドの値形式が JWT / UUID 以外で機密性を持たないか
+    - 例: メールアドレス / 電話番号 → 値パターンに正規表現を追加するか、キー名を redact 対象に追加
+[ ] 新規エラー経路から Sentry に送られるか
+    - throw する例外の message に PII を埋め込んでいないか確認
+[ ] `sentry-scrubber.spec.ts` / `sentry-scrubber.test.ts` に redaction ケースを追加
+[ ] PR description に「Sentry redaction 追加: <key>」と明記
+```
+
+> [!IMPORTANT]
+> ブラックリスト方式は **新規キーを追加し忘れたら漏れる**。レビュアーは DTO / form state 追加 PR で必ずスクラブ追加の有無を確認すること。
+
+### 6.7 PII マスク漏れ検知時のリカバリ
+
+1. **即時**: 該当 issue を Sentry UI で **Delete & Discard**（同種イベントを 24h ブロック）
+2. **修正**: `sentry-scrubber.ts` の `DEFAULT_REDACTABLE_KEYS` または `DEFAULT_VALUE_PATTERNS` を更新 + テスト追加
+3. **デプロイ**: 修正版を Production にデプロイ
+4. **記録**: `docs/progress.md` にインシデントとして記録（漏洩したフィールド / 影響範囲 / 対応時刻）
 
 ---
 
 ## 7. ノイズ除外ルール
 
-> [!NOTE]
-> 本セクションは Task 8.1 で詳細を追記する（追加時のレビュー基準を含む）。
+> Task 8.1（Requirements 7.1〜7.5）
 
-- Backend `ignoreErrors`: `backend/src/instrument.ts`
-- Frontend `ignoreErrors` / `denyUrls`: `frontend/src/utils/sentry/init.ts`
+### 7.1 Backend `ignoreErrors`（`backend/src/instrument.ts`）
+
+| 例外名                  | HTTP | 除外理由                                                                       |
+| ----------------------- | ---- | ------------------------------------------------------------------------------ |
+| `NotFoundException`     | 404  | 未マッチルート（ボット / typo / 古いリンク）が大量に流入し signal/noise を悪化 |
+| `BadRequestException`   | 400  | ValidationPipe による入力エラーが大半でクライアント由来。アプリ起因ではない    |
+| `UnauthorizedException` | 401  | ALB / プローブ / トークン期限切れで頻発しアラート対象として弱い                |
+| `ForbiddenException`    | 403  | 意図したアクセス制御の結果なのでアラートではなく監査ログで追う                 |
+
+> [!NOTE]
+> **`ThrottlerException`（429）は意図的に除外しない**。レート制限到達は調査価値があるため通報する。
+
+### 7.2 Frontend `ignoreErrors`（`frontend/src/utils/sentry/init.ts`）
+
+| パターン          | 除外理由                                                    |
+| ----------------- | ----------------------------------------------------------- |
+| `AbortError`      | ユーザー操作によるリクエスト中断は障害ではない              |
+| `NetworkError`    | オフライン / 瞬断は復旧運用で対応するため通報しない         |
+| `Failed to fetch` | Chromium 系の Fetch 失敗。原因はブラウザ側 / ユーザー環境側 |
+| `Load failed`     | Safari / WebKit 系の Fetch 失敗。同上                       |
+
+### 7.3 Frontend `denyUrls`
+
+| パターン              | 除外理由                               |
+| --------------------- | -------------------------------------- |
+| `chrome-extension://` | ブラウザ拡張由来のエラーはアプリ管轄外 |
+| `moz-extension://`    | 同上                                   |
+
+### 7.4 ルール追加・削除のレビュー基準
+
+ノイズ除外ルールを追加するときは PR で以下を満たすこと:
+
+```
+[ ] 該当エラーが Sentry で過去 7 日間に 50 件以上発生していること（quota の実害を示す）
+[ ] アプリ起因ではない根拠を 1 行で説明（コードコメントとして残す）
+[ ] 除外することで失う signal が「許容できるレベル」であることを記述
+[ ] 該当 instrument.ts / init.ts のテストでルール追加を検証
+[ ] Phase 2 AI pipeline で該当 pattern を再評価する FollowUp を残す
+```
+
+削除（除外解除）の判断基準:
+
+- アプリのアーキテクチャ変更で該当エラーがアプリ起因に変わった
+- Phase 2 AI pipeline 導入後、自動 triage で signal を抽出できる見込みが立った
 
 ---
 
