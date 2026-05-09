@@ -1,9 +1,9 @@
 {
 	"feature_name": "sentry-integration",
 	"created_at": "2026-04-22T22:57:22Z",
-	"updated_at": "2026-04-28T00:00:00Z",
+	"updated_at": "2026-05-09T00:00:00Z",
 	"language": "ja",
-	"phase": "tasks-approved",
+	"phase": "completed",
 	"approvals": {
 		"requirements": {
 			"generated": true,
