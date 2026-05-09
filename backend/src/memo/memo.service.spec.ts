@@ -93,7 +93,9 @@ describe('MemoService', () => {
 
 			await service.findAll('user-1');
 
-			const callArgs = mockPrismaService.memo.findMany.mock.calls[0][0];
+			const [[callArgs]] = mockPrismaService.memo.findMany.mock.calls as Array<
+				[{ where: { userId: string; trashedAt: null } }]
+			>;
 			expect(callArgs.where).toMatchObject({ userId: 'user-1', trashedAt: null });
 		});
 

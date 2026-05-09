@@ -28,10 +28,12 @@ describe('TrashCleanupService', () => {
 
 			await service.cleanupOldTrashedMemos();
 
-			const callArgs = mockPrismaService.memo.deleteMany.mock.calls[0][0];
+			const [[callArgs]] = mockPrismaService.memo.deleteMany.mock.calls as Array<
+				[{ where: { trashedAt: { lte: Date } } }]
+			>;
 			expect(callArgs.where.trashedAt.lte).toBeDefined();
 			// 30日前以前の日時であることを確認
-			const cutoff = callArgs.where.trashedAt.lte as Date;
+			const cutoff = callArgs.where.trashedAt.lte;
 			const now = new Date();
 			const diffDays = (now.getTime() - cutoff.getTime()) / (1000 * 60 * 60 * 24);
 			expect(diffDays).toBeGreaterThanOrEqual(29.9);
