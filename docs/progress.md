@@ -32,6 +32,45 @@
 
 ---
 
+## 2026-05-09（Phase 1 / Sentry 統合完了）
+
+### 今週やったこと
+
+- **`sentry-integration` を完走**（26/26 タスク、`spec.json` を `completed` に更新）
+  - Backend: SDK 初期化、PII scrubber、構造化タグ、認証 Interceptor、ConfigService 拡張
+  - Frontend: SDK 初期化、`@sentry/vite-plugin` で source map upload、`useSentryRouteTag`、`AuthContext` の `setUser` 連携
+  - CI: `deploy-backend.yml` / `deploy-frontend-prod.yml` に release / token / サンプリング率を注入
+  - ドキュメント: `docs/deployment/sentry.md` を新規作成し single source of truth 化、`cloud-run.md` / `vercel.md` の旧セクションを誘導に整理
+  - Steering: `CLAUDE.md` / `.kiro/steering/tech.md` に Sentry 環境変数を反映
+  - Sentry Platform 側の Production プロジェクト・Alert Rule・Slack 通知を設定し smoke test 完了
+- **タグシステムの DB マイグレーションと UI コンポーネント追加**（`feat(tag)`）
+- **コード品質リファクタ多数**: `auth` / `memo` / `theme` / `tag` の ESLint 警告解消、`any` → `unknown` 置換、`auth.controller.ts` の `.bind(this)` をアロー関数化、WHAT コメントを CLAUDE.md 規約に沿って削除
+- **デプロイまわりの修正**: Vercel Git Integration の自動デプロイ無効化、Cloud Run の secret 全削除リスク修正、SW source map 残留対応
+- **意思決定**: オフライン対応・PWA 化の方針を会話で確定
+  - 2 spec に分割: `pwa-and-offline-cache`（PWA 基盤 + オフライン CRUD、シングルデバイス前提）→ `multi-device-conflict-resolution`（競合解決）
+  - 競合解決は CRDT ではなく `updatedAt` 比較 + 409 + ユーザー選択 UI で割り切り
+  - キャッシュポリシーは LRU（直近 50 件 + 直近 30 日編集）
+
+### 来週の予定
+
+- `/kiro:spec-init` で `pwa-and-offline-cache` を起票し、要件定義フェーズに入る
+- 摩擦記録の運用開始（`Friction Log` ノートブック作成）
+- UptimeRobot 導入（Sentry とセットの未完了タスク）
+- テーマ作成（+3、計 10）
+
+### ブロッカー・懸念
+
+- なし
+
+### メモ
+
+- 期間中コミット数: 42（前回からの差分、2.5 週分）
+- spec 完了状況: 13 spec 中 7 件が `completed` または `implementation-validated`、3 件が `tasks-generated` で停滞
+- `AuthContext.tsx` のオフライン起動時 `removeTokens()` 落とし穴を発見 → `pwa-and-offline-cache` の中で同梱修正予定
+- JWT 有効期限は 24h ハードコード気味、リフレッシュトークン未実装。将来課題として認識
+
+---
+
 ## 2026-04-23（Phase 1 spec 整理）
 
 ### 今週やったこと
