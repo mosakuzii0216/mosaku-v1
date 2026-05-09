@@ -29,6 +29,19 @@ const UUID_REGEX = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{1
 
 export const DEFAULT_VALUE_PATTERNS: ReadonlyArray<RegExp> = [JWT_REGEX, UUID_REGEX];
 
+// Sentry SDK が release 紐付け / trace 検索に使う予約 ID。UUID 形式のため
+// 値パターン redact が誤爆すると "invalid debug identifier" 等で event が壊れ、
+// sourcemap 解決や trace 連結が失敗する。これらキー直下の値は scrub から除外する
+export const DEFAULT_PATTERN_EXEMPT_KEYS: ReadonlySet<string> = new Set([
+	'debug_id',
+	'event_id',
+	'trace_id',
+	'span_id',
+	'parent_span_id',
+	'profile_id',
+	'replay_id',
+]);
+
 export const DEFAULT_PLACEHOLDER = '[REDACTED]';
 const TRUNCATE_LIMIT = 10_000;
 const TRUNCATE_SUFFIX = '...[TRUNCATED]';
@@ -37,6 +50,7 @@ const TIPTAP_MAX_DEPTH = 4;
 export interface ScrubberOptions {
 	readonly redactableKeys: ReadonlySet<string>;
 	readonly valuePatterns: ReadonlyArray<RegExp>;
+	readonly patternExemptKeys: ReadonlySet<string>;
 	readonly placeholder: string;
 }
 
@@ -49,6 +63,7 @@ export function createScrubber(options: Partial<ScrubberOptions> = {}): Frontend
 	const config: ScrubberOptions = {
 		redactableKeys: options.redactableKeys ?? DEFAULT_REDACTABLE_KEYS,
 		valuePatterns: options.valuePatterns ?? DEFAULT_VALUE_PATTERNS,
+		patternExemptKeys: options.patternExemptKeys ?? DEFAULT_PATTERN_EXEMPT_KEYS,
 		placeholder: options.placeholder ?? DEFAULT_PLACEHOLDER,
 	};
 
@@ -87,6 +102,10 @@ function walk(value: unknown, config: ScrubberOptions, seen: WeakSet<object>): u
 		for (const [key, child] of Object.entries(source)) {
 			if (config.redactableKeys.has(key)) {
 				result[key] = config.placeholder;
+				continue;
+			}
+			if (config.patternExemptKeys.has(key) && typeof child === 'string') {
+				result[key] = child;
 				continue;
 			}
 			result[key] = walk(child, config, seen);

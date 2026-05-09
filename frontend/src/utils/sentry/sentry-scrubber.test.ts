@@ -130,6 +130,75 @@ describe('FrontendSentryScrubber', () => {
 		});
 	});
 
+	describe('Sentry 予約 ID は redact しない', () => {
+		// Sentry SDK が生成する debug_id / event_id / trace_id 等は UUID 形式だが
+		// release 紐付けや trace 検索のキーであり、redact すると Sentry 側が
+		// "invalid debug identifier" 等で reject し sourcemap 解決が壊れる
+		it('debug_meta.images[].debug_id は UUID でも保持すること', () => {
+			const event = {
+				debug_meta: {
+					images: [
+						{
+							type: 'sourcemap',
+							code_file: 'https://example.com/index.js',
+							debug_id: '06ceff95-39af-47f4-b030-6e45987fe06b',
+						},
+					],
+				},
+			};
+
+			const result = scrubber.scrub(event);
+
+			expect(result.debug_meta.images[0].debug_id).toBe('06ceff95-39af-47f4-b030-6e45987fe06b');
+		});
+
+		it('event_id / trace_id / span_id / parent_span_id は UUID/16進数でも保持すること', () => {
+			const event = {
+				event_id: '5233bc984e73447d955cf2b0cebc537f',
+				contexts: {
+					trace: {
+						trace_id: 'ff344dd1e65f4e5083f65832e007e9f1',
+						span_id: '9fb0b6a3b13987e7',
+						parent_span_id: '550e8400-e29b-41d4-a716-446655440000',
+					},
+				},
+			};
+
+			const result = scrubber.scrub(event);
+
+			expect(result.event_id).toBe('5233bc984e73447d955cf2b0cebc537f');
+			expect(result.contexts.trace.trace_id).toBe('ff344dd1e65f4e5083f65832e007e9f1');
+			expect(result.contexts.trace.span_id).toBe('9fb0b6a3b13987e7');
+			expect(result.contexts.trace.parent_span_id).toBe('550e8400-e29b-41d4-a716-446655440000');
+		});
+
+		it('profile_id / replay_id も UUID でも保持すること', () => {
+			const event = {
+				contexts: {
+					profile: { profile_id: '550e8400-e29b-41d4-a716-446655440000' },
+					replay: { replay_id: '06ceff95-39af-47f4-b030-6e45987fe06b' },
+				},
+			};
+
+			const result = scrubber.scrub(event);
+
+			expect(result.contexts.profile.profile_id).toBe('550e8400-e29b-41d4-a716-446655440000');
+			expect(result.contexts.replay.replay_id).toBe('06ceff95-39af-47f4-b030-6e45987fe06b');
+		});
+
+		it('予約キー以外の場所の UUID は引き続き redact すること（既存挙動）', () => {
+			const event = {
+				extra: {
+					someUserUuid: '550e8400-e29b-41d4-a716-446655440000',
+				},
+			};
+
+			const result = scrubber.scrub(event);
+
+			expect(result.extra.someUserUuid).toBe('[REDACTED]');
+		});
+	});
+
 	describe('再帰走査（breadcrumbs / formData / React Query cache）', () => {
 		it('breadcrumbs[].data 内のメモ本文をマスクすること', () => {
 			const event = {
