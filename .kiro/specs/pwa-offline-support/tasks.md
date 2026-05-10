@@ -122,7 +122,7 @@
 
 ## 7. SyncTelemetry（Sentry 観測性）
 
-- [ ] 7.1 同期成功 / スキップ / 失敗の breadcrumb と、リトライ上限到達時のみ `level: 'error'` の Sentry イベントを送出するヘルパーを実装する
+- [x] 7.1 同期成功 / スキップ / 失敗の breadcrumb と、リトライ上限到達時のみ `level: 'error'` の Sentry イベントを送出するヘルパーを実装する
   - `feature_area: 'memo'` / `route` / `user_facing` のタグを必ず付与する
   - breadcrumb の `data` を `memoId` / ステータスコード / `attempt` のみのホワイトリストに限定する
   - 既存 `sentry-scrubber` を経路に挟み、想定外フィールド追加時もメモ本文・タイトルを送信しない二重防御をユニットテストで確認する
@@ -131,19 +131,19 @@
 
 ## 8. React Query / 自動保存 / 初期化との統合
 
-- [ ] 8.1 React Query の memo 系 query / mutation を `OfflineMemoRepository` 経由に切り替え、`networkMode: 'offlineFirst'` を全クエリ・ミューテーションに適用する
+- [x] 8.1 React Query の memo 系 query / mutation を `OfflineMemoRepository` 経由に切り替え、`networkMode: 'offlineFirst'` を全クエリ・ミューテーションに適用する
   - フック層から `apiClient` への直接依存を解除し、Repository の `apiClient` 注入経由に統一する
   - `onMutate` の楽観更新後は Repository 結果での再上書きを行わず、二重更新による「一瞬古い値に戻る」現象を排除する
   - オフライン中は新規メモ作成を行わない方針（前提仕様）に従い、対応 mutation はオンライン時のみ発火する
   - _Requirements: 3.1, 3.2, 3.3, 4.1, 4.2, 4.3, 4.6, 5.1_
 
-- [ ] 8.2 `useAutoSave` の SaveStatus を `'offline-saved'` 込みの 6 値 discriminated union に拡張し、Repository からの `OfflineSavedSignal` を resolve、サーバーエラーのみ reject という応答プロトコルを実装する
+- [x] 8.2 `useAutoSave` の SaveStatus を `'offline-saved'` 込みの 6 値 discriminated union に拡張し、Repository からの `OfflineSavedSignal` を resolve、サーバーエラーのみ reject という応答プロトコルを実装する
   - オフライン保存時は既存の自動保存タイミング（編集停止後 2 秒）を維持する
   - `'offline-saved' → 'saved'` の遷移は `useAutoSave` ではなく上位（`MemoEditor` 内の `SyncEngine` イベント購読）で行う方針を実装と単体テストの両方で固定する
   - 既存テスト（`useAutoSave.test.ts`）を拡張し、`'offline-saved'` 遷移と再オンライン後の `'saved'` 復帰を検証する
   - _Requirements: 4.1, 4.7_
 
-- [ ] 8.3 `useNetworkStatus` / `useSyncEngine` / `useSwRegistration` フックと、Repository の `ready: Promise<void>` を待ってから React Query の `enabled` を解放する `useAppInit` の初期化順序を整える
+- [x] 8.3 `useNetworkStatus` / `useSyncEngine` / `useSwRegistration` フックと、Repository の `ready: Promise<void>` を待ってから React Query の `enabled` を解放する `useAppInit` の初期化順序を整える
   - 起動順序: SW 登録 → IDB 初期化 → 所有者検証 → NetworkStatusStore 起動 → SyncEngine 起動 → React Query 解放
   - 起動時に `pending_operations` を読んで `'offline-saved'` 表示を再導出し、未送信の編集内容で UI を即時表示する
   - _Requirements: 4.4, 6.7, 7.3, 10.3_

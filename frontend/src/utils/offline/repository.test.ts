@@ -772,3 +772,94 @@ describe('OfflineMemoRepository — owner scoping & purge', () => {
 		}
 	});
 });
+
+describe('OfflineMemoRepository — markSynced / evictById', () => {
+	beforeEach(async () => {
+		await deleteDB(OFFLINE_DB_NAME);
+	});
+
+	afterEach(async () => {
+		await deleteDB(OFFLINE_DB_NAME);
+	});
+
+	it('markSynced はサーバースナップショットを synced 状態で保存し既存の offline-saved を上書きする', async () => {
+		const { repo, db } = await makeRepo();
+		try {
+			const initial: CachedMemoRecord = {
+				id: 'memo-1',
+				userId: USER_ID,
+				title: 'old-local',
+				content: '<p>old</p>',
+				searchableText: 'old',
+				tagIds: [],
+				notebookId: null,
+				createdAt: '2026-05-01T00:00:00.000Z',
+				updatedAt: '2026-05-01T00:00:00.000Z',
+				trashedAt: null,
+				syncStatus: 'offline-saved',
+			};
+			await repo.saveLocal(initial);
+
+			const updated = await repo.markSynced({
+				id: 'memo-1',
+				title: 'server-version',
+				content: '<p>fresh</p>',
+				tagIds: ['tag-a'],
+				notebookId: null,
+				createdAt: '2026-05-01T00:00:00.000Z',
+				updatedAt: '2026-05-02T00:00:00.000Z',
+				trashedAt: null,
+			});
+
+			expect(updated.title).toBe('server-version');
+			expect(updated.syncStatus).toBe('synced');
+			expect(updated.searchableText).toBe('fresh');
+
+			const reloaded = await repo.getMemo('memo-1');
+			expect(reloaded?.title).toBe('server-version');
+			expect(reloaded?.syncStatus).toBe('synced');
+		} finally {
+			db.close();
+		}
+	});
+
+	it('evictById は対象メモを削除する。他ユーザー所有のメモは触らない', async () => {
+		const { repo, db } = await makeRepo();
+		try {
+			await repo.saveLocal({
+				id: 'mine',
+				userId: USER_ID,
+				title: 'mine',
+				content: '',
+				searchableText: '',
+				tagIds: [],
+				notebookId: null,
+				createdAt: '2026-05-01T00:00:00.000Z',
+				updatedAt: '2026-05-01T00:00:00.000Z',
+				trashedAt: null,
+				syncStatus: 'synced',
+			});
+			await db.put('memos', {
+				id: 'others',
+				userId: OTHER_USER_ID,
+				title: 'others',
+				content: '',
+				searchableText: '',
+				tagIds: [],
+				notebookId: null,
+				createdAt: '2026-05-01T00:00:00.000Z',
+				updatedAt: '2026-05-01T00:00:00.000Z',
+				trashedAt: null,
+				syncStatus: 'synced',
+			});
+
+			await repo.evictById('mine');
+			await repo.evictById('others');
+
+			expect(await db.get('memos', 'mine')).toBeUndefined();
+			expect(await db.get('memos', 'others')).toBeDefined();
+		} finally {
+			db.close();
+		}
+	});
+});

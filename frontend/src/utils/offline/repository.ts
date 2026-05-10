@@ -209,6 +209,32 @@ export class OfflineMemoRepository {
 		return input.memo;
 	}
 
+	async markSynced(snapshot: ServerMemoSnapshot): Promise<CachedMemoRecord> {
+		const userId = this.requireUserId();
+		const record: CachedMemoRecord = {
+			id: snapshot.id,
+			userId,
+			title: snapshot.title,
+			content: snapshot.content,
+			searchableText: stripHtml(snapshot.content),
+			tagIds: [...snapshot.tagIds],
+			notebookId: snapshot.notebookId,
+			createdAt: snapshot.createdAt,
+			updatedAt: snapshot.updatedAt,
+			trashedAt: snapshot.trashedAt,
+			syncStatus: 'synced',
+		};
+		await this.opts.db.put('memos', record);
+		return record;
+	}
+
+	async evictById(id: string): Promise<void> {
+		const userId = this.requireUserId();
+		const memo = await this.opts.db.get('memos', id);
+		if (!memo || memo.userId !== userId) return;
+		await this.opts.db.delete('memos', id);
+	}
+
 	async evictOldestSynced(keep: number): Promise<number> {
 		const userId = this.requireUserId();
 		const tx = this.opts.db.transaction('memos', 'readwrite');
