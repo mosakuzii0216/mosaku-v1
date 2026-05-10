@@ -29,6 +29,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
 	[ERROR_CODES.RESOURCE.IN_USE]: '使用中のリソースは削除できません',
 	[ERROR_CODES.RESOURCE.ALREADY_FAVORITED]: '既にお気に入りに追加されています',
 	[ERROR_CODES.RESOURCE.NOT_FAVORITED]: 'お気に入りに登録されていません',
+	[ERROR_CODES.RESOURCE.CONFLICT]: 'リソースは他のクライアントによって更新されています',
 
 	// バリデーションエラー
 	[ERROR_CODES.VALIDATION.INVALID_INPUT]: '入力値が不正です',

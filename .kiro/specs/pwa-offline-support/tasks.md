@@ -77,28 +77,28 @@
 
 ## 5. バックエンドの last-write-wins 対応
 
-- [ ] 5.1 (P) `UpdateMemoDto` に `clientUpdatedAt`（オプショナル / `@IsISO8601()`）を追加し、未指定時は従来挙動のままとする後方互換を維持する
+- [x] 5.1 (P) `UpdateMemoDto` に `clientUpdatedAt`（オプショナル / `@IsISO8601()`）を追加し、未指定時は従来挙動のままとする後方互換を維持する
   - DTO バリデーションでタイムゾーン情報の欠落を弾くこと、未指定時はバリデーションをスキップすることをユニットテストで担保する
   - _Requirements: 6.2_
 
-- [ ] 5.2 (P) `MemoService.update` に `clientUpdatedAt` 比較分岐を実装し、サーバー側 `updatedAt` がクライアントより新しい場合に `ConflictException` を投げてレスポンスボディに現在の Memo（`getDefaultInclude` 込み）を含める
+- [x] 5.2 (P) `MemoService.update` に `clientUpdatedAt` 比較分岐を実装し、サーバー側 `updatedAt` がクライアントより新しい場合に `ConflictException` を投げてレスポンスボディに現在の Memo（`getDefaultInclude` 込み）を含める
   - 比較は UTC ミリ秒に正規化（`getTime()`）してタイムゾーン交差ケースに対応する
   - 既存所有権バリデーションと `BaseOwnableService` の責務境界を維持し、`update` 内部で分岐を実装する
   - 未指定時は無条件上書き（既存挙動）であることを明示するテストを残す
   - _Requirements: 6.2, 6.3_
 
-- [ ] 5.3 (P) Supertest による e2e テストで、`PATCH /memos/:id` の (a) `clientUpdatedAt` 未送信時の 200 / (b) クライアントの方が新しい場合の 200 / (c) サーバーの方が新しい場合の 409 + 現在表現を検証する
+- [x] 5.3 (P) Supertest による e2e テストで、`PATCH /memos/:id` の (a) `clientUpdatedAt` 未送信時の 200 / (b) クライアントの方が新しい場合の 200 / (c) サーバーの方が新しい場合の 409 + 現在表現を検証する
   - 401 / 403 / 404 の既存挙動が壊れていないことを併せて確認する
   - _Requirements: 6.2, 6.3, 6.5_
 
 ## 6. SyncEngine（保留キュードレインと last-write-wins 同期）
 
-- [ ] 6.1 SyncEngine をシングルトン構造で実装し、`BroadcastChannel('mosaku-sync')` によるタブ間リーダー選出（先勝ち）とリーダー喪失時の `aborted` 結果返却を成立させる
+- [x] 6.1 SyncEngine をシングルトン構造で実装し、`BroadcastChannel('mosaku-sync')` によるタブ間リーダー選出（先勝ち）とリーダー喪失時の `aborted` 結果返却を成立させる
   - リーダー以外のタブはキュー操作のみ可能とし、ドレインを開始しないことを並行起動シナリオの単体テストで検証する
   - `start()` / `stop()` / `isRunning()` を提供し、ホットリロード時にタイマー多重起動を防ぐ
   - _Requirements: 6.1, 6.7_
 
-- [ ] 6.2 ドレインサイクル本体を実装し、保留キューを `updatedAt` 昇順に走査して `apiClient.updateMemo` 等を発行、ステータスごとに分岐させる
+- [x] 6.2 ドレインサイクル本体を実装し、保留キューを `updatedAt` 昇順に走査して `apiClient.updateMemo` 等を発行、ステータスごとに分岐させる
   - 200 系成功時はサーバー応答でローカル `memos` を上書きしキューを除去
   - 409（last-write-wins 敗北）時はサーバー版で上書きし、スキップ通知バッチへ `{ memoId, title }` を蓄積
   - 404 時は対象エントリをキューから取り除き、ローカルキャッシュも削除した上でユーザー通知バッチへ追加
@@ -106,17 +106,17 @@
   - サイクル完了後にメモ一覧の再取得を行いローカルキャッシュと React Query キャッシュを再同期する
   - _Requirements: 6.1, 6.2, 6.3, 6.5, 6.6, 7.4_
 
-- [ ] 6.3 5xx / ネットワーク再切断時の指数バックオフ（初期 2 秒 / 最大 5 分 / 最大 3 回）と、上限到達時の Sentry error イベント発火を実装する
+- [x] 6.3 5xx / ネットワーク再切断時の指数バックオフ（初期 2 秒 / 最大 5 分 / 最大 3 回）と、上限到達時の Sentry error イベント発火を実装する
   - リトライによりキューが失われないことを永続化テストで担保する
   - サイクルがバックオフ中に網が再び切れた場合の中断と、再オンライン後の自動再開を検証する
   - _Requirements: 6.4, 10.2_
 
-- [ ] 6.4 `SyncEvent`（`cycle-start` / `cycle-complete` / `pending-changed` / `auth-required`）の発火と、サイクル完了時のスキップタイトル列挙トースト用ペイロード生成を実装する
+- [x] 6.4 `SyncEvent`（`cycle-start` / `cycle-complete` / `pending-changed` / `auth-required`）の発火と、サイクル完了時のスキップタイトル列挙トースト用ペイロード生成を実装する
   - `cycle-complete` の result に `succeeded` / `skippedByLww` / `failed` を含める
   - 保留件数の変化（追加・削除）を都度 `pending-changed` で通知する
   - _Requirements: 7.5, 10.1_
 
-- [ ] 6.5 サイクル中に新規オフライン編集が enqueue された場合の挙動として、現サイクルでは送信せず完了後に再ドレインを起動するロジックを実装し、ユニットテストで再起動が高々 1 度であることを検証する
+- [x] 6.5 サイクル中に新規オフライン編集が enqueue された場合の挙動として、現サイクルでは送信せず完了後に再ドレインを起動するロジックを実装し、ユニットテストで再起動が高々 1 度であることを検証する
   - サイクル多重起動を防ぐミューテックスを実装する
   - _Requirements: 6.7_
 

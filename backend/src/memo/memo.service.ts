@@ -12,6 +12,7 @@ import { CreateMemoDto } from './dto/create-memo.dto';
 import { UpdateMemoDto } from './dto/update-memo.dto';
 import type { Memo, Prisma } from '@prisma/client';
 import { NOTEBOOK_WITH_THEME_SELECT } from '../common/constants/prisma-selects';
+import { ERROR_CODES, throwConflict } from '../common/exceptions';
 
 // Memoエンティティ型（リレーション込み）
 type MemoWithRelations = Memo & { userId: string };
@@ -143,8 +144,37 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 		});
 	}
 
+	/**
+	 * メモを更新する。
+	 * - `clientUpdatedAt` 未指定時は従来挙動（無条件上書き）。
+	 * - 指定時は last-write-wins 比較を行い、サーバーの `updatedAt` が新しい場合は
+	 *   409 Conflict を投げて現在のメモを `details.current` に含める。
+	 *   比較は UTC ミリ秒（`getTime()`）に正規化し、タイムゾーン差異を吸収する。
+	 */
 	async update(id: string, updateMemoDto: UpdateMemoDto, userId: string) {
-		return this.updateBase(id, updateMemoDto, userId);
+		const { clientUpdatedAt, ...patch } = updateMemoDto;
+
+		if (clientUpdatedAt === undefined) {
+			return this.updateBase(id, patch, userId);
+		}
+
+		const existing = await this.findOne(id, userId);
+		const serverMs = new Date(existing.updatedAt).getTime();
+		const clientMs = new Date(clientUpdatedAt).getTime();
+
+		if (serverMs > clientMs) {
+			throwConflict(
+				ERROR_CODES.RESOURCE.CONFLICT,
+				'Memo has been updated on the server since clientUpdatedAt',
+				{ current: existing },
+			);
+		}
+
+		return (await this.prisma.memo.update({
+			where: { id },
+			data: patch,
+			include: this.getDefaultInclude(),
+		})) as unknown as MemoWithRelations;
 	}
 
 	async search(query: string, userId: string, tagIds?: string[]) {

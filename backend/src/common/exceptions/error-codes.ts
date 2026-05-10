@@ -39,6 +39,7 @@ export const ERROR_CODES = {
 		IN_USE: 'RES003',
 		ALREADY_FAVORITED: 'RES004',
 		NOT_FAVORITED: 'RES005',
+		CONFLICT: 'RES006',
 	},
 
 	// バリデーションエラー (VAL001~)
