@@ -427,6 +427,11 @@ class ApiClient {
 	async deleteNotebook(id: string): Promise<void> {
 		await this.request(`/notebooks/${id}`, { method: 'DELETE' });
 	}
+
+	// ヘルスチェック（オフライン状態判定用 heartbeat。認証不要）
+	async health(): Promise<{ status: string }> {
+		return this.request<{ status: string }>('/health', { authLevel: 'NONE' });
+	}
 }
 
 export const apiClient = new ApiClient();

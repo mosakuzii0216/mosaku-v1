@@ -146,3 +146,44 @@ describe('ApiClient.verifyInvitationCode()', () => {
 		);
 	});
 });
+
+describe('ApiClient.health()', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it('GET /health を認証なしで呼び { status: "ok" } を返す', async () => {
+		const fetchMock = vi.fn().mockResolvedValue({
+			ok: true,
+			headers: new Headers({ 'content-type': 'application/json' }),
+			json: vi.fn().mockResolvedValue({ status: 'ok' }),
+		});
+		vi.stubGlobal('fetch', fetchMock);
+
+		const result = await apiClient.health();
+		expect(result).toEqual({ status: 'ok' });
+
+		const [url, init] = fetchMock.mock.calls[0];
+		expect(url).toBe('http://localhost:3000/health');
+		const headers = (init?.headers ?? {}) as Record<string, string>;
+		expect(headers.Authorization).toBeUndefined();
+	});
+
+	it('非 OK レスポンスでエラーを throw する', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn().mockResolvedValue({
+				ok: false,
+				status: 503,
+				headers: new Headers({ 'content-type': 'application/json' }),
+				json: vi.fn().mockResolvedValue({ message: 'Service unavailable' }),
+			}),
+		);
+
+		await expect(apiClient.health()).rejects.toThrow('Service unavailable');
+	});
+});
