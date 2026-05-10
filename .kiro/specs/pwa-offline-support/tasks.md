@@ -52,25 +52,25 @@
 
 ## 3. ストレージ容量と退避制御
 
-- [ ] 3.1 `navigator.storage.estimate()` を用いた容量スナップショット取得と、`quotaBytes < 100 MB` 時の `maxEntries` 比例縮小ロジックを実装する
+- [x] 3.1 `navigator.storage.estimate()` を用いた容量スナップショット取得と、`quotaBytes < 100 MB` 時の `maxEntries` 比例縮小ロジックを実装する
   - estimate 失敗時は固定上限 50 MB / 200 件で運用するフォールバックを用意する
   - 80% 超過の閾値判定をスナップショットに含めて上位へ伝える
   - _Requirements: 8.1, 8.5_
 
-- [ ] 3.2 容量逼迫時の退避（`updatedAt` 昇順削除）を実装し、`syncStatus === 'offline-saved'` のメモは退避対象から除外する
+- [x] 3.2 容量逼迫時の退避（`updatedAt` 昇順削除）を実装し、`syncStatus === 'offline-saved'` のメモは退避対象から除外する
   - 退避はサーバー上のメモを削除しないことをユニットテストで明示する
   - 80% 閾値到達時にユーザーへ通知するイベントを発火し、UI トースト連携の足場を作る
   - _Requirements: 2.4, 8.2_
 
 ## 4. ネットワーク状態の検知と公開
 
-- [ ] 4.1 (P) `NetworkStatusStore` を Zustand で実装し、`online` / `unstable` / `offline` の 3 値状態を `window` の `online`/`offline` イベントを一次シグナルとして提供する
+- [x] 4.1 (P) `NetworkStatusStore` を Zustand で実装し、`online` / `unstable` / `offline` の 3 値状態を `window` の `online`/`offline` イベントを一次シグナルとして提供する
   - 状態変更時に `lastChangeAt` を更新し、購読者に同期的に通知する
   - プロセス起動時は `'unstable'` から開始し、初回 heartbeat 結果で確定する初期化フローを設ける
   - `visibilityState: 'hidden'` の間は heartbeat を停止し、復帰時に再開する
   - _Requirements: 7.1, 7.2_
 
-- [ ] 4.2 軽量 heartbeat（`apiClient.health()` の追加と HEAD 相当の通信）と連続失敗 2 回で `'unstable' → 'offline'` に遷移する判定ロジックを組み込む
+- [x] 4.2 軽量 heartbeat（`apiClient.health()` の追加と HEAD 相当の通信）と連続失敗 2 回で `'unstable' → 'offline'` に遷移する判定ロジックを組み込む
   - 既存テーマエフェクトの自動停止条件（`prefers-reduced-motion` / エディタフォーカス / `visibilityState` / マウスアイドル）と矛盾しないよう、独自の RAF / setInterval を増やさず単一タイマーで実装する
   - heartbeat の最大間隔・最小間隔・バックオフを設定で可変にし、ユニットテストでフェイクタイマーから挙動を検証する
   - _Requirements: 7.1, 8.4_

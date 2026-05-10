@@ -209,6 +209,34 @@ export class OfflineMemoRepository {
 		return input.memo;
 	}
 
+	async evictOldestSynced(keep: number): Promise<number> {
+		const userId = this.requireUserId();
+		const tx = this.opts.db.transaction('memos', 'readwrite');
+		const store = tx.objectStore('memos');
+		const all = await store.index('byUser').getAll(userId);
+
+		const totalCount = all.length;
+		const target = totalCount - Math.max(0, keep);
+		if (target <= 0) {
+			await tx.done;
+			return 0;
+		}
+
+		const evictable = all
+			.filter((memo) => memo.syncStatus === 'synced')
+			.sort((a, b) => {
+				if (a.updatedAt === b.updatedAt) return 0;
+				return a.updatedAt < b.updatedAt ? -1 : 1;
+			});
+
+		const toRemove = evictable.slice(0, Math.min(target, evictable.length));
+		for (const memo of toRemove) {
+			await store.delete(memo.id);
+		}
+		await tx.done;
+		return toRemove.length;
+	}
+
 	async purgeForUser(userId: string): Promise<void> {
 		const tx = this.opts.db.transaction(['memos', 'pending_operations', 'meta'], 'readwrite');
 		const memosStore = tx.objectStore('memos');
