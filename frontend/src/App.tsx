@@ -11,6 +11,7 @@ import AuthGuard from './components/auth/AuthGuard';
 import AuthCallback from './components/auth/AuthCallback';
 import PasswordReset from './components/auth/PasswordReset';
 import InvitationManager from './components/admin/InvitationManager';
+import { SwUpdatePrompt } from './components/pwa/SwUpdatePrompt';
 
 const MOBILE_BREAKPOINT = 768;
 
@@ -49,6 +50,7 @@ function AppContent() {
 function App() {
 	return (
 		<QueryClientProvider client={queryClient}>
+			<SwUpdatePrompt />
 			<AuthProvider>
 				<Router>
 					<RouteTracker />
