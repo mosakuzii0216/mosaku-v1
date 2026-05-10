@@ -58,3 +58,13 @@ jobs:
       # frontend の build スクリプトは "tsc -b && vite build"
       - name: Viteビルド確認
         run: npm run build -w frontend
+
+      # -----------------------------------------------------------------------
+      # Step 5: Precache サイズ計測（PWA app-shell ガード）
+      # -----------------------------------------------------------------------
+      # PRECACHE_BASELINE_BYTES が未設定の間は計測のみ。値が設定されると
+      # 1.5x ガードが有効になり、超過時は CI が失敗する（Requirement 8.3）。
+      - name: Precache サイズ計測
+        env:
+          PRECACHE_BASELINE_BYTES: ${{ vars.PRECACHE_BASELINE_BYTES }}
+        run: npm run check:precache -w frontend
