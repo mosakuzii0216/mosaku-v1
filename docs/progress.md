@@ -32,6 +32,42 @@
 
 ---
 
+## 2026-05-12（Phase 1 / PWA + オフライン対応完了 — 計画大幅前倒し）
+
+### 今週やったこと
+
+- **`pwa-offline-support` を完走**（31/31 タスク、`/kiro:validate-impl` で `implementation-validated` に確定）
+  - 当初 7〜8月予定の PWA + オフライン対応を 5月で前倒し完了
+  - Domain 層: `OfflineMemoRepository`（`frontend/src/utils/offline/repository.ts`）/ `SyncEngine`（`frontend/src/utils/sync/sync-engine.ts`）/ `QuotaManager` / `SyncTelemetry` / `NetworkStatusStore`
+  - Hooks 層: `useNetworkStatus` / `useSyncEngine` / `useSwRegistration`、`useAutoSave` を 6 状態（`'offline-saved'` 追加）に拡張、`useMemoQueries` を Repository 経由に切替
+  - UI 層: `OfflineBadge`（ヘッダー常時表示）/ `SyncToast` / `SwUpdatePrompt` / `DebugPanel`、`MemoEditor` の削除/ゴミ箱送りも Repository 経由
+  - PWA 設定: `vite-plugin-pwa` を `prompt` 更新方式に切替、`/api/*` の runtimeCaching 完全排除、`themes/*.css` を precache から外して CacheFirst の遅延キャッシュ化
+  - Backend: `PATCH /memos/:id` に `clientUpdatedAt`（`@IsISO8601()` + TZ 検証）を追加し、サーバー側が新しい場合は `ConflictException`（409 + 現在表現）を返す last-write-wins を実装
+  - E2E: 電車内シナリオ / PWA インストール / アプリシェル / SW 更新 / パフォーマンス計測 CI ジョブ（precache 1.5x 以下・同期 30 秒以内・検索 300 ms 以内）
+  - 観測性: `SyncTelemetry` 経由で `feature_area: memo` / `route` / `user_facing` タグ付き Sentry breadcrumb + リトライ上限到達時のみ `level: error`
+- **テスト結果**: Frontend Vitest **519/519 緑**、Backend memo Jest **32/32 緑**、Backend e2e `memo-last-write-wins.e2e-spec.ts` 含む
+
+### 来週の予定
+
+- ドッグフーディング開始（Notion 閉じる）・摩擦記録運用ルール開始（`Friction Log` ノートブック作成）
+- UptimeRobot 導入（Sentry とセットの未完了タスク）
+- GitHub Secrets に `SLACK_WEBHOOK_URL` を追加（デプロイ通知）
+- テーマ作成（+3 テーマ、計 10。5 月マイルストーン達成）
+- 摩擦 Top1 の選定 → `/kiro:spec-init`
+
+### ブロッカー・懸念
+
+- なし
+
+### メモ
+
+- spec 名は計画書記載の `pwa-and-offline-cache` から `pwa-offline-support` に変わった（実装スコープを「単一デバイス前提のオフライン CRUD + シングル PWA」に明示化）
+- `multi-device-conflict-resolution` は引き続き別 spec（Phase 3 / 11 月）として温存
+- 当初 7〜8 月の PWA 枠が空いたため、その時間で content JSONB 移行 / 利用規約・PP 骨子 / 摩擦 Top の積み増しなどに余裕ができた
+- 計画書の Phase 1 PWA 行を ✅ に更新、最終更新日を 2026-05-12 に変更
+
+---
+
 ## 2026-05-09（Phase 1 / Sentry 統合完了）
 
 ### 今週やったこと
