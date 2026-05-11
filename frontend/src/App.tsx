@@ -12,6 +12,8 @@ import AuthCallback from './components/auth/AuthCallback';
 import PasswordReset from './components/auth/PasswordReset';
 import InvitationManager from './components/admin/InvitationManager';
 import { SwUpdatePrompt } from './components/pwa/SwUpdatePrompt';
+import { SyncToast } from './components/ui/SyncToast';
+import { SettingsPage } from './components/settings/SettingsPage';
 
 const MOBILE_BREAKPOINT = 768;
 
@@ -51,6 +53,7 @@ function App() {
 	return (
 		<QueryClientProvider client={queryClient}>
 			<SwUpdatePrompt />
+			<SyncToast />
 			<AuthProvider>
 				<Router>
 					<RouteTracker />
@@ -62,6 +65,14 @@ function App() {
 							element={
 								<AuthGuard>
 									<InvitationManager />
+								</AuthGuard>
+							}
+						/>
+						<Route
+							path="/settings"
+							element={
+								<AuthGuard>
+									<SettingsPage />
 								</AuthGuard>
 							}
 						/>

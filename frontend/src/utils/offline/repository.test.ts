@@ -863,3 +863,95 @@ describe('OfflineMemoRepository — markSynced / evictById', () => {
 		}
 	});
 });
+
+describe('OfflineMemoRepository — statsForDebug', () => {
+	beforeEach(async () => {
+		await deleteDB(OFFLINE_DB_NAME);
+	});
+	afterEach(async () => {
+		await deleteDB(OFFLINE_DB_NAME);
+	});
+
+	it('返り値に cachedCount と pendingCount を含む', async () => {
+		const { repo, db } = await makeRepo();
+		try {
+			const stats = await repo.statsForDebug();
+			expect(stats).toMatchObject({ cachedCount: 0, pendingCount: 0 });
+		} finally {
+			db.close();
+		}
+	});
+
+	it('現在ログイン中ユーザーのキャッシュ件数のみを cachedCount に数える', async () => {
+		const { repo, db } = await makeRepo();
+		try {
+			await repo.upsertFromServer([
+				createSnapshot({ id: 'm1' }),
+				createSnapshot({ id: 'm2' }),
+				createSnapshot({ id: 'm3' }),
+			]);
+			await db.put('memos', {
+				id: 'foreign',
+				userId: OTHER_USER_ID,
+				title: 'other user',
+				content: '',
+				searchableText: '',
+				tagIds: [],
+				notebookId: null,
+				createdAt: '2026-05-01T00:00:00.000Z',
+				updatedAt: '2026-05-01T00:00:00.000Z',
+				trashedAt: null,
+				syncStatus: 'synced',
+			});
+
+			const stats = await repo.statsForDebug();
+			expect(stats.cachedCount).toBe(3);
+		} finally {
+			db.close();
+		}
+	});
+
+	it('pendingCount は pending_operations の件数', async () => {
+		const { repo, db } = await makeRepo();
+		try {
+			const op: PendingOperationRecord = {
+				memoId: 'm1',
+				kind: 'update',
+				patch: { title: 'updated' },
+				clientUpdatedAt: '2026-05-01T00:00:00.000Z',
+				enqueuedAt: '2026-05-01T00:00:00.000Z',
+				retryCount: 0,
+			};
+			await repo.enqueueOperation(op);
+			await repo.enqueueOperation({ ...op, memoId: 'm2', kind: 'trash' });
+
+			const stats = await repo.statsForDebug();
+			expect(stats.pendingCount).toBe(2);
+		} finally {
+			db.close();
+		}
+	});
+
+	it('quotaSnapshot は quotaManager が提供されている場合に含まれる', async () => {
+		const quotaManager = makeQuotaManagerSpy();
+		const { repo, db } = await makeRepo({ quotaManager });
+		try {
+			const stats = await repo.statsForDebug();
+			expect(quotaManager.estimate).toHaveBeenCalled();
+			expect(stats.quotaSnapshot).toBeDefined();
+			expect(stats.quotaSnapshot?.quotaBytes).toBeGreaterThan(0);
+		} finally {
+			db.close();
+		}
+	});
+
+	it('quotaManager が無ければ quotaSnapshot は undefined', async () => {
+		const { repo, db } = await makeRepo();
+		try {
+			const stats = await repo.statsForDebug();
+			expect(stats.quotaSnapshot).toBeUndefined();
+		} finally {
+			db.close();
+		}
+	});
+});

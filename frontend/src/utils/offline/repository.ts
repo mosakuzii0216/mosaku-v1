@@ -1,6 +1,6 @@
 import type { CachedMemoRecord, OfflineDB, PendingOperationRecord, SyncOperationKind } from './db';
 import { isValidIso8601 } from './iso8601';
-import type { QuotaManager } from './quota';
+import type { QuotaManager, QuotaSnapshot } from './quota';
 import { stripHtml } from './strip-html';
 
 export interface ServerMemoSnapshot {
@@ -43,6 +43,12 @@ export interface SearchHit {
 export interface SearchResult {
 	hits: SearchHit[];
 	outOfCacheRange: boolean;
+}
+
+export interface DebugStats {
+	cachedCount: number;
+	pendingCount: number;
+	quotaSnapshot?: QuotaSnapshot;
 }
 
 const SNIPPET_CONTEXT_RADIUS = 30;
@@ -341,6 +347,26 @@ export class OfflineMemoRepository {
 		});
 
 		return { hits, outOfCacheRange: hits.length === 0 };
+	}
+
+	async statsForDebug(): Promise<DebugStats> {
+		const userId = this.requireUserId();
+		const memosTx = this.opts.db.transaction('memos', 'readonly');
+		const cachedAll = await memosTx.objectStore('memos').index('byUser').getAll(userId);
+		await memosTx.done;
+
+		const pendingTx = this.opts.db.transaction('pending_operations', 'readonly');
+		const pendingAll = await pendingTx.objectStore('pending_operations').getAll();
+		await pendingTx.done;
+
+		const stats: DebugStats = {
+			cachedCount: cachedAll.length,
+			pendingCount: pendingAll.length,
+		};
+		if (this.opts.quotaManager) {
+			stats.quotaSnapshot = await this.opts.quotaManager.estimate();
+		}
+		return stats;
 	}
 
 	private assertValidClientUpdatedAt(op: PendingOperationRecord): void {
