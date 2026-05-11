@@ -128,8 +128,8 @@ class ApiClient {
 		});
 	}
 
-	// メモ更新
-	async updateMemo(id: string, data: UpdateMemoDto): Promise<Memo> {
+	// メモ更新（clientUpdatedAt を含めると last-write-wins チェックの対象になる）
+	async updateMemo(id: string, data: UpdateMemoDto & { clientUpdatedAt?: string }): Promise<Memo> {
 		return this.request<Memo>(`/memos/${id}`, {
 			method: 'PATCH',
 			body: JSON.stringify(data),

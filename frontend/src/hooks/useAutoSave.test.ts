@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useAutoSave } from './useAutoSave';
+import { OFFLINE_SAVED_SIGNAL, useAutoSave, type OfflineSavedSignal } from './useAutoSave';
 
 describe('useAutoSave', () => {
 	beforeEach(() => {
@@ -116,5 +116,71 @@ describe('useAutoSave', () => {
 		});
 
 		expect(result.current.saveStatus).toBe('error');
+	});
+
+	it("onSave が OfflineSavedSignal を返したとき saveStatus が 'offline-saved' になること", async () => {
+		const onSave = vi
+			.fn<() => Promise<void | OfflineSavedSignal>>()
+			.mockResolvedValue(OFFLINE_SAVED_SIGNAL);
+		const { result } = renderHook(() => useAutoSave({ canSave: true, isSaving: false, onSave }));
+
+		act(() => {
+			result.current.scheduleAutoSave();
+		});
+
+		await act(async () => {
+			vi.advanceTimersByTime(2000);
+		});
+
+		expect(result.current.saveStatus).toBe('offline-saved');
+	});
+
+	it('offline-saved の状態は SAVED_RESET_DELAY_MS が経過しても idle に戻らない', async () => {
+		const onSave = vi
+			.fn<() => Promise<void | OfflineSavedSignal>>()
+			.mockResolvedValue(OFFLINE_SAVED_SIGNAL);
+		const { result } = renderHook(() => useAutoSave({ canSave: true, isSaving: false, onSave }));
+
+		act(() => {
+			result.current.scheduleAutoSave();
+		});
+
+		await act(async () => {
+			vi.advanceTimersByTime(2000);
+		});
+
+		await act(async () => {
+			vi.advanceTimersByTime(2000);
+		});
+
+		expect(result.current.saveStatus).toBe('offline-saved');
+	});
+
+	it("offline-saved 後にオンラインで再度自動保存が成功すると saveStatus が 'saved' になること", async () => {
+		const onSave = vi
+			.fn<() => Promise<void | OfflineSavedSignal>>()
+			.mockResolvedValueOnce(OFFLINE_SAVED_SIGNAL)
+			.mockResolvedValueOnce(undefined);
+		const { result } = renderHook(() => useAutoSave({ canSave: true, isSaving: false, onSave }));
+
+		act(() => {
+			result.current.scheduleAutoSave();
+		});
+
+		await act(async () => {
+			vi.advanceTimersByTime(2000);
+		});
+
+		expect(result.current.saveStatus).toBe('offline-saved');
+
+		act(() => {
+			result.current.scheduleAutoSave();
+		});
+
+		await act(async () => {
+			vi.advanceTimersByTime(2000);
+		});
+
+		expect(result.current.saveStatus).toBe('saved');
 	});
 });

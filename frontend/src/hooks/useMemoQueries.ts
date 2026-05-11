@@ -1,22 +1,23 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
-import { apiClient } from '../utils/api';
 import { useViewStore } from '../stores/useViewStore';
 import { useTagStore } from '../stores/useTagStore';
 import type { CreateMemoDto, UpdateMemoDto } from '../types/memo';
 import type { PaginationParams } from '../types/pagination';
 import { queryKeys } from '../constants/queryKeys';
 import { ENTITY_CACHE_CONFIG } from '../constants/cacheConfig';
+import { getMemoBridge } from '../utils/memo/memo-bridge-instance';
 
 /**
  * メモ一覧取得
- * React Query を唯一の真実の源泉として使用（Zustand へのコピーは行わない）
+ * MemoBridge 経由でオンラインは apiClient、オフラインは IndexedDB から取得する。
  */
 export const useMemos = () => {
 	const { selectedTags } = useTagStore();
 
 	return useQuery({
 		queryKey: queryKeys.memos.list(selectedTags),
-		queryFn: () => apiClient.getMemos(selectedTags.length > 0 ? selectedTags : undefined),
+		queryFn: () => getMemoBridge().listMemos(selectedTags.length > 0 ? selectedTags : undefined),
+		networkMode: 'offlineFirst',
 		...ENTITY_CACHE_CONFIG.memos.list,
 	});
 };
@@ -30,8 +31,12 @@ export const useMemosPaginated = (pagination: PaginationParams = { page: 1, limi
 	return useQuery({
 		queryKey: [...queryKeys.memos.list(selectedTags), 'paginated', pagination],
 		queryFn: () =>
-			apiClient.getMemosPaginated(pagination, selectedTags.length > 0 ? selectedTags : undefined),
+			getMemoBridge().getMemosPaginated(
+				pagination,
+				selectedTags.length > 0 ? selectedTags : undefined,
+			),
 		placeholderData: keepPreviousData,
+		networkMode: 'offlineFirst',
 		...ENTITY_CACHE_CONFIG.memos.list,
 	});
 };
@@ -40,23 +45,25 @@ export const useMemosPaginated = (pagination: PaginationParams = { page: 1, limi
 export const useMemo = (id: string) => {
 	return useQuery({
 		queryKey: queryKeys.memos.detail(id),
-		queryFn: () => apiClient.getMemo(id),
+		queryFn: () => getMemoBridge().getMemo(id),
 		enabled: !!id,
+		networkMode: 'offlineFirst',
 		...ENTITY_CACHE_CONFIG.memos.detail,
 	});
 };
 
 /**
  * メモ検索
- * React Query を唯一の真実の源泉として使用
  */
 export const useSearchMemos = (query: string) => {
 	const { selectedTags } = useTagStore();
 
 	return useQuery({
 		queryKey: queryKeys.memos.search(query, selectedTags),
-		queryFn: () => apiClient.searchMemos(query, selectedTags.length > 0 ? selectedTags : undefined),
+		queryFn: () =>
+			getMemoBridge().searchMemos(query, selectedTags.length > 0 ? selectedTags : undefined),
 		enabled: query.length > 0,
+		networkMode: 'offlineFirst',
 		...ENTITY_CACHE_CONFIG.memos.search,
 	});
 };
@@ -73,23 +80,25 @@ export const useSearchMemosPaginated = (
 	return useQuery({
 		queryKey: [...queryKeys.memos.search(query, selectedTags), 'paginated', pagination],
 		queryFn: () =>
-			apiClient.searchMemosPaginated(
+			getMemoBridge().searchMemosPaginated(
 				query,
 				pagination,
 				selectedTags.length > 0 ? selectedTags : undefined,
 			),
 		enabled: query.length > 0,
 		placeholderData: keepPreviousData,
+		networkMode: 'offlineFirst',
 		...ENTITY_CACHE_CONFIG.memos.search,
 	});
 };
 
-// メモ作成
+// メモ作成（オンライン専用）
 export const useCreateMemo = () => {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: (data: CreateMemoDto) => apiClient.createMemo(data),
+		mutationFn: (data: CreateMemoDto) => getMemoBridge().createMemo(data),
+		networkMode: 'offlineFirst',
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: queryKeys.memos.list() });
 		},
@@ -102,10 +111,11 @@ export const useUpdateMemo = () => {
 
 	return useMutation({
 		mutationFn: ({ id, data }: { id: string; data: UpdateMemoDto }) =>
-			apiClient.updateMemo(id, data),
-		onSuccess: (data) => {
+			getMemoBridge().updateMemo(id, data),
+		networkMode: 'offlineFirst',
+		onSuccess: (result) => {
 			queryClient.invalidateQueries({ queryKey: queryKeys.memos.list() });
-			queryClient.invalidateQueries({ queryKey: queryKeys.memos.detail(data.id) });
+			queryClient.invalidateQueries({ queryKey: queryKeys.memos.detail(result.memo.id) });
 		},
 	});
 };
@@ -116,7 +126,8 @@ export const useDeleteMemo = () => {
 	const { goToList } = useViewStore();
 
 	return useMutation({
-		mutationFn: (id: string) => apiClient.deleteMemo(id),
+		mutationFn: (id: string) => getMemoBridge().trashMemo(id),
+		networkMode: 'offlineFirst',
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: queryKeys.memos.list() });
 			goToList();
@@ -128,7 +139,8 @@ export const useDeleteMemo = () => {
 export const useTrashMemos = () => {
 	return useQuery({
 		queryKey: queryKeys.memos.trash(),
-		queryFn: () => apiClient.getTrashMemos(),
+		queryFn: () => getMemoBridge().getTrashMemos(),
+		networkMode: 'offlineFirst',
 		...ENTITY_CACHE_CONFIG.memos.list,
 	});
 };
@@ -138,7 +150,8 @@ export const useRestoreMemo = () => {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: (id: string) => apiClient.restoreMemo(id),
+		mutationFn: (id: string) => getMemoBridge().restoreMemo(id),
+		networkMode: 'offlineFirst',
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: queryKeys.memos.all });
 		},
@@ -150,7 +163,8 @@ export const usePermanentDeleteMemo = () => {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: (id: string) => apiClient.permanentDeleteMemo(id),
+		mutationFn: (id: string) => getMemoBridge().permanentDeleteMemo(id),
+		networkMode: 'offlineFirst',
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: queryKeys.memos.trash() });
 		},
@@ -162,7 +176,8 @@ export const useEmptyTrash = () => {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: () => apiClient.emptyTrash(),
+		mutationFn: () => getMemoBridge().emptyTrash(),
+		networkMode: 'offlineFirst',
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: queryKeys.memos.trash() });
 		},

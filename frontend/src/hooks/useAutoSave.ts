@@ -1,14 +1,33 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
-export type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
+export type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'offline-saved';
+
+export interface OfflineSavedSignal {
+	readonly kind: 'offline-saved';
+}
+
+export const OFFLINE_SAVED_SIGNAL: OfflineSavedSignal = Object.freeze({ kind: 'offline-saved' });
+
+export function isOfflineSavedSignal(value: unknown): value is OfflineSavedSignal {
+	return (
+		typeof value === 'object' &&
+		value !== null &&
+		(value as { kind?: unknown }).kind === 'offline-saved'
+	);
+}
 
 export interface UseAutoSaveOptions {
 	/** hasChanges && (title または content が非空) */
 	canSave: boolean;
 	/** createMemo.isPending || updateMemo.isPending */
 	isSaving: boolean;
-	/** 保存処理本体。resolve で成功、reject で失敗 */
-	onSave: () => Promise<void>;
+	/**
+	 * 保存処理本体。
+	 * - resolve(undefined): 成功（saved に遷移）
+	 * - resolve(OFFLINE_SAVED_SIGNAL): オフライン保存成功（offline-saved に遷移）
+	 * - reject: サーバーエラー（error に遷移）
+	 */
+	onSave: () => Promise<void | OfflineSavedSignal>;
 	/** デバウンス待機時間（ms）。デフォルト 2000 */
 	debounceMs?: number;
 }
@@ -82,10 +101,16 @@ export function useAutoSave({
 			setSaveStatus('saving');
 
 			try {
-				await onSaveRef.current();
-				setSaveStatus('saved');
+				const result = await onSaveRef.current();
+				if (isOfflineSavedSignal(result)) {
+					// offline-saved は終端状態。
+					// 'saved' への自動復帰は呼び出し側（MemoEditor の SyncEngine 購読）で扱う方針。
+					clearSavedResetTimer();
+					setSaveStatus('offline-saved');
+					return;
+				}
 
-				// saved → idle へ自動リセット（Requirements: 1.2）
+				setSaveStatus('saved');
 				clearSavedResetTimer();
 				savedResetTimerRef.current = setTimeout(() => {
 					setSaveStatus('idle');
