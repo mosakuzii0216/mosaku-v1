@@ -150,34 +150,34 @@
 
 ## 9. UI レイヤ（オフライン可視化と通知）
 
-- [ ] 9.1 アプリヘッダーに `OfflineBadge` を常時表示し、`'offline'` を赤、`'unstable'` を黄、未同期件数を数字バッジで可視化する
+- [x] 9.1 アプリヘッダーに `OfflineBadge` を常時表示し、`'offline'` を赤、`'unstable'` を黄、未同期件数を数字バッジで可視化する
   - メモ詳細画面でも未同期件数の表示を出し分ける
   - 既存ヘッダーの未保存差分（M Header.tsx）と整合する形で統合する
   - _Requirements: 3.4, 7.2, 7.3_
 
-- [ ] 9.2 `MemoEditor` の自動保存インジケーターを 6 状態の discriminated union で網羅的に分岐し、`'offline-saved'` の専用ラベルとオフライン時の削除/ゴミ箱 confirm ダイアログ文言（「再接続後に同期されます」）を組み込む
+- [x] 9.2 `MemoEditor` の自動保存インジケーターを 6 状態の discriminated union で網羅的に分岐し、`'offline-saved'` の専用ラベルとオフライン時の削除/ゴミ箱 confirm ダイアログ文言（「再接続後に同期されます」）を組み込む
   - 削除・ゴミ箱送り操作も Repository 経由に変更し、オフライン時は保留キューに積む
   - _Requirements: 3.4, 4.1, 4.6, 4.7, 7.3_
 
-- [ ] 9.3 (P) `SyncToast` を実装し、`SyncEngine` の `cycle-complete` を購読して、(a) 同期成功件数 / (b) `skippedByLww` のタイトル列挙 / (c) 404 削除済み通知 / (d) リトライ上限到達 を区別して通知する
+- [x] 9.3 (P) `SyncToast` を実装し、`SyncEngine` の `cycle-complete` を購読して、(a) 同期成功件数 / (b) `skippedByLww` のタイトル列挙 / (c) 404 削除済み通知 / (d) リトライ上限到達 を区別して通知する
   - キャッシュ再構築通知（IDB 破損時）も同コンポーネントから出すか、別経路で出すかをデザインに沿って決定し実装する
   - _Requirements: 2.6, 7.4, 7.5, 8.2_
 
-- [ ] 9.4 (P) 設定画面の開発者向けセクションとして `DebugPanel` を追加し、`cachedCount` / `pendingCount` / `lastSyncAt` / `quotaUsage` / 最終同期結果を読み取り専用で表示する
+- [x] 9.4 (P) 設定画面の開発者向けセクションとして `DebugPanel` を追加し、`cachedCount` / `pendingCount` / `lastSyncAt` / `quotaUsage` / 最終同期結果を読み取り専用で表示する
   - `OfflineMemoRepository.statsForDebug()` と `SyncEngine.getLastSyncAt()` を呼び出して構成する
   - 検索範囲外ヒット時の「オフライン範囲のみ検索しました」メッセージ表示の動作確認手段を本パネルから提供する
   - _Requirements: 5.4, 10.3_
 
 ## 10. 統合検証とパフォーマンス計測
 
-- [ ] 10.1 Playwright による電車内シナリオ E2E を実装し、(オンラインで読み込み → DevTools `Offline` → 編集 + 自動保存 + 検索 → オンライン復帰 → 自動同期 → サーバーに反映) を一連で検証する
+- [x] 10.1 Playwright による電車内シナリオ E2E を実装し、(オンラインで読み込み → DevTools `Offline` → 編集 + 自動保存 + 検索 → オンライン復帰 → 自動同期 → サーバーに反映) を一連で検証する
   - 「未キャッシュメモへ遷移時のガイダンス」「オフライン中のタグ / ノートブックフィルタ」「サーバー削除済みメモの 404 通知」も同テストでカバーする
   - _Requirements: 3.1, 3.2, 3.3, 4.4, 5.1, 6.1, 6.6, 7.4_
 
-- [ ] 10.2 (P) インストール / アプリシェル / SW 更新の E2E を実装し、Manifest 検証、standalone 起動時の初期描画 3 秒以内、SW 更新トースト → 「更新」 → 旧 `api-cache` の消滅、を確認する
+- [x] 10.2 (P) インストール / アプリシェル / SW 更新の E2E を実装し、Manifest 検証、standalone 起動時の初期描画 3 秒以内、SW 更新トースト → 「更新」 → 旧 `api-cache` の消滅、を確認する
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 9.4_
 
-- [ ] 10.3 (P) パフォーマンス / 容量計測ジョブを CI に追加し、(a) precache サイズが既存ビルドの 1.5 倍以下、(b) 200 件キャッシュ + 50 件保留での同期スループット 30 秒以内（4G 想定）、(c) 検索 300 ms 以内、を計測する
+- [x] 10.3 (P) パフォーマンス / 容量計測ジョブを CI に追加し、(a) precache サイズが既存ビルドの 1.5 倍以下、(b) 200 件キャッシュ + 50 件保留での同期スループット 30 秒以内（4G 想定）、(c) 検索 300 ms 以内、を計測する
   - _Requirements: 5.2, 6.4, 8.3_
 
 - [ ]\* 10.4 React Query + Repository 結合の Vitest 統合テスト（オフラインで `useMemos` が IDB から読み取り、再オンラインで `SyncEngine` ドレイン後にキャッシュが更新される）を追加する

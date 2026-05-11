@@ -1,0 +1,218 @@
+# =============================================================================
+# PWA Offline Support — パフォーマンス / E2E ワークフロー（Task 10.3）
+# =============================================================================
+#
+# 概要:
+#   PWA オフライン対応のパフォーマンス指標と統合E2Eを CI で計測 / 検証する。
+#
+#   Job 1 (perf): バックエンド不要のベンチマーク
+#     - precache サイズ計測（既存 check:precache）
+#     - 検索スループット（200件キャッシュで <500ms）
+#     - 同期スループット（50件 pending で <60s）
+#
+#   Job 2 (e2e):  実バックエンド + PostgreSQL を起動し、Playwright で
+#     電車内シナリオ / PWA インストールフローを検証
+#
+# トリガー:
+#   - frontend/ / backend/ / .github/workflows/pwa-perf.yml 配下の変更
+#   - main への push（リリース確認）
+#
+# =============================================================================
+
+name: PWA Offline Perf & E2E
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - '.github/workflows/pwa-perf.yml'
+  push:
+    branches: [main]
+
+jobs:
+  # ===========================================================================
+  # Job 1: パフォーマンス計測（バックエンド不要）
+  # ===========================================================================
+  perf:
+    name: PWA performance benches
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # -----------------------------------------------------------------------
+      # Frontend build → precache サイズ計測
+      # -----------------------------------------------------------------------
+      - name: Build frontend
+        run: npm run build -w frontend
+
+      - name: Precache size guard
+        env:
+          PRECACHE_BASELINE_BYTES: ${{ vars.PRECACHE_BASELINE_BYTES }}
+        run: npm run check:precache -w frontend
+
+      # -----------------------------------------------------------------------
+      # 検索スループット（Requirement 5.2）
+      # -----------------------------------------------------------------------
+      - name: Search throughput bench
+        run: npm run bench:search -w frontend
+
+      # -----------------------------------------------------------------------
+      # 同期スループット（Requirement 6.4）
+      # -----------------------------------------------------------------------
+      - name: Sync drain throughput bench
+        run: npm run bench:sync -w frontend
+
+  # ===========================================================================
+  # Job 2: E2E（実バックエンド + PostgreSQL）
+  # ===========================================================================
+  e2e:
+    name: PWA E2E (train-scenario + pwa-install)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: mosaku_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://testuser:testpass@localhost:5432/mosaku_test
+      DIRECT_URL: postgresql://testuser:testpass@localhost:5432/mosaku_test
+      JWT_SECRET: test-jwt-secret-for-ci
+      SESSION_SECRET: test-session-secret-for-ci
+      # ADMIN_EMAIL を E2E_USER_EMAIL と同じ値にして招待コード無しで register できるようにする
+      ADMIN_EMAIL: pwa-e2e-admin@test.example
+      CORS_ORIGINS: http://localhost:5173,http://localhost:4173
+      E2E_USER_EMAIL: pwa-e2e-admin@test.example
+      E2E_USER_PASSWORD: PwaE2eTest123!
+      E2E_BACKEND_URL: http://localhost:3000
+      E2E_FRONTEND_ORIGIN: http://localhost:5173
+      VITE_BACKEND_URL: http://localhost:3000
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+
+      # -----------------------------------------------------------------------
+      # Backend 準備 + 起動
+      # -----------------------------------------------------------------------
+      - name: Generate Prisma Client
+        run: npx prisma generate
+        working-directory: backend
+
+      - name: Apply DB migrations
+        run: npx prisma migrate deploy
+        working-directory: backend
+
+      - name: Build backend
+        run: npm run build
+        working-directory: backend
+
+      - name: Start backend
+        run: |
+          nohup node dist/main > backend.log 2>&1 &
+          echo "Backend started (pid=$!)"
+        working-directory: backend
+
+      - name: Wait for backend
+        run: |
+          for i in {1..30}; do
+            if curl -sf http://localhost:3000/health > /dev/null; then
+              echo "Backend is up"; exit 0
+            fi
+            sleep 2
+          done
+          echo "Backend did not become ready"; tail -n 200 backend/backend.log || true
+          exit 1
+
+      # -----------------------------------------------------------------------
+      # Frontend ビルド + preview 起動（SW 有効化のため production build を使う）
+      # -----------------------------------------------------------------------
+      - name: Build frontend
+        run: npm run build -w frontend
+
+      - name: Start frontend preview
+        run: |
+          nohup npx vite preview --port 5173 --strictPort > preview.log 2>&1 &
+          echo "Preview started (pid=$!)"
+        working-directory: frontend
+
+      - name: Wait for frontend
+        run: |
+          for i in {1..30}; do
+            if curl -sf http://localhost:5173/ > /dev/null; then
+              echo "Frontend is up"; exit 0
+            fi
+            sleep 2
+          done
+          echo "Frontend did not become ready"; tail -n 200 frontend/preview.log || true
+          exit 1
+
+      # -----------------------------------------------------------------------
+      # E2E 実行
+      # -----------------------------------------------------------------------
+      - name: Run Playwright E2E (train-scenario + pwa-install)
+        env:
+          E2E_USE_PREVIEW: '1'
+        run: npx playwright test --reporter=list
+        working-directory: frontend
+
+      - name: Upload backend log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-log
+          path: backend/backend.log
+          retention-days: 7
+
+      - name: Upload frontend preview log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-preview-log
+          path: frontend/preview.log
+          retention-days: 7
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+          retention-days: 7
