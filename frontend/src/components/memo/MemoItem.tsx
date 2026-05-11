@@ -12,6 +12,8 @@ export const MemoItem = ({ memo, onClick }: MemoItemProps) => {
 	return (
 		<div
 			onClick={onClick}
+			data-testid="memo-item"
+			data-memo-id={memo.id}
 			className="bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer"
 		>
 			<div className="flex items-start justify-between">
