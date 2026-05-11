@@ -180,6 +180,6 @@
 - [x] 10.3 (P) パフォーマンス / 容量計測ジョブを CI に追加し、(a) precache サイズが既存ビルドの 1.5 倍以下、(b) 200 件キャッシュ + 50 件保留での同期スループット 30 秒以内（4G 想定）、(c) 検索 300 ms 以内、を計測する
   - _Requirements: 5.2, 6.4, 8.3_
 
-- [ ]\* 10.4 React Query + Repository 結合の Vitest 統合テスト（オフラインで `useMemos` が IDB から読み取り、再オンラインで `SyncEngine` ドレイン後にキャッシュが更新される）を追加する
+- [x]\* 10.4 React Query + Repository 結合の Vitest 統合テスト（オフラインで `useMemos` が IDB から読み取り、再オンラインで `SyncEngine` ドレイン後にキャッシュが更新される）を追加する
   - MVP 完了後にカバレッジ向上目的で着手可。受け入れ基準は E2E（10.1）で既にカバーされる
   - _Requirements: 3.1, 6.6_
