@@ -4,6 +4,7 @@ import { useNavigation } from '../../hooks/useNavigation';
 import { LibraryBig, Tag, LogOut, Settings, Trash2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router';
+import { OfflineBadge } from './OfflineBadge';
 
 interface HeaderProps {
 	onMemoCreateClick?: () => void;
@@ -92,6 +93,7 @@ export const Header = (_props?: HeaderProps) => {
 			</div>
 
 			<div className="flex items-center space-x-3">
+				<OfflineBadge variant="header" />
 				{user?.role === 'ADMIN' && (
 					<Link
 						to="/admin/invitations"
@@ -128,16 +130,14 @@ export const Header = (_props?: HeaderProps) => {
 								</div>
 
 								{/* メニューアイテム */}
-								<button
-									onClick={() => {
-										setIsDropdownOpen(false);
-										// TODO: 設定画面への遷移
-									}}
+								<Link
+									to="/settings"
+									onClick={() => setIsDropdownOpen(false)}
 									className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
 								>
 									<Settings className="w-4 h-4 mr-3" />
 									設定
-								</button>
+								</Link>
 
 								<button
 									onClick={() => {
