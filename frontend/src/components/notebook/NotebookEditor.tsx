@@ -19,6 +19,8 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 	const [content, setContent] = useState<string>('');
 	const [name, setName] = useState<string>('');
 	const [themeId, setThemeId] = useState<string>('default');
+	const [hasChanges, setHasChanges] = useState<boolean>(false);
+	const [saveError, setSaveError] = useState<string | null>(null);
 	const createNotebook = useCreateNotebook();
 	const updateNotebook = useUpdateNotebook();
 	const { goToNotebookList } = useViewStore();
@@ -34,6 +36,7 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 			setName(editingNotebook.name ?? '');
 			setContent(editingNotebook.content ?? '');
 			setThemeId(editingNotebook.themeId ?? editingNotebook.theme?.id ?? 'default');
+			setHasChanges(false);
 			// 既存タグの取得
 			apiClient
 				.getNotebookTags(editingNotebook.id)
@@ -41,6 +44,23 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 				.catch((e) => logger.error('failed to load notebook tags', e));
 		}
 	}, [isEdit, editingNotebook]);
+
+	// 変更検知
+	useEffect(() => {
+		if (isCreate) {
+			setHasChanges(name.trim().length > 0 || content.trim().length > 0);
+			return;
+		}
+		if (!editingNotebook) return;
+
+		const originalName = editingNotebook.name ?? '';
+		const originalContent = editingNotebook.content ?? '';
+		const originalThemeId = editingNotebook.themeId ?? editingNotebook.theme?.id ?? 'default';
+
+		setHasChanges(
+			name !== originalName || content !== originalContent || themeId !== originalThemeId,
+		);
+	}, [name, content, themeId, selectedTagIds, editingNotebook, isCreate]);
 
 	// DBからテーマ取得（システム + 公開）
 	const { data: systemThemes = [], isLoading: isLoadingSystem } = useSystemThemes();
@@ -64,6 +84,7 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 	useThemeCSS(selectedTheme);
 
 	const handleSave = () => {
+		setSaveError(null);
 		const payload = {
 			name: name?.trim() ? name : null,
 			content: content?.trim() ? content : null,
@@ -95,6 +116,7 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 					},
 					onError: (error) => {
 						logger.error('error update notebook', error);
+						setSaveError('更新に失敗しました。もう一度お試しください。');
 					},
 				},
 			);
@@ -119,6 +141,7 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 				},
 				onError: (error) => {
 					logger.error('error create notebook', error);
+					setSaveError('保存に失敗しました。もう一度お試しください。');
 				},
 			});
 		}
@@ -127,8 +150,9 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 	return (
 		<div className="flex flex-col h-full">
 			{/* ヘッダー */}
-			<div className="border-b border-gray-200 p-4 flex items-center justify-end">
-				<div className="flex items-center space-x-2">
+			<div className="border-b border-gray-200 p-4 flex items-center justify-between">
+				{saveError && <p className="text-sm text-red-500">{saveError}</p>}
+				<div className="flex items-center space-x-2 ml-auto">
 					<TagDropdownIcon
 						selectedTagIds={selectedTagIds}
 						onToggleTag={(id) => {
@@ -140,7 +164,10 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 					<button
 						onClick={handleSave}
 						disabled={
-							createNotebook.isPending || updateNotebook.isPending || (isEdit && isLoadingNotebook)
+							!hasChanges ||
+							createNotebook.isPending ||
+							updateNotebook.isPending ||
+							(isEdit && isLoadingNotebook)
 						}
 						className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 					>
