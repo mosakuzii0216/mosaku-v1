@@ -24,7 +24,7 @@ const DEFAULT_CLAIM_TIMEOUT_MS = 200;
 
 function defaultChannelFactory(name: string): BroadcastChannelLike | null {
 	if (typeof BroadcastChannel === 'undefined') return null;
-	return new BroadcastChannel(name);
+	return new BroadcastChannel(name) as unknown as BroadcastChannelLike;
 }
 
 function generateTabId(): string {
