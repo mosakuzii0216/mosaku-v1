@@ -32,6 +32,35 @@
 
 ---
 
+## 2026-05-14（Phase 1 準備中 / UptimeRobot 導入完了）
+
+### 今週やったこと
+
+- **UptimeRobot 導入完了**（mosaku.jp / api.mosaku.jp の2モニター設定、5分間隔）
+  - api.mosaku.jp は DNS Resolving problem を検知中 → 並行対応中
+- **NotebookEditor に変更検知とエラー表示を追加**（`fix(notebook)`）
+- API 障害監視ツールの構想をドキュメント化（`docs/development/`）
+- Sentry 導入 spec を `completed` に確定
+
+### 来週の予定
+
+- api.mosaku.jp DNS 問題の解消（対応中）
+- ドッグフーディング開始（Notion を閉じる）・摩擦記録運用ルール開始
+- GitHub Secrets に `SLACK_WEBHOOK_URL` を追加（デプロイ通知）
+- テーマ作成（+3テーマ、計 10。5月マイルストーン達成）
+- 摩擦 Top1 の選定 → `/kiro:spec-init`
+
+### ブロッカー・懸念
+
+- api.mosaku.jp: DNS Resolving problem を UptimeRobot が検知中（並行対応中）
+
+### メモ
+
+- テーマ数: 7（変わらず）
+- Phase 1 5月後半タスク: Sentry ✅ / UptimeRobot ✅ / SLACK_WEBHOOK_URL ⬜ / ドッグフーディング ⬜ / テーマ +3 ⬜ / 摩擦 Top1 ⬜
+
+---
+
 ## 2026-05-12（Phase 1 / PWA + オフライン対応完了 — 計画大幅前倒し）
 
 ### 今週やったこと
