@@ -1,11 +1,26 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useViewStore } from '../stores/useViewStore';
 import { useTagStore } from '../stores/useTagStore';
-import type { CreateMemoDto, UpdateMemoDto } from '../types/memo';
-import type { PaginationParams } from '../types/pagination';
+import type { CreateMemoDto, Memo, UpdateMemoDto } from '../types/memo';
+import type { PaginatedResult, PaginationParams } from '../types/pagination';
 import { queryKeys } from '../constants/queryKeys';
 import { ENTITY_CACHE_CONFIG } from '../constants/cacheConfig';
 import { getMemoBridge } from '../utils/memo/memo-bridge-instance';
+
+// list / paginated / search / trash の各キャッシュは Memo[] か PaginatedResult<Memo> のどちらか。
+// detail を初回取得する間、選択 UI が空に見えないよう一致する Memo を探す。
+const findCachedMemoById = (
+	caches: Array<readonly [unknown, Memo[] | PaginatedResult<Memo> | undefined]>,
+	id: string,
+): Memo | undefined => {
+	for (const [, data] of caches) {
+		if (!data) continue;
+		const items: Memo[] = Array.isArray(data) ? data : data.data;
+		const found = items?.find((m) => m.id === id);
+		if (found) return found;
+	}
+	return undefined;
+};
 
 /**
  * メモ一覧取得
@@ -43,11 +58,21 @@ export const useMemosPaginated = (pagination: PaginationParams = { page: 1, limi
 
 // 特定メモ取得
 export const useMemo = (id: string) => {
+	const queryClient = useQueryClient();
 	return useQuery({
 		queryKey: queryKeys.memos.detail(id),
 		queryFn: () => getMemoBridge().getMemo(id),
 		enabled: !!id,
 		networkMode: 'offlineFirst',
+		// 選択直後にネットワーク完了を待たず、リスト/検索/ゴミ箱キャッシュから即座に表示する。
+		// これがないと detail フェッチ中は data が undefined になり「メモが選択されていません」が一瞬出る。
+		placeholderData: () => {
+			if (!id) return undefined;
+			const caches = queryClient.getQueriesData<Memo[] | PaginatedResult<Memo>>({
+				queryKey: queryKeys.memos.all,
+			});
+			return findCachedMemoById(caches, id);
+		},
 		...ENTITY_CACHE_CONFIG.memos.detail,
 	});
 };
