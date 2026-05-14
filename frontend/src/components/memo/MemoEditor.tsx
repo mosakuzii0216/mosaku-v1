@@ -138,26 +138,28 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 		onSave: handleSave,
 	});
 
-	// memo prop の変更を検知してエディタの状態を更新し、デバウンスをリセットする
+	// 編集対象 memo が切り替わったときだけ state を再同期する。
+	// memo オブジェクト全体を依存にすると、保存完了後の React Query invalidate で
+	// 参照だけが変わった memo が渡し直され、直近の入力が上書きされて消える（dogfooding で発覚）。
+	const memoId = memo?.id;
 	useEffect(() => {
 		cancelDebounce();
 		if (isCreate) {
-			// 新規作成モードの時は常に空にする
 			setTitle('');
 			setContent('');
 			setSelectedTagIds([]);
 			setSelectedNotebookId('');
 			setHasChanges(false);
 		} else if (memo) {
-			// 編集モードの時はmemoの内容で更新
 			setTitle(memo.title || '');
 			setContent(memo.content || '');
 			setSelectedTagIds(memo.memoTags?.map((mt) => mt.tag.id) || []);
 			setSelectedNotebookId(memo.notebookId || '');
-			// 新しいメモに切り替わったので、変更状態をリセット
 			setHasChanges(false);
 		}
-	}, [memo, isCreate, cancelDebounce]);
+		// memo の中身ではなく id の切り替えだけを依存にする。
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [memoId, isCreate, cancelDebounce]);
 
 	// 変更検知
 	useEffect(() => {
