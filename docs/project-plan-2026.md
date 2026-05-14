@@ -1,7 +1,7 @@
 # Mosaku プロジェクト計画（2026年3月〜12月）
 
 作成日: 2026-03-14
-最終更新: 2026-05-14
+最終更新: 2026-05-15
 
 ---
 
@@ -188,7 +188,7 @@
 | ドッグフーディング開始（Notionを閉じる）・運用ルールで摩擦記録開始 | 2h   | ⬜   |
 | Sentry 導入（Backend / Frontend SDK・CI・運用ドキュメント）        | 2h   | ✅   |
 | アップタイム監視（UptimeRobot）導入                                | 1h   | ✅   |
-| GitHub Secrets に `SLACK_WEBHOOK_URL` を追加（デプロイ通知）       | 0.5h | ⬜   |
+| GitHub Secrets に `SLACK_WEBHOOK_URL` を追加（デプロイ通知）       | 0.5h | ✅   |
 | テーマ作成（+3テーマ、計10）                                       | 3h   | ⬜   |
 | 摩擦Top1を実装（cc-sddで仕様化→実装）                              | 2h   | ⬜   |
 
