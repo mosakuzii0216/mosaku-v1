@@ -1,45 +1,12 @@
--- CreateTable
-CREATE TABLE "tags" (
-    "id" TEXT NOT NULL,
-    "name" VARCHAR(50) NOT NULL,
-    "color" VARCHAR(7) NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    "user_id" TEXT NOT NULL,
-
-    CONSTRAINT "tags_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "memo_tags" (
-    "memo_id" TEXT NOT NULL,
-    "tag_id" TEXT NOT NULL,
-
-    CONSTRAINT "memo_tags_pkey" PRIMARY KEY ("memo_id","tag_id")
-);
-
--- CreateTable
-CREATE TABLE "notebook_tags" (
-    "notebook_id" TEXT NOT NULL,
-    "tag_id" TEXT NOT NULL,
-
-    CONSTRAINT "notebook_tags_pkey" PRIMARY KEY ("notebook_id","tag_id")
-);
-
--- CreateIndex
-CREATE UNIQUE INDEX "tags_user_id_name_key" ON "tags"("user_id", "name");
-
--- AddForeignKey
-ALTER TABLE "tags" ADD CONSTRAINT "tags_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "memo_tags" ADD CONSTRAINT "memo_tags_memo_id_fkey" FOREIGN KEY ("memo_id") REFERENCES "memos"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "memo_tags" ADD CONSTRAINT "memo_tags_tag_id_fkey" FOREIGN KEY ("tag_id") REFERENCES "tags"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "notebook_tags" ADD CONSTRAINT "notebook_tags_notebook_id_fkey" FOREIGN KEY ("notebook_id") REFERENCES "notebooks"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "notebook_tags" ADD CONSTRAINT "notebook_tags_tag_id_fkey" FOREIGN KEY ("tag_id") REFERENCES "tags"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- This migration is intentionally a no-op.
+--
+-- 経緯:
+-- 本番 DB では同名・同内容の `20250713094055_add_tag_system` が 2026-01-12 に
+-- 先行して適用済みで、tags / memo_tags テーブルはそちらが作成している。
+-- このマイグレーションは後から追加された重複定義で、本番では
+-- `_prisma_migrations` に "applied" として記録されているのみで実体 SQL は実行されていない。
+--
+-- 過去にこのファイルへ notebook_tags 等を後付け編集した結果、フレッシュ DB に対する
+-- `prisma migrate deploy` が「notebooks がまだ存在しない」エラーで失敗していたため、
+-- 本ファイルを no-op に戻して整合させている。
+-- notebook_tags は `20251107080000_add_notebook_tags` が IF NOT EXISTS 付きで作成する。
