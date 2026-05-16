@@ -4,6 +4,7 @@ import {
 	describeDeleteConfirm,
 	describeSaveStatus,
 	exhaustiveSaveStatusKeys,
+	formatRelativeTime,
 } from './save-status-presentation';
 import type { SaveStatus } from '../../hooks/useAutoSave';
 
@@ -50,6 +51,47 @@ describe('describeSaveStatus', () => {
 		const desc = describeSaveStatus('error');
 		expect(desc.label).toContain('保存失敗');
 		expect(desc.tone).toBe('error');
+	});
+});
+
+describe('formatRelativeTime', () => {
+	const base = new Date('2026-05-15T12:00:00Z');
+
+	it('5秒未満は「今しがた」を返す', () => {
+		const target = new Date(base.getTime() - 3 * 1000);
+		expect(formatRelativeTime(base, target)).toBe('今しがた');
+	});
+
+	it('5〜59秒は「N秒前」を返す', () => {
+		const target = new Date(base.getTime() - 30 * 1000);
+		expect(formatRelativeTime(base, target)).toBe('30秒前');
+	});
+
+	it('1〜59分は「N分前」を返す', () => {
+		const target = new Date(base.getTime() - 5 * 60 * 1000);
+		expect(formatRelativeTime(base, target)).toBe('5分前');
+	});
+
+	it('1〜23時間は「N時間前」を返す', () => {
+		const target = new Date(base.getTime() - 3 * 60 * 60 * 1000);
+		expect(formatRelativeTime(base, target)).toBe('3時間前');
+	});
+
+	it('1〜29日は「N日前」を返す', () => {
+		const target = new Date(base.getTime() - 7 * 24 * 60 * 60 * 1000);
+		expect(formatRelativeTime(base, target)).toBe('7日前');
+	});
+
+	it('30日以上前は日付文字列を返す', () => {
+		const target = new Date(base.getTime() - 60 * 24 * 60 * 60 * 1000);
+		const result = formatRelativeTime(base, target);
+		// ロケール非依存にゆるく検証（2026 を含む）
+		expect(result).toContain('2026');
+	});
+
+	it('未来時刻が渡されても負の値にならず「今しがた」を返す（時計ズレ耐性）', () => {
+		const target = new Date(base.getTime() + 10 * 1000);
+		expect(formatRelativeTime(base, target)).toBe('今しがた');
 	});
 });
 

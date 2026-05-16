@@ -41,6 +41,23 @@ export function describeSaveStatus(status: SaveStatus): SaveStatusDescription {
 	}
 }
 
+/**
+ * 「保存済み (○○前)」など、最終保存時刻からの相対表示を組み立てる。
+ * tick による頻繁な再描画を見越して、純粋関数として now を引数で受ける。
+ */
+export function formatRelativeTime(now: Date, target: Date): string {
+	const diffSec = Math.max(0, Math.floor((now.getTime() - target.getTime()) / 1000));
+	if (diffSec < 5) return '今しがた';
+	if (diffSec < 60) return `${diffSec}秒前`;
+	const diffMin = Math.floor(diffSec / 60);
+	if (diffMin < 60) return `${diffMin}分前`;
+	const diffHour = Math.floor(diffMin / 60);
+	if (diffHour < 24) return `${diffHour}時間前`;
+	const diffDay = Math.floor(diffHour / 24);
+	if (diffDay < 30) return `${diffDay}日前`;
+	return target.toLocaleDateString('ja-JP');
+}
+
 export interface DeleteConfirmInput {
 	kind: 'trash' | 'permanentDelete';
 	networkStatus: NetworkStatus;
