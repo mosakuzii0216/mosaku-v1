@@ -28,7 +28,7 @@ export interface UseAutoSaveOptions {
 	 * - reject: サーバーエラー（error に遷移）
 	 */
 	onSave: () => Promise<void | OfflineSavedSignal>;
-	/** デバウンス待機時間（ms）。デフォルト 2000 */
+	/** デバウンス待機時間（ms）。デフォルト 1000 */
 	debounceMs?: number;
 }
 
@@ -40,18 +40,15 @@ export interface UseAutoSaveReturn {
 	cancelDebounce: () => void;
 }
 
-const SAVED_RESET_DELAY_MS = 2000;
-
 export function useAutoSave({
 	canSave,
 	isSaving,
 	onSave,
-	debounceMs = 2000,
+	debounceMs = 1000,
 }: UseAutoSaveOptions): UseAutoSaveReturn {
 	const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
 
 	const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const savedResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	// タイマーコールバック内で最新値を参照するための refs
 	// レンダリング中に同期更新（useEffect の非同期更新では stale closure が生じる）
@@ -63,13 +60,6 @@ export function useAutoSave({
 
 	const onSaveRef = useRef(onSave);
 	onSaveRef.current = onSave;
-
-	const clearSavedResetTimer = useCallback(() => {
-		if (savedResetTimerRef.current !== null) {
-			clearTimeout(savedResetTimerRef.current);
-			savedResetTimerRef.current = null;
-		}
-	}, []);
 
 	const cancelDebounce = useCallback(() => {
 		if (debounceTimerRef.current !== null) {
@@ -103,32 +93,24 @@ export function useAutoSave({
 			try {
 				const result = await onSaveRef.current();
 				if (isOfflineSavedSignal(result)) {
-					// offline-saved は終端状態。
-					// 'saved' への自動復帰は呼び出し側（MemoEditor の SyncEngine 購読）で扱う方針。
-					clearSavedResetTimer();
 					setSaveStatus('offline-saved');
 					return;
 				}
 
+				// 'saved' は次の編集（scheduleAutoSave → pending）まで永続表示する。
+				// ユーザーが「保存されたか」を常に確認できる安心感のため、自動で idle に戻さない。
 				setSaveStatus('saved');
-				clearSavedResetTimer();
-				savedResetTimerRef.current = setTimeout(() => {
-					setSaveStatus('idle');
-					savedResetTimerRef.current = null;
-				}, SAVED_RESET_DELAY_MS);
 			} catch {
 				setSaveStatus('error');
 			}
 		}, debounceMs);
-	}, [clearSavedResetTimer, debounceMs]);
+	}, [debounceMs]);
 
-	// アンマウント時のクリーンアップ（Requirements: 4.4）
 	useEffect(() => {
 		return () => {
 			cancelDebounce();
-			clearSavedResetTimer();
 		};
-	}, [cancelDebounce, clearSavedResetTimer]);
+	}, [cancelDebounce]);
 
 	return { saveStatus, scheduleAutoSave, cancelDebounce };
 }

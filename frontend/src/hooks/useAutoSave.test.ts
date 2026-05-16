@@ -23,7 +23,7 @@ describe('useAutoSave', () => {
 		expect(result.current.saveStatus).toBe('pending');
 	});
 
-	it('2000ms 後に onSave が呼ばれること', async () => {
+	it('デバウンス時間（1000ms）経過後に onSave が呼ばれること', async () => {
 		const onSave = vi.fn().mockResolvedValue(undefined);
 		const { result } = renderHook(() => useAutoSave({ canSave: true, isSaving: false, onSave }));
 
@@ -32,7 +32,7 @@ describe('useAutoSave', () => {
 		});
 
 		await act(async () => {
-			vi.advanceTimersByTime(2000);
+			vi.advanceTimersByTime(1000);
 		});
 
 		expect(onSave).toHaveBeenCalledTimes(1);
@@ -47,7 +47,7 @@ describe('useAutoSave', () => {
 		});
 
 		await act(async () => {
-			vi.advanceTimersByTime(2000);
+			vi.advanceTimersByTime(1000);
 		});
 
 		expect(onSave).not.toHaveBeenCalled();
@@ -62,7 +62,7 @@ describe('useAutoSave', () => {
 		});
 
 		await act(async () => {
-			vi.advanceTimersByTime(2000);
+			vi.advanceTimersByTime(1000);
 		});
 
 		expect(onSave).not.toHaveBeenCalled();
@@ -78,7 +78,7 @@ describe('useAutoSave', () => {
 		});
 
 		await act(async () => {
-			vi.advanceTimersByTime(2000);
+			vi.advanceTimersByTime(1000);
 		});
 
 		expect(onSave).not.toHaveBeenCalled();
@@ -97,7 +97,7 @@ describe('useAutoSave', () => {
 		unmount();
 
 		await act(async () => {
-			vi.advanceTimersByTime(2000);
+			vi.advanceTimersByTime(1000);
 		});
 
 		expect(onSave).not.toHaveBeenCalled();
@@ -112,10 +112,51 @@ describe('useAutoSave', () => {
 		});
 
 		await act(async () => {
-			vi.advanceTimersByTime(2000);
+			vi.advanceTimersByTime(1000);
 		});
 
 		expect(result.current.saveStatus).toBe('error');
+	});
+
+	it("onSave 成功後 saveStatus は 'saved' を維持し、時間が経っても idle に戻らない", async () => {
+		const onSave = vi.fn().mockResolvedValue(undefined);
+		const { result } = renderHook(() => useAutoSave({ canSave: true, isSaving: false, onSave }));
+
+		act(() => {
+			result.current.scheduleAutoSave();
+		});
+
+		await act(async () => {
+			vi.advanceTimersByTime(1000);
+		});
+
+		expect(result.current.saveStatus).toBe('saved');
+
+		// さらに時間が経過しても 'saved' のまま（ユーザーが安心感を得られるよう永続表示）
+		await act(async () => {
+			vi.advanceTimersByTime(5000);
+		});
+
+		expect(result.current.saveStatus).toBe('saved');
+	});
+
+	it("'saved' 後に再度編集を始めると saveStatus が 'pending' に戻ること", async () => {
+		const onSave = vi.fn().mockResolvedValue(undefined);
+		const { result } = renderHook(() => useAutoSave({ canSave: true, isSaving: false, onSave }));
+
+		act(() => {
+			result.current.scheduleAutoSave();
+		});
+		await act(async () => {
+			vi.advanceTimersByTime(1000);
+		});
+		expect(result.current.saveStatus).toBe('saved');
+
+		act(() => {
+			result.current.scheduleAutoSave();
+		});
+
+		expect(result.current.saveStatus).toBe('pending');
 	});
 
 	it("onSave が OfflineSavedSignal を返したとき saveStatus が 'offline-saved' になること", async () => {
@@ -129,13 +170,13 @@ describe('useAutoSave', () => {
 		});
 
 		await act(async () => {
-			vi.advanceTimersByTime(2000);
+			vi.advanceTimersByTime(1000);
 		});
 
 		expect(result.current.saveStatus).toBe('offline-saved');
 	});
 
-	it('offline-saved の状態は SAVED_RESET_DELAY_MS が経過しても idle に戻らない', async () => {
+	it('offline-saved の状態は時間が経っても idle に戻らない', async () => {
 		const onSave = vi
 			.fn<() => Promise<void | OfflineSavedSignal>>()
 			.mockResolvedValue(OFFLINE_SAVED_SIGNAL);
@@ -146,11 +187,11 @@ describe('useAutoSave', () => {
 		});
 
 		await act(async () => {
-			vi.advanceTimersByTime(2000);
+			vi.advanceTimersByTime(1000);
 		});
 
 		await act(async () => {
-			vi.advanceTimersByTime(2000);
+			vi.advanceTimersByTime(5000);
 		});
 
 		expect(result.current.saveStatus).toBe('offline-saved');
@@ -168,7 +209,7 @@ describe('useAutoSave', () => {
 		});
 
 		await act(async () => {
-			vi.advanceTimersByTime(2000);
+			vi.advanceTimersByTime(1000);
 		});
 
 		expect(result.current.saveStatus).toBe('offline-saved');
@@ -178,7 +219,7 @@ describe('useAutoSave', () => {
 		});
 
 		await act(async () => {
-			vi.advanceTimersByTime(2000);
+			vi.advanceTimersByTime(1000);
 		});
 
 		expect(result.current.saveStatus).toBe('saved');
