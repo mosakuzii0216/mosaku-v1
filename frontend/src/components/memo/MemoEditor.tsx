@@ -11,9 +11,11 @@ import { OfflineBadge } from '../ui/OfflineBadge';
 import { RichTextEditor } from '../editor/RichTextEditor';
 import type { Memo } from '../../types/memo';
 import type { MemoUpdateOutcome } from '../../utils/memo/memo-bridge';
+import type { SaveStatus } from '../../hooks/useAutoSave';
 import {
 	describeDeleteConfirm,
 	describeSaveStatus,
+	formatRelativeTime,
 	type SaveStatusTone,
 } from '../../utils/memo/save-status-presentation';
 import { logger } from '../../utils/logger';
@@ -49,6 +51,14 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	const [selectedNotebookId, setSelectedNotebookId] = useState<string>(memo?.notebookId || '');
 
 	const [hasChanges, setHasChanges] = useState(false);
+
+	// 最終保存時刻。初期値は既存メモの updatedAt、自動/手動保存成功時に現在時刻へ更新。
+	const [lastSavedAt, setLastSavedAt] = useState<Date | null>(
+		memo?.updatedAt ? new Date(memo.updatedAt) : null,
+	);
+	// 相対時刻ラベルを進めるための tick（30秒ごとに再描画）。
+	// 秒単位の精度は不要（「今しがた」「N秒前」「N分前」…の表示なので 30秒間隔で十分）。
+	const [, setTick] = useState(0);
 
 	// useAutoSave に渡す派生値（レンダリング中に同期計算）
 	const isSaving = createMemo.isPending || updateMemo.isPending;
@@ -138,6 +148,20 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 		onSave: handleSave,
 	});
 
+	// saved に到達したら最終保存時刻を現在時刻に更新
+	useEffect(() => {
+		if (saveStatus === 'saved') {
+			setLastSavedAt(new Date());
+		}
+	}, [saveStatus]);
+
+	// 「N秒前」「N分前」の相対表示を進めるための再描画 tick
+	useEffect(() => {
+		if (!lastSavedAt) return;
+		const id = setInterval(() => setTick((n) => n + 1), 30 * 1000);
+		return () => clearInterval(id);
+	}, [lastSavedAt]);
+
 	// 編集対象 memo が切り替わったときだけ state を再同期する。
 	// memo オブジェクト全体を依存にすると、保存完了後の React Query invalidate で
 	// 参照だけが変わった memo が渡し直され、直近の入力が上書きされて消える（dogfooding で発覚）。
@@ -150,12 +174,14 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 			setSelectedTagIds([]);
 			setSelectedNotebookId('');
 			setHasChanges(false);
+			setLastSavedAt(null);
 		} else if (memo) {
 			setTitle(memo.title || '');
 			setContent(memo.content || '');
 			setSelectedTagIds(memo.memoTags?.map((mt) => mt.tag.id) || []);
 			setSelectedNotebookId(memo.notebookId || '');
 			setHasChanges(false);
+			setLastSavedAt(memo.updatedAt ? new Date(memo.updatedAt) : null);
 		}
 		// memo の中身ではなく id の切り替えだけを依存にする。
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -227,16 +253,26 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 							scheduleAutoSave();
 						}}
 					/>
-					{/* 保存状態インジケーター（exhaustive switch via describeSaveStatus） */}
+					{/* 保存状態インジケーター（exhaustive switch via describeSaveStatus）
+					    既存メモを編集中で saveStatus が 'idle' のとき（＝初期表示 or 直近の編集が
+					    全て巻き戻された無変更状態）は 'saved' とみなして「保存済み」を出す。
+					    新規作成中は何も表示しない（保存対象がまだ存在しないため）。
+					    'saved' のときは最終保存時刻からの相対表示も併記して安心感を出す。*/}
 					{(() => {
-						const desc = describeSaveStatus(saveStatus);
+						const displayStatus: SaveStatus =
+							!isCreate && memo && saveStatus === 'idle' ? 'saved' : saveStatus;
+						const desc = describeSaveStatus(displayStatus);
 						if (!desc.label) return null;
+						const label =
+							displayStatus === 'saved' && lastSavedAt
+								? `${desc.label}（${formatRelativeTime(new Date(), lastSavedAt)}）`
+								: desc.label;
 						return (
 							<span
 								data-testid="save-status-label"
 								className={`text-sm ${SAVE_STATUS_TONE_CLASSES[desc.tone]}`}
 							>
-								{desc.label}
+								{label}
 							</span>
 						);
 					})()}

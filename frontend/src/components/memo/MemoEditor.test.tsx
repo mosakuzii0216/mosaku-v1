@@ -142,3 +142,55 @@ describe('MemoEditor - 自動保存中の入力保持', () => {
 		expect(titleInput.value).toBe('B title');
 	});
 });
+
+describe('MemoEditor - 保存状態インジケーター', () => {
+	beforeEach(() => {
+		cleanup();
+		updateMutate.mockReset();
+		createMutate.mockReset();
+		deleteMutateAsync.mockReset();
+	});
+
+	it('既存メモの初期表示（未編集）で「保存済み」と相対時刻が表示される', () => {
+		const Wrapper = createWrapper();
+		// updatedAt はテスト実行時刻からの相対表示になるので、テスト時刻基準で過去30日以内に収まる時刻を設定
+		const memo = buildMemo({ updatedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString() });
+
+		render(<MemoEditor memo={memo} />, { wrapper: Wrapper });
+
+		const label = screen.getByTestId('save-status-label').textContent ?? '';
+		expect(label).toContain('保存済み');
+		expect(label).toContain('5分前');
+	});
+
+	it('updatedAt が無い既存メモでも「保存済み」だけは表示される', () => {
+		const Wrapper = createWrapper();
+		const memo = buildMemo({ updatedAt: '' });
+
+		render(<MemoEditor memo={memo} />, { wrapper: Wrapper });
+
+		expect(screen.getByTestId('save-status-label').textContent).toBe('保存済み');
+	});
+
+	it('新規作成画面（未入力）では保存状態インジケーターが表示されない', () => {
+		const Wrapper = createWrapper();
+
+		render(<MemoEditor isCreate />, { wrapper: Wrapper });
+
+		expect(screen.queryByTestId('save-status-label')).toBeNull();
+	});
+
+	it('既存メモを編集すると「未保存」が表示される', () => {
+		const Wrapper = createWrapper();
+		const memo = buildMemo();
+
+		render(<MemoEditor memo={memo} />, { wrapper: Wrapper });
+
+		const titleInput = screen.getByPlaceholderText('タイトル') as HTMLInputElement;
+		act(() => {
+			fireEvent.change(titleInput, { target: { value: 'Hello World' } });
+		});
+
+		expect(screen.getByTestId('save-status-label').textContent).toBe('未保存');
+	});
+});
