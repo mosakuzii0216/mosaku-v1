@@ -12,7 +12,7 @@
  */
 
 jest.mock('@sentry/nestjs', () => {
-	const actual = jest.requireActual('@sentry/nestjs');
+	const actual = jest.requireActual<typeof import('@sentry/nestjs')>('@sentry/nestjs');
 	return {
 		...actual,
 		init: jest.fn(),
