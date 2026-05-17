@@ -57,11 +57,7 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 			where: { id, trashedAt: null },
 			include: this.getDefaultInclude(),
 		});
-		return this.authorizationService.validateOwnership(
-			memo as MemoWithRelations | null,
-			userId,
-			this.getEntityName(),
-		);
+		return this.authorizationService.validateOwnership(memo, userId, this.getEntityName());
 	}
 
 	/**
@@ -284,7 +280,7 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 			where: { id },
 			data: { trashedAt: new Date() },
 			include: this.getDefaultInclude(),
-		}) as unknown as MemoWithRelations;
+		});
 	}
 
 	/**
@@ -296,11 +292,7 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 			where: { id, trashedAt: { not: null } },
 			include: this.getDefaultInclude(),
 		});
-		return this.authorizationService.validateOwnership(
-			memo as MemoWithRelations | null,
-			userId,
-			this.getEntityName(),
-		);
+		return this.authorizationService.validateOwnership(memo, userId, this.getEntityName());
 	}
 
 	/**
@@ -312,7 +304,7 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 			include: this.getDefaultInclude(),
 			orderBy: { trashedAt: 'desc' },
 		});
-		return memos as unknown as MemoWithRelations[];
+		return memos;
 	}
 
 	/**
@@ -324,7 +316,7 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 			where: { id },
 			data: { trashedAt: null },
 			include: this.getDefaultInclude(),
-		}) as unknown as MemoWithRelations;
+		});
 	}
 
 	/**
@@ -334,7 +326,7 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 		await this.findOneTrashed(id, userId);
 		return this.prisma.memo.delete({
 			where: { id },
-		}) as unknown as MemoWithRelations;
+		});
 	}
 
 	/**
