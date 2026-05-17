@@ -12,7 +12,7 @@ const setUserMock = jest.fn();
 const setTagMock = jest.fn();
 
 jest.mock('@sentry/nestjs', () => {
-	const actual = jest.requireActual('@sentry/nestjs');
+	const actual = jest.requireActual<typeof import('@sentry/nestjs')>('@sentry/nestjs');
 	return {
 		...actual,
 		init: jest.fn(),
@@ -48,7 +48,7 @@ describe('SentryUserContextInterceptor (e2e)', () => {
 			.overrideGuard(JwtAuthGuard)
 			.useValue({
 				canActivate: (ctx: ExecutionContext) => {
-					const req = ctx.switchToHttp().getRequest();
+					const req = ctx.switchToHttp().getRequest<{ user: { id: string } }>();
 					req.user = { id: 'user-test-123' };
 					return true;
 				},
