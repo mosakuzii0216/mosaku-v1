@@ -204,7 +204,7 @@ describe('SentryScrubber', () => {
 					},
 				},
 			};
-			const before = JSON.parse(JSON.stringify(event));
+			const before = JSON.parse(JSON.stringify(event)) as typeof event;
 
 			scrubber.scrub(event);
 

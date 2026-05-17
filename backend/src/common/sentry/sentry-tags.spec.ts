@@ -122,7 +122,7 @@ describe('SentryTags', () => {
 			const event = {
 				request: { url: '/memo/123' },
 			};
-			const before = JSON.parse(JSON.stringify(event));
+			const before = JSON.parse(JSON.stringify(event)) as typeof event;
 
 			applyStandardTags(event);
 
