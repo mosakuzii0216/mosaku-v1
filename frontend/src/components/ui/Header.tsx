@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useViewStore } from '../../stores/useViewStore';
 import { useNavigation } from '../../hooks/useNavigation';
-import { LibraryBig, Tag, LogOut, Settings, Trash2 } from 'lucide-react';
+import { LibraryBig, StickyNote, Tag, LogOut, Settings, Trash2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router';
 import { OfflineBadge } from './OfflineBadge';
@@ -53,12 +53,20 @@ export const Header = (_props?: HeaderProps) => {
 					<button
 						onClick={goToList}
 						className="mr-3 p-2 text-gray-600 hover:text-gray-900 md:hidden"
-					>
-						←
-					</button>
+					></button>
 				)}
 				{/* ナビゲーションボタン */}
 				<div className="ml-6 flex items-center space-x-2">
+					<button
+						onClick={goToList}
+						className={`px-3 py-2 rounded text-sm font-medium transition-colors inline-flex items-center ${
+							currentObject === 'memo' && currentView === 'list'
+								? 'bg-blue-100 text-blue-800'
+								: 'text-gray-600 hover:text-gray-900'
+						}`}
+					>
+						<StickyNote className="w-4 h-4 mr-1.5" /> メモ
+					</button>
 					<button
 						onClick={goToNotebookList}
 						className={`px-3 py-2 rounded text-sm font-medium transition-colors inline-flex items-center ${
