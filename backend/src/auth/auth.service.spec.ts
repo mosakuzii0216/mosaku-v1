@@ -158,7 +158,7 @@ describe('AuthService', () => {
 
 			expect(mockPrismaService.user.create).toHaveBeenCalledWith(
 				expect.objectContaining({
-					data: expect.objectContaining({ role: 'USER' }),
+					data: expect.objectContaining({ role: 'USER' }) as unknown,
 				}),
 			);
 			expect(result).not.toHaveProperty('password');
@@ -173,7 +173,7 @@ describe('AuthService', () => {
 
 			expect(mockPrismaService.user.create).toHaveBeenCalledWith(
 				expect.objectContaining({
-					data: expect.objectContaining({ role: 'ADMIN' }),
+					data: expect.objectContaining({ role: 'ADMIN' }) as unknown,
 				}),
 			);
 		});
@@ -194,7 +194,7 @@ describe('AuthService', () => {
 
 			expect(mockPrismaService.user.create).toHaveBeenCalledWith(
 				expect.objectContaining({
-					data: expect.objectContaining({ name: mockUser.email }),
+					data: expect.objectContaining({ name: mockUser.email }) as unknown,
 				}),
 			);
 		});
