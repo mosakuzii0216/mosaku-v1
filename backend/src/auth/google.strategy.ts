@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy, StrategyOptions } from 'passport-google-oauth20';
+import { Strategy } from 'passport-google-oauth20';
 import { ConfigService } from '../config/config.service';
 import type { GoogleProfile, GoogleStrategyUser } from './types/oauth.types';
 
@@ -19,7 +19,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 			clientSecret,
 			callbackURL: configService.googleRedirectUri,
 			scope: ['email', 'profile'],
-		} as StrategyOptions);
+		});
 	}
 
 	validate(accessToken: string, refreshToken: string, profile: GoogleProfile): GoogleStrategyUser {

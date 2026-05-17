@@ -80,7 +80,7 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 				password: 'password123',
 				name: 'User',
 				invitationCode: 'VALID-CODE',
-			} as never);
+			});
 
 			expect(mockAuthService.register).toHaveBeenCalledWith(
 				'user@example.com',
@@ -103,7 +103,7 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 					email: 'existing@example.com',
 					password: 'password123',
 					invitationCode: 'VALID-CODE',
-				} as never),
+				}),
 			).rejects.toBeInstanceOf(AppException);
 		});
 	});

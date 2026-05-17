@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy, StrategyOptions } from 'passport-github2';
+import { Strategy } from 'passport-github2';
 import { ConfigService } from '../config/config.service';
 import type { GitHubProfile, GitHubStrategyUser } from './types/oauth.types';
 
@@ -19,7 +19,7 @@ export class GitHubStrategy extends PassportStrategy(Strategy, 'github') {
 			clientSecret,
 			callbackURL: configService.githubRedirectUri,
 			scope: ['user:email'],
-		} as StrategyOptions);
+		});
 	}
 
 	validate(accessToken: string, refreshToken: string, profile: GitHubProfile): GitHubStrategyUser {
