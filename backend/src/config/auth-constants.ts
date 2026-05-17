@@ -3,6 +3,8 @@
  * 環境変数から読み取り、デフォルト値を提供
  */
 
+import type { StringValue } from 'ms';
+
 /**
  * bcryptのソルトラウンド数
  * 推奨値: 10-12（セキュリティと性能のバランス）
@@ -12,8 +14,11 @@ export const BCRYPT_SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12
 /**
  * JWT有効期限
  * デフォルト: 24時間
+ *
+ * 型: @nestjs/jwt v11 の signOptions.expiresIn は number | ms.StringValue を要求するため、
+ * テンプレートリテラル型 `${number}${Unit}` に合致する形で型付けする。
  */
-export const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '24h';
+export const JWT_EXPIRATION: StringValue = (process.env.JWT_EXPIRATION as StringValue) || '24h';
 
 const MS_PER_MINUTE = 60_000;
 
