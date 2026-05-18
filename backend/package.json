@@ -24,7 +24,7 @@
 		"migration:deploy": "npx prisma migrate deploy"
 	},
 	"dependencies": {
-		"@nestjs/common": "^11.0.1",
+		"@nestjs/common": "^11.1.21",
 		"@nestjs/core": "^11.0.1",
 		"@nestjs/jwt": "^11.0.0",
 		"@nestjs/passport": "^11.0.5",
@@ -37,7 +37,7 @@
 		"@sentry/profiling-node": "^10.47.0",
 		"bcrypt": "^6.0.0",
 		"class-transformer": "^0.5.1",
-		"class-validator": "^0.14.2",
+		"class-validator": "^0.15.1",
 		"dotenv": "^17.2.3",
 		"express-session": "^1.18.1",
 		"googleapis": "^154.0.0",
@@ -61,7 +61,7 @@
 		"@nestjs/cli": "^11.0.0",
 		"@nestjs/schematics": "^11.0.0",
 		"@nestjs/testing": "^11.0.1",
-		"@swc/cli": "^0.6.0",
+		"@swc/cli": "^0.8.1",
 		"@swc/core": "^1.10.7",
 		"@types/bcrypt": "^6.0.0",
 		"@types/express": "^5.0.0",
