@@ -37,11 +37,9 @@ services:
     restart: unless-stopped
 
   # ローカルデータベース (PostgreSQL) サービス
-  # オフライン開発用 - プロファイル "local" で起動
   db:
     image: postgres:16-alpine
     container_name: mosaku-db
-    profiles: ['local'] # --profile local で起動する
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
