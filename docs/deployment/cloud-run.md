@@ -618,7 +618,7 @@ gcloud run deploy ${SERVICE_NAME} \
   --port=8080 \
   --cpu=1 \
   --memory=512Mi \
-  --min-instances=0 \
+  --min-instances=1 \
   --max-instances=10 \
   --timeout=300 \
   --set-env-vars="NODE_ENV=production,PORT=8080,SUPABASE_URL=https://pxrouvdpdffdfoitmoyv.supabase.co" \
@@ -633,7 +633,7 @@ gcloud run deploy ${SERVICE_NAME} \
 - `--allow-unauthenticated`: パブリックアクセス許可（フロントエンドから呼び出すため）
 - `--cpu=1`: 1vCPU（必要に応じて調整）
 - `--memory=512Mi`: 512MBメモリ（必要に応じて調整）
-- `--min-instances=0`: アイドル時はインスタンスをゼロに（コスト削減）
+- `--min-instances=1`: 常時1インスタンス起動（コールドスタート防止 / UptimeRobot 誤検知防止）
 - `--max-instances=10`: 最大10インスタンス（負荷に応じてスケール）
 - `--timeout=300`: タイムアウト5分
 
@@ -1312,7 +1312,7 @@ gcloud artifacts docker images list asia-northeast1-docker.pkg.dev/mosaku-prod-x
 
 ### コールドスタート遅延
 
-**問題**: 初回リクエストが遅い（5秒以上）
+**問題**: 初回リクエストが遅い（5秒以上）/ UptimeRobot 等の外形監視が間欠的に Down 判定（"DNS Resolving problem" 表記になることもある）
 
 **解決策**:
 
@@ -1327,6 +1327,8 @@ gcloud run services update mosaku-backend \
   --region=asia-northeast1 \
   --startup-cpu-boost
 ```
+
+> Phase 1（2026-05）で UptimeRobot の間欠 Down を解消するため `--min-instances=1` を本番に適用済み。GitHub Actions のデプロイは `--update-env-vars` / `--update-secrets` のみ指定で既存値を保持するため、毎回のデプロイで上書きされない。
 
 ---
 
