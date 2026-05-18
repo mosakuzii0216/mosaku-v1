@@ -15,8 +15,9 @@ export interface MaybeAuthRequest extends ExpressRequest {
 	user?: AuthenticatedUser;
 }
 
-export interface OAuthRequest<TUser extends OAuthStrategyUser = OAuthStrategyUser>
-	extends ExpressRequest {
+export interface OAuthRequest<
+	TUser extends OAuthStrategyUser = OAuthStrategyUser,
+> extends ExpressRequest {
 	user: TUser;
 }
 
