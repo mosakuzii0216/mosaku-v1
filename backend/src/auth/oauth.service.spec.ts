@@ -90,7 +90,7 @@ describe('OAuthService', () => {
 
 			expect(mockPrismaService.user.create).toHaveBeenCalledWith(
 				expect.objectContaining({
-					data: expect.objectContaining({ role: 'ADMIN' }),
+					data: expect.objectContaining({ role: 'ADMIN' }) as unknown,
 				}),
 			);
 			expect(result.user).not.toHaveProperty('password');
@@ -177,8 +177,8 @@ describe('OAuthService', () => {
 			expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: expect.objectContaining({
-						OR: expect.arrayContaining([{ oauthId: 'google-id-789' }]),
-					}),
+						OR: expect.arrayContaining([{ oauthId: 'google-id-789' }]) as unknown,
+					}) as unknown,
 				}),
 			);
 			expect(result.accessToken).toBeDefined();
@@ -200,8 +200,8 @@ describe('OAuthService', () => {
 			expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: expect.objectContaining({
-						OR: expect.arrayContaining([{ oauthId: 'github-id-789' }]),
-					}),
+						OR: expect.arrayContaining([{ oauthId: 'github-id-789' }]) as unknown,
+					}) as unknown,
 				}),
 			);
 			expect(result.accessToken).toBeDefined();
@@ -221,8 +221,8 @@ describe('OAuthService', () => {
 			expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: expect.objectContaining({
-						OR: expect.arrayContaining([{ lineId: 'U1234567890' }]),
-					}),
+						OR: expect.arrayContaining([{ lineId: 'U1234567890' }]) as unknown,
+					}) as unknown,
 				}),
 			);
 			expect(result.accessToken).toBeDefined();
@@ -273,8 +273,8 @@ describe('OAuthService', () => {
 			expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: expect.objectContaining({
-						OR: expect.arrayContaining([{ appleId: 'apple-sub-id' }]),
-					}),
+						OR: expect.arrayContaining([{ appleId: 'apple-sub-id' }]) as unknown,
+					}) as unknown,
 				}),
 			);
 			expect(result.accessToken).toBeDefined();
@@ -328,8 +328,8 @@ describe('OAuthService', () => {
 			expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: expect.objectContaining({
-						OR: expect.arrayContaining([{ xId: '1234567890' }]),
-					}),
+						OR: expect.arrayContaining([{ xId: '1234567890' }]) as unknown,
+					}) as unknown,
 				}),
 			);
 			expect(result.accessToken).toBeDefined();
