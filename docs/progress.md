@@ -32,6 +32,39 @@
 
 ---
 
+## 2026-05-19（Phase 1 / 5月マイルストーンほぼ達成 + 認識ズレ訂正）
+
+### 今週やったこと
+
+- **`api.mosaku.jp` の UptimeRobot 間欠 Down 解消**
+  - 原因は **DNS ではなく Cloud Run のコールドスタート + Domain Mapping のオーバーヘッド**（5分間隔チェックでほぼ毎回コールドスタートに当たる構造）。UptimeRobot は接続タイムアウトを "DNS Resolving problem" と表記することがある
+  - `gcloud run services update mosaku-backend --region=asia-northeast1 --min-instances=1` を本番適用 → リビジョン `mosaku-backend-00049-rmj`
+  - 適用後の 10 回連続 `/health` チェック: HTTP 200 が **10/10**、TTFB 平均 1.4s（最大 4.4s / 最小 0.4s）。UptimeRobot のタイムアウト（30s）に余裕で収まる範囲に
+  - `docs/deployment/cloud-run.md` を更新（初回デプロイのコマンド例 `--min-instances=0` → `=1`、説明文、トラブルシューティングに UptimeRobot 誤検知の注記と Phase 1 適用済みのメモを追記）→ コミット `01268b2 docs(deployment): Cloud Run min-instances=1 への変更を反映`
+  - GitHub Actions のデプロイは `--update-env-vars` / `--update-secrets` のみ指定で既存値を保持するため、毎回のデプロイで `--min-instances` が上書きされないことを確認
+- **過去エントリの認識ズレを訂正**（5/14 エントリは時点の認識として残し、本エントリで補正）
+  - **`SLACK_WEBHOOK_URL`**: 5/14 22:46 時点で GitHub Secrets に登録済み。`deploy-backend.yml` / `deploy-frontend-prod.yml` の `notify` ジョブ（`8398a7/action-slack@v3`）も実装済みで、最新の backend デプロイ（5/18 22:20）の `Slack Notification` ジョブが **success** → 既に通知は飛んでいる
+  - **テーマ +3（計 10）**: 5/15 に `20260515000000_add_umi_tsuki_yuki_themes` マイグレーションをコミット（`dc7f703 feat(theme): umi・tsuki・yuki テーマを追加（計10テーマ）`）し、5/17 22:37 の backend デプロイで本番 DB に `migrate deploy` 済み（DB Migration ジョブ success）。CSS ファイル（`frontend/public/themes/`）も 10 個揃っている: `aka` / `ao` / `code` / `kami` / `kuro` / `mori` / `siro` / `umi` / `tsuki` / `yuki`
+
+### 来週の予定
+
+- **ドッグフーディング開始**（Notion を閉じる、`Friction Log` ノートブック作成、`#blocker` / `#major` / `#spec-done` タグ命名規約、金曜トリアージのルール文書化）
+- 摩擦記録が貯まり次第、**摩擦 Top1 の選定 → `/kiro:spec-init`**
+- 6 月以降のテーマ作成ペース見直し（9 月マイルストーン 30 テーマに向けて、月 4 テーマペース要）
+
+### ブロッカー・懸念
+
+- なし
+
+### メモ
+
+- **5 月マイルストーン: Sentry / PWA / UptimeRobot / api.mosaku.jp DNS / SLACK_WEBHOOK_URL / テーマ +3 = 6/7 達成**。残るは「ドッグフーディング開始」のみ
+- Cloud Run `min-instances=1` 適用に伴う**月額コスト増は約 $13〜18**。Phase 1 ドッグフーディング期間の安定性投資として許容
+- UptimeRobot の "DNS Resolving problem" 表記は実際にはタイムアウト系も含むことを `docs/deployment/cloud-run.md` の TS セクションに記録済み（将来同様の症状が出たときの参照用）
+- 次のテーマ作成マイルストーン警告: 9 月 30 / 10 月 40 / 12 月 50 → 現在 10 から 6〜8 月で +20、月 4 テーマペースが必要
+
+---
+
 ## 2026-05-14（Phase 1 準備中 / UptimeRobot 導入完了）
 
 ### 今週やったこと
