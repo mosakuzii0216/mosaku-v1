@@ -19,14 +19,18 @@ const frontendCommand = usePreview ? 'npm run preview -- --port 5173' : 'npm run
 
 const backendUrl = process.env.E2E_BACKEND_URL ?? 'http://localhost:3000';
 
-const webServers = [
-	{
-		command: frontendCommand,
-		url: 'http://localhost:5173',
-		reuseExistingServer: !process.env.CI,
-		timeout: 60_000,
-	},
-];
+// E2E_USE_PREVIEW=1 のときは CI ワークフロー側で `vite preview` を起動済みのため、
+// Playwright 側で二重に立ち上げないようにスキップする。
+const webServers = usePreview
+	? []
+	: [
+			{
+				command: frontendCommand,
+				url: 'http://localhost:5173',
+				reuseExistingServer: !process.env.CI,
+				timeout: 60_000,
+			},
+		];
 
 if (process.env.E2E_BACKEND_AUTOSTART === '1') {
 	webServers.push({
