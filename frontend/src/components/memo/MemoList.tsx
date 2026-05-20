@@ -1,13 +1,23 @@
-import { useMemo } from 'react';
-import { useMemos } from '../../hooks/useMemoQueries';
+import { useMemo, useState } from 'react';
+import { useMemos, useSearchMemos } from '../../hooks/useMemoQueries';
+import { Search } from 'lucide-react';
 import { useViewStore } from '../../stores/useViewStore';
 import { useNavigation } from '../../hooks/useNavigation';
 import { MemoItem } from './MemoItem';
 
 export const MemoList = () => {
-	const { data: memos = [], isLoading, error } = useMemos();
 	const { notebookFilter } = useViewStore();
 	const { goToEdit } = useNavigation();
+
+	const [query, setQuery] = useState('');
+	const trimmedQuery = query.trim();
+	const isSearching = trimmedQuery.length > 0;
+
+	const memosQuery = useMemos();
+	const searchQuery = useSearchMemos(trimmedQuery);
+
+	const activeQuery = isSearching ? searchQuery : memosQuery;
+	const { data: memos = [], isLoading, error } = activeQuery;
 
 	// notebookFilterに基づいてメモをフィルタリング
 	const filteredMemos = useMemo(() => {
@@ -46,7 +56,9 @@ export const MemoList = () => {
 	if (filteredMemos.length === 0) {
 		return (
 			<div className="flex-1 flex items-center justify-center">
-				<div className="text-gray-500">メモがありません</div>
+				<div className="text-gray-500">
+					{isSearching ? '該当するメモが見つかりません' : 'メモがありません'}
+				</div>
 			</div>
 		);
 	}
@@ -64,6 +76,16 @@ export const MemoList = () => {
 				<div className="mb-4 flex items-baseline justify-between">
 					<h1 className="text-xl font-semibold text-gray-900">{headerLabel}</h1>
 					<span className="text-sm text-gray-500">{filteredMemos.length} 件</span>
+				</div>
+				<div className="mb-4 relative">
+					<Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+					<input
+						type="search"
+						value={query}
+						onChange={(e) => setQuery(e.target.value)}
+						placeholder="タイトル・本文で検索..."
+						className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+					/>
 				</div>
 				<div className="space-y-2">
 					{filteredMemos.map((memo) => (
