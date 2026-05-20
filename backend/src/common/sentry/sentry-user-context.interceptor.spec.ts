@@ -1,7 +1,7 @@
 import { ExecutionContext, CallHandler } from '@nestjs/common';
 import { of, lastValueFrom } from 'rxjs';
 
-const setUserMock = jest.fn();
+const setUserMock = jest.fn<void, [{ id: string }]>();
 const getCurrentScopeMock = jest.fn(() => ({ setUser: setUserMock }));
 
 jest.mock('@sentry/nestjs', () => ({
