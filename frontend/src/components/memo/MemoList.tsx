@@ -46,8 +46,8 @@ export const MemoList = () => {
 				return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 			case 'title_asc':
 				return list.sort((a, b) => a.title.localeCompare(b.title, 'ja'));
-		
-	})
+		}
+	}, [filteredMemos, sortKey]);
 
 	if (isLoading) {
 		return (
@@ -92,9 +92,9 @@ export const MemoList = () => {
 			<div className="max-w-4xl mx-auto p-4">
 				<div className="mb-4 flex items-baseline justify-between">
 					<h1 className="text-xl font-semibold text-gray-900">{headerLabel}</h1>
-					<span className="text-sm text-gray-500">{filteredMemos.length} 件</span>
+					<span className="text-sm text-gray-500">{sortedMemos.length} 件</span>
 				</div>
-				<div className='mb-4 flex gap-2'>
+				<div className="mb-4 flex gap-2">
 					<div className="relative flex-1">
 						<Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
 						<input
@@ -103,7 +103,7 @@ export const MemoList = () => {
 							onChange={(e) => setQuery(e.target.value)}
 							placeholder="タイトル・本文で検索..."
 							className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-							/>
+						/>
 					</div>
 					<select
 						value={sortKey}
@@ -117,7 +117,7 @@ export const MemoList = () => {
 					</select>
 				</div>
 				<div className="space-y-2">
-					{filteredMemos.map((memo) => (
+					{sortedMemos.map((memo) => (
 						<MemoItem key={memo.id} memo={memo} onClick={() => goToEdit(memo)} />
 					))}
 				</div>
