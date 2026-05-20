@@ -19,6 +19,9 @@ export const MemoList = () => {
 	const activeQuery = isSearching ? searchQuery : memosQuery;
 	const { data: memos = [], isLoading, error } = activeQuery;
 
+	type SortKey = 'updated_desc' | 'updated_asc' | 'created_desc' | 'title_asc';
+	const [sortKey, setSortKey] = useState<SortKey>('updated_desc');
+
 	// notebookFilterに基づいてメモをフィルタリング
 	const filteredMemos = useMemo(() => {
 		return memos.filter((memo) => {
@@ -31,6 +34,20 @@ export const MemoList = () => {
 			}
 		});
 	}, [memos, notebookFilter]);
+
+	const sortedMemos = useMemo(() => {
+		const list = [...filteredMemos];
+		switch (sortKey) {
+			case 'updated_desc':
+				return list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+			case 'updated_asc':
+				return list.sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
+			case 'created_desc':
+				return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+			case 'title_asc':
+				return list.sort((a, b) => a.title.localeCompare(b.title, 'ja'));
+		
+	})
 
 	if (isLoading) {
 		return (
@@ -77,15 +94,27 @@ export const MemoList = () => {
 					<h1 className="text-xl font-semibold text-gray-900">{headerLabel}</h1>
 					<span className="text-sm text-gray-500">{filteredMemos.length} 件</span>
 				</div>
-				<div className="mb-4 relative">
-					<Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-					<input
-						type="search"
-						value={query}
-						onChange={(e) => setQuery(e.target.value)}
-						placeholder="タイトル・本文で検索..."
-						className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-					/>
+				<div className='mb-4 flex gap-2'>
+					<div className="relative flex-1">
+						<Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+						<input
+							type="search"
+							value={query}
+							onChange={(e) => setQuery(e.target.value)}
+							placeholder="タイトル・本文で検索..."
+							className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+							/>
+					</div>
+					<select
+						value={sortKey}
+						onChange={(e) => setSortKey(e.target.value as SortKey)}
+						className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+					>
+						<option value="updated_desc">更新日時(新しい順)</option>
+						<option value="updated_asc">更新日時(古い順)</option>
+						<option value="created_desc">作成日時(新しい順)</option>
+						<option value="title_asc">タイトル昇順</option>
+					</select>
 				</div>
 				<div className="space-y-2">
 					{filteredMemos.map((memo) => (
