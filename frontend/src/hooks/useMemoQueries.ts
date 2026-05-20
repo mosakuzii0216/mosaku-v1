@@ -148,14 +148,14 @@ export const useUpdateMemo = () => {
 // メモ削除（soft delete: ゴミ箱に移動）
 export const useDeleteMemo = () => {
 	const queryClient = useQueryClient();
-	const { goToList } = useViewStore();
+	const { goToMemoList } = useViewStore();
 
 	return useMutation({
 		mutationFn: (id: string) => getMemoBridge().trashMemo(id),
 		networkMode: 'offlineFirst',
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: queryKeys.memos.list() });
-			goToList();
+			goToMemoList();
 		},
 	});
 };
