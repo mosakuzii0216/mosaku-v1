@@ -4,7 +4,7 @@ import type { Memo } from '../types/memo';
 
 interface NavigationActions {
 	goToEdit: (memo: Memo) => void;
-	goToList: () => void;
+	goToMemoList: () => void;
 	goToMemoCreate: () => void;
 	goToNotebookCreate: () => void;
 	goToNotebookEdit: (id: string) => void;
@@ -26,8 +26,8 @@ export const useNavigation = (): NavigationActions => {
 			setSelectedMemoId(memo.id);
 		},
 
-		goToList: () => {
-			viewStore.goToList();
+		goToMemoList: () => {
+			viewStore.goToMemoList();
 			setSelectedMemoId(null);
 		},
 

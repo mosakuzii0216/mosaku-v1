@@ -33,7 +33,7 @@ vi.mock('../utils/memo/memo-bridge-instance', () => ({
 	},
 }));
 
-// useViewStore は useDeleteMemo の中で goToList を呼ぶが、本テストでは使わないので何もしない。
+// useViewStore は useDeleteMemo の中で goToMemoList を呼ぶが、本テストでは使わないので何もしない。
 const USER_ID = 'user-1';
 
 async function importHooks() {

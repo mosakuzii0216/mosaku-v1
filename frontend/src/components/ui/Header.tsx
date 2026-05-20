@@ -13,7 +13,7 @@ interface HeaderProps {
 
 export const Header = (_props?: HeaderProps) => {
 	const { currentView, currentObject } = useViewStore();
-	const { goToList, goToTags, goToNotebookList, goToTrash } = useNavigation();
+	const { goToMemoList, goToTags, goToNotebookList, goToTrash } = useNavigation();
 	const { user, logout } = useAuth();
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const dropdownRef = useRef<HTMLDivElement>(null);
@@ -51,14 +51,14 @@ export const Header = (_props?: HeaderProps) => {
 			<div className="flex items-center">
 				{currentView !== 'list' && (
 					<button
-						onClick={goToList}
+						onClick={goToMemoList}
 						className="mr-3 p-2 text-gray-600 hover:text-gray-900 md:hidden"
 					></button>
 				)}
 				{/* ナビゲーションボタン */}
 				<div className="ml-6 flex items-center space-x-2">
 					<button
-						onClick={goToList}
+						onClick={goToMemoList}
 						className={`px-3 py-2 rounded text-sm font-medium transition-colors inline-flex items-center ${
 							currentObject === 'memo' && currentView === 'list'
 								? 'bg-blue-100 text-blue-800'

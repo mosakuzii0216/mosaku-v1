@@ -56,12 +56,12 @@ describe('useNavigation', () => {
 		});
 	});
 
-	describe('goToList', () => {
+	describe('goToMemoList', () => {
 		it('currentObject が memo に、currentView が list に、isEditing が false になること', () => {
 			const { result } = renderHook(() => useNavigation());
 
 			act(() => {
-				result.current.goToList();
+				result.current.goToMemoList();
 			});
 
 			const viewState = useViewStore.getState();
@@ -74,7 +74,7 @@ describe('useNavigation', () => {
 			const { result } = renderHook(() => useNavigation());
 
 			act(() => {
-				result.current.goToList();
+				result.current.goToMemoList();
 			});
 
 			expect(useMemoDataStore.getState().selectedMemoId).toBeNull();

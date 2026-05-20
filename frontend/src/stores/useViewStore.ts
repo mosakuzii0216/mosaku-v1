@@ -22,7 +22,7 @@ interface ViewState {
 	setNotebookFilter: (filter: 'ALL' | 'INBOX' | string) => void;
 
 	// Navigation helpers
-	goToList: () => void;
+	goToMemoList: () => void;
 	goToMemoCreate: () => void;
 	goToNotebookCreate: () => void;
 	goToNotebookList: () => void;
@@ -52,7 +52,7 @@ export const useViewStore = create<ViewState>((set, get) => ({
 	setNotebookFilter: (filter) => set({ notebookFilter: filter }),
 
 	// Navigation helpers
-	goToList: () =>
+	goToMemoList: () =>
 		set({
 			currentObject: 'memo',
 			currentView: 'list',
