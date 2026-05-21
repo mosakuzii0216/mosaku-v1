@@ -10,7 +10,7 @@ const setUserMock = jest.fn();
 const setTagMock = jest.fn();
 
 jest.mock('@sentry/nestjs', () => {
-	const actual = jest.requireActual('@sentry/nestjs');
+	const actual = jest.requireActual<typeof import('@sentry/nestjs')>('@sentry/nestjs');
 	return {
 		...actual,
 		init: jest.fn(),
@@ -50,6 +50,13 @@ const memoFixture = {
 	notebook: null,
 };
 
+type MemoResponseBody = { title: string };
+type ConflictResponseBody = {
+	code: string;
+	statusCode: number;
+	details: { current: { id: string; userId: string } };
+};
+
 describe('PATCH /memos/:id (e2e) — last-write-wins', () => {
 	let app: INestApplication<App>;
 	const findFirstMock = jest.fn();
@@ -68,7 +75,9 @@ describe('PATCH /memos/:id (e2e) — last-write-wins', () => {
 					if (authMode === 'unauthed') {
 						throw new UnauthorizedException();
 					}
-					const req = ctx.switchToHttp().getRequest();
+					const req = ctx
+						.switchToHttp()
+						.getRequest<{ user?: { id: string; email: string; role: string } }>();
 					req.user = { id: 'user-1', email: 'test@example.com', role: 'user' };
 					return true;
 				},
@@ -119,7 +128,8 @@ describe('PATCH /memos/:id (e2e) — last-write-wins', () => {
 			.send({ title: 'Updated' });
 
 		expect(res.status).toBe(HttpStatus.OK);
-		expect(res.body.title).toBe('Updated');
+		const body = res.body as MemoResponseBody;
+		expect(body.title).toBe('Updated');
 		expect(updateMock).toHaveBeenCalled();
 	});
 
@@ -133,7 +143,8 @@ describe('PATCH /memos/:id (e2e) — last-write-wins', () => {
 			.send({ title: 'Newer', clientUpdatedAt: '2026-05-10T11:00:00.000Z' });
 
 		expect(res.status).toBe(HttpStatus.OK);
-		expect(res.body.title).toBe('Newer');
+		const body = res.body as MemoResponseBody;
+		expect(body.title).toBe('Newer');
 	});
 
 	it('(c) サーバー側が新しい場合は 409 + details.current に現在の Memo を含む', async () => {
@@ -144,11 +155,12 @@ describe('PATCH /memos/:id (e2e) — last-write-wins', () => {
 			.send({ title: 'Stale', clientUpdatedAt: '2026-05-10T09:00:00.000Z' });
 
 		expect(res.status).toBe(HttpStatus.CONFLICT);
-		expect(res.body.code).toBe('RES006');
-		expect(res.body.statusCode).toBe(HttpStatus.CONFLICT);
-		expect(res.body.details).toBeDefined();
-		expect(res.body.details.current.id).toBe('memo-1');
-		expect(res.body.details.current.userId).toBe('user-1');
+		const body = res.body as ConflictResponseBody;
+		expect(body.code).toBe('RES006');
+		expect(body.statusCode).toBe(HttpStatus.CONFLICT);
+		expect(body.details).toBeDefined();
+		expect(body.details.current.id).toBe('memo-1');
+		expect(body.details.current.userId).toBe('user-1');
 		expect(updateMock).not.toHaveBeenCalled();
 	});
 
