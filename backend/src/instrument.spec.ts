@@ -10,20 +10,6 @@
  * - Sentry.init が throw してもアプリ起動は継続する（warn のみ）
  */
 
-const initMock = jest.fn();
-const profilingIntegrationMock = jest.fn(() => ({ name: 'ProfilingIntegrationMock' }));
-
-jest.mock('@sentry/nestjs', () => ({
-	__esModule: true,
-	init: (...args: unknown[]) => initMock(...args),
-	getCurrentScope: () => ({ setUser: jest.fn(), setTag: jest.fn() }),
-}));
-
-jest.mock('@sentry/profiling-node', () => ({
-	__esModule: true,
-	nodeProfilingIntegration: () => profilingIntegrationMock(),
-}));
-
 type SentryInitOptions = {
 	dsn?: string;
 	environment?: string;
@@ -36,6 +22,22 @@ type SentryInitOptions = {
 	ignoreErrors?: string[];
 	beforeSend?: (event: Record<string, unknown>, hint?: unknown) => Record<string, unknown> | null;
 };
+
+const initMock = jest.fn<void, [SentryInitOptions]>();
+const profilingIntegrationMock = jest.fn<{ name: string }, []>(() => ({
+	name: 'ProfilingIntegrationMock',
+}));
+
+jest.mock('@sentry/nestjs', () => ({
+	__esModule: true,
+	init: (options: SentryInitOptions): void => initMock(options),
+	getCurrentScope: () => ({ setUser: jest.fn(), setTag: jest.fn() }),
+}));
+
+jest.mock('@sentry/profiling-node', () => ({
+	__esModule: true,
+	nodeProfilingIntegration: () => profilingIntegrationMock(),
+}));
 
 const SENTRY_ENV_VARS = [
 	'SENTRY_DSN',
@@ -60,7 +62,7 @@ describe('initializeSentry', () => {
 
 	const lastInitOptions = (): SentryInitOptions => {
 		expect(initMock).toHaveBeenCalled();
-		return initMock.mock.calls[initMock.mock.calls.length - 1][0] as SentryInitOptions;
+		return initMock.mock.calls[initMock.mock.calls.length - 1][0];
 	};
 
 	beforeEach(() => {
@@ -184,16 +186,27 @@ describe('initializeSentry', () => {
 			tags: { existing: 'keep-me' },
 		};
 
-		const result = options.beforeSend!(event, {}) as Record<string, any>;
+		type ProcessedEvent = {
+			request: { data: { content: string } };
+			tags: {
+				existing: string;
+				feature_area: string;
+				user_facing: boolean;
+				controller: string;
+				handler: string;
+				route: string;
+			};
+		};
+		const result = options.beforeSend!(event, {}) as ProcessedEvent | null;
 
 		expect(result).not.toBeNull();
-		expect(result.request.data.content).toBe('[REDACTED]');
-		expect(result.tags.existing).toBe('keep-me');
-		expect(result.tags.feature_area).toBe('memo');
-		expect(result.tags.user_facing).toBe(true);
-		expect(result.tags.controller).toBe('MemoController');
-		expect(result.tags.handler).toBe('createMemo');
-		expect(result.tags.route).toBe('/memos/abc');
+		expect(result!.request.data.content).toBe('[REDACTED]');
+		expect(result!.tags.existing).toBe('keep-me');
+		expect(result!.tags.feature_area).toBe('memo');
+		expect(result!.tags.user_facing).toBe(true);
+		expect(result!.tags.controller).toBe('MemoController');
+		expect(result!.tags.handler).toBe('createMemo');
+		expect(result!.tags.route).toBe('/memos/abc');
 	});
 
 	it('beforeSend が内部例外を握りつぶして null を返し、送信を抑止すること', () => {
@@ -202,7 +215,7 @@ describe('initializeSentry', () => {
 		loadInstrument();
 
 		const options = lastInitOptions();
-		const cyclic: any = { request: {} };
+		const cyclic: { request: { self?: unknown }; tags?: unknown } = { request: {} };
 		cyclic.request.self = cyclic;
 		// Object.entries は循環でも動くが、tags 合成側で意図的に throw する setter を仕掛ける
 		Object.defineProperty(cyclic, 'tags', {
