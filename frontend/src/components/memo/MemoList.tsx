@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useMemos, useSearchMemos } from '../../hooks/useMemoQueries';
-import { Search } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import { useViewStore } from '../../stores/useViewStore';
 import { useNavigation } from '../../hooks/useNavigation';
 import { MemoItem } from './MemoItem';
 
 export const MemoList = () => {
 	const { notebookFilter } = useViewStore();
-	const { goToEdit } = useNavigation();
+	const { goToEdit, goToMemoCreate } = useNavigation();
 
 	const [query, setQuery] = useState('');
 	const trimmedQuery = query.trim();
@@ -91,8 +91,17 @@ export const MemoList = () => {
 		<div className="flex-1 overflow-y-auto">
 			<div className="max-w-4xl mx-auto p-4">
 				<div className="mb-4 flex items-baseline justify-between">
-					<h1 className="text-xl font-semibold text-gray-900">{headerLabel}</h1>
-					<span className="text-sm text-gray-500">{sortedMemos.length} 件</span>
+					<div className="flex items-baseline gap-3">
+						<h1 className="text-xl font-semibold text-gray-900">{headerLabel}</h1>
+						<span className="text-sm text-gray-500">{sortedMemos.length} 件</span>
+					</div>
+					<button
+						onClick={goToMemoCreate}
+						className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium inline-flex items-center gap-1 transition-colors"
+					>
+						<Plus className="w-4 h-4" />
+						新規メモ
+					</button>
 				</div>
 				<div className="mb-4 flex gap-2">
 					<div className="relative flex-1">
