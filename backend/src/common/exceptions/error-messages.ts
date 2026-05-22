@@ -15,6 +15,13 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
 	[ERROR_CODES.AUTH.USER_ALREADY_EXISTS]: 'このユーザーは既に存在します',
 	[ERROR_CODES.AUTH.PASSWORD_NOT_SET]: 'パスワードが設定されていません',
 	[ERROR_CODES.AUTH.INVALID_PASSWORD]: '現在のパスワードが正しくありません',
+	[ERROR_CODES.AUTH.REFRESH_TOKEN_INVALID]:
+		'セッションを継続できませんでした。再度ログインしてください',
+	[ERROR_CODES.AUTH.REFRESH_TOKEN_REVOKED]: 'セッションが終了しています。再度ログインしてください',
+	[ERROR_CODES.AUTH.REFRESH_TOKEN_REUSED]:
+		'セキュリティ上の理由でセッションを終了しました。再度ログインしてください',
+	[ERROR_CODES.AUTH.REFRESH_TOKEN_EXPIRED]:
+		'セッションの有効期限が切れました。再度ログインしてください',
 
 	// 認可エラー
 	[ERROR_CODES.AUTHZ.FORBIDDEN]: 'アクセスが拒否されました',

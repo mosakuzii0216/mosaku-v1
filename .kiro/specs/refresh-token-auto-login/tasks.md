@@ -4,19 +4,19 @@
 
 ## 1. データ基盤と共通定数の整備
 
-- [ ] 1.1 (P) Refresh Token 永続化モデルと初期マイグレーションを追加する
+- [x] 1.1 (P) Refresh Token 永続化モデルと初期マイグレーションを追加する
   - `RefreshToken` モデル（id / userId / tokenHash / familyId / status / issuedAt / expiresAt / lastUsedAt / ip / userAgent）と `RefreshTokenStatus` enum を Prisma スキーマに追加する
   - `User → RefreshToken` を `onDelete: Cascade` で関連付け、`(tokenHash)` 一意・`(userId, status)` ・`(familyId)` のインデックスを宣言する
   - `add_refresh_tokens` マイグレーションを生成し、`npx prisma migrate dev` および `npx prisma generate` で Prisma クライアントを再生成する
   - _Requirements: 1.4, 1.5, 4.3, 4.4, 4.5_
 
-- [ ] 1.2 (P) Refresh Token 関連の環境変数と Auth 定数を整備する
+- [x] 1.2 (P) Refresh Token 関連の環境変数と Auth 定数を整備する
   - `REFRESH_TOKEN_PEPPER` / `REFRESH_TOKEN_EXPIRATION`（既定 30 日）/ `REFRESH_COOKIE_DOMAIN` / `REFRESH_COOKIE_SAMESITE` / `REFRESH_COOKIE_SECURE` を `.env.example` と `ConfigService` に追加し、本番起動時に pepper 未設定なら fail-fast にする
   - 既存 `JWT_EXPIRATION` の既定値を `15m` に変更し、env で上書き可能であることを明示する
   - `THROTTLE_CONFIG.REFRESH = { LIMIT: 10, TTL: 60_000 }` と `REFRESH_COOKIE_NAME = 'refresh_token'` を Auth 定数モジュールへ追加する
   - _Requirements: 1.6, 5.6, 6.1, 7.3_
 
-- [ ] 1.3 (P) Refresh Token 系エラーコードを共通エラーコード体系に追加する
+- [x] 1.3 (P) Refresh Token 系エラーコードを共通エラーコード体系に追加する
   - `AUTH010 REFRESH_TOKEN_INVALID` / `AUTH011 REFRESH_TOKEN_REVOKED` / `AUTH012 REFRESH_TOKEN_REUSED` / `AUTH013 REFRESH_TOKEN_EXPIRED` を `ERROR_CODES.AUTH.*` に追加する
   - フロント側のエラーメッセージ出し分けの土台として、各コードの想定 HTTP ステータス（401）と利用シーンをコメントで明示する
   - _Requirements: 7.4_

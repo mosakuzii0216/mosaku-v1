@@ -10,6 +10,22 @@ export interface SentryConfig {
 	readonly debugEnabled: boolean;
 }
 
+/**
+ * Refresh Token Cookie 属性。`RefreshCookieHelper` から参照される単一の真実の源泉。
+ */
+export interface RefreshCookieOptions {
+	readonly domain?: string;
+	readonly sameSite: 'lax' | 'none' | 'strict';
+	readonly secure: boolean;
+	readonly path: '/auth';
+}
+
+const VALID_SAME_SITE_VALUES: ReadonlySet<RefreshCookieOptions['sameSite']> = new Set([
+	'lax',
+	'none',
+	'strict',
+]);
+
 @Injectable()
 export class ConfigService {
 	// JWT設定
@@ -144,6 +160,46 @@ export class ConfigService {
 
 	get xRedirectUri(): string {
 		return process.env.X_REDIRECT_URI || 'http://localhost:3000/auth/x/callback';
+	}
+
+	// Refresh Token 設定
+	/**
+	 * Refresh Token のハッシュ用 pepper。
+	 * 本番環境で未設定なら fail-fast（design.md §RefreshTokenService Risks）。
+	 * 開発環境では未設定許容（空文字を返す）— ローカルで JWT_SECRET 互換の挙動。
+	 */
+	get refreshTokenPepper(): string {
+		const pepper = process.env.REFRESH_TOKEN_PEPPER;
+		if (!pepper) {
+			if (this.isProduction) {
+				throw new Error(
+					'REFRESH_TOKEN_PEPPER is not configured. Refresh Token の発行には pepper の設定が必須です（本番環境）。',
+				);
+			}
+			return '';
+		}
+		return pepper;
+	}
+
+	/**
+	 * Refresh Token Cookie 属性。env で全て上書き可能。
+	 * 既定: 本番は secure=true、それ以外は secure=false。SameSite は lax 既定でクロスドメイン構成時のみ `none` 上書き。
+	 */
+	get refreshCookieOptions(): RefreshCookieOptions {
+		const rawSameSite = process.env.REFRESH_COOKIE_SAMESITE?.toLowerCase();
+		const sameSite: RefreshCookieOptions['sameSite'] = VALID_SAME_SITE_VALUES.has(
+			rawSameSite as RefreshCookieOptions['sameSite'],
+		)
+			? (rawSameSite as RefreshCookieOptions['sameSite'])
+			: 'lax';
+
+		const rawSecure = process.env.REFRESH_COOKIE_SECURE?.toLowerCase();
+		const secure = rawSecure === 'true' ? true : rawSecure === 'false' ? false : this.isProduction;
+
+		const domainRaw = process.env.REFRESH_COOKIE_DOMAIN;
+		const domain = domainRaw && domainRaw.length > 0 ? domainRaw : undefined;
+
+		return { sameSite, secure, domain, path: '/auth' };
 	}
 
 	// データベース設定

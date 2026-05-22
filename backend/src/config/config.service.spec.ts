@@ -100,6 +100,80 @@ describe('ConfigService - LINE/Apple/X OAuth', () => {
 		});
 	});
 
+	// ─── Refresh Token ─────────────────────────────────────────────────────
+
+	describe('Refresh Token 設定', () => {
+		describe('refreshTokenPepper', () => {
+			it('REFRESH_TOKEN_PEPPER が設定されていれば値を返すこと', () => {
+				process.env.REFRESH_TOKEN_PEPPER = 'super-secret-pepper-32-bytes-min';
+				expect(service.refreshTokenPepper).toBe('super-secret-pepper-32-bytes-min');
+			});
+
+			it('本番環境で REFRESH_TOKEN_PEPPER が未設定なら fail-fast で例外を投げること', () => {
+				process.env.NODE_ENV = 'production';
+				delete process.env.REFRESH_TOKEN_PEPPER;
+				expect(() => service.refreshTokenPepper).toThrow(/REFRESH_TOKEN_PEPPER/);
+			});
+
+			it('開発環境で REFRESH_TOKEN_PEPPER が未設定でも例外を投げないこと', () => {
+				process.env.NODE_ENV = 'development';
+				delete process.env.REFRESH_TOKEN_PEPPER;
+				expect(() => service.refreshTokenPepper).not.toThrow();
+			});
+		});
+
+		describe('refreshCookieOptions', () => {
+			it('既定では SameSite=lax, secure=false, path=/auth, domain=undefined を返すこと（開発）', () => {
+				process.env.NODE_ENV = 'development';
+				delete process.env.REFRESH_COOKIE_SAMESITE;
+				delete process.env.REFRESH_COOKIE_SECURE;
+				delete process.env.REFRESH_COOKIE_DOMAIN;
+				const opts = service.refreshCookieOptions;
+				expect(opts.sameSite).toBe('lax');
+				expect(opts.secure).toBe(false);
+				expect(opts.path).toBe('/auth');
+				expect(opts.domain).toBeUndefined();
+			});
+
+			it('本番既定では secure=true, sameSite=lax を返すこと', () => {
+				process.env.NODE_ENV = 'production';
+				delete process.env.REFRESH_COOKIE_SAMESITE;
+				delete process.env.REFRESH_COOKIE_SECURE;
+				delete process.env.REFRESH_COOKIE_DOMAIN;
+				const opts = service.refreshCookieOptions;
+				expect(opts.secure).toBe(true);
+				expect(opts.sameSite).toBe('lax');
+			});
+
+			it('REFRESH_COOKIE_SAMESITE で値を上書きできること', () => {
+				process.env.REFRESH_COOKIE_SAMESITE = 'none';
+				expect(service.refreshCookieOptions.sameSite).toBe('none');
+				process.env.REFRESH_COOKIE_SAMESITE = 'strict';
+				expect(service.refreshCookieOptions.sameSite).toBe('strict');
+			});
+
+			it('REFRESH_COOKIE_SAMESITE に不正値が来たら lax にフォールバックすること', () => {
+				process.env.REFRESH_COOKIE_SAMESITE = 'invalid';
+				expect(service.refreshCookieOptions.sameSite).toBe('lax');
+			});
+
+			it('REFRESH_COOKIE_SECURE で値を強制上書きできること', () => {
+				process.env.NODE_ENV = 'production';
+				process.env.REFRESH_COOKIE_SECURE = 'false';
+				expect(service.refreshCookieOptions.secure).toBe(false);
+
+				process.env.NODE_ENV = 'development';
+				process.env.REFRESH_COOKIE_SECURE = 'true';
+				expect(service.refreshCookieOptions.secure).toBe(true);
+			});
+
+			it('REFRESH_COOKIE_DOMAIN を設定すれば domain に反映されること', () => {
+				process.env.REFRESH_COOKIE_DOMAIN = '.mosaku.jp';
+				expect(service.refreshCookieOptions.domain).toBe('.mosaku.jp');
+			});
+		});
+	});
+
 	// ─── X ──────────────────────────────────────────────────────────────────
 
 	describe('X クレデンシャル', () => {

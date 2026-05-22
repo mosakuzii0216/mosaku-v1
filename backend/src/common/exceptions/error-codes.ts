@@ -21,6 +21,15 @@ export const ERROR_CODES = {
 		USER_ALREADY_EXISTS: 'AUTH007',
 		PASSWORD_NOT_SET: 'AUTH008',
 		INVALID_PASSWORD: 'AUTH009',
+		// Refresh Token 系（全て HTTP 401）
+		// AUTH010: Cookie 不在 / 形式不正 / ハッシュ不一致など、サーバー側で RT を識別できないケース
+		REFRESH_TOKEN_INVALID: 'AUTH010',
+		// AUTH011: ログアウト・パスワード変更・管理操作により明示的に revoked された RT を再使用したケース
+		REFRESH_TOKEN_REVOKED: 'AUTH011',
+		// AUTH012: rotated 済みの旧 RT が再使用されたケース。同一 family を全 revoke + Sentry warning
+		REFRESH_TOKEN_REUSED: 'AUTH012',
+		// AUTH013: expiresAt を過ぎた RT が使われたケース。FE はログイン画面に静かにフォールバック
+		REFRESH_TOKEN_EXPIRED: 'AUTH013',
 	},
 
 	// 認可エラー (AUTHZ001~)
