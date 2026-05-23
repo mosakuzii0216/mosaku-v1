@@ -8,8 +8,16 @@ import type { AuthTokens } from './jwt.service';
 import { BCRYPT_SALT_ROUNDS } from '../config/auth-constants';
 import { ERROR_CODES, throwUnauthorized, throwBadRequest } from '../common/exceptions';
 import { InvitationService } from '../invitation/invitation.service';
+import { RefreshTokenService, type IssueResult } from './refresh-token.service';
 
 export type { JwtPayload, AuthTokens } from './jwt.service';
+
+export interface AuthRequestContext {
+	ip: string | null;
+	userAgent: string | null;
+}
+
+export type AuthLoginResult = AuthTokens & { user: AuthenticatedUser; refresh: IssueResult };
 
 @Injectable()
 export class AuthService {
@@ -18,6 +26,7 @@ export class AuthService {
 		private readonly jwtTokenService: JwtTokenService,
 		private readonly configService: ConfigService,
 		private readonly invitationService: InvitationService,
+		private readonly refreshTokenService: RefreshTokenService,
 	) {}
 
 	async hashPassword(password: string): Promise<string> {
@@ -106,10 +115,32 @@ export class AuthService {
 		return this.excludePassword(user);
 	}
 
-	async login(email: string, password: string): Promise<AuthTokens & { user: AuthenticatedUser }> {
+	async login(email: string, password: string, ctx: AuthRequestContext): Promise<AuthLoginResult> {
 		const user = await this.validateUser(email, password);
 		const tokens = this.jwtTokenService.generateTokens(user.id, user.email, user.role);
-		return { ...tokens, user };
+		const refresh = await this.refreshTokenService.issue({
+			userId: user.id,
+			ip: ctx.ip,
+			userAgent: ctx.userAgent,
+		});
+		return { ...tokens, user, refresh };
+	}
+
+	async registerWithTokens(
+		email: string,
+		password: string,
+		name: string | undefined,
+		invitationCode: string | undefined,
+		ctx: AuthRequestContext,
+	): Promise<AuthLoginResult> {
+		const user = await this.register(email, password, name, invitationCode);
+		const tokens = this.jwtTokenService.generateTokens(user.id, user.email, user.role);
+		const refresh = await this.refreshTokenService.issue({
+			userId: user.id,
+			ip: ctx.ip,
+			userAgent: ctx.userAgent,
+		});
+		return { ...tokens, user, refresh };
 	}
 
 	async findUserById(id: string): Promise<AuthenticatedUser> {

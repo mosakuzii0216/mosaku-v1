@@ -14,8 +14,14 @@ import type {
 } from './types/oauth.types';
 import type { AuthenticatedUser } from './types';
 import { ERROR_CODES, throwBadRequest } from '../common/exceptions';
+import { RefreshTokenService, type IssueResult } from './refresh-token.service';
+import type { AuthRequestContext } from './auth.service';
 
 type UserProviderField = 'oauthId' | 'lineId' | 'appleId' | 'xId';
+
+export type OAuthLoginResult = AuthTokens & { user: AuthenticatedUser; refresh: IssueResult };
+
+const EMPTY_CONTEXT: AuthRequestContext = { ip: null, userAgent: null };
 
 @Injectable()
 export class OAuthService {
@@ -24,6 +30,7 @@ export class OAuthService {
 		private readonly jwtTokenService: JwtTokenService,
 		private readonly configService: ConfigService,
 		private readonly invitationService: InvitationService,
+		private readonly refreshTokenService: RefreshTokenService,
 	) {}
 
 	private excludePassword<T extends { password?: string | null }>(user: T): Omit<T, 'password'> {
@@ -42,7 +49,8 @@ export class OAuthService {
 		oauthUser: BaseOAuthUser,
 		providerId: string,
 		providerField: UserProviderField = 'oauthId',
-	): Promise<AuthTokens & { user: AuthenticatedUser }> {
+		ctx: AuthRequestContext = EMPTY_CONTEXT,
+	): Promise<OAuthLoginResult> {
 		let user = await this.prisma.user.findFirst({
 			where: {
 				OR: [
@@ -78,7 +86,12 @@ export class OAuthService {
 		}
 
 		const tokens = this.jwtTokenService.generateTokens(user.id, user.email, user.role);
-		return { ...tokens, user: this.excludePassword(user) };
+		const refresh = await this.refreshTokenService.issue({
+			userId: user.id,
+			ip: ctx.ip,
+			userAgent: ctx.userAgent,
+		});
+		return { ...tokens, user: this.excludePassword(user), refresh };
 	}
 
 	/**
@@ -90,7 +103,8 @@ export class OAuthService {
 		invitationCode: string,
 		fallbackEmail?: string,
 		providerField: UserProviderField = 'oauthId',
-	): Promise<AuthTokens & { user: AuthenticatedUser }> {
+		ctx: AuthRequestContext = EMPTY_CONTEXT,
+	): Promise<OAuthLoginResult> {
 		await this.invitationService.verifyInvitation(invitationCode);
 
 		const userEmail = oauthUser.email || fallbackEmail;
@@ -123,27 +137,34 @@ export class OAuthService {
 		await this.invitationService.useInvitation(invitationCode);
 
 		const tokens = this.jwtTokenService.generateTokens(user.id, user.email, user.role);
-		return { ...tokens, user: this.excludePassword(user) };
+		const refresh = await this.refreshTokenService.issue({
+			userId: user.id,
+			ip: ctx.ip,
+			userAgent: ctx.userAgent,
+		});
+		return { ...tokens, user: this.excludePassword(user), refresh };
 	}
 
 	// ─── Google ─────────────────────────────────────────────────────────────
 
 	async googleLogin(
 		googleUser: GoogleStrategyUser,
-	): Promise<AuthTokens & { user: AuthenticatedUser }> {
+		ctx: AuthRequestContext = EMPTY_CONTEXT,
+	): Promise<OAuthLoginResult> {
 		const normalizedUser: BaseOAuthUser = {
 			id: googleUser.googleId,
 			email: googleUser.email,
 			name: googleUser.name,
 			provider: 'google',
 		};
-		return this.handleOAuthLogin(normalizedUser, googleUser.googleId, 'oauthId');
+		return this.handleOAuthLogin(normalizedUser, googleUser.googleId, 'oauthId', ctx);
 	}
 
 	async googleRegisterWithInvitation(
 		googleUser: GoogleStrategyUser,
 		invitationCode: string,
-	): Promise<AuthTokens & { user: AuthenticatedUser }> {
+		ctx: AuthRequestContext = EMPTY_CONTEXT,
+	): Promise<OAuthLoginResult> {
 		const normalizedUser: BaseOAuthUser = {
 			id: googleUser.googleId,
 			email: googleUser.email,
@@ -156,6 +177,7 @@ export class OAuthService {
 			invitationCode,
 			undefined,
 			'oauthId',
+			ctx,
 		);
 	}
 
@@ -163,20 +185,22 @@ export class OAuthService {
 
 	async githubLogin(
 		githubUser: GitHubStrategyUser,
-	): Promise<AuthTokens & { user: AuthenticatedUser }> {
+		ctx: AuthRequestContext = EMPTY_CONTEXT,
+	): Promise<OAuthLoginResult> {
 		const normalizedUser: BaseOAuthUser = {
 			id: githubUser.githubId,
 			email: githubUser.email,
 			name: githubUser.name,
 			provider: 'github',
 		};
-		return this.handleOAuthLogin(normalizedUser, githubUser.githubId, 'oauthId');
+		return this.handleOAuthLogin(normalizedUser, githubUser.githubId, 'oauthId', ctx);
 	}
 
 	async githubRegisterWithInvitation(
 		githubUser: GitHubStrategyUser,
 		invitationCode: string,
-	): Promise<AuthTokens & { user: AuthenticatedUser }> {
+		ctx: AuthRequestContext = EMPTY_CONTEXT,
+	): Promise<OAuthLoginResult> {
 		const normalizedUser: BaseOAuthUser = {
 			id: githubUser.githubId,
 			email: githubUser.email,
@@ -189,25 +213,30 @@ export class OAuthService {
 			invitationCode,
 			undefined,
 			'oauthId',
+			ctx,
 		);
 	}
 
 	// ─── LINE ────────────────────────────────────────────────────────────────
 
-	async lineLogin(lineUser: LineStrategyUser): Promise<AuthTokens & { user: AuthenticatedUser }> {
+	async lineLogin(
+		lineUser: LineStrategyUser,
+		ctx: AuthRequestContext = EMPTY_CONTEXT,
+	): Promise<OAuthLoginResult> {
 		const normalizedUser: BaseOAuthUser = {
 			id: lineUser.lineId,
 			email: lineUser.email,
 			name: lineUser.name,
 			provider: 'line',
 		};
-		return this.handleOAuthLogin(normalizedUser, lineUser.lineId, 'lineId');
+		return this.handleOAuthLogin(normalizedUser, lineUser.lineId, 'lineId', ctx);
 	}
 
 	async lineRegisterWithInvitation(
 		lineUser: LineStrategyUser,
 		invitationCode: string,
-	): Promise<AuthTokens & { user: AuthenticatedUser }> {
+		ctx: AuthRequestContext = EMPTY_CONTEXT,
+	): Promise<OAuthLoginResult> {
 		const normalizedUser: BaseOAuthUser = {
 			id: lineUser.lineId,
 			email: lineUser.email,
@@ -220,6 +249,7 @@ export class OAuthService {
 			invitationCode,
 			undefined,
 			'lineId',
+			ctx,
 		);
 	}
 
@@ -227,21 +257,23 @@ export class OAuthService {
 
 	async appleLogin(
 		appleUser: AppleStrategyUser,
-	): Promise<AuthTokens & { user: AuthenticatedUser }> {
+		ctx: AuthRequestContext = EMPTY_CONTEXT,
+	): Promise<OAuthLoginResult> {
 		const normalizedUser: BaseOAuthUser = {
 			id: appleUser.appleId,
 			email: appleUser.email,
 			name: appleUser.name,
 			provider: 'apple',
 		};
-		return this.handleOAuthLogin(normalizedUser, appleUser.appleId, 'appleId');
+		return this.handleOAuthLogin(normalizedUser, appleUser.appleId, 'appleId', ctx);
 	}
 
 	async appleRegisterWithInvitation(
 		appleUser: AppleStrategyUser,
 		invitationCode: string,
 		fallbackEmail?: string,
-	): Promise<AuthTokens & { user: AuthenticatedUser }> {
+		ctx: AuthRequestContext = EMPTY_CONTEXT,
+	): Promise<OAuthLoginResult> {
 		const normalizedUser: BaseOAuthUser = {
 			id: appleUser.appleId,
 			email: appleUser.email,
@@ -254,25 +286,30 @@ export class OAuthService {
 			invitationCode,
 			fallbackEmail,
 			'appleId',
+			ctx,
 		);
 	}
 
 	// ─── X ──────────────────────────────────────────────────────────────────
 
-	async xLogin(xUser: XStrategyUser): Promise<AuthTokens & { user: AuthenticatedUser }> {
+	async xLogin(
+		xUser: XStrategyUser,
+		ctx: AuthRequestContext = EMPTY_CONTEXT,
+	): Promise<OAuthLoginResult> {
 		const normalizedUser: BaseOAuthUser = {
 			id: xUser.xId,
 			email: xUser.email,
 			name: xUser.name,
 			provider: 'x',
 		};
-		return this.handleOAuthLogin(normalizedUser, xUser.xId, 'xId');
+		return this.handleOAuthLogin(normalizedUser, xUser.xId, 'xId', ctx);
 	}
 
 	async xRegisterWithInvitation(
 		xUser: XStrategyUser,
 		invitationCode: string,
-	): Promise<AuthTokens & { user: AuthenticatedUser }> {
+		ctx: AuthRequestContext = EMPTY_CONTEXT,
+	): Promise<OAuthLoginResult> {
 		const normalizedUser: BaseOAuthUser = {
 			id: xUser.xId,
 			email: xUser.email,
@@ -285,6 +322,7 @@ export class OAuthService {
 			invitationCode,
 			undefined,
 			'xId',
+			ctx,
 		);
 	}
 }

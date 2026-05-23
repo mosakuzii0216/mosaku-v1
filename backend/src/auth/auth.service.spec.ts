@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '../config/config.service';
 import { JwtTokenService } from './jwt.service';
 import { InvitationService } from '../invitation/invitation.service';
+import { RefreshTokenService } from './refresh-token.service';
 import { AppException } from '../common/exceptions';
 
 describe('AuthService', () => {
@@ -43,6 +44,14 @@ describe('AuthService', () => {
 		useInvitation: jest.fn(),
 	};
 
+	const mockRefreshTokenService = {
+		issue: jest.fn().mockResolvedValue({
+			plainRt: 'plain-rt',
+			expiresAt: new Date(Date.now() + 30 * 86_400_000),
+			familyId: 'fam-1',
+		}),
+	};
+
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
@@ -51,11 +60,17 @@ describe('AuthService', () => {
 				{ provide: ConfigService, useValue: mockConfigService },
 				{ provide: JwtTokenService, useValue: mockJwtTokenService },
 				{ provide: InvitationService, useValue: mockInvitationService },
+				{ provide: RefreshTokenService, useValue: mockRefreshTokenService },
 			],
 		}).compile();
 
 		service = module.get<AuthService>(AuthService);
 		jest.clearAllMocks();
+		mockRefreshTokenService.issue.mockResolvedValue({
+			plainRt: 'plain-rt',
+			expiresAt: new Date(Date.now() + 30 * 86_400_000),
+			familyId: 'fam-1',
+		});
 	});
 
 	it('should be defined', () => {
@@ -263,16 +278,40 @@ describe('AuthService', () => {
 	});
 
 	describe('login', () => {
-		it('should return accessToken and user without password', async () => {
+		it('should return accessToken, user without password, and refresh metadata', async () => {
 			const password = 'correct-password';
 			const hash = await bcrypt.hash(password, 10);
 			mockPrismaService.user.findUnique.mockResolvedValue({ ...mockUser, password: hash });
 			mockJwtTokenService.generateTokens.mockReturnValue({ accessToken: 'test-token' });
 
-			const result = await service.login(mockUser.email, password);
+			const result = await service.login(mockUser.email, password, {
+				ip: '10.0.0.1',
+				userAgent: 'jest',
+			});
 
 			expect(result.accessToken).toBe('test-token');
 			expect(result.user).not.toHaveProperty('password');
+			expect(result.refresh).toMatchObject({
+				plainRt: expect.any(String),
+				familyId: expect.any(String),
+			});
+			expect(mockRefreshTokenService.issue).toHaveBeenCalledWith({
+				userId: mockUser.id,
+				ip: '10.0.0.1',
+				userAgent: 'jest',
+			});
+		});
+
+		it('should propagate exception and not return AT when RT issuance fails', async () => {
+			const password = 'correct-password';
+			const hash = await bcrypt.hash(password, 10);
+			mockPrismaService.user.findUnique.mockResolvedValue({ ...mockUser, password: hash });
+			mockJwtTokenService.generateTokens.mockReturnValue({ accessToken: 'test-token' });
+			mockRefreshTokenService.issue.mockRejectedValue(new Error('DB write failed'));
+
+			await expect(
+				service.login(mockUser.email, password, { ip: null, userAgent: null }),
+			).rejects.toThrow('DB write failed');
 		});
 	});
 

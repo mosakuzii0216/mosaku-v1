@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Request, Response } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Request, Response, Req } from '@nestjs/common';
 import {
 	ERROR_CODES,
 	throwBadRequest,
@@ -32,13 +32,17 @@ import {
 	XAuthGuard,
 } from './oauth-auth.guards';
 import { Public } from '../common/decorators/public.decorator';
-import { AuthService } from './auth.service';
-import { OAuthService } from './oauth.service';
+import { AuthService, type AuthLoginResult, type AuthRequestContext } from './auth.service';
+import { OAuthService, type OAuthLoginResult } from './oauth.service';
 import { RegisterUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResetPasswordRequestDto, ChangePasswordDto } from './dto/reset-password.dto';
-import { THROTTLE_CONFIG } from '../config/auth-constants';
+import { THROTTLE_CONFIG, REFRESH_COOKIE_NAME } from '../config/auth-constants';
 import { AppLogger } from '../common/logger/app-logger.service';
+import { JwtTokenService } from './jwt.service';
+import { RefreshTokenService } from './refresh-token.service';
+import { RefreshCookieHelper } from './refresh-cookie.helper';
+import { RefreshCsrfGuard } from './refresh-csrf.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -49,21 +53,44 @@ export class AuthController {
 		private readonly authService: AuthService,
 		private readonly oauthService: OAuthService,
 		private readonly configService: ConfigService,
+		private readonly jwtTokenService: JwtTokenService,
+		private readonly refreshTokenService: RefreshTokenService,
+		private readonly refreshCookieHelper: RefreshCookieHelper,
 	) {
 		this.logger.setContext('AuthController');
+	}
+
+	private extractRequestContext(req: ExpressRequest): AuthRequestContext {
+		const ip = req.ip ?? null;
+		const uaHeader = req.headers['user-agent'];
+		const userAgent = typeof uaHeader === 'string' ? uaHeader.slice(0, 512) : null;
+		return { ip, userAgent };
+	}
+
+	private readRefreshCookie(req: ExpressRequest): string | null {
+		const cookies = (req as ExpressRequest & { cookies?: Record<string, string> }).cookies;
+		const value = cookies?.[REFRESH_COOKIE_NAME];
+		return typeof value === 'string' && value.length > 0 ? value : null;
 	}
 
 	/**
 	 * OAuth認証コールバック共通処理
 	 */
 	private async handleOAuthCallback<TUser extends OAuthStrategyUser>(
-		authMethod: (user: TUser) => Promise<{ accessToken: string; user: unknown }>,
+		authMethod: (user: TUser, ctx: AuthRequestContext) => Promise<OAuthLoginResult>,
 		req: OAuthRequest<TUser>,
 		res: ExpressResponse,
 		providerName: string,
 	): Promise<void> {
 		try {
-			const result = await authMethod(req.user);
+			const ctx = this.extractRequestContext(req);
+			const result = await authMethod(req.user, ctx);
+
+			this.refreshCookieHelper.setRefreshCookie(
+				res,
+				result.refresh.plainRt,
+				result.refresh.expiresAt,
+			);
 
 			// フロントエンドにトークンを渡すため、URLパラメータとしてリダイレクト
 			const redirectUrl = this.configService.generateSuccessRedirectUrl(
@@ -95,16 +122,30 @@ export class AuthController {
 		default: { limit: THROTTLE_CONFIG.REGISTER.LIMIT, ttl: THROTTLE_CONFIG.REGISTER.TTL },
 	})
 	@Post('register')
-	async register(@Body() registerUserDto: RegisterUserDto) {
+	async register(
+		@Body() registerUserDto: RegisterUserDto,
+		@Req() req: ExpressRequest,
+		@Response({ passthrough: true }) res: ExpressResponse,
+	) {
 		const { email, password, name, invitationCode } = registerUserDto;
 
 		try {
-			const user = await this.authService.register(email, password, name, invitationCode);
+			const ctx = this.extractRequestContext(req);
+			const result = await this.authService.registerWithTokens(
+				email,
+				password,
+				name,
+				invitationCode,
+				ctx,
+			);
 
-			return {
-				message: 'Registration successful. You can now login.',
-				user,
-			};
+			this.refreshCookieHelper.setRefreshCookie(
+				res,
+				result.refresh.plainRt,
+				result.refresh.expiresAt,
+			);
+
+			return this.buildAuthResponse(result, 'Registration successful');
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : 'Registration failed';
 			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_INPUT, message);
@@ -114,28 +155,82 @@ export class AuthController {
 	@Public()
 	@Throttle({ default: { limit: THROTTLE_CONFIG.LOGIN.LIMIT, ttl: THROTTLE_CONFIG.LOGIN.TTL } })
 	@Post('login')
-	async login(@Body() loginDto: LoginDto) {
+	async login(
+		@Body() loginDto: LoginDto,
+		@Req() req: ExpressRequest,
+		@Response({ passthrough: true }) res: ExpressResponse,
+	) {
 		const { email, password } = loginDto;
 
 		try {
-			const result = await this.authService.login(email, password);
-			return {
-				message: 'Login successful',
-				...result,
-			};
+			const ctx = this.extractRequestContext(req);
+			const result = await this.authService.login(email, password, ctx);
+
+			this.refreshCookieHelper.setRefreshCookie(
+				res,
+				result.refresh.plainRt,
+				result.refresh.expiresAt,
+			);
+
+			return this.buildAuthResponse(result, 'Login successful');
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : 'Login failed';
 			throwUnauthorized(ERROR_CODES.AUTH.INVALID_CREDENTIALS, message);
 		}
 	}
 
-	@Post('logout')
 	@Public()
-	logout() {
-		// JWTはステートレスなので、ログアウト処理は主にクライアント側で実装
-		// 必要に応じてトークンをブラックリストに追加する処理を実装可能
+	@UseGuards(RefreshCsrfGuard)
+	@Throttle({
+		default: { limit: THROTTLE_CONFIG.REFRESH.LIMIT, ttl: THROTTLE_CONFIG.REFRESH.TTL },
+	})
+	@Post('refresh')
+	async refresh(@Req() req: ExpressRequest, @Response({ passthrough: true }) res: ExpressResponse) {
+		const plainRt = this.readRefreshCookie(req);
+		if (!plainRt) {
+			throwUnauthorized(ERROR_CODES.AUTH.REFRESH_TOKEN_INVALID);
+		}
+
+		const ctx = this.extractRequestContext(req);
+		const rotated = await this.refreshTokenService.rotate({
+			plainRt,
+			ip: ctx.ip,
+			userAgent: ctx.userAgent,
+		});
+
+		const user = await this.authService.findUserById(rotated.userId);
+		const tokens = this.jwtTokenService.generateTokens(user.id, user.email, user.role);
+
+		this.refreshCookieHelper.setRefreshCookie(res, rotated.plainRt, rotated.expiresAt);
+
 		return {
-			message: 'Logout successful',
+			accessToken: tokens.accessToken,
+			user,
+		};
+	}
+
+	@Public()
+	@UseGuards(RefreshCsrfGuard)
+	@Throttle({
+		default: { limit: THROTTLE_CONFIG.REFRESH.LIMIT, ttl: THROTTLE_CONFIG.REFRESH.TTL },
+	})
+	@Post('logout')
+	async logout(@Req() req: ExpressRequest, @Response({ passthrough: true }) res: ExpressResponse) {
+		const plainRt = this.readRefreshCookie(req);
+		if (plainRt) {
+			await this.refreshTokenService.revoke(plainRt);
+		}
+
+		this.refreshCookieHelper.clearRefreshCookie(res);
+
+		return { message: 'Logout successful' };
+	}
+
+	private buildAuthResponse(result: AuthLoginResult | OAuthLoginResult, message: string) {
+		return {
+			message,
+			accessToken: result.accessToken,
+			user: result.user,
 		};
 	}
 
@@ -208,6 +303,7 @@ export class AuthController {
 	async changePassword(
 		@Request() req: AuthenticatedRequest,
 		@Body() changePasswordDto: ChangePasswordDto,
+		@Response({ passthrough: true }) res: ExpressResponse,
 	) {
 		const userId = req.user.id;
 		const { currentPassword, newPassword } = changePasswordDto;
@@ -237,6 +333,9 @@ export class AuthController {
 				where: { id: userId },
 				data: { password: hashedNewPassword },
 			});
+
+			await this.refreshTokenService.revokeAllForUser(userId, 'password_change');
+			this.refreshCookieHelper.clearRefreshCookie(res);
 
 			return {
 				message: 'Password changed successfully',
@@ -294,7 +393,7 @@ export class AuthController {
 		@Response() res: ExpressResponse,
 	) {
 		return this.handleOAuthCallback(
-			(user) => this.oauthService.googleLogin(user),
+			(user, ctx) => this.oauthService.googleLogin(user, ctx),
 			req,
 			res,
 			'Google',
@@ -308,17 +407,27 @@ export class AuthController {
 		user: Record<string, unknown>,
 		invitationCode: string,
 		parser: (user: Record<string, unknown>) => TUser,
-		registerMethod: (user: TUser, code: string) => Promise<{ accessToken: string; user: unknown }>,
+		registerMethod: (
+			user: TUser,
+			code: string,
+			ctx: AuthRequestContext,
+		) => Promise<OAuthLoginResult>,
+		req: ExpressRequest,
+		res: ExpressResponse,
 	) {
 		const parsedUser = parser(user);
 
 		try {
-			const result = await registerMethod(parsedUser, invitationCode);
+			const ctx = this.extractRequestContext(req);
+			const result = await registerMethod(parsedUser, invitationCode, ctx);
 
-			return {
-				message: 'Registration successful',
-				...result,
-			};
+			this.refreshCookieHelper.setRefreshCookie(
+				res,
+				result.refresh.plainRt,
+				result.refresh.expiresAt,
+			);
+
+			return this.buildAuthResponse(result, 'Registration successful');
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : 'Registration failed';
 			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_INPUT, message);
@@ -327,13 +436,19 @@ export class AuthController {
 
 	@Public()
 	@Post('google/register-with-invitation')
-	async googleRegisterWithInvitation(@Body() body: GoogleRegisterWithInvitationDto) {
+	async googleRegisterWithInvitation(
+		@Body() body: GoogleRegisterWithInvitationDto,
+		@Req() req: ExpressRequest,
+		@Response({ passthrough: true }) res: ExpressResponse,
+	) {
 		const { googleUser, invitationCode } = body;
 		return this.handleOAuthRegisterWithInvitation(
 			googleUser,
 			invitationCode,
 			(value) => this.parseGoogleUser(value),
-			(user, code) => this.oauthService.googleRegisterWithInvitation(user, code),
+			(user, code, ctx) => this.oauthService.googleRegisterWithInvitation(user, code, ctx),
+			req,
+			res,
 		);
 	}
 
@@ -353,7 +468,7 @@ export class AuthController {
 		@Response() res: ExpressResponse,
 	) {
 		return this.handleOAuthCallback(
-			(user) => this.oauthService.githubLogin(user),
+			(user, ctx) => this.oauthService.githubLogin(user, ctx),
 			req,
 			res,
 			'GitHub',
@@ -362,13 +477,19 @@ export class AuthController {
 
 	@Public()
 	@Post('github/register-with-invitation')
-	async githubRegisterWithInvitation(@Body() body: GithubRegisterWithInvitationDto) {
+	async githubRegisterWithInvitation(
+		@Body() body: GithubRegisterWithInvitationDto,
+		@Req() req: ExpressRequest,
+		@Response({ passthrough: true }) res: ExpressResponse,
+	) {
 		const { githubUser, invitationCode } = body;
 		return this.handleOAuthRegisterWithInvitation(
 			githubUser,
 			invitationCode,
 			(value) => this.parseGithubUser(value),
-			(user, code) => this.oauthService.githubRegisterWithInvitation(user, code),
+			(user, code, ctx) => this.oauthService.githubRegisterWithInvitation(user, code, ctx),
+			req,
+			res,
 		);
 	}
 
@@ -426,18 +547,29 @@ export class AuthController {
 		@Request() req: OAuthRequest<LineStrategyUser>,
 		@Response() res: ExpressResponse,
 	) {
-		return this.handleOAuthCallback((user) => this.oauthService.lineLogin(user), req, res, 'LINE');
+		return this.handleOAuthCallback(
+			(user, ctx) => this.oauthService.lineLogin(user, ctx),
+			req,
+			res,
+			'LINE',
+		);
 	}
 
 	@Public()
 	@Post('line/register-with-invitation')
-	async lineRegisterWithInvitation(@Body() body: LineRegisterWithInvitationDto) {
+	async lineRegisterWithInvitation(
+		@Body() body: LineRegisterWithInvitationDto,
+		@Req() req: ExpressRequest,
+		@Response({ passthrough: true }) res: ExpressResponse,
+	) {
 		const { lineUser, invitationCode } = body;
 		return this.handleOAuthRegisterWithInvitation(
 			lineUser,
 			invitationCode,
 			(value) => this.parseLineUser(value),
-			(user, code) => this.oauthService.lineRegisterWithInvitation(user, code),
+			(user, code, ctx) => this.oauthService.lineRegisterWithInvitation(user, code, ctx),
+			req,
+			res,
 		);
 	}
 
@@ -457,7 +589,7 @@ export class AuthController {
 		@Response() res: ExpressResponse,
 	) {
 		return this.handleOAuthCallback(
-			(user) => this.oauthService.appleLogin(user),
+			(user, ctx) => this.oauthService.appleLogin(user, ctx),
 			req,
 			res,
 			'Apple',
@@ -466,20 +598,30 @@ export class AuthController {
 
 	@Public()
 	@Post('apple/register-with-invitation')
-	async appleRegisterWithInvitation(@Body() body: AppleRegisterWithInvitationDto) {
+	async appleRegisterWithInvitation(
+		@Body() body: AppleRegisterWithInvitationDto,
+		@Req() req: ExpressRequest,
+		@Response({ passthrough: true }) res: ExpressResponse,
+	) {
 		const { appleUser, invitationCode, fallbackEmail } = body;
 		const parsedUser = this.parseAppleUser(appleUser);
 
 		try {
+			const ctx = this.extractRequestContext(req);
 			const result = await this.oauthService.appleRegisterWithInvitation(
 				parsedUser,
 				invitationCode,
 				fallbackEmail,
+				ctx,
 			);
-			return {
-				message: 'Registration successful',
-				...result,
-			};
+
+			this.refreshCookieHelper.setRefreshCookie(
+				res,
+				result.refresh.plainRt,
+				result.refresh.expiresAt,
+			);
+
+			return this.buildAuthResponse(result, 'Registration successful');
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : 'Registration failed';
 			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_INPUT, message);
@@ -501,18 +643,29 @@ export class AuthController {
 		@Request() req: OAuthRequest<XStrategyUser>,
 		@Response() res: ExpressResponse,
 	) {
-		return this.handleOAuthCallback((user) => this.oauthService.xLogin(user), req, res, 'X');
+		return this.handleOAuthCallback(
+			(user, ctx) => this.oauthService.xLogin(user, ctx),
+			req,
+			res,
+			'X',
+		);
 	}
 
 	@Public()
 	@Post('x/register-with-invitation')
-	async xRegisterWithInvitation(@Body() body: XRegisterWithInvitationDto) {
+	async xRegisterWithInvitation(
+		@Body() body: XRegisterWithInvitationDto,
+		@Req() req: ExpressRequest,
+		@Response({ passthrough: true }) res: ExpressResponse,
+	) {
 		const { xUser, invitationCode } = body;
 		return this.handleOAuthRegisterWithInvitation(
 			xUser,
 			invitationCode,
 			(value) => this.parseXUser(value),
-			(user, code) => this.oauthService.xRegisterWithInvitation(user, code),
+			(user, code, ctx) => this.oauthService.xRegisterWithInvitation(user, code, ctx),
+			req,
+			res,
 		);
 	}
 

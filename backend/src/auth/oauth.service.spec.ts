@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '../config/config.service';
 import { InvitationService } from '../invitation/invitation.service';
 import { JwtTokenService } from './jwt.service';
+import { RefreshTokenService } from './refresh-token.service';
 import { AppException } from '../common/exceptions';
 
 describe('OAuthService', () => {
@@ -43,6 +44,14 @@ describe('OAuthService', () => {
 		generateTokens: jest.fn().mockReturnValue({ accessToken: 'mock-token' }),
 	};
 
+	const mockRefreshTokenService = {
+		issue: jest.fn().mockResolvedValue({
+			plainRt: 'oauth-plain-rt',
+			expiresAt: new Date(Date.now() + 30 * 86_400_000),
+			familyId: 'oauth-fam-1',
+		}),
+	};
+
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
@@ -51,11 +60,17 @@ describe('OAuthService', () => {
 				{ provide: ConfigService, useValue: mockConfigService },
 				{ provide: InvitationService, useValue: mockInvitationService },
 				{ provide: JwtTokenService, useValue: mockJwtTokenService },
+				{ provide: RefreshTokenService, useValue: mockRefreshTokenService },
 			],
 		}).compile();
 
 		service = module.get<OAuthService>(OAuthService);
 		jest.clearAllMocks();
+		mockRefreshTokenService.issue.mockResolvedValue({
+			plainRt: 'oauth-plain-rt',
+			expiresAt: new Date(Date.now() + 30 * 86_400_000),
+			familyId: 'oauth-fam-1',
+		});
 	});
 
 	it('should be defined', () => {
