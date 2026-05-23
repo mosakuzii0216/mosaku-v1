@@ -1,7 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import * as Sentry from '@sentry/nestjs';
 import { RefreshTokenService } from './refresh-token.service';
-import { RefreshTokenRepository, type RefreshTokenRecord } from './refresh-token.repository';
+import {
+	RefreshTokenRepository,
+	type RefreshTokenCreateInput,
+	type RefreshTokenRecord,
+} from './refresh-token.repository';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '../config/config.service';
 import { ERROR_CODES } from '../common/exceptions';
@@ -10,6 +14,9 @@ import { AppException } from '../common/exceptions/app.exception';
 jest.mock('@sentry/nestjs', () => ({
 	captureMessage: jest.fn(),
 }));
+
+type CreateMock = jest.Mock<Promise<RefreshTokenRecord>, [RefreshTokenCreateInput, ...unknown[]]>;
+type CaptureMessageMock = jest.Mock<string, [string, unknown?]>;
 
 describe('RefreshTokenService', () => {
 	let service: RefreshTokenService;
@@ -72,7 +79,7 @@ describe('RefreshTokenService', () => {
 			expect(result.plainRt).toMatch(/^[A-Za-z0-9_-]+$/);
 			expect(result.plainRt.length).toBeGreaterThanOrEqual(40);
 			expect(repo.create).toHaveBeenCalledTimes(1);
-			const callArg = repo.create.mock.calls[0][0];
+			const callArg = (repo.create as unknown as CreateMock).mock.calls[0][0];
 			expect(callArg.userId).toBe('user-1');
 			expect(callArg.status).toBe('active');
 			expect(callArg.ip).toBe('127.0.0.1');
@@ -85,8 +92,9 @@ describe('RefreshTokenService', () => {
 			repo.create.mockResolvedValue({ ...baseRecord });
 			await service.issue({ userId: 'u', ip: null, userAgent: null });
 			await service.issue({ userId: 'u', ip: null, userAgent: null });
-			const f1 = repo.create.mock.calls[0][0].familyId;
-			const f2 = repo.create.mock.calls[1][0].familyId;
+			const createMock = repo.create as unknown as CreateMock;
+			const f1 = createMock.mock.calls[0][0].familyId;
+			const f2 = createMock.mock.calls[1][0].familyId;
 			expect(f1).toMatch(/^[0-9a-f-]{36}$/);
 			expect(f2).toMatch(/^[0-9a-f-]{36}$/);
 			expect(f1).not.toBe(f2);
@@ -100,7 +108,9 @@ describe('RefreshTokenService', () => {
 				userAgent: null,
 				familyId: 'inherit-family',
 			});
-			expect(repo.create.mock.calls[0][0].familyId).toBe('inherit-family');
+			expect((repo.create as unknown as CreateMock).mock.calls[0][0].familyId).toBe(
+				'inherit-family',
+			);
 		});
 
 		it('DB 書き込み失敗時に例外を伝播し、AT のみ返るような中途半端を作らない', async () => {
@@ -143,7 +153,9 @@ describe('RefreshTokenService', () => {
 
 			await expect(service.issue({ userId: 'u', ip: null, userAgent: null })).rejects.toThrow();
 
-			const calls = (Sentry.captureMessage as jest.Mock).mock.calls.map((c) => c[0]);
+			const calls = (Sentry.captureMessage as unknown as CaptureMessageMock).mock.calls.map(
+				(c) => c[0],
+			);
 			expect(calls).not.toContain('refresh_token_issued');
 		});
 	});
