@@ -4,6 +4,8 @@ import { LineStrategy } from './line.strategy';
 import { AppleStrategy } from './apple.strategy';
 import { XStrategy } from './x.strategy';
 import { LineAuthGuard, AppleAuthGuard, XAuthGuard } from './oauth-auth.guards';
+import { RefreshTokenRepository } from './refresh-token.repository';
+import { RefreshTokenService } from './refresh-token.service';
 
 describe('AuthModule - 新プロバイダー登録', () => {
 	const providers = (Reflect.getMetadata('providers', AuthModule) as unknown[]) ?? [];
@@ -43,5 +45,15 @@ describe('AuthModule - 新プロバイダー登録', () => {
 
 	it('XAuthGuard が exports に登録されていること', () => {
 		expect(exports).toContain(XAuthGuard);
+	});
+
+	it('RefreshTokenRepository が providers / exports に登録されていること', () => {
+		expect(providers).toContain(RefreshTokenRepository);
+		expect(exports).toContain(RefreshTokenRepository);
+	});
+
+	it('RefreshTokenService が providers / exports に登録されていること', () => {
+		expect(providers).toContain(RefreshTokenService);
+		expect(exports).toContain(RefreshTokenService);
 	});
 });

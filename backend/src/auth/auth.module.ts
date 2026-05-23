@@ -20,6 +20,8 @@ import {
 } from './oauth-auth.guards';
 import { RefreshCookieHelper } from './refresh-cookie.helper';
 import { RefreshCsrfGuard } from './refresh-csrf.guard';
+import { RefreshTokenRepository } from './refresh-token.repository';
+import { RefreshTokenService } from './refresh-token.service';
 import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ConfigService } from '../config/config.service';
@@ -57,6 +59,8 @@ import { JWT_EXPIRATION } from '../config/auth-constants';
 		XAuthGuard,
 		RefreshCookieHelper,
 		RefreshCsrfGuard,
+		RefreshTokenRepository,
+		RefreshTokenService,
 		InvitationService,
 	],
 	exports: [
@@ -71,6 +75,8 @@ import { JWT_EXPIRATION } from '../config/auth-constants';
 		XAuthGuard,
 		RefreshCookieHelper,
 		RefreshCsrfGuard,
+		RefreshTokenRepository,
+		RefreshTokenService,
 	],
 })
 export class AuthModule {}
