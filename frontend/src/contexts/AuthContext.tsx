@@ -10,9 +10,10 @@ import type { ReactNode } from 'react';
 import { AuthAPI, AuthTokenManager } from '../utils/auth';
 // AuthAPI は appleRegisterWithInvitation で直接使用（fallbackEmail パラメータのため）
 import type { UserProfile, OAuthUserData } from '../utils/auth';
-import { useEmailAuth, initializeEmailAuth, performLogout } from '../hooks/useEmailAuth';
+import { useEmailAuth, initializeEmailAuth } from '../hooks/useEmailAuth';
 import { useOAuth, type OAuthProvider } from '../hooks/useOAuth';
 import { useSentryAuthSync } from '../hooks/useSentryAuthSync';
+import { refreshClient } from '../utils/refreshClient';
 import { logger } from '../utils/logger';
 
 export interface AuthState {
@@ -94,18 +95,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	useEffect(() => {
 		const initialize = async () => {
 			try {
-				// OAuthコールバックをチェック
+				// 1. OAuthコールバックをチェック
 				const oauthHandled = oauth.handleCallback(
 					(token, userProfile) => handleAuthSuccess(token, userProfile),
 					handleInvitationRequired,
 				);
 
 				if (oauthHandled) {
-					setLoading(false);
 					return;
 				}
 
-				// 既存のJWT認証をチェック
+				// 2. Refresh Token 経由の自動セッション復元
+				const refreshed = await refreshClient.tryAutoRefresh();
+				if (refreshed) {
+					setUser(refreshed.user);
+					return;
+				}
+
+				// 3. 既存の localStorage 内 Access Token によるフォールバック
 				const userProfile = await initializeEmailAuth();
 				if (userProfile) {
 					setUser(userProfile);
@@ -157,7 +164,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 	const logout = useCallback(async (): Promise<void> => {
 		setUser(null);
-		await performLogout();
+		await refreshClient.logout();
 	}, []);
 
 	const refreshUser = useCallback(async (): Promise<void> => {
