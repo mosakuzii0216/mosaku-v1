@@ -13,6 +13,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { SentryGlobalFilter } from '@sentry/nestjs/setup';
 import { AppController } from './app.controller';
+import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { SentryUserContextInterceptor } from './common/sentry/sentry-user-context.interceptor';
 
 @Module({
@@ -43,6 +44,11 @@ import { SentryUserContextInterceptor } from './common/sentry/sentry-user-contex
 		{
 			provide: APP_GUARD,
 			useClass: ThrottlerGuard,
+		},
+		// JwtAuthGuard をグローバル化。公開エンドポイントは @Public() で opt-out する。
+		{
+			provide: APP_GUARD,
+			useClass: JwtAuthGuard,
 		},
 		// 認証済みリクエストの間だけ Sentry scope に { id } を載せる side-car
 		{

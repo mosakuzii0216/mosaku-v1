@@ -279,12 +279,14 @@ export class AuthController {
 	}
 
 	// Google OAuth エンドポイント
+	@Public()
 	@Get('google')
 	@UseGuards(GoogleAuthGuard)
 	googleAuth(@Request() _req: ExpressRequest) {
 		// Google認証画面にリダイレクト
 	}
 
+	@Public()
 	@Get('google/callback')
 	@UseGuards(GoogleAuthGuard)
 	async googleAuthRedirect(
@@ -336,12 +338,14 @@ export class AuthController {
 	}
 
 	// GitHub OAuth エンドポイント
+	@Public()
 	@Get('github')
 	@UseGuards(GitHubAuthGuard)
 	githubAuth(@Request() _req: ExpressRequest) {
 		// GitHub認証画面にリダイレクト
 	}
 
+	@Public()
 	@Get('github/callback')
 	@UseGuards(GitHubAuthGuard)
 	async githubAuthRedirect(
@@ -408,12 +412,14 @@ export class AuthController {
 	}
 
 	// LINE OAuth エンドポイント
+	@Public()
 	@Get('line')
 	@UseGuards(LineAuthGuard)
 	lineAuth(@Request() _req: ExpressRequest) {
 		// LINE認証画面にリダイレクト
 	}
 
+	@Public()
 	@Get('line/callback')
 	@UseGuards(LineAuthGuard)
 	async lineAuthCallback(
@@ -436,6 +442,7 @@ export class AuthController {
 	}
 
 	// Apple OAuth エンドポイント
+	@Public()
 	@Get('apple')
 	@UseGuards(AppleAuthGuard)
 	appleAuth(@Request() _req: ExpressRequest) {
@@ -480,12 +487,14 @@ export class AuthController {
 	}
 
 	// X OAuth エンドポイント
+	@Public()
 	@Get('x')
 	@UseGuards(XAuthGuard)
 	xAuth(@Request() _req: ExpressRequest) {
 		// X認証画面にリダイレクト
 	}
 
+	@Public()
 	@Get('x/callback')
 	@UseGuards(XAuthGuard)
 	async xAuthCallback(
