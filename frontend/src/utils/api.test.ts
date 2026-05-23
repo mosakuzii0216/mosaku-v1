@@ -10,14 +10,25 @@ vi.mock('./auth', () => ({
 		getAccessToken: vi.fn().mockReturnValue('mock-token'),
 		isTokenExpired: vi.fn().mockReturnValue(false),
 		setAccessToken: vi.fn(),
+		removeTokens: vi.fn(),
+	},
+}));
+
+const ensureRefreshedMock = vi.fn();
+vi.mock('./refreshClient', () => ({
+	refreshClient: {
+		ensureRefreshed: (...args: unknown[]) => ensureRefreshedMock(...args),
 	},
 }));
 
 import { apiClient } from './api';
+import { AuthTokenManager } from './auth';
 
 describe('ApiClient.request() エラーハンドリング', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		vi.mocked(AuthTokenManager.getAccessToken).mockReturnValue('mock-token');
+		vi.mocked(AuthTokenManager.isTokenExpired).mockReturnValue(false);
 	});
 
 	afterEach(() => {
@@ -66,7 +77,8 @@ describe('ApiClient.request() エラーハンドリング', () => {
 		await expect(apiClient.getMemo('test-id')).rejects.toThrow('HTTP error! status: 404');
 	});
 
-	it('401 かつ authLevel=REQUIRED の場合は認証エラーを throw する（既存動作を維持）', async () => {
+	it('401 + REQUIRED + refresh 失敗 の場合は認証エラーを throw する', async () => {
+		ensureRefreshedMock.mockRejectedValue(new Error('refresh failed'));
 		vi.stubGlobal(
 			'fetch',
 			vi.fn().mockResolvedValue({
@@ -80,6 +92,154 @@ describe('ApiClient.request() エラーハンドリング', () => {
 		await expect(apiClient.getMemo('test-id')).rejects.toThrow(
 			'認証エラー: ログインし直してください',
 		);
+		expect(ensureRefreshedMock).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe('ApiClient.request() 401 透過リフレッシュ', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		vi.mocked(AuthTokenManager.getAccessToken).mockReturnValue('mock-token');
+		vi.mocked(AuthTokenManager.isTokenExpired).mockReturnValue(false);
+	});
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it('REQUIRED で 401 → refresh 成功で同一リクエストを再送し成功レスポンスを返す', async () => {
+		ensureRefreshedMock.mockResolvedValueOnce({
+			accessToken: 'fresh-token',
+			user: {
+				id: '1',
+				email: 'e',
+				name: 'n',
+				role: 'USER',
+				createdAt: '',
+				updatedAt: '',
+			},
+		});
+		const successPayload = {
+			id: 'memo-1',
+			title: 'after refresh',
+			content: '',
+			createdAt: '',
+			updatedAt: '',
+		};
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce({
+				ok: false,
+				status: 401,
+				headers: new Headers({ 'content-type': 'application/json' }),
+				json: vi.fn().mockResolvedValue({ message: 'Unauthorized' }),
+			})
+			.mockResolvedValueOnce({
+				ok: true,
+				headers: new Headers({ 'content-type': 'application/json' }),
+				json: vi.fn().mockResolvedValue(successPayload),
+			});
+		vi.stubGlobal('fetch', fetchMock);
+
+		const result = await apiClient.getMemo('memo-1');
+
+		expect(result).toEqual(successPayload);
+		expect(ensureRefreshedMock).toHaveBeenCalledTimes(1);
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+	});
+
+	it('再送も 401 の場合は ensureRefreshed を二度発火させず認証エラーを throw する', async () => {
+		ensureRefreshedMock.mockResolvedValueOnce({
+			accessToken: 'fresh-token',
+			user: {
+				id: '1',
+				email: 'e',
+				name: 'n',
+				role: 'USER',
+				createdAt: '',
+				updatedAt: '',
+			},
+		});
+		const fetchMock = vi.fn().mockResolvedValue({
+			ok: false,
+			status: 401,
+			headers: new Headers({ 'content-type': 'application/json' }),
+			json: vi.fn().mockResolvedValue({ message: 'Unauthorized' }),
+		});
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(apiClient.getMemo('memo-1')).rejects.toThrow(
+			'認証エラー: ログインし直してください',
+		);
+		expect(ensureRefreshedMock).toHaveBeenCalledTimes(1);
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+	});
+
+	it('NONE 経路は 401 でも refresh を発火させない', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn().mockResolvedValue({
+				ok: false,
+				status: 401,
+				headers: new Headers({ 'content-type': 'application/json' }),
+				json: vi.fn().mockResolvedValue({ message: 'Unauthorized' }),
+			}),
+		);
+
+		await expect(apiClient.health()).rejects.toThrow();
+		expect(ensureRefreshedMock).not.toHaveBeenCalled();
+	});
+
+	it('OPTIONAL 経路は 401 でも refresh を発火させない', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn().mockResolvedValue({
+				ok: false,
+				status: 401,
+				headers: new Headers({ 'content-type': 'application/json' }),
+				json: vi.fn().mockResolvedValue({ message: 'Unauthorized' }),
+			}),
+		);
+
+		await expect(apiClient.getPublicThemes()).rejects.toThrow();
+		expect(ensureRefreshedMock).not.toHaveBeenCalled();
+	});
+
+	it('再送リクエストには新しい Access Token がヘッダに乗る', async () => {
+		const tokens = ['mock-token', 'fresh-token'];
+		vi.mocked(AuthTokenManager.getAccessToken).mockImplementation(() => tokens.shift() ?? null);
+		ensureRefreshedMock.mockResolvedValueOnce({
+			accessToken: 'fresh-token',
+			user: {
+				id: '1',
+				email: 'e',
+				name: 'n',
+				role: 'USER',
+				createdAt: '',
+				updatedAt: '',
+			},
+		});
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce({
+				ok: false,
+				status: 401,
+				headers: new Headers({ 'content-type': 'application/json' }),
+				json: vi.fn().mockResolvedValue({ message: 'Unauthorized' }),
+			})
+			.mockResolvedValueOnce({
+				ok: true,
+				headers: new Headers({ 'content-type': 'application/json' }),
+				json: vi.fn().mockResolvedValue({}),
+			});
+		vi.stubGlobal('fetch', fetchMock);
+
+		await apiClient.getMemo('memo-1');
+
+		const firstHeaders = fetchMock.mock.calls[0][1].headers as Record<string, string>;
+		const retryHeaders = fetchMock.mock.calls[1][1].headers as Record<string, string>;
+		expect(firstHeaders.Authorization).toBe('Bearer mock-token');
+		expect(retryHeaders.Authorization).toBe('Bearer fresh-token');
 	});
 });
 

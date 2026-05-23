@@ -17,6 +17,7 @@ import type {
 import type { PaginationParams, PaginatedResult } from '../types/pagination';
 import { AuthTokenManager } from './auth';
 import { getBackendUrl } from './env';
+import { refreshClient } from './refreshClient';
 
 const API_BASE_URL = getBackendUrl();
 
@@ -24,6 +25,7 @@ type AuthLevel = 'REQUIRED' | 'OPTIONAL' | 'NONE';
 
 interface RequestConfig extends RequestInit {
 	authLevel?: AuthLevel;
+	_retried?: boolean;
 }
 
 class ApiClient {
@@ -47,7 +49,7 @@ class ApiClient {
 	}
 
 	private async request<T>(endpoint: string, config: RequestConfig = {}): Promise<T> {
-		const { authLevel = 'REQUIRED', ...fetchConfig } = config;
+		const { authLevel = 'REQUIRED', _retried = false, ...fetchConfig } = config;
 		const url = `${API_BASE_URL}${endpoint}`;
 
 		const authHeaders = this.getAuthHeaders(authLevel);
@@ -71,6 +73,14 @@ class ApiClient {
 
 		if (!response.ok) {
 			if (response.status === 401 && authLevel === 'REQUIRED') {
+				if (!_retried) {
+					try {
+						await refreshClient.ensureRefreshed();
+						return this.request<T>(endpoint, { ...config, _retried: true });
+					} catch {
+						throw new Error('認証エラー: ログインし直してください');
+					}
+				}
 				throw new Error('認証エラー: ログインし直してください');
 			}
 
