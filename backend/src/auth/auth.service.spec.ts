@@ -291,10 +291,8 @@ describe('AuthService', () => {
 
 			expect(result.accessToken).toBe('test-token');
 			expect(result.user).not.toHaveProperty('password');
-			expect(result.refresh).toMatchObject({
-				plainRt: expect.any(String),
-				familyId: expect.any(String),
-			});
+			expect(result.refresh.plainRt).toEqual(expect.any(String));
+			expect(result.refresh.familyId).toEqual(expect.any(String));
 			expect(mockRefreshTokenService.issue).toHaveBeenCalledWith({
 				userId: mockUser.id,
 				ip: '10.0.0.1',
