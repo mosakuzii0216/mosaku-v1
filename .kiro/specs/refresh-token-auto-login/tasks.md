@@ -147,39 +147,39 @@
 
 ## 7. テスト整備
 
-- [ ] 7.1 (P) Refresh Token サービス／リポジトリ／ヘルパ／Guard の単体テストを追加する
+- [x] 7.1 (P) Refresh Token サービス／リポジトリ／ヘルパ／Guard の単体テストを追加する
   - `RefreshTokenService` の issue / rotate（成功・revoked・expired・rotated 再使用）/ revoke / revokeAllForUser の各分岐を網羅する
   - `RefreshTokenRepository` の各メソッドが Prisma に意図通りの引数を渡すことを確認する
   - `RefreshCookieHelper` の Cookie 属性が env 値（SameSite / Secure / Domain）に従って切り替わることを検証する
   - `RefreshCsrfGuard` の Origin 不一致 / カスタムヘッダ欠如 / 正常ケースを 3 パターンで検証する
   - _Requirements: 8.1_
 
-- [ ] 7.2 (P) 既存 Auth 系 spec を新戻り値型に追従させ互換性を維持する
+- [x] 7.2 (P) 既存 Auth 系 spec を新戻り値型に追従させ互換性を維持する
   - `auth.service.spec.ts` / `oauth.service.spec.ts` / `auth.controller.spec.ts` / `jwt.service.spec.ts` を Access Token + Refresh Token 同時発行の新戻り値型に追従させる
   - `/auth/refresh` `/auth/logout` の Controller 統合テストで Cookie 受領 → 新 AT 返却 → 新 Cookie 発行までを検証する
   - `/auth/change-password` で当該ユーザーの全 RT が revoke されることを確認する
   - _Requirements: 8.3, 4.5_
 
-- [ ] 7.3 (P) Backend で login → refresh → 期限切れ AT 自動更新の E2E シナリオを実装する
+- [x] 7.3 (P) Backend で login → refresh → 期限切れ AT 自動更新の E2E シナリオを実装する
   - login で Cookie 受領 → AT 期限切れ → 通常 API 401 → `/auth/refresh` 経由で新 AT 取得 → 再送 200 までを Supertest で再現する
   - logout 後の `/auth/refresh` が 401 になること、Cookie の HttpOnly / Secure / SameSite が env に追従することを assert する
   - 旧 RT 再使用シナリオで family 全 revoke + 401 + Sentry warning（mock spy）が発火することを確認する
   - _Requirements: 8.4_
 
-- [ ] 7.4 (P) Frontend で透過リフレッシュとアプリ起動時自動復元の Vitest を追加する
+- [x] 7.4 (P) Frontend で透過リフレッシュとアプリ起動時自動復元の Vitest を追加する
   - `ensureRefreshed()` 並行呼び出しで `/auth/refresh` が 1 度だけ発火することを fetch モックで確認する
   - 起動時 `tryAutoRefresh` 成功時に Access Token が保存され user が返ること、401 時に AuthTokenManager がクリアされ Sentry breadcrumb が残ることを検証する
   - apiClient の 401 → ensureRefreshed → 同一リクエスト再送の 1 回限定挙動をモックで確認する
   - _Requirements: 8.2_
 
-- [ ]\* 7.5 (P) ブラウザ再起動相当の Playwright E2E を追加する
+- [x]\* 7.5 (P) ブラウザ再起動相当の Playwright E2E を追加する
   - localStorage の Access Token のみ削除（Cookie は維持）した状態で再ロードし、ログイン画面ではなく直接エディタが表示されることを assert する
   - 失敗系として Cookie も削除した状態で再ロードしログイン画面に遷移することを assert する
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
 ## 8. リリース整合性の検証
 
-- [ ] 8.1 旧 Access Token との互換性とマイグレーション運用を検証する
+- [x] 8.1 旧 Access Token との互換性とマイグレーション運用を検証する
   - リリース直後に旧 24h AT が `exp` まで通常受理されること、Cookie 不在時の `/auth/refresh` は 401 で 1 回再ログインに帰着することを手動シナリオで確認する
   - `npx prisma migrate deploy` を Cloud Run prebuild に組み込んだ前提で、`/health` / `/auth/login` / `/auth/refresh` / Sentry `refresh_token_issued` イベント発火の 4 点をデプロイ後チェックリスト化する
   - 機構自体に隠しフィーチャーフラグを持たず、常時 ON でデプロイされていることをコード上で再確認する
