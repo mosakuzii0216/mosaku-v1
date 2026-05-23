@@ -19,6 +19,7 @@ import {
 	XAuthGuard,
 } from './oauth-auth.guards';
 import { RefreshCookieHelper } from './refresh-cookie.helper';
+import { RefreshCsrfGuard } from './refresh-csrf.guard';
 import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ConfigService } from '../config/config.service';
@@ -55,6 +56,7 @@ import { JWT_EXPIRATION } from '../config/auth-constants';
 		AppleAuthGuard,
 		XAuthGuard,
 		RefreshCookieHelper,
+		RefreshCsrfGuard,
 		InvitationService,
 	],
 	exports: [
@@ -68,6 +70,7 @@ import { JWT_EXPIRATION } from '../config/auth-constants';
 		AppleAuthGuard,
 		XAuthGuard,
 		RefreshCookieHelper,
+		RefreshCsrfGuard,
 	],
 })
 export class AuthModule {}
