@@ -11,6 +11,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import * as session from 'express-session';
+import cookieParser from 'cookie-parser';
 import { ConfigService } from './config/config.service';
 import helmet from 'helmet';
 import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.filter';
@@ -33,6 +34,9 @@ async function bootstrap() {
 			crossOriginEmbedderPolicy: false, // OAuth認証で必要
 		}),
 	);
+
+	// Refresh Token Cookie の読み取りに必要（HttpOnly Cookie 経由で配送）
+	app.use(cookieParser());
 
 	// Session設定（X OAuth用）
 	app.use(
