@@ -73,8 +73,19 @@ export const MemoList = () => {
 	if (filteredMemos.length === 0) {
 		return (
 			<div className="flex-1 flex items-center justify-center">
-				<div className="text-gray-500">
-					{isSearching ? '該当するメモが見つかりません' : 'メモがありません'}
+				<div className="text-center text-gray-500">
+					<div className="mb-3">
+						{isSearching ? '該当するメモが見つかりません' : 'メモがありません'}
+					</div>
+					{!isSearching && (
+						<button
+							onClick={goToMemoCreate}
+							className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium inline-flex items-center gap-1.5"
+						>
+							<Plus className="w-4 h-4" />
+							最初のメモを作成
+						</button>
+					)}
 				</div>
 			</div>
 		);
