@@ -1,8 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import type { Response } from 'express';
+import type { CookieOptions, Response } from 'express';
 import { RefreshCookieHelper } from './refresh-cookie.helper';
 import { ConfigService, type RefreshCookieOptions } from '../config/config.service';
 import { REFRESH_COOKIE_NAME } from '../config/auth-constants';
+
+type CookieMock = jest.Mock<void, [string, string, CookieOptions]>;
+type ClearCookieMock = jest.Mock<void, [string, CookieOptions]>;
 
 describe('RefreshCookieHelper', () => {
 	let helper: RefreshCookieHelper;
@@ -60,7 +63,7 @@ describe('RefreshCookieHelper', () => {
 
 			helper.setRefreshCookie(res as Response, 'plain', new Date('2030-01-01T00:00:00.000Z'));
 
-			const callArg = (res.cookie as jest.Mock).mock.calls[0][2];
+			const callArg = (res.cookie as unknown as CookieMock).mock.calls[0][2];
 			expect(callArg.domain).toBeUndefined();
 		});
 
@@ -75,7 +78,7 @@ describe('RefreshCookieHelper', () => {
 
 			helper.setRefreshCookie(res as Response, 'plain', new Date('2030-01-01T00:00:00.000Z'));
 
-			const callArg = (res.cookie as jest.Mock).mock.calls[0][2];
+			const callArg = (res.cookie as unknown as CookieMock).mock.calls[0][2];
 			expect(callArg.sameSite).toBe('none');
 			expect(callArg.secure).toBe(true);
 		});
@@ -94,7 +97,7 @@ describe('RefreshCookieHelper', () => {
 				new Date('2030-01-01T00:00:00.000Z'),
 			);
 
-			const callArg = (res.cookie as jest.Mock).mock.calls[0][2];
+			const callArg = (res.cookie as unknown as CookieMock).mock.calls[0][2];
 			expect(callArg.httpOnly).toBe(true);
 		});
 	});
@@ -134,7 +137,7 @@ describe('RefreshCookieHelper', () => {
 
 			helper.clearRefreshCookie(res as Response);
 
-			const callArg = (res.clearCookie as jest.Mock).mock.calls[0][1];
+			const callArg = (res.clearCookie as unknown as ClearCookieMock).mock.calls[0][1];
 			expect(callArg.domain).toBeUndefined();
 		});
 	});
