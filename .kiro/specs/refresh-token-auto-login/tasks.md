@@ -140,7 +140,7 @@
   - 全イベントに `feature_area: 'auth'` タグが既存自動分類で乗ることを動作確認する
   - _Requirements: 7.1, 7.2_
 
-- [ ] 6.2 (P) フロント側 Refresh 失敗導線の Sentry breadcrumb と通知を整える
+- [x] 6.2 (P) フロント側 Refresh 失敗導線の Sentry breadcrumb と通知を整える
   - `transparent_refresh_success` / `transparent_refresh_failure` breadcrumb を `refreshClient` から送出する
   - 401 で AuthTokenManager をクリアしたタイミングを breadcrumb に残し、ログイン画面遷移との因果関係を追跡可能にする
   - _Requirements: 7.5_
