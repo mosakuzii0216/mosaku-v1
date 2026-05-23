@@ -1,4 +1,15 @@
-import { Controller, Post, Body, Get, UseGuards, Request, Response, Req } from '@nestjs/common';
+import {
+	Controller,
+	Post,
+	Body,
+	Get,
+	HttpCode,
+	HttpStatus,
+	UseGuards,
+	Request,
+	Response,
+	Req,
+} from '@nestjs/common';
 import {
 	ERROR_CODES,
 	throwBadRequest,
@@ -184,6 +195,7 @@ export class AuthController {
 	@Throttle({
 		default: { limit: THROTTLE_CONFIG.REFRESH.LIMIT, ttl: THROTTLE_CONFIG.REFRESH.TTL },
 	})
+	@HttpCode(HttpStatus.OK)
 	@Post('refresh')
 	async refresh(@Req() req: ExpressRequest, @Response({ passthrough: true }) res: ExpressResponse) {
 		const plainRt = this.readRefreshCookie(req);
@@ -214,6 +226,7 @@ export class AuthController {
 	@Throttle({
 		default: { limit: THROTTLE_CONFIG.REFRESH.LIMIT, ttl: THROTTLE_CONFIG.REFRESH.TTL },
 	})
+	@HttpCode(HttpStatus.OK)
 	@Post('logout')
 	async logout(@Req() req: ExpressRequest, @Response({ passthrough: true }) res: ExpressResponse) {
 		const plainRt = this.readRefreshCookie(req);
