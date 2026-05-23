@@ -86,6 +86,18 @@ describe('SentryScrubber', () => {
 			expect(result.request.headers.refreshToken).toBe('[REDACTED]');
 		});
 
+		it('tokenHash を [REDACTED] に置換すること', () => {
+			const event = {
+				extra: {
+					tokenHash: 'a'.repeat(64),
+				},
+			};
+
+			const result = scrubber.scrub(event);
+
+			expect(result.extra.tokenHash).toBe('[REDACTED]');
+		});
+
 		it('clientSecret / privateKey を [REDACTED] に置換すること', () => {
 			const event = {
 				extra: {

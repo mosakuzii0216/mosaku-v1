@@ -9,6 +9,7 @@ export const DEFAULT_REDACTABLE_KEYS: ReadonlySet<string> = new Set([
 	'token',
 	'accessToken',
 	'refreshToken',
+	'tokenHash',
 	'invitationCode',
 	'clientSecret',
 	'privateKey',

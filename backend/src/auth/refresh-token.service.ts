@@ -61,16 +61,24 @@ export class RefreshTokenService {
 		const issuedAt = new Date();
 		const expiresAt = new Date(issuedAt.getTime() + this.getExpirationMs());
 
-		await this.repository.create({
-			userId: ctx.userId,
-			tokenHash,
-			familyId,
-			status: 'active',
-			issuedAt,
-			expiresAt,
-			ip: ctx.ip,
-			userAgent: ctx.userAgent,
-		});
+		try {
+			await this.repository.create({
+				userId: ctx.userId,
+				tokenHash,
+				familyId,
+				status: 'active',
+				issuedAt,
+				expiresAt,
+				ip: ctx.ip,
+				userAgent: ctx.userAgent,
+			});
+		} catch (error) {
+			Sentry.captureMessage('refresh_token_issue_failed', {
+				level: 'error',
+				tags: { feature_area: 'auth' },
+			});
+			throw error;
+		}
 
 		Sentry.captureMessage('refresh_token_issued', {
 			level: 'info',

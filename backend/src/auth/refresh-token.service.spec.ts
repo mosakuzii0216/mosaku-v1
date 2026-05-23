@@ -121,6 +121,31 @@ describe('RefreshTokenService', () => {
 				}),
 			);
 		});
+
+		it('DB 書き込み失敗時に refresh_token_issue_failed を error で送出する', async () => {
+			repo.create.mockRejectedValue(new Error('db down'));
+
+			await expect(service.issue({ userId: 'u', ip: null, userAgent: null })).rejects.toThrow(
+				'db down',
+			);
+
+			expect(Sentry.captureMessage).toHaveBeenCalledWith(
+				'refresh_token_issue_failed',
+				expect.objectContaining({
+					level: 'error',
+					tags: expect.objectContaining({ feature_area: 'auth' }),
+				}),
+			);
+		});
+
+		it('issue 失敗時に refresh_token_issued は送出されない', async () => {
+			repo.create.mockRejectedValue(new Error('db down'));
+
+			await expect(service.issue({ userId: 'u', ip: null, userAgent: null })).rejects.toThrow();
+
+			const calls = (Sentry.captureMessage as jest.Mock).mock.calls.map((c) => c[0]);
+			expect(calls).not.toContain('refresh_token_issued');
+		});
 	});
 
 	describe('rotate', () => {
