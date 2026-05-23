@@ -1167,6 +1167,88 @@ WIF_SERVICE_ACCOUNT: github-actions@mosaku-prod-xxxxx.iam.gserviceaccount.com
 
 ---
 
+## 🔄 Refresh Token リリース後検証チェックリスト
+
+Refresh Token 機構（`feat/refresh-token-auto-login`）を本番にデプロイした直後に、`/health` / `/auth/login` / `/auth/refresh` / Sentry `refresh_token_issued` イベント発火の **4 点** を必ず手動で確認する。`npx prisma migrate deploy` は Cloud Run のビルドステップに組み込み済みである前提。
+
+### 前提
+
+- Secret Manager に `REFRESH_TOKEN_PEPPER` が登録され、Cloud Run サービスアカウントに `secretAccessor` 権限が付いている
+- `--set-env-vars` に `REFRESH_COOKIE_DOMAIN` / `REFRESH_COOKIE_SAMESITE=none` / `REFRESH_COOKIE_SECURE=true`（本番） / `JWT_EXPIRATION=15m`（既定）が投入されている
+- 機構自体に隠しフィーチャーフラグはなく、deploy 直後から **常時 ON** で動作する（`spec/refresh-token-auto-login` Requirement 8.5）
+
+### 4 点チェックリスト
+
+```bash
+SERVICE_URL=$(gcloud run services describe mosaku-backend \
+  --region=asia-northeast1 \
+  --format="value(status.url)")
+
+ORIGIN="https://mosaku.jp"   # 本番フロントオリジン
+```
+
+1. **`/health` 200**
+
+   ```bash
+   curl -fsS "${SERVICE_URL}/health"
+   # => { "status": "ok", ... }
+   ```
+
+2. **`/auth/login` で `Set-Cookie: refresh_token=...` が付くこと**
+
+   ```bash
+   curl -i -X POST "${SERVICE_URL}/auth/login" \
+     -H "Origin: ${ORIGIN}" \
+     -H "Content-Type: application/json" \
+     -d '{"email":"<verify-account>","password":"<verify-password>"}'
+   # => HTTP/2 200
+   # => set-cookie: refresh_token=<...>; Path=/auth; Domain=.mosaku.jp; HttpOnly; Secure; SameSite=None
+   # => body に accessToken / user を含む（refresh_token 平文は body に含まれないこと）
+   ```
+
+3. **`/auth/refresh` で新 Access Token と新 Set-Cookie が返ること**
+
+   ```bash
+   # 2 で得た Cookie ジャーを利用
+   curl -i -X POST "${SERVICE_URL}/auth/refresh" \
+     -H "Origin: ${ORIGIN}" \
+     -H "X-Refresh-Request: 1" \
+     -b cookie-jar.txt
+   # => HTTP/2 200, accessToken と新しい set-cookie: refresh_token=... が返る
+
+   # Cookie 不在経路は 401 (AUTH010) に帰着することも一度確認する
+   curl -i -X POST "${SERVICE_URL}/auth/refresh" \
+     -H "Origin: ${ORIGIN}" \
+     -H "X-Refresh-Request: 1"
+   # => HTTP/2 401, { "code": "AUTH010", ... }
+   ```
+
+4. **Sentry に `refresh_token_issued` イベントが発火すること**
+   - Sentry プロジェクト `mosaku-backend` の Issues / Events で `feature_area: auth` タグの `refresh_token_issued`（level: `info`）が deploy 直後の login で生成されているか確認
+   - PII スクラバが効いており、イベント本文に `refreshToken` / `tokenHash` / `accessToken` の生値が含まれていないことを目視確認
+   - 24h 以内に `refresh_token_rotated`（透過リフレッシュ）も流れていることを後追いで確認
+
+### 旧 24h Access Token との互換性手動シナリオ
+
+- リリース直前に発行された旧 24h AT を持つユーザーは、その AT の `exp` までは通常通り認証が通る（`jwt.strategy.ts` は `ignoreExpiration: false` のまま、JWT 署名検証のみで判定）。
+- 旧 AT が exp 切れになると、Cookie 不在のため `/auth/refresh` は 401 (`AUTH010`) を返し、フロントはログイン画面に遷移して 1 回再ログインで新方式に乗る（`design.md §Migration Strategy` Phase 2-3）。
+- 上記移行挙動を以下で抜き打ち確認しておく:
+  1. deploy 直前に旧 AT を取得して localStorage に温存
+  2. deploy 直後にその AT で API を叩いて 200 が返ること
+  3. AT 期限切れ後、`/auth/refresh` が Cookie 不在で 401 を返し、再ログインに帰着すること
+
+### ロールバックトリガー
+
+| 観測対象                                                              | 閾値                            | アクション                         |
+| --------------------------------------------------------------------- | ------------------------------- | ---------------------------------- |
+| `/auth/refresh` 5xx 率                                                | 5 分平均 > 10%                  | Cloud Run previous revision に戻す |
+| 全 OAuth login 5xx                                                    | 5 分連続失敗                    | Cloud Run previous revision に戻す |
+| Sentry `refresh_token_reuse_detected` 大量発火（family 設計バグ兆候） | 1 時間で同一 user に対し > 5 件 | revision rollback + family ID 監査 |
+
+Prisma マイグレーションは `RefreshToken` テーブル追加のみで `User` への列追加なし → コード rollback で動作不整合は出ない（`design.md §Migration Strategy`）。
+
+---
+
 ## ✅ Phase C完了チェックリスト
 
 ### Phase C1: Google Cloud準備
