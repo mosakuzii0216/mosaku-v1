@@ -40,8 +40,8 @@
   - InjectionToken で公開し、`InvitationService` から DI 経由で利用
   - _Requirements: 4.3, 4.4, 4.5, 9.4_
 
-- [ ] 3. Backend: `InvitationService` の拡張
-- [ ] 3.1 `verifyInvitation` を新エラーコード体系へ統一し、後方互換と招待者情報返却を担保
+- [x] 3. Backend: `InvitationService` の拡張
+- [x] 3.1 `verifyInvitation` を新エラーコード体系へ統一し、後方互換と招待者情報返却を担保
   - 旧 32 文字 hex と新 10 文字 nanoid を同一ロジックで受理（コード長に依存しない検索）
   - 失敗は `throwBadRequest(ERROR_CODES.INVITATION.INVALID_CODE | EXPIRED | MAX_USES_REACHED)` のいずれかに統一
   - 戻り値の `InvitationContext` に `creator: { id, name, maskedId }` と `expiresAt`、`usesRemaining` を含める
@@ -49,7 +49,7 @@
   - email など PII は含めず、Sentry スクラバ規約と整合
   - _Requirements: 2.3, 6.2, 6.4, 7.1_
 
-- [ ] 3.2 `createForUser` を Prisma インタラクティブトランザクションで実装し `QuotaPolicy` と連携
+- [x] 3.2 `createForUser` を Prisma インタラクティブトランザクションで実装し `QuotaPolicy` と連携
   - `tx` 内で `QuotaPolicy.evaluateAndConsume` → 拒否なら `QUOTA_EXHAUSTED` を throw してロールバック
   - 許可されたら `CodeGenerator.generate()` で発行 → `InvitationCode.create({ maxUses: 1, ... })` で「通常コード」として永続化（キャンペーンコードは ADMIN 経路のみ）
   - 戻り値に発行レコードとともに `shareUrl` を含めるが、URL 組み立て自体は Controller 層に委ねる（サービス層は文字列 URL を関知しない）
@@ -57,7 +57,7 @@
   - 衝突時は最大 3 回まで生成リトライ（unique 違反のみキャッチ、それ以外は伝播）
   - _Requirements: 2.1, 4.3, 4.4, 4.5, 9.3_
 
-- [ ] 3.3 自分用の取得・削除メソッド群を追加（PII 除外）
+- [x] 3.3 自分用の取得・削除メソッド群を追加（PII 除外）
   - `getMyInvitations(userId)` は `createdById = userId` の招待を発行日時降順で返却
   - `getMyQuota(userId)` は `{ invitationQuota, unlimited, role }` を返却（ADMIN の `unlimited` は true 固定）
   - `deleteMyInvitation(id, ownerId)` は `AuthorizationService.checkOwnership()` 経由で所有権を検証し、`usedCount > 0` でも削除を許可（既に消費済みの履歴は別途検討）

@@ -30,7 +30,7 @@ export class InvitationController {
 	@Public()
 	@Post('verify')
 	async verifyInvitation(@Body() verifyInvitationDto: VerifyInvitationDto) {
-		return this.invitationService.verifyInvitation(verifyInvitationDto.code);
+		return this.invitationService.findValidInvitation(verifyInvitationDto.code);
 	}
 
 	/**
