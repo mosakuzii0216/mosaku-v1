@@ -383,4 +383,147 @@ describe('OAuthService', () => {
 			);
 		});
 	});
+
+	// ─── Task 5.2: state 由来登録（OAuth 順序逆転新フロー）─────────────────────
+
+	describe('googleRegisterWithStateInvitation', () => {
+		it('招待コードを再検証し、新規ユーザー作成 + useInvitation + access/refresh 発行までを完了すること', async () => {
+			mockInvitationService.verifyInvitation.mockResolvedValue({ id: 'invite-1', code: 'CODE' });
+			mockPrismaService.user.findFirst.mockResolvedValue(null);
+			mockPrismaService.user.create.mockResolvedValue({
+				...mockUser,
+				email: 'new-google@example.com',
+				oauthId: 'google-id-state',
+			});
+			mockConfigService.isAdminEmail.mockReturnValue(false);
+
+			const result = await service.googleRegisterWithStateInvitation({
+				oauthUser: {
+					googleId: 'google-id-state',
+					email: 'new-google@example.com',
+					name: 'New Google',
+				},
+				invitationCode: 'CODE',
+				ctx: { ip: '10.0.0.1', userAgent: 'jest' },
+			});
+
+			expect(mockInvitationService.verifyInvitation).toHaveBeenCalledWith('CODE');
+			expect(mockInvitationService.useInvitation).toHaveBeenCalledWith('CODE');
+			expect(mockPrismaService.user.create).toHaveBeenCalled();
+			expect(result.accessToken).toBeDefined();
+			expect(result.refresh).toBeDefined();
+		});
+
+		it('admin email 該当者は role=ADMIN で作成されること', async () => {
+			mockInvitationService.verifyInvitation.mockResolvedValue({ id: 'invite-1', code: 'CODE' });
+			mockPrismaService.user.findFirst.mockResolvedValue(null);
+			mockPrismaService.user.create.mockResolvedValue({ ...mockUser, role: 'ADMIN' });
+			mockConfigService.isAdminEmail.mockReturnValue(true);
+
+			await service.googleRegisterWithStateInvitation({
+				oauthUser: {
+					googleId: 'google-admin',
+					email: 'admin@example.com',
+					name: 'Admin',
+				},
+				invitationCode: 'CODE',
+				ctx: { ip: null, userAgent: null },
+			});
+
+			expect(mockPrismaService.user.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					data: expect.objectContaining({ role: 'ADMIN' }) as unknown,
+				}),
+			);
+		});
+	});
+
+	describe('githubRegisterWithStateInvitation', () => {
+		it('GitHub OAuth 経由の state 由来登録が成功すること', async () => {
+			mockInvitationService.verifyInvitation.mockResolvedValue({ id: 'invite-1', code: 'CODE' });
+			mockPrismaService.user.findFirst.mockResolvedValue(null);
+			mockPrismaService.user.create.mockResolvedValue({ ...mockUser, oauthId: 'gh-state' });
+			mockConfigService.isAdminEmail.mockReturnValue(false);
+
+			const result = await service.githubRegisterWithStateInvitation({
+				oauthUser: {
+					githubId: 'gh-state',
+					email: 'gh@example.com',
+					name: 'GH',
+				},
+				invitationCode: 'CODE',
+				ctx: { ip: null, userAgent: null },
+			});
+
+			expect(mockInvitationService.useInvitation).toHaveBeenCalledWith('CODE');
+			expect(result.accessToken).toBeDefined();
+		});
+	});
+
+	describe('lineRegisterWithStateInvitation', () => {
+		it('LINE OAuth 経由の state 由来登録が成功すること', async () => {
+			mockInvitationService.verifyInvitation.mockResolvedValue({ id: 'invite-1', code: 'CODE' });
+			mockPrismaService.user.findFirst.mockResolvedValue(null);
+			mockPrismaService.user.create.mockResolvedValue({ ...mockUser, lineId: 'U999' });
+			mockConfigService.isAdminEmail.mockReturnValue(false);
+
+			const result = await service.lineRegisterWithStateInvitation({
+				oauthUser: { lineId: 'U999', email: 'line@example.com', name: 'LINE' },
+				invitationCode: 'CODE',
+				ctx: { ip: null, userAgent: null },
+			});
+
+			expect(mockInvitationService.useInvitation).toHaveBeenCalledWith('CODE');
+			expect(result.accessToken).toBeDefined();
+		});
+	});
+
+	describe('appleRegisterWithStateInvitation', () => {
+		it('email 不在でも fallbackEmail で登録が成功すること', async () => {
+			mockInvitationService.verifyInvitation.mockResolvedValue({ id: 'invite-1', code: 'CODE' });
+			mockPrismaService.user.findFirst.mockResolvedValue(null);
+			mockPrismaService.user.create.mockResolvedValue({ ...mockUser, appleId: 'sub-state' });
+			mockConfigService.isAdminEmail.mockReturnValue(false);
+
+			const result = await service.appleRegisterWithStateInvitation({
+				oauthUser: { appleId: 'sub-state', name: 'Apple' },
+				invitationCode: 'CODE',
+				ctx: { ip: null, userAgent: null },
+				fallbackEmail: 'apple-fallback@example.com',
+			});
+
+			expect(mockInvitationService.useInvitation).toHaveBeenCalledWith('CODE');
+			expect(result.accessToken).toBeDefined();
+		});
+
+		it('email も fallbackEmail もない場合に AppException', async () => {
+			mockInvitationService.verifyInvitation.mockResolvedValue({ id: 'invite-1', code: 'CODE' });
+
+			await expect(
+				service.appleRegisterWithStateInvitation({
+					oauthUser: { appleId: 'sub-state', name: 'Apple' },
+					invitationCode: 'CODE',
+					ctx: { ip: null, userAgent: null },
+				}),
+			).rejects.toBeInstanceOf(AppException);
+		});
+	});
+
+	describe('xRegisterWithStateInvitation', () => {
+		it('X OAuth 経由の state 由来登録が成功すること', async () => {
+			mockInvitationService.verifyInvitation.mockResolvedValue({ id: 'invite-1', code: 'CODE' });
+			mockPrismaService.user.findFirst.mockResolvedValue(null);
+			mockPrismaService.user.create.mockResolvedValue({ ...mockUser, xId: 'x-state' });
+			mockConfigService.isAdminEmail.mockReturnValue(false);
+
+			const result = await service.xRegisterWithStateInvitation({
+				oauthUser: { xId: 'x-state', name: 'X', email: 'x-state@example.com' },
+				invitationCode: 'CODE',
+				ctx: { ip: null, userAgent: null },
+			});
+
+			expect(mockInvitationService.useInvitation).toHaveBeenCalledWith('CODE');
+			expect(result.accessToken).toBeDefined();
+		});
+	});
 });
