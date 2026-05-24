@@ -23,7 +23,7 @@ describe('useAutoSave', () => {
 		expect(result.current.saveStatus).toBe('pending');
 	});
 
-	it('デバウンス時間（1000ms）経過後に onSave が呼ばれること', async () => {
+	it('デバウンス時間（200ms）経過後に onSave が呼ばれること', async () => {
 		const onSave = vi.fn().mockResolvedValue(undefined);
 		const { result } = renderHook(() => useAutoSave({ canSave: true, isSaving: false, onSave }));
 
@@ -32,7 +32,7 @@ describe('useAutoSave', () => {
 		});
 
 		await act(async () => {
-			vi.advanceTimersByTime(1000);
+			vi.advanceTimersByTime(200);
 		});
 
 		expect(onSave).toHaveBeenCalledTimes(1);
@@ -223,5 +223,26 @@ describe('useAutoSave', () => {
 		});
 
 		expect(result.current.saveStatus).toBe('saved');
+	});
+
+	it('debounceMs のデフォルトは 200ms（境界テスト）', async () => {
+		const onSave = vi.fn().mockResolvedValue(undefined);
+		const { result } = renderHook(() => useAutoSave({ canSave: true, isSaving: false, onSave }));
+
+		act(() => {
+			result.current.scheduleAutoSave();
+		});
+
+		// 199ms 経過時点ではまだ発火しない
+		await act(async () => {
+			vi.advanceTimersByTime(199);
+		});
+		expect(onSave).not.toHaveBeenCalled();
+
+		// 200ms 経過時点で発火
+		await act(async () => {
+			vi.advanceTimersByTime(1);
+		});
+		expect(onSave).toHaveBeenCalledTimes(1);
 	});
 });

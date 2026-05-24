@@ -28,7 +28,7 @@ export interface UseAutoSaveOptions {
 	 * - reject: サーバーエラー（error に遷移）
 	 */
 	onSave: () => Promise<void | OfflineSavedSignal>;
-	/** デバウンス待機時間（ms）。デフォルト 1000 */
+	/** デバウンス待機時間（ms）。デフォルト 200 */
 	debounceMs?: number;
 }
 
@@ -44,7 +44,7 @@ export function useAutoSave({
 	canSave,
 	isSaving,
 	onSave,
-	debounceMs = 1000,
+	debounceMs = 200,
 }: UseAutoSaveOptions): UseAutoSaveReturn {
 	const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
 
