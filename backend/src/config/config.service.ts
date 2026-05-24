@@ -239,6 +239,74 @@ export class ConfigService {
 		return `${this.frontendUrl}?error=auth_failed`;
 	}
 
+	/**
+	 * OAuth state 検証失敗時のリダイレクト URL を組み立てる。
+	 * 招待コード自体は URL path に乗るのみで Sentry イベント本文には含めない（PII 整合）。
+	 */
+	generateInvitationStateInvalidUrl(invitationCode: string): string {
+		const base = this.frontendUrl.replace(/\/+$/, '');
+		return `${base}/invite/${encodeURIComponent(invitationCode)}?error=invalid_state`;
+	}
+
+	/**
+	 * 5 OAuth プロバイダの認可エンドポイント URL を state 付きで組み立てる。
+	 * `InvitationStateService` で発行した signedState を query state に乗せて
+	 * passport の state: true 機構をバイパスする。
+	 */
+	generateOAuthAuthorizationUrl(provider: string, state: string): string {
+		switch (provider) {
+			case 'google':
+				return this.buildOAuthAuthorizationUrl('https://accounts.google.com/o/oauth2/v2/auth', {
+					client_id: this.googleClientId ?? '',
+					redirect_uri: this.googleRedirectUri,
+					response_type: 'code',
+					scope: 'email profile',
+					state,
+				});
+			case 'github':
+				return this.buildOAuthAuthorizationUrl('https://github.com/login/oauth/authorize', {
+					client_id: this.githubClientId ?? '',
+					redirect_uri: this.githubRedirectUri,
+					scope: 'user:email',
+					state,
+				});
+			case 'line':
+				return this.buildOAuthAuthorizationUrl('https://access.line.me/oauth2/v2.1/authorize', {
+					response_type: 'code',
+					client_id: this.lineClientId ?? '',
+					redirect_uri: this.lineRedirectUri,
+					scope: 'profile openid',
+					state,
+				});
+			case 'apple':
+				return this.buildOAuthAuthorizationUrl('https://appleid.apple.com/auth/authorize', {
+					client_id: this.appleClientId ?? '',
+					redirect_uri: this.appleRedirectUri,
+					response_type: 'code id_token',
+					response_mode: 'form_post',
+					scope: 'name email',
+					state,
+				});
+			case 'x':
+				return this.buildOAuthAuthorizationUrl('https://twitter.com/i/oauth2/authorize', {
+					response_type: 'code',
+					client_id: this.xClientId ?? '',
+					redirect_uri: this.xRedirectUri,
+					scope: 'tweet.read users.read offline.access',
+					state,
+					code_challenge: 'challenge',
+					code_challenge_method: 'plain',
+				});
+			default:
+				throw new Error(`Unsupported OAuth provider: ${provider}`);
+		}
+	}
+
+	private buildOAuthAuthorizationUrl(base: string, params: Record<string, string>): string {
+		const search = new URLSearchParams(params).toString();
+		return `${base}?${search}`;
+	}
+
 	// Sentry 設定
 	get sentry(): SentryConfig {
 		const environment = this.resolveSentryEnvironment();

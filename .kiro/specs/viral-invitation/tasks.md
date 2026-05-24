@@ -87,8 +87,8 @@
   - `FRONTEND_URL` 末尾スラッシュの有無による二重スラッシュを排除するヘルパーを利用
   - _Requirements: 2.5, 5.5_
 
-- [ ] 5. Backend: OAuth 順序逆転（state 引き継ぎ）の新フロー
-- [ ] 5.1 (P) `InvitationStateService` を HMAC-SHA256 で実装
+- [x] 5. Backend: OAuth 順序逆転（state 引き継ぎ）の新フロー
+- [x] 5.1 (P) `InvitationStateService` を HMAC-SHA256 で実装
   - ペイロード `{ code, provider, nonce, iat }` を `base64url(payload).base64url(signature)` 形式の文字列で表現
   - 署名鍵は `INVITATION_STATE_SECRET` を `ConfigService` 経由で取得、未設定時はサービス初期化で例外
   - `verifyState` は `crypto.timingSafeEqual` でタイミング攻撃耐性を確保し、`iat` 経過 10 分超 / provider 不一致 / 改ざんペイロード / base64 不正の全てを `ERROR_CODES.INVITATION.INVALID_CODE` で拒否
@@ -96,7 +96,7 @@
   - passport-oauth2 の `state: true` は使用せず、本サービスが state 文字列の単一権威となる
   - _Requirements: 3.3, 3.4_
 
-- [ ] 5.2 (P) `OAuthService` に 5 プロバイダ分の state 由来登録メソッドを追加
+- [x] 5.2 (P) `OAuthService` に 5 プロバイダ分の state 由来登録メソッドを追加
   - `googleRegisterWithStateInvitation` / `githubRegisterWithStateInvitation` / `lineRegisterWithStateInvitation` / `appleRegisterWithStateInvitation` / `xRegisterWithStateInvitation` を追加
   - 共通処理（ユーザー作成 → `InvitationService.useInvitation` で消費 → `JwtTokenService` でアクセストークン発行 → `RefreshTokenService` で refresh cookie 設定）を private helper `consumeAndIssue()` に集約
   - admin email 該当者は `role: 'ADMIN'`、それ以外は `role: 'USER'` で作成（既存 `handleOAuthLogin` の admin 例外と整合）
@@ -104,7 +104,7 @@
   - 旧 `*RegisterWithInvitation` 5 本および `handleOAuthRegistrationWithInvitation` の削除は手順 9 で実施するため、本タスクでは追加のみ
   - _Requirements: 3.4, 3.5, 8.1, 9.1, 9.2_
 
-- [ ] 5.3 `AuthController` に OAuth 開始エンドポイントを 5 プロバイダ統一で新設
+- [x] 5.3 `AuthController` に OAuth 開始エンドポイントを 5 プロバイダ統一で新設
   - `POST /auth/oauth/:provider/start` を `@Public()` で公開し、`invitationCode` を受領
   - 受領後に `InvitationService.verifyInvitation` で開始前検証（失敗時は OAuth へリダイレクトせず構造化エラーを返却）
   - 検証成功時に `InvitationStateService.issueState` で signedState を生成し、passport の `authenticate(provider, { state: signedState })` に渡して認可 URL を組み立て
@@ -112,7 +112,7 @@
   - `auth.controller.public-audit.spec.ts` の Public 判定対象に新エンドポイントを追加する
   - _Requirements: 3.1, 3.2, 9.2_
 
-- [ ] 5.4 5 プロバイダの OAuth コールバックに state 検証分岐を組み込む
+- [x] 5.4 5 プロバイダの OAuth コールバックに state 検証分岐を組み込む
   - `GET /auth/{google|github|line|x}/callback` および `POST /auth/apple/callback`（form_post）共通で `req.query.state` または `req.body.state` を取得
   - state が存在すれば `InvitationStateService.verifyState(state, provider)` を実行 → 成功時のみ `OAuthService.*RegisterWithStateInvitation` を呼び出し新規登録 + 自動ログインを完了
   - state なしの callback は既存「ログインまたは admin email 経由新規」経路をそのまま維持

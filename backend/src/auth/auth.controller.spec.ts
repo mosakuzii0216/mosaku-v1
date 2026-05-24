@@ -8,7 +8,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtTokenService } from './jwt.service';
 import { RefreshTokenService } from './refresh-token.service';
 import { RefreshCookieHelper } from './refresh-cookie.helper';
+import { InvitationStateService } from './invitation-state.service';
+import * as Sentry from '@sentry/nestjs';
 import { AppException } from '../common/exceptions';
+
+jest.mock('@sentry/nestjs', () => ({
+	captureMessage: jest.fn(),
+}));
 
 describe('AuthController - LINE / Apple / X エンドポイント', () => {
 	let controller: AuthController;
@@ -24,6 +30,11 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 		githubLogin: jest.fn(),
 		googleRegisterWithInvitation: jest.fn(),
 		githubRegisterWithInvitation: jest.fn(),
+		googleRegisterWithStateInvitation: jest.fn(),
+		githubRegisterWithStateInvitation: jest.fn(),
+		lineRegisterWithStateInvitation: jest.fn(),
+		appleRegisterWithStateInvitation: jest.fn(),
+		xRegisterWithStateInvitation: jest.fn(),
 	};
 
 	const mockConfigService = {
@@ -32,8 +43,24 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 			.fn()
 			.mockReturnValue('http://localhost?error=invitation_required'),
 		generateAuthFailedUrl: jest.fn().mockReturnValue('http://localhost?error=auth_failed'),
+		generateInvitationStateInvalidUrl: jest
+			.fn()
+			.mockImplementation(
+				(code: string) => `http://localhost/invite/${encodeURIComponent(code)}?error=invalid_state`,
+			),
+		generateOAuthAuthorizationUrl: jest
+			.fn()
+			.mockImplementation(
+				(provider: string, state: string) => `https://oauth.example.com/${provider}?state=${state}`,
+			),
+		frontendUrl: 'http://localhost',
 		adminEmail: undefined,
 		isAdminEmail: jest.fn().mockReturnValue(false),
+	};
+
+	const mockInvitationStateService = {
+		issueState: jest.fn().mockReturnValue('signed.state'),
+		verifyState: jest.fn(),
 	};
 
 	const mockAuthService = {
@@ -86,11 +113,13 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 				{ provide: JwtTokenService, useValue: mockJwtTokenService },
 				{ provide: RefreshTokenService, useValue: mockRefreshTokenService },
 				{ provide: RefreshCookieHelper, useValue: mockRefreshCookieHelper },
+				{ provide: InvitationStateService, useValue: mockInvitationStateService },
 			],
 		}).compile();
 
 		controller = module.get<AuthController>(AuthController);
 		jest.clearAllMocks();
+		mockInvitationStateService.issueState.mockReturnValue('signed.state');
 	});
 
 	it('AuthController が定義されていること', () => {
@@ -471,5 +500,203 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 				),
 			).rejects.toBeInstanceOf(AppException);
 		});
+	});
+
+	// ─── Task 5.3: POST /auth/oauth/:provider/start ─────────────────────────
+
+	// ─── Task 5.4: OAuth callback with state-verified register ──────────────
+
+	describe('Google callback with state', () => {
+		const validState = 'valid.state';
+
+		beforeEach(() => {
+			(Sentry.captureMessage as jest.Mock).mockClear();
+		});
+
+		it('state クエリありで verifyState 成功 → googleRegisterWithStateInvitation を呼び success redirect', async () => {
+			mockInvitationStateService.verifyState.mockReturnValue({
+				code: 'ABCD1234',
+				provider: 'google',
+				nonce: 'nonce',
+				iat: Date.now(),
+			});
+			mockOAuthService.googleRegisterWithStateInvitation.mockResolvedValue(oauthLoginResult);
+
+			const req = {
+				...buildReq(),
+				query: { state: validState },
+				user: { googleId: 'g-1', name: 'G', email: 'g@example.com' },
+			};
+			const res = buildRes();
+
+			await controller.googleAuthRedirect(req as never, res as never);
+
+			expect(mockInvitationStateService.verifyState).toHaveBeenCalledWith(validState, 'google');
+			expect(mockOAuthService.googleRegisterWithStateInvitation).toHaveBeenCalledWith(
+				expect.objectContaining({ invitationCode: 'ABCD1234' }),
+			);
+			expect(mockOAuthService.googleLogin).not.toHaveBeenCalled();
+			expect(mockRefreshCookieHelper.setRefreshCookie).toHaveBeenCalled();
+			expect(res.redirect).toHaveBeenCalledWith('http://localhost?token=xxx');
+		});
+
+		it('state あり verify 失敗 → invalid_state redirect + Sentry.captureMessage', async () => {
+			mockInvitationStateService.verifyState.mockImplementation(() => {
+				throw new AppException('INV001', 400);
+			});
+
+			const req = {
+				...buildReq(),
+				query: { state: 'tampered.state' },
+				user: { googleId: 'g-1', name: 'G' },
+			};
+			const res = buildRes();
+
+			await controller.googleAuthRedirect(req as never, res as never);
+
+			expect(mockOAuthService.googleRegisterWithStateInvitation).not.toHaveBeenCalled();
+			expect(mockOAuthService.googleLogin).not.toHaveBeenCalled();
+			expect(res.redirect).toHaveBeenCalledWith(expect.stringContaining('error=invalid_state'));
+			expect(Sentry.captureMessage).toHaveBeenCalledWith(
+				'invitation_state_invalid',
+				expect.objectContaining({
+					tags: expect.objectContaining({
+						feature_area: 'invitation',
+						invitation_failure_code: 'INV001',
+					}) as unknown,
+				}),
+			);
+		});
+
+		it('state なし → 既存 googleLogin パスを維持', async () => {
+			mockOAuthService.googleLogin.mockResolvedValue(oauthLoginResult);
+
+			const req = {
+				...buildReq(),
+				query: {},
+				user: { googleId: 'g-1', name: 'G', email: 'g@example.com' },
+			};
+			const res = buildRes();
+
+			await controller.googleAuthRedirect(req as never, res as never);
+
+			expect(mockInvitationStateService.verifyState).not.toHaveBeenCalled();
+			expect(mockOAuthService.googleLogin).toHaveBeenCalled();
+			expect(res.redirect).toHaveBeenCalledWith('http://localhost?token=xxx');
+		});
+	});
+
+	describe('Apple callback with body.state', () => {
+		it('body.state が存在すれば appleRegisterWithStateInvitation 経路に進むこと', async () => {
+			mockInvitationStateService.verifyState.mockReturnValue({
+				code: 'CODE12345',
+				provider: 'apple',
+				nonce: 'nonce',
+				iat: Date.now(),
+			});
+			mockOAuthService.appleRegisterWithStateInvitation.mockResolvedValue(oauthLoginResult);
+
+			const req = {
+				...buildReq(),
+				query: {},
+				body: { state: 'apple.signed.state' },
+				user: { appleId: 'a-1', name: 'A', email: 'a@example.com' },
+			};
+			const res = buildRes();
+
+			await controller.appleAuthCallback(req as never, res as never);
+
+			expect(mockInvitationStateService.verifyState).toHaveBeenCalledWith(
+				'apple.signed.state',
+				'apple',
+			);
+			expect(mockOAuthService.appleRegisterWithStateInvitation).toHaveBeenCalled();
+			expect(res.redirect).toHaveBeenCalledWith('http://localhost?token=xxx');
+		});
+	});
+
+	describe.each([
+		['github', 'githubAuthRedirect', 'githubRegisterWithStateInvitation', 'githubLogin'],
+		['line', 'lineAuthCallback', 'lineRegisterWithStateInvitation', 'lineLogin'],
+		['x', 'xAuthCallback', 'xRegisterWithStateInvitation', 'xLogin'],
+	] as const)('%s callback with state', (provider, handler, stateMethod, loginMethod) => {
+		it('state あり成功時に *RegisterWithStateInvitation を呼び success redirect', async () => {
+			mockInvitationStateService.verifyState.mockReturnValue({
+				code: 'CODE12345',
+				provider,
+				nonce: 'nonce',
+				iat: Date.now(),
+			});
+			mockOAuthService[stateMethod].mockResolvedValue(oauthLoginResult);
+
+			const userByProvider: Record<string, Record<string, unknown>> = {
+				github: { githubId: 'gh-1', name: 'GH' },
+				line: { lineId: 'U1', name: 'L', email: 'l@example.com' },
+				x: { xId: 'x-1', name: 'X' },
+			};
+
+			const req = {
+				...buildReq(),
+				query: { state: 'signed.state' },
+				user: userByProvider[provider],
+			};
+			const res = buildRes();
+
+			await (controller as unknown as Record<string, (...args: unknown[]) => Promise<void>>)[
+				handler
+			](req, res);
+
+			expect(mockInvitationStateService.verifyState).toHaveBeenCalledWith('signed.state', provider);
+			expect(mockOAuthService[stateMethod]).toHaveBeenCalled();
+			expect(mockOAuthService[loginMethod]).not.toHaveBeenCalled();
+			expect(res.redirect).toHaveBeenCalledWith('http://localhost?token=xxx');
+		});
+	});
+
+	describe('startOAuthRegistration', () => {
+		it('招待コード検証 → state 発行 → authorizationUrl を返すこと', async () => {
+			mockInvitationService.verifyInvitation.mockResolvedValue({ code: 'ABCD1234' });
+			mockInvitationStateService.issueState.mockReturnValue('signed.state');
+
+			const result = await controller.startOAuthRegistration(
+				{ provider: 'google' },
+				{ invitationCode: 'ABCD1234' },
+			);
+
+			expect(mockInvitationService.verifyInvitation).toHaveBeenCalledWith('ABCD1234');
+			expect(mockInvitationStateService.issueState).toHaveBeenCalledWith('ABCD1234', 'google');
+			expect(mockConfigService.generateOAuthAuthorizationUrl).toHaveBeenCalledWith(
+				'google',
+				'signed.state',
+			);
+			expect(result.authorizationUrl).toBe('https://oauth.example.com/google?state=signed.state');
+		});
+
+		it('verifyInvitation が失敗した場合は authorizationUrl を返さず例外を伝播すること', async () => {
+			mockInvitationService.verifyInvitation.mockRejectedValue(
+				new AppException('INV001', 400, 'invalid'),
+			);
+
+			await expect(
+				controller.startOAuthRegistration({ provider: 'google' }, { invitationCode: 'BADCODE12' }),
+			).rejects.toBeInstanceOf(AppException);
+			expect(mockInvitationStateService.issueState).not.toHaveBeenCalled();
+			expect(mockConfigService.generateOAuthAuthorizationUrl).not.toHaveBeenCalled();
+		});
+
+		it.each(['google', 'github', 'line', 'apple', 'x'] as const)(
+			'%s プロバイダで authorizationUrl を組み立てること',
+			async (provider) => {
+				mockInvitationService.verifyInvitation.mockResolvedValue({ code: 'ABCD1234' });
+
+				const result = await controller.startOAuthRegistration(
+					{ provider },
+					{ invitationCode: 'ABCD1234' },
+				);
+
+				expect(mockInvitationStateService.issueState).toHaveBeenCalledWith('ABCD1234', provider);
+				expect(result.authorizationUrl).toContain(provider);
+			},
+		);
 	});
 });

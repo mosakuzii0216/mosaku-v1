@@ -5,6 +5,7 @@ import {
 	Get,
 	HttpCode,
 	HttpStatus,
+	Param,
 	UseGuards,
 	Request,
 	Response,
@@ -45,6 +46,13 @@ import {
 import { Public } from '../common/decorators/public.decorator';
 import { AuthService, type AuthLoginResult, type AuthRequestContext } from './auth.service';
 import { OAuthService, type OAuthLoginResult } from './oauth.service';
+import { InvitationService } from '../invitation/invitation.service';
+import { InvitationStateService } from './invitation-state.service';
+import {
+	OAuthStartBodyDto,
+	OAuthStartParamsDto,
+	type OAuthStartResponse,
+} from './dto/oauth-start.dto';
 import { RegisterUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResetPasswordRequestDto, ChangePasswordDto } from './dto/reset-password.dto';
@@ -54,6 +62,10 @@ import { JwtTokenService } from './jwt.service';
 import { RefreshTokenService } from './refresh-token.service';
 import { RefreshCookieHelper } from './refresh-cookie.helper';
 import { RefreshCsrfGuard } from './refresh-csrf.guard';
+import * as Sentry from '@sentry/nestjs';
+import { AppException } from '../common/exceptions/app.exception';
+import type { OAuthProvider } from './types/oauth.types';
+import type { OAuthRegisterArgs } from './oauth.service';
 
 @Controller('auth')
 export class AuthController {
@@ -67,8 +79,39 @@ export class AuthController {
 		private readonly jwtTokenService: JwtTokenService,
 		private readonly refreshTokenService: RefreshTokenService,
 		private readonly refreshCookieHelper: RefreshCookieHelper,
+		private readonly invitationService: InvitationService,
+		private readonly invitationStateService: InvitationStateService,
 	) {
 		this.logger.setContext('AuthController');
+	}
+
+	/**
+	 * Task 5.3: 5 プロバイダ統一の OAuth 開始エンドポイント。
+	 * 招待コードを開始前に検証し、HMAC 署名 state を passport の state 機構の代わりに渡す。
+	 */
+	@Public()
+	@Throttle({
+		default: { limit: THROTTLE_CONFIG.LOGIN.LIMIT, ttl: THROTTLE_CONFIG.LOGIN.TTL },
+	})
+	@HttpCode(HttpStatus.OK)
+	@Post('oauth/:provider/start')
+	async startOAuthRegistration(
+		@Param() params: OAuthStartParamsDto,
+		@Body() body: OAuthStartBodyDto,
+	): Promise<OAuthStartResponse> {
+		await this.invitationService.verifyInvitation(body.invitationCode);
+
+		const signedState = this.invitationStateService.issueState(
+			body.invitationCode,
+			params.provider,
+		);
+
+		const authorizationUrl = this.configService.generateOAuthAuthorizationUrl(
+			params.provider,
+			signedState,
+		);
+
+		return { authorizationUrl };
 	}
 
 	private extractRequestContext(req: ExpressRequest): AuthRequestContext {
@@ -82,6 +125,114 @@ export class AuthController {
 		const cookies = (req as ExpressRequest & { cookies?: Record<string, string> }).cookies;
 		const value = cookies?.[REFRESH_COOKIE_NAME];
 		return typeof value === 'string' && value.length > 0 ? value : null;
+	}
+
+	/**
+	 * Task 5.4: state 検証込みの OAuth コールバック dispatcher。
+	 * state が `req.query.state` または `req.body.state` に存在すれば
+	 * `InvitationStateService.verifyState` を実行し、成功時のみ
+	 * `*RegisterWithStateInvitation` 経路で新規登録 + 自動ログインを行う。
+	 * state なしは既存ログイン経路（旧フロー）にそのまま委譲する。
+	 */
+	private async runOAuthCallbackWithStateSupport<TUser extends OAuthStrategyUser>(
+		provider: OAuthProvider,
+		loginMethod: (user: TUser, ctx: AuthRequestContext) => Promise<OAuthLoginResult>,
+		stateRegister: (
+			args: OAuthRegisterArgs<TUser> & { fallbackEmail?: string },
+		) => Promise<OAuthLoginResult>,
+		req: OAuthRequest<TUser>,
+		res: ExpressResponse,
+		providerName: string,
+	): Promise<void> {
+		const stateValue = this.extractStateFromRequest(req);
+
+		if (stateValue !== null) {
+			try {
+				const payload = this.invitationStateService.verifyState(stateValue, provider);
+				const ctx = this.extractRequestContext(req);
+				const result = await stateRegister({
+					oauthUser: req.user,
+					invitationCode: payload.code,
+					ctx,
+				});
+
+				this.refreshCookieHelper.setRefreshCookie(
+					res,
+					result.refresh.plainRt,
+					result.refresh.expiresAt,
+				);
+
+				const redirectUrl = this.configService.generateSuccessRedirectUrl(
+					result.accessToken,
+					result.user,
+				);
+				return res.redirect(redirectUrl);
+			} catch (error: unknown) {
+				const failureCode = error instanceof AppException ? error.code : 'unknown';
+				const invitationCode = this.tryExtractInvitationCodeFromState(stateValue) ?? '';
+
+				try {
+					Sentry.captureMessage('invitation_state_invalid', {
+						level: 'warning',
+						tags: {
+							feature_area: 'invitation',
+							invitation_failure_code: failureCode,
+						},
+					});
+				} catch (sentryError) {
+					this.logger.warn(
+						`Sentry captureMessage failed: ${sentryError instanceof Error ? sentryError.message : String(sentryError)}`,
+					);
+				}
+
+				this.logger.warn(
+					`${providerName} OAuth state invalid: ${error instanceof Error ? error.message : String(error)}`,
+				);
+
+				const invalidStateUrl =
+					this.configService.generateInvitationStateInvalidUrl(invitationCode);
+				return res.redirect(invalidStateUrl);
+			}
+		}
+
+		return this.handleOAuthCallback(loginMethod, req, res, providerName);
+	}
+
+	private extractStateFromRequest(req: ExpressRequest): string | null {
+		const queryState = (req.query as Record<string, unknown> | undefined)?.state;
+		if (typeof queryState === 'string' && queryState.length > 0) {
+			return queryState;
+		}
+
+		const bodyState = (req.body as Record<string, unknown> | undefined)?.state;
+		if (typeof bodyState === 'string' && bodyState.length > 0) {
+			return bodyState;
+		}
+
+		return null;
+	}
+
+	private tryExtractInvitationCodeFromState(state: string): string | null {
+		const separatorIndex = state.indexOf('.');
+		if (separatorIndex <= 0) {
+			return null;
+		}
+
+		try {
+			const encodedPayload = state.slice(0, separatorIndex);
+			const json = Buffer.from(encodedPayload, 'base64url').toString('utf8');
+			const parsed: unknown = JSON.parse(json);
+			if (
+				parsed &&
+				typeof parsed === 'object' &&
+				typeof (parsed as { code?: unknown }).code === 'string'
+			) {
+				return (parsed as { code: string }).code;
+			}
+			return null;
+		} catch {
+			return null;
+		}
 	}
 
 	/**
@@ -405,8 +556,10 @@ export class AuthController {
 		@Request() req: OAuthRequest<GoogleStrategyUser>,
 		@Response() res: ExpressResponse,
 	) {
-		return this.handleOAuthCallback(
+		return this.runOAuthCallbackWithStateSupport<GoogleStrategyUser>(
+			'google',
 			(user, ctx) => this.oauthService.googleLogin(user, ctx),
+			(args) => this.oauthService.googleRegisterWithStateInvitation(args),
 			req,
 			res,
 			'Google',
@@ -480,8 +633,10 @@ export class AuthController {
 		@Request() req: OAuthRequest<GitHubStrategyUser>,
 		@Response() res: ExpressResponse,
 	) {
-		return this.handleOAuthCallback(
+		return this.runOAuthCallbackWithStateSupport<GitHubStrategyUser>(
+			'github',
 			(user, ctx) => this.oauthService.githubLogin(user, ctx),
+			(args) => this.oauthService.githubRegisterWithStateInvitation(args),
 			req,
 			res,
 			'GitHub',
@@ -560,8 +715,10 @@ export class AuthController {
 		@Request() req: OAuthRequest<LineStrategyUser>,
 		@Response() res: ExpressResponse,
 	) {
-		return this.handleOAuthCallback(
+		return this.runOAuthCallbackWithStateSupport<LineStrategyUser>(
+			'line',
 			(user, ctx) => this.oauthService.lineLogin(user, ctx),
+			(args) => this.oauthService.lineRegisterWithStateInvitation(args),
 			req,
 			res,
 			'LINE',
@@ -601,8 +758,10 @@ export class AuthController {
 		@Request() req: OAuthRequest<AppleStrategyUser>,
 		@Response() res: ExpressResponse,
 	) {
-		return this.handleOAuthCallback(
+		return this.runOAuthCallbackWithStateSupport<AppleStrategyUser>(
+			'apple',
 			(user, ctx) => this.oauthService.appleLogin(user, ctx),
+			(args) => this.oauthService.appleRegisterWithStateInvitation(args),
 			req,
 			res,
 			'Apple',
@@ -656,8 +815,10 @@ export class AuthController {
 		@Request() req: OAuthRequest<XStrategyUser>,
 		@Response() res: ExpressResponse,
 	) {
-		return this.handleOAuthCallback(
+		return this.runOAuthCallbackWithStateSupport<XStrategyUser>(
+			'x',
 			(user, ctx) => this.oauthService.xLogin(user, ctx),
+			(args) => this.oauthService.xRegisterWithStateInvitation(args),
 			req,
 			res,
 			'X',

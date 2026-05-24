@@ -33,6 +33,7 @@ describe('AuthController @Public() 監査', () => {
 		{ method: 'lineRegisterWithInvitation', description: 'LINE 招待コード登録' },
 		{ method: 'appleRegisterWithInvitation', description: 'Apple 招待コード登録' },
 		{ method: 'xRegisterWithInvitation', description: 'X 招待コード登録' },
+		{ method: 'startOAuthRegistration', description: 'OAuth 開始（招待コード state 引き継ぎ）' },
 	];
 
 	publicHandlers.forEach(({ method, description }) => {
