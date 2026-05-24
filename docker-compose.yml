@@ -20,6 +20,8 @@ services:
     env_file: ./.env # .envファイルから環境変数を読み込む
     environment:
       - DATABASE_URL=postgresql://mosakuzii:mosakuzii@db:5432/mosaku?schema=public
+      # 招待 OAuth state 署名鍵（未設定なら起動時 fail-fast）。.env から読み込む値をそのまま注入。
+      - INVITATION_STATE_SECRET=${INVITATION_STATE_SECRET}
     restart: unless-stopped # コンテナが落ちたら自動で再起動
 
   # フロントエンド (React) サービス

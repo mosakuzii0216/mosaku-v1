@@ -37,6 +37,21 @@ export class ConfigService {
 		return secret;
 	}
 
+	/**
+	 * 招待 OAuth フロー（state 引き継ぎ）の HMAC 署名鍵。
+	 * `JWT_SECRET` とは独立した鍵を要求し、`InvitationStateService` 専用に分離する。
+	 * 未設定なら開発・本番を問わず fail-fast。
+	 */
+	get invitationStateSecret(): string {
+		const secret = process.env.INVITATION_STATE_SECRET;
+		if (!secret) {
+			throw new Error(
+				'INVITATION_STATE_SECRET is not configured. Please set INVITATION_STATE_SECRET environment variable (e.g. `openssl rand -hex 32`).',
+			);
+		}
+		return secret;
+	}
+
 	// 管理者設定
 	get adminEmail(): string | undefined {
 		return process.env.ADMIN_EMAIL;

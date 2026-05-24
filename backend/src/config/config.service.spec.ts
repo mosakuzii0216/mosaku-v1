@@ -174,6 +174,40 @@ describe('ConfigService - LINE/Apple/X OAuth', () => {
 		});
 	});
 
+	// ─── Invitation State Secret ─────────────────────────────────────────────
+
+	describe('invitationStateSecret', () => {
+		it('INVITATION_STATE_SECRET が設定されていれば値を返すこと', () => {
+			process.env.INVITATION_STATE_SECRET = 'invitation-state-secret-32-bytes-min';
+			expect(service.invitationStateSecret).toBe('invitation-state-secret-32-bytes-min');
+		});
+
+		it('INVITATION_STATE_SECRET が未設定の場合は環境を問わず fail-fast で例外を投げること', () => {
+			process.env.NODE_ENV = 'production';
+			delete process.env.INVITATION_STATE_SECRET;
+			expect(() => service.invitationStateSecret).toThrow(/INVITATION_STATE_SECRET/);
+
+			process.env.NODE_ENV = 'development';
+			delete process.env.INVITATION_STATE_SECRET;
+			expect(() => service.invitationStateSecret).toThrow(/INVITATION_STATE_SECRET/);
+		});
+
+		it('JWT_SECRET とは独立した getter を介して取得されること（同値でも参照を分離）', () => {
+			process.env.JWT_SECRET = 'shared-value';
+			process.env.INVITATION_STATE_SECRET = 'shared-value';
+
+			const jwtSecret = service.jwtSecret;
+			const stateSecret = service.invitationStateSecret;
+
+			expect(jwtSecret).toBe('shared-value');
+			expect(stateSecret).toBe('shared-value');
+
+			delete process.env.INVITATION_STATE_SECRET;
+			expect(() => service.invitationStateSecret).toThrow(/INVITATION_STATE_SECRET/);
+			expect(service.jwtSecret).toBe('shared-value');
+		});
+	});
+
 	// ─── X ──────────────────────────────────────────────────────────────────
 
 	describe('X クレデンシャル', () => {
