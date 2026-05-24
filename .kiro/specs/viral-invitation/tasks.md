@@ -2,8 +2,8 @@
 
 > 並列実行可能なタスクには `(P)` を付与。`(P)` は同一ファイル・同一サービスを触らず、かつ前段タスクへのデータ依存がないものだけに付ける。
 
-- [ ] 1. 招待 quota スキーマ・環境変数・エラーコードの基盤整備
-- [ ] 1.1 (P) Prisma `User.invitationQuota` カラム追加とマイグレーション作成
+- [x] 1. 招待 quota スキーマ・環境変数・エラーコードの基盤整備
+- [x] 1.1 (P) Prisma `User.invitationQuota` カラム追加とマイグレーション作成
   - `User` モデルに `invitationQuota`（整数、デフォルト `5`）を追加し、`@map("invitation_quota")` で snake_case に揃える
   - マイグレーションファイルを `npx prisma migrate dev --name add_user_invitation_quota` で生成し、`ALTER TABLE users ADD COLUMN invitation_quota INTEGER NOT NULL DEFAULT 5` のみを含む内容に整える
   - 既存レコードはデフォルト値で自動初期化されることを `prisma migrate diff` 出力で確認（追加 UPDATE 文を含めない）
@@ -11,14 +11,14 @@
   - 生成後に `npx prisma generate` を実行し、型定義に新フィールドが反映されることを確認
   - _Requirements: 4.1, 4.2, 9.4_
 
-- [ ] 1.2 (P) OAuth state 用シークレットを環境変数として導入
+- [x] 1.2 (P) OAuth state 用シークレットを環境変数として導入
   - `INVITATION_STATE_SECRET` を `.env.example` および Docker Compose の `backend` サービス env に追加
   - `ConfigService` のスキーマに必須項目として登録し、未設定時は起動時に明確なエラーで拒否する
   - `JWT_SECRET` から完全に分離されていること（同値であってもアプリ層で参照を分けること）を `app.module.ts` セットアップで保証
   - ローカル開発用のデフォルト値生成手順（`openssl rand -hex 32`）を `.env.example` のコメントとして添える
   - _Requirements: 3.3, 3.4_
 
-- [ ] 1.3 (P) `ERROR_CODES.INVITATION` に `QUOTA_EXHAUSTED` を追加
+- [x] 1.3 (P) `ERROR_CODES.INVITATION` に `QUOTA_EXHAUSTED` を追加
   - 既存の `INV001` 〜 `INV004` に続けて `QUOTA_EXHAUSTED = 'INV005'` を定義
   - `AppExceptionFilter` 経由のレスポンスに新コードが乗ることを既存ヘルパー（`throwBadRequest`）で送出可能にする
   - フロント側 `ErrorCode` 型（`shared` または `types` 配下）にも同コードを反映し、型レベルで網羅性を担保
