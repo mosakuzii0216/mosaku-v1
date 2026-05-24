@@ -149,6 +149,7 @@ model User {
   lineId                 String?             @unique @map("line_id")
   appleId                String?             @unique @map("apple_id")
   xId                    String?             @unique @map("x_id")
+  invitationQuota        Int                 @default(5) @map("invitation_quota")
   invitationCodes        InvitationCode[]
   memos                  Memo[]
   notebooks              Notebook[]
