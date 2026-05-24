@@ -25,7 +25,7 @@
   - _Requirements: 7.1_
 
 - [ ] 2. Backend: 招待ドメインの基礎ユーティリティ
-- [ ] 2.1 (P) `CodeGenerator` を nanoid no-look-alike alphabet で実装
+- [x] 2.1 (P) `CodeGenerator` を nanoid no-look-alike alphabet で実装
   - `nanoid` を `backend/package.json` の依存に追加（`customAlphabet` を使用）
   - alphabet は `346789ABCDEFGHJKLMNPQRTUVWXYabcdefghijkmnpqrtuvwxy`（49 文字、`0/O/1/I/l/L/2/Z/5/S/_/-` 除外）、長さは 10 固定
   - 旧 32 文字 hex 形式を判別する `isLegacyFormat` を提供し、Sentry breadcrumb 用に利用できるようにする
