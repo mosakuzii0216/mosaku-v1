@@ -53,4 +53,5 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
 	[ERROR_CODES.INVITATION.EXPIRED]: '招待コードの有効期限が切れています',
 	[ERROR_CODES.INVITATION.MAX_USES_REACHED]: '招待コードの使用回数が上限に達しています',
 	[ERROR_CODES.INVITATION.NOT_FOUND]: '招待コードが見つかりません',
+	[ERROR_CODES.INVITATION.QUOTA_EXHAUSTED]: '招待枠を使い切りました',
 };

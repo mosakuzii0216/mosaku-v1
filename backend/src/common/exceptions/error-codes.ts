@@ -67,6 +67,7 @@ export const ERROR_CODES = {
 		EXPIRED: 'INV002',
 		MAX_USES_REACHED: 'INV003',
 		NOT_FOUND: 'INV004',
+		QUOTA_EXHAUSTED: 'INV005',
 	},
 } as const;
 
