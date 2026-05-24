@@ -33,7 +33,7 @@
   - 衝突は理論上ほぼ 0 だが、呼び出し側でリトライできるよう副作用ゼロのピュア関数として実装
   - _Requirements: 2.1, 2.2_
 
-- [ ] 2.2 (P) `QuotaPolicy` の実装（ロール別評価と楽観ロック減算）
+- [x] 2.2 (P) `QuotaPolicy` の実装（ロール別評価と楽観ロック減算）
   - Prisma トランザクションクライアントを受け取り、ADMIN は無条件で `{ allowed: true, consumed: false }` を返す
   - USER は `update where: { id, role: 'USER', invitationQuota: { gt: 0 } }` で 1 減算し、影響行数 0 件なら `{ allowed: false, code: 'QUOTA_EXHAUSTED' }` を返す（楽観ロック相当）
   - `invitationQuota` が負にならない不変条件を関数内で保証
