@@ -22,6 +22,7 @@ import { RefreshCookieHelper } from './refresh-cookie.helper';
 import { RefreshCsrfGuard } from './refresh-csrf.guard';
 import { RefreshTokenRepository } from './refresh-token.repository';
 import { RefreshTokenService } from './refresh-token.service';
+import { InvitationStateService } from './invitation-state.service';
 import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ConfigService } from '../config/config.service';
@@ -62,11 +63,13 @@ import { JWT_EXPIRATION } from '../config/auth-constants';
 		RefreshTokenRepository,
 		RefreshTokenService,
 		InvitationService,
+		InvitationStateService,
 	],
 	exports: [
 		AuthService,
 		JwtTokenService,
 		OAuthService,
+		InvitationStateService,
 		JwtAuthGuard,
 		GoogleAuthGuard,
 		GitHubAuthGuard,
