@@ -64,8 +64,8 @@
   - いずれのメソッドも email や OAuth provider id 等の機微情報を含めない
   - _Requirements: 4.6, 4.7, 6.4_
 
-- [ ] 4. Backend: `InvitationController` の API 追加と共有 URL 整備
-- [ ] 4.1 受信者向け `/invitation/verify-context` エンドポイントを Public + Throttler で公開
+- [x] 4. Backend: `InvitationController` の API 追加と共有 URL 整備
+- [x] 4.1 受信者向け `/invitation/verify-context` エンドポイントを Public + Throttler で公開
   - `@Public()` を付与し未認証アクセスを許可
   - `@Throttle({ default: { limit: 30, ttl: 60_000 } })` を適用しブルートフォース耐性を担保
   - リクエスト DTO の `code` を `class-validator` で 8〜50 文字・英数字のみに制限
@@ -73,7 +73,7 @@
   - 失敗時は構造化エラーコード（`INVALID_CODE` / `EXPIRED` / `MAX_USES_REACHED`）を 400 で返す
   - _Requirements: 1.3, 6.2, 6.4_
 
-- [ ] 4.2 自分用 quota / 招待一覧 / 発行 / 削除エンドポイントを実装
+- [x] 4.2 自分用 quota / 招待一覧 / 発行 / 削除エンドポイントを実装
   - `POST /invitation/me`、`GET /invitation/me`、`GET /invitation/me/quota`、`DELETE /invitation/me/:id` を追加
   - 全エンドポイントを JWT 必須（既定保護）にし、削除は `AuthorizationService.checkOwnership()` を経由
   - レスポンスは `InvitationWithShareUrlResponse` / `UserQuotaResponse` 形に統一し、PII を含めない
@@ -81,7 +81,7 @@
   - 既存 ADMIN ルート（`POST /invitation`、`GET /invitation`、`DELETE /invitation/:id`、`POST /invitation/verify`）は互換維持のため変更しない
   - _Requirements: 4.6, 4.7, 9.3_
 
-- [ ] 4.3 発行系レスポンスに共有用絶対 URL を付与
+- [x] 4.3 発行系レスポンスに共有用絶対 URL を付与
   - `ConfigService.frontendUrl` を Controller 層で参照し `{FRONTEND_URL}/invite/{code}` 形式を組み立てる
   - 新規発行（`POST /invitation/me`、ADMIN 経路 `POST /invitation`）、一覧取得（`GET /invitation/me`）両方のレスポンスに `shareUrl` を含める
   - `FRONTEND_URL` 末尾スラッシュの有無による二重スラッシュを排除するヘルパーを利用
