@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { InvitationVerificationResponse } from '../types/invitation';
+import type {
+	InvitationVerificationResponse,
+	InvitationContextResponse,
+	InvitationWithShareUrlResponse,
+	UserQuotaResponse,
+	OAuthStartResponse,
+} from '../types/invitation';
+import { ApiError } from './apiError';
 
 vi.mock('./env', () => ({
 	getBackendUrl: () => 'http://localhost:3000',
@@ -304,6 +311,226 @@ describe('ApiClient.verifyInvitationCode()', () => {
 		await expect(apiClient.verifyInvitationCode('BAD-CODE')).rejects.toThrow(
 			'HTTP error! status: 422',
 		);
+	});
+});
+
+describe('ApiClient 招待関連エンドポイント', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		vi.mocked(AuthTokenManager.getAccessToken).mockReturnValue('mock-token');
+		vi.mocked(AuthTokenManager.isTokenExpired).mockReturnValue(false);
+	});
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it('verifyInvitationContext: code を Public で POST し InvitationContextResponse を返す', async () => {
+		const mockResponse: InvitationContextResponse = {
+			code: 'k9x7m2j3pq',
+			status: 'valid',
+			creator: { name: 'モサ子', maskedId: 'usr1***' },
+			expiresAt: null,
+			usesRemaining: 1,
+		};
+		const fetchMock = vi.fn().mockResolvedValue({
+			ok: true,
+			headers: new Headers({ 'content-type': 'application/json' }),
+			json: vi.fn().mockResolvedValue(mockResponse),
+		});
+		vi.stubGlobal('fetch', fetchMock);
+
+		const result = await apiClient.verifyInvitationContext({ code: 'k9x7m2j3pq' });
+		expect(result).toEqual(mockResponse);
+
+		const [url, init] = fetchMock.mock.calls[0];
+		expect(url).toBe('http://localhost:3000/invitation/verify-context');
+		expect(init?.method).toBe('POST');
+		expect(init?.body).toBe(JSON.stringify({ code: 'k9x7m2j3pq' }));
+		const headers = (init?.headers ?? {}) as Record<string, string>;
+		expect(headers.Authorization).toBeUndefined();
+	});
+
+	it('verifyInvitationContext: バックエンドの { code, message, statusCode } を ApiError にして throw する', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn().mockResolvedValue({
+				ok: false,
+				status: 400,
+				headers: new Headers({ 'content-type': 'application/json' }),
+				json: vi.fn().mockResolvedValue({
+					code: 'INV001',
+					message: '招待コードが無効です',
+					statusCode: 400,
+				}),
+			}),
+		);
+
+		try {
+			await apiClient.verifyInvitationContext({ code: 'bad' });
+			expect.unreachable();
+		} catch (error) {
+			expect(error).toBeInstanceOf(ApiError);
+			const apiError = error as ApiError;
+			expect(apiError.code).toBe('INV001');
+			expect(apiError.statusCode).toBe(400);
+			expect(apiError.message).toBe('招待コードが無効です');
+		}
+	});
+
+	it('createMyInvitation: 認証付き POST /invitation/me で InvitationWithShareUrlResponse を返す', async () => {
+		const mockResponse: InvitationWithShareUrlResponse = {
+			id: 'inv-1',
+			code: 'k9x7m2j3pq',
+			shareUrl: 'https://mosaku.jp/invite/k9x7m2j3pq',
+			maxUses: 1,
+			usedCount: 0,
+			expiresAt: null,
+			createdAt: '2026-05-24T00:00:00Z',
+		};
+		const fetchMock = vi.fn().mockResolvedValue({
+			ok: true,
+			headers: new Headers({ 'content-type': 'application/json' }),
+			json: vi.fn().mockResolvedValue(mockResponse),
+		});
+		vi.stubGlobal('fetch', fetchMock);
+
+		const result = await apiClient.createMyInvitation();
+		expect(result).toEqual(mockResponse);
+
+		const [url, init] = fetchMock.mock.calls[0];
+		expect(url).toBe('http://localhost:3000/invitation/me');
+		expect(init?.method).toBe('POST');
+		const headers = (init?.headers ?? {}) as Record<string, string>;
+		expect(headers.Authorization).toBe('Bearer mock-token');
+	});
+
+	it('createMyInvitation: QUOTA_EXHAUSTED は ApiError として throw される', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn().mockResolvedValue({
+				ok: false,
+				status: 400,
+				headers: new Headers({ 'content-type': 'application/json' }),
+				json: vi.fn().mockResolvedValue({
+					code: 'INV005',
+					message: '招待枠を使い切りました',
+					statusCode: 400,
+				}),
+			}),
+		);
+
+		try {
+			await apiClient.createMyInvitation();
+			expect.unreachable();
+		} catch (error) {
+			expect(error).toBeInstanceOf(ApiError);
+			expect((error as ApiError).code).toBe('INV005');
+		}
+	});
+
+	it('getMyInvitations: 認証付き GET /invitation/me で配列を返す', async () => {
+		const mockResponse: InvitationWithShareUrlResponse[] = [];
+		const fetchMock = vi.fn().mockResolvedValue({
+			ok: true,
+			headers: new Headers({ 'content-type': 'application/json' }),
+			json: vi.fn().mockResolvedValue(mockResponse),
+		});
+		vi.stubGlobal('fetch', fetchMock);
+
+		const result = await apiClient.getMyInvitations();
+		expect(result).toEqual(mockResponse);
+
+		const [url, init] = fetchMock.mock.calls[0];
+		expect(url).toBe('http://localhost:3000/invitation/me');
+		expect(init?.method ?? 'GET').toBe('GET');
+	});
+
+	it('getMyInvitationQuota: GET /invitation/me/quota で UserQuotaResponse を返す', async () => {
+		const mockResponse: UserQuotaResponse = {
+			invitationQuota: 3,
+			unlimited: false,
+			role: 'USER',
+		};
+		const fetchMock = vi.fn().mockResolvedValue({
+			ok: true,
+			headers: new Headers({ 'content-type': 'application/json' }),
+			json: vi.fn().mockResolvedValue(mockResponse),
+		});
+		vi.stubGlobal('fetch', fetchMock);
+
+		const result = await apiClient.getMyInvitationQuota();
+		expect(result).toEqual(mockResponse);
+
+		const [url] = fetchMock.mock.calls[0];
+		expect(url).toBe('http://localhost:3000/invitation/me/quota');
+	});
+
+	it('deleteMyInvitation: 認証付き DELETE /invitation/me/:id を呼ぶ', async () => {
+		const fetchMock = vi.fn().mockResolvedValue({
+			ok: true,
+			headers: new Headers({ 'content-type': 'application/json' }),
+			json: vi.fn().mockResolvedValue({}),
+		});
+		vi.stubGlobal('fetch', fetchMock);
+
+		await apiClient.deleteMyInvitation({ id: 'inv-1' });
+
+		const [url, init] = fetchMock.mock.calls[0];
+		expect(url).toBe('http://localhost:3000/invitation/me/inv-1');
+		expect(init?.method).toBe('DELETE');
+	});
+
+	it('startOAuthRegistration: Public POST /auth/oauth/:provider/start で authorizationUrl を返す', async () => {
+		const mockResponse: OAuthStartResponse = {
+			authorizationUrl: 'https://accounts.google.com/o/oauth2/v2/auth?...',
+		};
+		const fetchMock = vi.fn().mockResolvedValue({
+			ok: true,
+			headers: new Headers({ 'content-type': 'application/json' }),
+			json: vi.fn().mockResolvedValue(mockResponse),
+		});
+		vi.stubGlobal('fetch', fetchMock);
+
+		const result = await apiClient.startOAuthRegistration({
+			provider: 'google',
+			invitationCode: 'k9x7m2j3pq',
+		});
+		expect(result).toEqual(mockResponse);
+
+		const [url, init] = fetchMock.mock.calls[0];
+		expect(url).toBe('http://localhost:3000/auth/oauth/google/start');
+		expect(init?.method).toBe('POST');
+		expect(init?.body).toBe(JSON.stringify({ invitationCode: 'k9x7m2j3pq' }));
+		const headers = (init?.headers ?? {}) as Record<string, string>;
+		expect(headers.Authorization).toBeUndefined();
+	});
+
+	it('startOAuthRegistration: 検証失敗時は ApiError として code を伝播', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn().mockResolvedValue({
+				ok: false,
+				status: 400,
+				headers: new Headers({ 'content-type': 'application/json' }),
+				json: vi.fn().mockResolvedValue({
+					code: 'INV002',
+					message: '招待コードの有効期限が切れています',
+					statusCode: 400,
+				}),
+			}),
+		);
+
+		try {
+			await apiClient.startOAuthRegistration({
+				provider: 'github',
+				invitationCode: 'expired',
+			});
+			expect.unreachable();
+		} catch (error) {
+			expect(error).toBeInstanceOf(ApiError);
+			expect((error as ApiError).code).toBe('INV002');
+		}
 	});
 });
 

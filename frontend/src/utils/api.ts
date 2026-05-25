@@ -13,11 +13,17 @@ import type {
 	InvitationVerificationResponse,
 	InvitationCode,
 	CreateInvitationDto,
+	InvitationContextResponse,
+	InvitationWithShareUrlResponse,
+	UserQuotaResponse,
+	InvitationOAuthProvider,
+	OAuthStartResponse,
 } from '../types/invitation';
 import type { PaginationParams, PaginatedResult } from '../types/pagination';
 import { AuthTokenManager } from './auth';
 import { getBackendUrl } from './env';
 import { refreshClient } from './refreshClient';
+import { ApiError } from './apiError';
 
 const API_BASE_URL = getBackendUrl();
 
@@ -85,6 +91,7 @@ class ApiClient {
 			}
 
 			let errorMessage = `HTTP error! status: ${response.status}`;
+			let errorCode: string | null = null;
 			const contentType = response.headers.get('content-type');
 			if (contentType && contentType.includes('application/json')) {
 				try {
@@ -92,11 +99,21 @@ class ApiClient {
 					if (errorBody.message) {
 						errorMessage = errorBody.message;
 					}
+					if (typeof errorBody.code === 'string') {
+						errorCode = errorBody.code;
+					}
 				} catch {
 					// JSON パース失敗時はフォールバックメッセージを使用
 				}
 			}
 
+			if (errorCode) {
+				throw new ApiError({
+					code: errorCode,
+					message: errorMessage,
+					statusCode: response.status,
+				});
+			}
 			throw new Error(errorMessage);
 		}
 
@@ -316,6 +333,47 @@ class ApiClient {
 	// 招待コード削除（ADMIN専用）
 	async deleteInvitation(id: string): Promise<void> {
 		await this.request(`/invitation/${id}`, { method: 'DELETE' });
+	}
+
+	// 招待コード文脈検証（受信者向け、認証不要）
+	async verifyInvitationContext(input: { code: string }): Promise<InvitationContextResponse> {
+		return this.requestPublic<InvitationContextResponse>('/invitation/verify-context', {
+			method: 'POST',
+			body: JSON.stringify({ code: input.code }),
+		});
+	}
+
+	// 自分の招待コードを発行
+	async createMyInvitation(): Promise<InvitationWithShareUrlResponse> {
+		return this.request<InvitationWithShareUrlResponse>('/invitation/me', {
+			method: 'POST',
+		});
+	}
+
+	// 自分の招待コード一覧
+	async getMyInvitations(): Promise<InvitationWithShareUrlResponse[]> {
+		return this.request<InvitationWithShareUrlResponse[]>('/invitation/me');
+	}
+
+	// 自分の招待 quota 残数
+	async getMyInvitationQuota(): Promise<UserQuotaResponse> {
+		return this.request<UserQuotaResponse>('/invitation/me/quota');
+	}
+
+	// 自分の招待コードを削除
+	async deleteMyInvitation(input: { id: string }): Promise<void> {
+		await this.request(`/invitation/me/${input.id}`, { method: 'DELETE' });
+	}
+
+	// OAuth 登録開始（招待コードを開始前に検証 → state 経由でコールバックへ）
+	async startOAuthRegistration(input: {
+		provider: InvitationOAuthProvider;
+		invitationCode: string;
+	}): Promise<OAuthStartResponse> {
+		return this.requestPublic<OAuthStartResponse>(`/auth/oauth/${input.provider}/start`, {
+			method: 'POST',
+			body: JSON.stringify({ invitationCode: input.invitationCode }),
+		});
 	}
 
 	// ========== テーマ関連API ==========
