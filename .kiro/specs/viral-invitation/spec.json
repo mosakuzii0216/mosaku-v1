@@ -1,9 +1,9 @@
 {
 	"feature_name": "viral-invitation",
 	"created_at": "2026-05-24T01:08:13Z",
-	"updated_at": "2026-05-24T14:00:00Z",
+	"updated_at": "2026-05-26T14:00:00Z",
 	"language": "ja",
-	"phase": "tasks-generated",
+	"phase": "implemented",
 	"approvals": {
 		"requirements": {
 			"generated": true,

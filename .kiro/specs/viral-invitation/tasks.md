@@ -120,29 +120,29 @@
   - 5 プロバイダ全てで同一の small dispatcher 関数を経由させ、分岐ロジックの二重実装を避ける
   - _Requirements: 3.3, 3.4, 7.4, 9.2_
 
-- [ ] 6. Frontend: 共通ユーティリティとフックの基盤整備
-- [ ] 6.1 (P) `invitationErrorMessages` 定数を整備
+- [x] 6. Frontend: 共通ユーティリティとフックの基盤整備
+- [x] 6.1 (P) `invitationErrorMessages` 定数を整備
   - `ErrorCode`（`INV001` 〜 `INV005`）→ 日本語文言のマッピングを定義
   - 例: `INVALID_CODE → 招待コードが無効です` / `EXPIRED → 招待コードの有効期限が切れています` / `MAX_USES_REACHED → 招待コードの使用上限に達しました` / `QUOTA_EXHAUSTED → 招待枠を使い切りました`
   - 未知コードのフォールバック文言（汎用エラー）も含める
   - 文言は表示専用、Sentry breadcrumb 用の英語キー（`invitation_failure_code: INV001` 等）とは分離
   - _Requirements: 7.3_
 
-- [ ] 6.2 (P) `shareInvitation` util（Web Share + clipboard フォールバック）
+- [x] 6.2 (P) `shareInvitation` util（Web Share + clipboard フォールバック）
   - `navigator.canShare` で share 可否を判定 → 可なら `navigator.share`、不可なら `navigator.clipboard.writeText` にフォールバック
   - 戻り値は `{ method: 'web-share' | 'clipboard' | 'failed', cancelled?, error? }`
   - `navigator.share` の `AbortError`（ユーザーキャンセル）は失敗扱いにせず `{ method: 'web-share', cancelled: true }` を返す
   - HTTPS でない環境では両 API ともに失敗し `failed` を返す（ローカルは `localhost` 例外で動作）
   - _Requirements: 5.3, 5.4_
 
-- [ ] 6.3 `apiClient`（`utils/api.ts`）に招待関連メソッドを追加
+- [x] 6.3 `apiClient`（`utils/api.ts`）に招待関連メソッドを追加
   - `verifyInvitationContext({ code })` / `createMyInvitation()` / `getMyInvitations()` / `getMyInvitationQuota()` / `deleteMyInvitation({ id })` / `startOAuthRegistration({ provider, invitationCode })` を追加
   - レスポンスから `{ code, message, statusCode }` 形式の `ApiError` を抽出する共通ロジックを整備（文字列 `includes` 判定は使わない）
   - `ApiError.code` を型として `ErrorCode` で表現し、呼び出し側の網羅判定を可能にする
   - 直接 `fetch` 禁止の規約を順守し、必ず `apiClient` 経由で外部呼び出しを行う
   - _Requirements: 7.2_
 
-- [ ] 6.4 `useInvitationsQueries` で招待関連 Hook を集約
+- [x] 6.4 `useInvitationsQueries` で招待関連 Hook を集約
   - `useInvitationContext({ code })` を `enabled: !!code` + `retry: false` で実装し、エラーを `ApiError` のまま伝播
   - `useMyInvitations` / `useMyInvitationQuota` / `useCreateMyInvitation` / `useDeleteMyInvitation` を実装、mutation 成功時に対応 query を `invalidateQueries`
   - `useStartOAuthRegistration` を mutation として実装（成功時に `window.location.assign(authorizationUrl)` の起動はコンポーネント側責務）
@@ -150,8 +150,8 @@
   - サーバー状態は React Query に閉じ、Zustand への複製を行わない
   - _Requirements: 1.2, 4.6, 5.2, 5.5, 7.2_
 
-- [ ] 7. Frontend: 招待 URL ページと AuthForm の改修
-- [ ] 7.1 `/invite/:code` ルートと `InvitePage` の新規実装
+- [x] 7. Frontend: 招待 URL ページと AuthForm の改修
+- [x] 7.1 `/invite/:code` ルートと `InvitePage` の新規実装
   - `App.tsx`（または route 定義）に `/invite/:code` を追加し未認証ユーザー向けに開放
   - マウント時に `useInvitationContext({ code })` を実行し、成功時は `AuthForm` を prefilled な招待コードと招待者文脈付きで表示
   - 招待者 `name` が null の場合は「あるユーザーから招待されました」等の汎用文言にフォールバック
@@ -159,7 +159,7 @@
   - 認証済みユーザーが踏んだ場合は `useAuthGuard()` 経由でアプリホームへリダイレクト
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 6.1, 6.3_
 
-- [ ] 7.2 `AuthForm` を新フロー（prefill / 属性 / OAuth start / 自動ログイン文言）に整合
+- [x] 7.2 `AuthForm` を新フロー（prefill / 属性 / OAuth start / 自動ログイン文言）に整合
   - 招待コード入力欄に `autoCapitalize="off"` / `autoComplete="off"` / `inputMode="text"` / `spellCheck={false}` を付与
   - prefill 時もユーザー編集を許容し、別コードに差し替え可能な状態を維持
   - OAuth ボタン押下時は `useStartOAuthRegistration` で `/auth/oauth/:provider/start` を呼び、返却された `authorizationUrl` に `window.location.assign` で遷移
@@ -167,8 +167,8 @@
   - `EmailAuthForm` の「Registration successful! You can now login with your credentials.」等の自動ログインと矛盾する文言を削除し、登録成功後は `useNavigation` 経由でホーム遷移
   - _Requirements: 1.5, 2.4, 7.2, 7.3, 8.1, 8.2, 8.3_
 
-- [ ] 8. Frontend: Settings の友達招待 UI
-- [ ] 8.1 `InvitationCard` の実装（quota 可視化・発行・一覧・共有・無効化）
+- [x] 8. Frontend: Settings の友達招待 UI
+- [x] 8.1 `InvitationCard` の実装（quota 可視化・発行・一覧・共有・無効化）
   - 現在の quota 残数を `useMyInvitationQuota` から取得しバッジ表示（例: `3 / 5`、ADMIN は「無制限」表示）
   - 「招待リンクを発行」操作で `useCreateMyInvitation` を mutate → 一覧の先頭に追加、発行直後に `shareInvitation(shareUrl)` を呼ぶオプションを提示
   - 発行済み一覧に `code` / `usedCount`/`maxUses` / 発行日 / 共有ボタン / 削除ボタンを表示
@@ -176,14 +176,14 @@
   - Web Share / clipboard / failed の結果別に toast を出し、AbortError は無音
   - _Requirements: 4.6, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6_
 
-- [ ] 8.2 `SettingsPage` への組み込み
+- [x] 8.2 `SettingsPage` への組み込み
   - 既存 `SettingsPage` 内の適切な位置に「友達を招待」セクションとして `InvitationCard` を配置
   - ADMIN 用 `InvitationManager.tsx` は ADMIN 画面にそのまま残置し、一般ユーザー UI（`InvitationCard`）と責務を分離
   - レイアウトはモバイル幅でも操作可能なタッチターゲットサイズを確保
   - _Requirements: 5.1_
 
-- [ ] 9. 旧フロー削除と Sentry 連携統一
-- [ ] 9.1 旧 `/auth/{provider}/register-with-invitation` 5 本と `INVITATION_REQUIRED` 経路を削除
+- [x] 9. 旧フロー削除と Sentry 連携統一
+- [x] 9.1 旧 `/auth/{provider}/register-with-invitation` 5 本と `INVITATION_REQUIRED` 経路を削除
   - `AuthController` から 5 プロバイダ分の `register-with-invitation` ルートを削除
   - `OAuthService.handleOAuthRegistrationWithInvitation` / `*RegisterWithInvitation`（5 本）を削除（admin email 例外を含む通常ログイン経路は維持）
   - `INVITATION_REQUIRED` を throw していたコードパスを除去し、新フローでは到達不能であることを `oauth.service.spec.ts` の網羅テストで担保
@@ -191,15 +191,15 @@
   - `generateInvitationRequiredUrl` の呼び出しを撤去
   - _Requirements: 3.5, 3.6_
 
-- [ ] 9.2 文字列マッチ判定撤去と Sentry `feature_area: invitation` 失敗記録
+- [x] 9.2 文字列マッチ判定撤去と Sentry `feature_area: invitation` 失敗記録
   - `errorMessage.includes('invitation code')` などの文字列マッチ判定を全箇所撤去し、`ApiError.code` での分岐に統一（バックエンド・フロント双方）
   - OAuth コールバック内の招待関連例外で `Sentry.captureMessage('invitation_state_invalid', { tags: { feature_area: 'invitation', invitation_failure_code: <code> } })` を呼ぶ
   - 招待コード文字列自体は Sentry イベント本文に含めず、タグのみで失敗を追跡（PII スクラバ規約と整合）
   - 既存の `/invitation` URL prefix 自動付与（`feature_area: invitation`）が新エンドポイントにも適用されることを確認
   - _Requirements: 7.2, 7.4_
 
-- [ ] 10. テスト・統合検証
-- [ ] 10.1 (P) Backend ユニットテスト整備
+- [x] 10. テスト・統合検証
+- [x] 10.1 (P) Backend ユニットテスト整備
   - `CodeGenerator.generate()`: 100 回呼び出して長さ 10 / alphabet 範囲内 / 重複なしを確認、`isLegacyFormat` の境界も検証
   - `QuotaPolicy.evaluateAndConsume()`: USER quota>0 / USER quota==0 / ADMIN の 3 ケースで戻り値と DB 副作用を検証
   - `InvitationStateService`: 正常往復・改ざんペイロード・期限切れ（iat>10 分）・provider 不一致・base64 不正の 5 ケース
@@ -207,7 +207,7 @@
   - `OAuthService`: admin email 例外 / 既存ユーザー再ログイン / state 経由新規作成 の 3 系統を 5 プロバイダ分でカバー
   - _Requirements: 2.1, 2.2, 2.3, 3.3, 3.4, 4.3, 4.4, 4.5, 8.1, 9.1, 9.2_
 
-- [ ] 10.2 (P) Backend 統合テスト整備
+- [x] 10.2 (P) Backend 統合テスト整備
   - `POST /invitation/me`: USER quota 5 → 1 減算、quota 0 → `QUOTA_EXHAUSTED`、ADMIN → quota 不変、`shareUrl` がレスポンスに含まれる
   - `POST /invitation/verify-context`: 有効コード成功 / 4 種失敗コード / Throttler 30/min 超過時 429 を確認
   - `POST /auth/oauth/google/start` → mock passport → callback → 新規ユーザー作成 + access token + refresh cookie 発行までのエンドツーエンド
@@ -215,7 +215,7 @@
   - 旧 `/auth/{provider}/register-with-invitation` 5 本への POST が 404 を返す（削除確認）
   - _Requirements: 1.3, 3.1, 3.2, 3.6, 4.3, 4.4, 4.6, 7.1, 9.2_
 
-- [ ] 10.3 (P) Frontend ユニットテスト整備
+- [x] 10.3 (P) Frontend ユニットテスト整備
   - `useInvitationsQueries`: `useInvitationContext` の `retry: false`、mutation 成功時の `invalidateQueries`、`ApiError.code` 伝播を確認
   - `shareInvitation`: `navigator.share` あり / なし / AbortError の 3 経路と HTTPS 未満時の `failed` 戻り
   - `invitationErrorMessages`: 全 `ErrorCode` の網羅マッピング、未知コード時のフォールバック
@@ -223,7 +223,7 @@
   - `InvitationCard`: quota 残数表示 / quota 0 時の発行ボタン disabled / Web Share と clipboard のフォールバック動作
   - _Requirements: 1.2, 1.5, 2.4, 5.1, 5.3, 5.4, 5.6, 7.2, 7.3, 8.2, 8.3_
 
-- [ ] 10.4 E2E と Sentry 監視チェックポイント検証
+- [x] 10.4 E2E と Sentry 監視チェックポイント検証
   - Playwright で `/invite/{code}` を踏む → 招待者名表示 → メール登録完了 → ホーム遷移（自動ログイン文言が出ない）を確認
   - Settings の「友達を招待」→ 発行 → 共有ボタン（Web Share またはクリップボード）が起動するシナリオを確認
   - quota 0 USER の Settings で発行ボタンが disabled になることを確認
