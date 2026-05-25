@@ -330,26 +330,94 @@ it('オンラインで 400 系エラーが起きたらキューから消して�
 
 ---
 
-## Step 4: 配線（memo-bridge-instance）— 任意
+## Step 4: 配線（memo-bridge-instance）
 
-**ファイル**: `frontend/src/utils/memo/memo-bridge-instance.ts`
+**ファイル**: `frontend/src/utils/memo/memo-bridge-instance.ts`（全 22 行のシンプルなファイル）
 
-SyncEngine と接続するなら、`memo-bridge-instance.ts` の `MemoBridge` 生成時に `onPendingChanged` を渡す。
+修正は **2 箇所のみ**。
+
+### 4-A: `import` 行に `getSyncEngine` を追加
+
+#### Before
 
 ```ts
-// 例（実際のファイル構造に合わせて調整）
-new MemoBridge({
-	repository,
-	api,
-	isOnline,
-	onPendingChanged: () => syncEngine.notifyEnqueueChanged(),
-});
+import { useNetworkStatusStore } from '../../stores/useNetworkStatusStore';
+import { apiClient } from '../api';
+import { getOfflineRepository } from '../offline/instance';
+
+import { MemoBridge } from './memo-bridge';
+```
+
+#### After
+
+```ts
+import { useNetworkStatusStore } from '../../stores/useNetworkStatusStore';
+import { apiClient } from '../api';
+import { getOfflineRepository } from '../offline/instance';
+import { getSyncEngine } from '../sync/instance';
+
+import { MemoBridge } from './memo-bridge';
+```
+
+### 4-B: `new MemoBridge({...})` に `onPendingChanged` を追加
+
+#### Before
+
+```ts
+export function getMemoBridge(): MemoBridge {
+	if (bridgeInstance) return bridgeInstance;
+	bridgeInstance = new MemoBridge({
+		repository: getOfflineRepository().repository,
+		api: apiClient,
+		isOnline: () => useNetworkStatusStore.getState().status === 'online',
+	});
+	return bridgeInstance;
+}
+```
+
+#### After
+
+```ts
+export function getMemoBridge(): MemoBridge {
+	if (bridgeInstance) return bridgeInstance;
+	bridgeInstance = new MemoBridge({
+		repository: getOfflineRepository().repository,
+		api: apiClient,
+		isOnline: () => useNetworkStatusStore.getState().status === 'online',
+		onPendingChanged: () => getSyncEngine().notifyEnqueueChanged(),
+	});
+	return bridgeInstance;
+}
 ```
 
 ### 解説 💡
 
-- SyncEngine のインスタンスは `useAppInit.ts` で生成されてるので、そこの依存関係を整理する必要がある
-- 初回は no-op (`() => {}`) で渡しておいて、後の PR で配線するのもアリ
+#### なぜラムダ `() => getSyncEngine()...` で包むのか
+
+- `getMemoBridge()` が呼ばれた瞬間に `getSyncEngine()` を直接実行すると、起動順序によっては SyncEngine がまだ存在しない可能性がある
+- ラムダで包むと **遅延評価** になり、実際に enqueue / dequeue が起きた時にだけ `getSyncEngine()` が走る
+- その時点では SyncEngine は確実に存在するため、循環参照を回避できる
+
+#### 循環依存にならない理由
+
+- `SyncEngine` 側は `MemoBridge` を一切参照していないため、`MemoBridge → SyncEngine` の片方向参照のみ
+- `sync-engine.ts` に `MemoBridge` の import が無いことは `grep` で確認可能
+
+### 動作確認
+
+```bash
+cd frontend
+npm run test -- src/utils/memo/memo-bridge.test.ts --run
+npm run lint
+npm run build
+```
+
+すべて green であれば、配線コミットへ進む:
+
+```bash
+git add frontend/src/utils/memo/memo-bridge-instance.ts
+git commit -m "feat(frontend/sync): MemoBridge と SyncEngine の pending 通知を配線"
+```
 
 ---
 
@@ -367,23 +435,100 @@ npm run build
 
 ## Step 6: 動作確認（dev server + DevTools）
 
+### 6-1. dev server を起動
+
 ```bash
+# ルートから
 npm run dev
 ```
 
-ブラウザで:
+frontend は `http://localhost:5173`、backend は `http://localhost:3000` で起動する。
 
-1. メモを編集 → 入力停止
-2. **Chrome DevTools → Application → IndexedDB → mosaku-offline → pending_operations** を開く
-3. 一瞬「該当レコードが現れる → すぐ消える」のが見えるはず（成功時）
+### 6-2. ブラウザと DevTools の準備
 
-### 意図的に失敗させる確認
+1. **Chrome** で `http://localhost:5173` を開く（DevTools の IndexedDB ビューが使いやすい）
+2. ログイン → 任意のメモを開く
+3. **F12（macOS は ⌘+Opt+I）** で DevTools を開く
+4. 上部タブで **Application** を選択
+5. 左サイドバー **Storage → IndexedDB → mosaku-offline → pending_operations** を展開
 
-1. DevTools → Network タブで Throttling を **Offline** に
-2. メモを編集
-3. **pending_operations に残る** のを確認
-4. Throttling を Online に戻す
-5. SyncEngine が走って **pending_operations が空になる** のを確認
+```
+Application
+└ Storage
+   └ IndexedDB
+      └ mosaku-offline
+         ├ memos
+         ├ pending_operations  ← ここを表示しておく
+         └ ...
+```
+
+### 6-3. 確認パターン A: オンライン編集（成功フロー）
+
+#### 手順
+
+1. メモのタイトル or 本文を編集 → 入力を止める（200ms デバウンス）
+2. すぐに DevTools の `pending_operations` テーブルを右クリック → **"Refresh"**
+
+#### 期待される挙動
+
+- 一瞬 `memoId = ○○, kind = 'update'` のレコードが現れる
+- 送信が成功すると数百 ms で **レコードが消える**（テーブルが空に戻る）
+
+#### 観察を容易にする Tips
+
+デバウンスと送信が速いと「現れた瞬間」を捉えにくい。**Network throttling を Slow 3G にする**と、サーバー応答が数秒遅れて enqueue → dequeue の遷移が明確に観察できる。
+
+```
+DevTools → Network タブ → 上部の "No throttling" ドロップダウン → "Slow 3G"
+```
+
+### 6-4. 確認パターン B: オフライン編集（キュー残存 → drain）
+
+#### 手順
+
+1. DevTools → **Network タブ → ドロップダウンを "Offline"** に変更
+2. 同じメモを編集 → 入力停止
+3. `pending_operations` を Refresh
+
+#### 期待される挙動（オフライン中）
+
+- **レコードが残ったまま**
+- `Storage → IndexedDB → mosaku-offline → memos` 内の対象メモは `syncStatus = 'offline-saved'`
+
+#### drain も続けて確認
+
+4. Throttling を **"No throttling"** に戻す
+5. 数秒待つ（heartbeat が online を検知 → SyncEngine が drain）
+6. `pending_operations` を Refresh
+7. **空になる** ことを確認
+8. UI 側の「保存待ち N 件」表示も 0 に更新される（**Step 4 の配線が効いている証拠**）
+
+### 6-5. 確認パターン C: 4xx エラー（キューから除去 + throw）— 任意
+
+普通の操作だと再現しにくいため、API のレスポンスを偽装するのが手っ取り早い。
+
+#### 手順例
+
+1. DevTools → Network タブで `PATCH /memos/{id}` を **Block request URL**、または
+2. backend を一時的に 400 を返すよう改造
+
+#### 期待される挙動
+
+- `pending_operations` に残らない
+- コンソールにエラーログが出る
+- UI 上は保存失敗扱い
+
+> Step 6 では **A と B のみ確認すれば実用上 OK**。C は時間があれば。
+
+### 6-6. トラブルシュート（実機）
+
+| 症状                                      | 原因と対処                                                                                    |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `pending_operations` に何も現れない       | デバウンス + 送信成功で 1 秒未満に消える。**Slow 3G** をかけて再試行                          |
+| オンラインなのに `offline-saved` になる   | `isLikelyNetworkError` が誤判定。API エラーメッセージが該当ワードを含んでいないか確認         |
+| オフラインで編集してもキューに残らない    | `MemoBridge` 経由ではなく直接 `apiClient` を呼んでいるコードがある可能性。`grep` で確認       |
+| UI の「保存待ち N 件」が即時更新されない  | Step 4 の配線忘れ。`memo-bridge-instance.ts` で `onPendingChanged` を渡しているか確認         |
+| `Cannot read properties of null` 系エラー | `existing` が null の時のガード漏れ。Step 1 のオプショナルチェーン（`existing?.title`）を確認 |
 
 ---
 
