@@ -20,7 +20,7 @@ jest.mock('@sentry/nestjs', () => {
 	};
 });
 
-import { INestApplication, ExecutionContext } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
 import { App } from 'supertest/types';
@@ -29,30 +29,36 @@ import { App } from 'supertest/types';
 // テスト前に最低限の値を埋めておく
 process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'test-secret';
 process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? 'test-session';
+process.env.INVITATION_STATE_SECRET = process.env.INVITATION_STATE_SECRET ?? 'a'.repeat(64);
 process.env.DATABASE_URL =
 	process.env.DATABASE_URL ?? 'postgresql://test:test@localhost:5432/test?schema=public';
 
 import { AppModule } from '../src/app.module';
-import { JwtAuthGuard } from '../src/auth/jwt-auth.guard';
 import { MemoService } from '../src/memo/memo.service';
 import { InvitationService } from '../src/invitation/invitation.service';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { JwtTokenService } from '../src/auth/jwt.service';
 
 describe('SentryUserContextInterceptor (e2e)', () => {
 	let app: INestApplication<App>;
+	let authedHeader: string;
+
+	const authedUser = {
+		id: 'user-test-123',
+		email: 'sentry-user@example.com',
+		name: 'Sentry User',
+		role: 'USER' as const,
+		password: null,
+		createdAt: new Date('2026-01-01T00:00:00.000Z'),
+		updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+	};
+
+	const userFindUniqueMock = jest.fn();
 
 	beforeAll(async () => {
 		const moduleFixture: TestingModule = await Test.createTestingModule({
 			imports: [AppModule],
 		})
-			.overrideGuard(JwtAuthGuard)
-			.useValue({
-				canActivate: (ctx: ExecutionContext) => {
-					const req = ctx.switchToHttp().getRequest<{ user: { id: string } }>();
-					req.user = { id: 'user-test-123' };
-					return true;
-				},
-			})
 			.overrideProvider(MemoService)
 			.useValue({
 				findAll: jest.fn().mockResolvedValue([]),
@@ -74,6 +80,8 @@ describe('SentryUserContextInterceptor (e2e)', () => {
 			})
 			.overrideProvider(PrismaService)
 			.useValue({
+				// JwtStrategy.validate → AuthService.validateJwtPayload で user を引くため
+				user: { findUnique: userFindUniqueMock },
 				$connect: jest.fn(),
 				$disconnect: jest.fn(),
 				onModuleInit: jest.fn(),
@@ -83,6 +91,16 @@ describe('SentryUserContextInterceptor (e2e)', () => {
 
 		app = moduleFixture.createNestApplication();
 		await app.init();
+
+		// `.overrideGuard(JwtAuthGuard)` は APP_GUARD 登録された JwtAuthGuard には効かないため、
+		// 実 JwtTokenService で署名済み JWT を発行して Authorization ヘッダで通す。
+		const jwtTokenService = moduleFixture.get(JwtTokenService);
+		const { accessToken } = jwtTokenService.generateTokens(
+			authedUser.id,
+			authedUser.email,
+			authedUser.role,
+		);
+		authedHeader = `Bearer ${accessToken}`;
 	});
 
 	afterAll(async () => {
@@ -92,10 +110,12 @@ describe('SentryUserContextInterceptor (e2e)', () => {
 	beforeEach(() => {
 		setUserMock.mockClear();
 		setTagMock.mockClear();
+		userFindUniqueMock.mockReset();
+		userFindUniqueMock.mockResolvedValue(authedUser);
 	});
 
 	it('認証済み /memos リクエストで Sentry scope に { id: userId } のみが設定されること', async () => {
-		await request(app.getHttpServer()).get('/memos').expect(200);
+		await request(app.getHttpServer()).get('/memos').set('Authorization', authedHeader).expect(200);
 
 		expect(setUserMock).toHaveBeenCalledTimes(1);
 		expect(setUserMock).toHaveBeenCalledWith({ id: 'user-test-123' });

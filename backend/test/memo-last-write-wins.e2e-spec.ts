@@ -1,9 +1,12 @@
 /**
  * PATCH /memos/:id の last-write-wins (clientUpdatedAt) コントラクトを HTTP 経由で検証する e2e テスト。
  *
- * 実 DB / 実 Sentry には接続せず、PrismaService と JwtAuthGuard を override して
- * AppModule の controller → service → DTO バリデーション → グローバル ValidationPipe
- * → AppException 経由のエラーレスポンス整形までを通す。
+ * 実 DB / 実 Sentry には接続せず、PrismaService を override し、JwtTokenService で
+ * 実署名トークンを発行することで AppModule の controller → service → AppException
+ * 経由のレスポンス整形までをグローバル JwtAuthGuard (APP_GUARD) 経由で検証する。
+ *
+ * 注: `.overrideGuard(JwtAuthGuard)` は `APP_GUARD` 登録された JwtAuthGuard には
+ * 効かないため、Authorization ヘッダに本物の署名 JWT を載せて経路を通す。
  */
 
 const setUserMock = jest.fn();
@@ -18,24 +21,20 @@ jest.mock('@sentry/nestjs', () => {
 	};
 });
 
-import {
-	ExecutionContext,
-	HttpStatus,
-	INestApplication,
-	UnauthorizedException,
-} from '@nestjs/common';
+import { HttpStatus, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
 import { App } from 'supertest/types';
 
 process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'test-secret';
 process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? 'test-session';
+process.env.INVITATION_STATE_SECRET = process.env.INVITATION_STATE_SECRET ?? 'a'.repeat(64);
 process.env.DATABASE_URL =
 	process.env.DATABASE_URL ?? 'postgresql://test:test@localhost:5432/test?schema=public';
 
 import { AppModule } from '../src/app.module';
-import { JwtAuthGuard } from '../src/auth/jwt-auth.guard';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { JwtTokenService } from '../src/auth/jwt.service';
 
 const memoFixture = {
 	id: 'memo-1',
@@ -59,29 +58,25 @@ type ConflictResponseBody = {
 
 describe('PATCH /memos/:id (e2e) — last-write-wins', () => {
 	let app: INestApplication<App>;
+	let authedHeader: string;
 	const findFirstMock = jest.fn();
 	const updateMock = jest.fn();
+	const userFindUniqueMock = jest.fn();
 
-	// Auth control: テストごとに切り替えて 401/403/404 ケースを表現する
-	let authMode: 'authed' | 'unauthed' = 'authed';
+	const authedUser = {
+		id: 'user-1',
+		email: 'test@example.com',
+		name: 'Test User',
+		role: 'USER' as const,
+		password: null,
+		createdAt: new Date('2026-01-01T00:00:00.000Z'),
+		updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+	};
 
 	beforeAll(async () => {
 		const moduleFixture: TestingModule = await Test.createTestingModule({
 			imports: [AppModule],
 		})
-			.overrideGuard(JwtAuthGuard)
-			.useValue({
-				canActivate: (ctx: ExecutionContext) => {
-					if (authMode === 'unauthed') {
-						throw new UnauthorizedException();
-					}
-					const req = ctx
-						.switchToHttp()
-						.getRequest<{ user?: { id: string; email: string; role: string } }>();
-					req.user = { id: 'user-1', email: 'test@example.com', role: 'user' };
-					return true;
-				},
-			})
 			.overrideProvider(PrismaService)
 			.useValue({
 				memo: {
@@ -93,6 +88,9 @@ describe('PATCH /memos/:id (e2e) — last-write-wins', () => {
 					findMany: jest.fn(),
 					count: jest.fn(),
 					create: jest.fn(),
+				},
+				user: {
+					findUnique: userFindUniqueMock,
 				},
 				$connect: jest.fn(),
 				$disconnect: jest.fn(),
@@ -106,6 +104,15 @@ describe('PATCH /memos/:id (e2e) — last-write-wins', () => {
 		// DTO フォーマット検証は update-memo.dto.spec.ts のユニットテストに委譲し、
 		// 本 e2e では service / controller / AppException 経由のレスポンス整形のみ検証する。
 		await app.init();
+
+		// 実 JwtTokenService で署名済み JWT を発行（JwtStrategy が同じ JWT_SECRET で検証）
+		const jwtTokenService = moduleFixture.get(JwtTokenService);
+		const { accessToken } = jwtTokenService.generateTokens(
+			authedUser.id,
+			authedUser.email,
+			authedUser.role,
+		);
+		authedHeader = `Bearer ${accessToken}`;
 	});
 
 	afterAll(async () => {
@@ -115,7 +122,10 @@ describe('PATCH /memos/:id (e2e) — last-write-wins', () => {
 	beforeEach(() => {
 		findFirstMock.mockReset();
 		updateMock.mockReset();
-		authMode = 'authed';
+		userFindUniqueMock.mockReset();
+		// JwtStrategy.validate → AuthService.validateJwtPayload で user を引くため
+		// 既定で authed ユーザーを返す。401 ケースは Authorization ヘッダ自体を外す。
+		userFindUniqueMock.mockResolvedValue(authedUser);
 	});
 
 	it('(a) clientUpdatedAt 未送信時は 200 で従来挙動の更新を行う', async () => {
@@ -125,6 +135,7 @@ describe('PATCH /memos/:id (e2e) — last-write-wins', () => {
 
 		const res = await request(app.getHttpServer())
 			.patch('/memos/memo-1')
+			.set('Authorization', authedHeader)
 			.send({ title: 'Updated' });
 
 		expect(res.status).toBe(HttpStatus.OK);
@@ -140,6 +151,7 @@ describe('PATCH /memos/:id (e2e) — last-write-wins', () => {
 
 		const res = await request(app.getHttpServer())
 			.patch('/memos/memo-1')
+			.set('Authorization', authedHeader)
 			.send({ title: 'Newer', clientUpdatedAt: '2026-05-10T11:00:00.000Z' });
 
 		expect(res.status).toBe(HttpStatus.OK);
@@ -152,6 +164,7 @@ describe('PATCH /memos/:id (e2e) — last-write-wins', () => {
 
 		const res = await request(app.getHttpServer())
 			.patch('/memos/memo-1')
+			.set('Authorization', authedHeader)
 			.send({ title: 'Stale', clientUpdatedAt: '2026-05-10T09:00:00.000Z' });
 
 		expect(res.status).toBe(HttpStatus.CONFLICT);
@@ -165,7 +178,7 @@ describe('PATCH /memos/:id (e2e) — last-write-wins', () => {
 	});
 
 	it('未認証アクセスは 401 を返す', async () => {
-		authMode = 'unauthed';
+		// Authorization ヘッダなし → JwtAuthGuard (APP_GUARD) が 401 を返す
 		const res = await request(app.getHttpServer()).patch('/memos/memo-1').send({ title: 'X' });
 
 		expect(res.status).toBe(HttpStatus.UNAUTHORIZED);
@@ -177,6 +190,7 @@ describe('PATCH /memos/:id (e2e) — last-write-wins', () => {
 
 		const res = await request(app.getHttpServer())
 			.patch('/memos/memo-1')
+			.set('Authorization', authedHeader)
 			.send({ title: 'X', clientUpdatedAt: '2026-05-10T11:00:00.000Z' });
 
 		expect(res.status).toBe(HttpStatus.FORBIDDEN);
@@ -186,7 +200,10 @@ describe('PATCH /memos/:id (e2e) — last-write-wins', () => {
 	it('存在しないメモ (またはゴミ箱送り) は 404 を返す', async () => {
 		findFirstMock.mockResolvedValue(null);
 
-		const res = await request(app.getHttpServer()).patch('/memos/nonexistent').send({ title: 'X' });
+		const res = await request(app.getHttpServer())
+			.patch('/memos/nonexistent')
+			.set('Authorization', authedHeader)
+			.send({ title: 'X' });
 
 		expect(res.status).toBe(HttpStatus.NOT_FOUND);
 		expect(updateMock).not.toHaveBeenCalled();
