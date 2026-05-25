@@ -3,15 +3,14 @@
  *
  * 内部で以下のカスタムフックを使用して責務を分離:
  * - useEmailAuth: Email/Password認証
- * - useOAuth: OAuth認証（Google, GitHub, X）
+ * - useOAuth: OAuth認証（Google, GitHub, LINE, Apple, X）
  */
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { AuthAPI, AuthTokenManager } from '../utils/auth';
-// AuthAPI は appleRegisterWithInvitation で直接使用（fallbackEmail パラメータのため）
-import type { UserProfile, OAuthUserData } from '../utils/auth';
+import type { UserProfile } from '../utils/auth';
 import { useEmailAuth, initializeEmailAuth } from '../hooks/useEmailAuth';
-import { useOAuth, type OAuthProvider } from '../hooks/useOAuth';
+import { useOAuth } from '../hooks/useOAuth';
 import { useSentryAuthSync } from '../hooks/useSentryAuthSync';
 import { refreshClient } from '../utils/refreshClient';
 import { logger } from '../utils/logger';
@@ -34,27 +33,13 @@ export interface AuthActions {
 	resetPassword: (email: string) => Promise<void>;
 	changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 
-	// OAuth認証
+	// OAuth ログイン（既存ユーザー）
 	googleLogin: () => void;
-	googleRegisterWithInvitation: (
-		googleUser: OAuthUserData,
-		invitationCode: string,
-	) => Promise<void>;
 	githubLogin: () => void;
-	githubRegisterWithInvitation: (
-		githubUser: OAuthUserData,
-		invitationCode: string,
-	) => Promise<void>;
 	lineLogin: () => void;
-	lineRegisterWithInvitation: (lineUser: OAuthUserData, invitationCode: string) => Promise<void>;
 	appleLogin: () => void;
-	appleRegisterWithInvitation: (
-		appleUser: OAuthUserData,
-		invitationCode: string,
-		fallbackEmail?: string,
-	) => Promise<void>;
 	xLogin: () => void;
-	xRegisterWithInvitation: (xUser: OAuthUserData, invitationCode: string) => Promise<void>;
+
 	// 共通
 	logout: () => Promise<void>;
 	refreshUser: () => Promise<void>;
@@ -83,22 +68,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		setUser(userProfile);
 	}, []);
 
-	// 招待コードが必要な場合のハンドラー（現在は何もしない - UIで処理）
-	const handleInvitationRequired = useCallback(
-		(_provider: OAuthProvider, _userData: OAuthUserData) => {
-			// 招待コード入力フォームはAuthFormコンポーネントで処理
-		},
-		[],
-	);
-
 	// 初期化
 	useEffect(() => {
 		const initialize = async () => {
 			try {
 				// 1. OAuthコールバックをチェック
-				const oauthHandled = oauth.handleCallback(
-					(token, userProfile) => handleAuthSuccess(token, userProfile),
-					handleInvitationRequired,
+				const oauthHandled = oauth.handleCallback((token, userProfile) =>
+					handleAuthSuccess(token, userProfile),
 				);
 
 				if (oauthHandled) {
@@ -126,7 +102,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		};
 
 		initialize();
-	}, [oauth.handleCallback, handleAuthSuccess, handleInvitationRequired]);
+	}, [oauth.handleCallback, handleAuthSuccess]);
 
 	const login = useCallback(
 		async (email: string, password: string): Promise<void> => {
@@ -186,55 +162,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	const appleLogin = useCallback(() => oauth.startLogin('apple'), [oauth]);
 	const xLogin = useCallback(() => oauth.startLogin('x'), [oauth]);
 
-	const googleRegisterWithInvitation = useCallback(
-		async (googleUser: OAuthUserData, invitationCode: string): Promise<void> => {
-			const response = await oauth.registerWithInvitation('google', googleUser, invitationCode);
-			handleAuthSuccess(response.accessToken, response.user);
-		},
-		[oauth, handleAuthSuccess],
-	);
-
-	const githubRegisterWithInvitation = useCallback(
-		async (githubUser: OAuthUserData, invitationCode: string): Promise<void> => {
-			const response = await oauth.registerWithInvitation('github', githubUser, invitationCode);
-			handleAuthSuccess(response.accessToken, response.user);
-		},
-		[oauth, handleAuthSuccess],
-	);
-
-	const lineRegisterWithInvitation = useCallback(
-		async (lineUser: OAuthUserData, invitationCode: string): Promise<void> => {
-			const response = await oauth.registerWithInvitation('line', lineUser, invitationCode);
-			handleAuthSuccess(response.accessToken, response.user);
-		},
-		[oauth, handleAuthSuccess],
-	);
-
-	const appleRegisterWithInvitation = useCallback(
-		async (
-			appleUser: OAuthUserData,
-			invitationCode: string,
-			fallbackEmail?: string,
-		): Promise<void> => {
-			const response = await AuthAPI.appleRegisterWithInvitation(
-				appleUser,
-				invitationCode,
-				fallbackEmail,
-			);
-			handleAuthSuccess(response.accessToken, response.user);
-			sessionStorage.removeItem('pendingAppleUser');
-		},
-		[handleAuthSuccess],
-	);
-
-	const xRegisterWithInvitation = useCallback(
-		async (xUser: OAuthUserData, invitationCode: string): Promise<void> => {
-			const response = await oauth.registerWithInvitation('x', xUser, invitationCode);
-			handleAuthSuccess(response.accessToken, response.user);
-		},
-		[oauth, handleAuthSuccess],
-	);
-
 	const value: AuthContextType = {
 		user,
 		loading,
@@ -244,15 +171,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		resetPassword,
 		changePassword,
 		googleLogin,
-		googleRegisterWithInvitation,
 		githubLogin,
-		githubRegisterWithInvitation,
 		lineLogin,
-		lineRegisterWithInvitation,
 		appleLogin,
-		appleRegisterWithInvitation,
 		xLogin,
-		xRegisterWithInvitation,
 		logout,
 		refreshUser,
 	};

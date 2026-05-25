@@ -2,18 +2,26 @@ import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { PasswordInput } from '../ui/PasswordInput';
 import { OAuthLoginButton } from '../ui/OAuthLoginButton';
+import { isApiError } from '../../utils/apiError';
+import { resolveInvitationErrorMessage } from '../../constants/invitationErrorMessages';
 
 interface EmailAuthFormProps {
 	mode: 'login' | 'signup';
 	onSwitchMode: () => void;
 	onForgotPassword: () => void;
+	prefilledInvitationCode?: string;
 }
 
-export function EmailAuthForm({ mode, onSwitchMode, onForgotPassword }: EmailAuthFormProps) {
+export function EmailAuthForm({
+	mode,
+	onSwitchMode,
+	onForgotPassword,
+	prefilledInvitationCode,
+}: EmailAuthFormProps) {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [name, setName] = useState('');
-	const [invitationCode, setInvitationCode] = useState('');
+	const [invitationCode, setInvitationCode] = useState(prefilledInvitationCode ?? '');
 	const [loading, setLoading] = useState(false);
 	const [message, setMessage] = useState('');
 	const { login, register } = useAuth();
@@ -23,7 +31,7 @@ export function EmailAuthForm({ mode, onSwitchMode, onForgotPassword }: EmailAut
 		setEmail('');
 		setPassword('');
 		setName('');
-		setInvitationCode('');
+		setInvitationCode(prefilledInvitationCode ?? '');
 	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
@@ -34,14 +42,17 @@ export function EmailAuthForm({ mode, onSwitchMode, onForgotPassword }: EmailAut
 		try {
 			if (mode === 'signup') {
 				await register(email, password, name || undefined, invitationCode);
-				setMessage('Registration successful! You can now login with your credentials.');
 				resetFormFields(false);
 			} else {
 				await login(email, password);
 			}
 		} catch (error: unknown) {
-			const errorMessage = error instanceof Error ? error.message : 'An error occurred';
-			setMessage(errorMessage);
+			if (isApiError(error) && error.code && error.code.startsWith('INV')) {
+				setMessage(resolveInvitationErrorMessage(error.code));
+			} else {
+				const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+				setMessage(errorMessage);
+			}
 		} finally {
 			setLoading(false);
 		}
@@ -54,13 +65,7 @@ export function EmailAuthForm({ mode, onSwitchMode, onForgotPassword }: EmailAut
 			</h2>
 
 			{message && (
-				<div
-					className={`mb-4 p-3 rounded-lg text-sm ${
-						message.includes('successful')
-							? 'bg-emerald-900/50 text-emerald-300 border border-emerald-700'
-							: 'bg-red-900/50 text-red-300 border border-red-700'
-					}`}
-				>
+				<div className="mb-4 p-3 rounded-lg text-sm bg-red-900/50 text-red-300 border border-red-700">
 					{message}
 				</div>
 			)}
@@ -115,6 +120,10 @@ export function EmailAuthForm({ mode, onSwitchMode, onForgotPassword }: EmailAut
 								value={invitationCode}
 								onChange={(e) => setInvitationCode(e.target.value)}
 								required
+								autoCapitalize="off"
+								autoComplete="off"
+								inputMode="text"
+								spellCheck={false}
 								className="w-full px-3 py-2 bg-black/40 border border-green-700 text-green-100 placeholder-green-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
 								placeholder="招待コードを入力してください"
 							/>

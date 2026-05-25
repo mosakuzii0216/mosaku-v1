@@ -99,74 +99,8 @@ test.describe('パスワードリセットフォーム', () => {
 	});
 });
 
-test.describe('OAuthInviteForm の表示（?error=invitation_required）', () => {
-	test('invitation_required エラーパラメータで招待コード入力フォームが表示されること', async ({
-		page,
-	}) => {
-		// pendingGoogleUser を sessionStorage に設定してから遷移
-		await page.goto('/');
-		await page.waitForSelector('input[type="email"]', { timeout: 10000 });
-
-		await page.evaluate(() => {
-			sessionStorage.setItem(
-				'pendingGoogleUser',
-				JSON.stringify({
-					email: 'test@example.com',
-					name: 'Test User',
-					provider: 'google',
-				}),
-			);
-		});
-
-		await page.goto('/?error=invitation_required');
-
-		// OAuthInviteForm の招待コード入力フィールドが表示される
-		await expect(page.locator('input[type="text"]')).toBeVisible({ timeout: 5000 });
-	});
-
-	test('invite_required エラーパラメータでも招待コードフォームが表示されること', async ({
-		page,
-	}) => {
-		await page.goto('/');
-		await page.waitForSelector('input[type="email"]', { timeout: 10000 });
-
-		await page.evaluate(() => {
-			sessionStorage.setItem(
-				'pendingGitHubUser',
-				JSON.stringify({
-					email: 'github@example.com',
-					name: 'GitHub User',
-					provider: 'github',
-				}),
-			);
-		});
-
-		await page.goto('/?error=invite_required');
-
-		await expect(page.locator('input[type="text"]')).toBeVisible({ timeout: 5000 });
-	});
-
-	test('OAuthInviteForm から「ログインページに戻る」で戻れること', async ({ page }) => {
-		await page.goto('/');
-		await page.waitForSelector('input[type="email"]', { timeout: 10000 });
-
-		await page.evaluate(() => {
-			sessionStorage.setItem(
-				'pendingGoogleUser',
-				JSON.stringify({ email: 'test@example.com', name: 'Test', provider: 'google' }),
-			);
-		});
-
-		await page.goto('/?error=invitation_required');
-		await expect(page.locator('input[type="text"]')).toBeVisible({ timeout: 5000 });
-
-		await page.getByRole('button', { name: /ログインページに戻る/ }).click();
-
-		// ログインフォームに戻る
-		await expect(page.locator('input[type="email"]')).toBeVisible();
-		await expect(page.locator('input[type="password"]')).toBeVisible();
-	});
-});
+// Task 9.1: 旧 OAuthInviteForm（?error=invitation_required + pending sessionStorage）は撤去済み。
+// 新フローでは `/invite/:code` → `/auth/oauth/:provider/start` → state 引き継ぎコールバックのみ。
 
 test.describe('森テーマのビジュアル確認', () => {
 	test('フォームカードに半透明ダーク背景が適用されること', async ({ page }) => {

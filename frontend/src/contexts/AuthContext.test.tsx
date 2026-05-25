@@ -32,7 +32,6 @@ vi.mock('../hooks/useEmailAuth', () => ({
 const handleCallbackMock = vi.fn();
 const stableOAuthHandlers = {
 	startLogin: vi.fn(),
-	registerWithInvitation: vi.fn(),
 	handleCallback: handleCallbackMock,
 };
 
@@ -60,7 +59,6 @@ vi.mock('../utils/auth', () => ({
 	AuthAPI: {
 		getCurrentUser: vi.fn(),
 		logout: vi.fn(),
-		appleRegisterWithInvitation: vi.fn(),
 	},
 }));
 

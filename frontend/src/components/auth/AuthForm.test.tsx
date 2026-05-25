@@ -6,13 +6,14 @@ vi.mock('react-router', () => ({
 	useSearchParams: () => [new URLSearchParams()],
 }));
 
+vi.mock('../../utils/api', () => ({
+	apiClient: {
+		startOAuthRegistration: vi.fn(),
+	},
+}));
+
 vi.mock('../../contexts/AuthContext', () => ({
 	useAuth: () => ({
-		googleRegisterWithInvitation: vi.fn(),
-		githubRegisterWithInvitation: vi.fn(),
-		lineRegisterWithInvitation: vi.fn(),
-		appleRegisterWithInvitation: vi.fn(),
-		xRegisterWithInvitation: vi.fn(),
 		login: vi.fn(),
 		register: vi.fn(),
 		googleLogin: vi.fn(),
