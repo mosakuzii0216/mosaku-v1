@@ -40,6 +40,8 @@ export interface MemoBridgeOptions {
 	api?: ApiClientLike;
 	isOnline?: () => boolean;
 	now?: () => Date;
+	/** enqueue / dequeue 後に SyncEngine 等へ通知するコールバック(任意) */
+	onPendingChanged?: () => void | Promise<void>;
 }
 
 export class MemoBridge {
@@ -47,6 +49,7 @@ export class MemoBridge {
 	private readonly api: ApiClientLike;
 	private readonly isOnline: () => boolean;
 	private readonly now: () => Date;
+	private readonly onPendingChanged: () => void | Promise<void>;
 
 	constructor(opts: MemoBridgeOptions) {
 		if (!opts.repository) {
@@ -59,6 +62,7 @@ export class MemoBridge {
 		this.api = opts.api;
 		this.isOnline = opts.isOnline ?? (() => true);
 		this.now = opts.now ?? (() => new Date());
+		this.onPendingChanged = opts.onPendingChanged ?? (() => {});
 	}
 
 	async listMemos(tagIds?: string[]): Promise<Memo[]> {
@@ -118,17 +122,7 @@ export class MemoBridge {
 		const existing = await this.repo.getMemo(id);
 		const clientUpdatedAt = this.now().toISOString();
 
-		if (this.isOnline()) {
-			try {
-				const memo = await this.api.updateMemo(id, { ...data, clientUpdatedAt });
-				await this.repo.markSynced(memoToSnapshot(memo));
-				await this.repo.removePending(id, 'update');
-				return { kind: 'synced', memo };
-			} catch (err) {
-				if (!this.isLikelyNetworkError(err)) throw err;
-			}
-		}
-
+		// 1.必ず先にローカルに enqueue(永続化保証)
 		const record: CachedMemoRecord = {
 			id,
 			userId: existing?.userId ?? this.requireUserIdFromRecord(existing),
@@ -140,7 +134,7 @@ export class MemoBridge {
 			createdAt: existing?.createdAt ?? clientUpdatedAt,
 			updatedAt: clientUpdatedAt,
 			trashedAt: existing?.trashedAt ?? null,
-			syncStatus: 'offline-saved',
+			syncStatus: 'offline-saved', // 後で synced に上書きする
 		};
 		const operation: PendingOperationRecord = {
 			memoId: id,
@@ -155,7 +149,38 @@ export class MemoBridge {
 			retryCount: 0,
 		};
 		await this.repo.applyOfflineEdit({ memo: record, operation });
-		return { kind: 'offline-saved', memo: cachedToMemo(record), signal: OFFLINE_SAVED_SIGNAL };
+		await this.onPendingChanged();
+
+		// 2.オフラインなら enqueue で終了
+		if (!this.isOnline()) {
+			return {
+				kind: 'offline-saved',
+				memo: cachedToMemo(record),
+				signal: OFFLINE_SAVED_SIGNAL,
+			};
+		}
+
+		// 3.オンラインなら即送信を試みる(失敗しても SyncEngine が後で drain)
+		try {
+			const memo = await this.api.updateMemo(id, { ...data, clientUpdatedAt });
+			await this.repo.markSynced(memoToSnapshot(memo));
+			await this.repo.removePending(id, 'update');
+			await this.onPendingChanged();
+			return { kind: 'synced', memo };
+		} catch (err) {
+			if (this.isLikelyNetworkError(err)) {
+				// ネットワークエラー：キューに残したまま offline-saved として扱う
+				return {
+					kind: 'offline-saved',
+					memo: cachedToMemo(record),
+					signal: OFFLINE_SAVED_SIGNAL,
+				};
+			}
+			// ネットワーク以外(400, 403等)はキューから外して上に投げる
+			await this.repo.removePending(id, 'update');
+			await this.onPendingChanged();
+			throw err;
+		}
 	}
 
 	async trashMemo(id: string): Promise<MemoUpdateOutcome> {

@@ -98,22 +98,40 @@ describe('MemoBridge — online', () => {
 		}
 	});
 
-	it('updateMemo includes clientUpdatedAt and writes-through markSynced', async () => {
+	it('updateMemo enqueues then drains the queue on success (online)', async () => {
 		const api = makeApiMock();
 		api.updateMemo = vi.fn(async (id, data) =>
 			makeMemo({ id, title: data.title ?? 'untouched', updatedAt: '2026-05-10T00:00:00.000Z' }),
 		);
 		const { bridge, repository, db } = await makeBridge({ online: true, api });
 		try {
+			await repository.upsertFromServer([
+				{
+					id: 'm1',
+					title: 'pre',
+					content: '<p>pre</p>',
+					tagIds: [],
+					notebookId: null,
+					createdAt: '2026-05-01T00:00:00.000Z',
+					updatedAt: '2026-05-01T00:00:00.000Z',
+					trashedAt: null,
+				},
+			]);
+
 			const outcome = await bridge.updateMemo('m1', { title: 'new' });
+
 			expect(outcome.kind).toBe('synced');
 			expect(api.updateMemo).toHaveBeenCalledWith(
 				'm1',
 				expect.objectContaining({ title: 'new', clientUpdatedAt: expect.any(String) }),
 			);
+
 			const cached = await repository.getMemo('m1');
 			expect(cached?.syncStatus).toBe('synced');
 			expect(cached?.title).toBe('new');
+
+			const pending = await repository.listPending();
+			expect(pending.filter((p) => p.memoId === 'm1' && p.kind === 'update')).toHaveLength(0);
 		} finally {
 			db.close();
 		}
@@ -276,7 +294,7 @@ describe('MemoBridge — online with network failure', () => {
 		}
 	});
 
-	it('updateMemo re-throws non-network errors (e.g. 4xx)', async () => {
+	it('updateMemo re-throws non-network errors and removes the pending entry', async () => {
 		const api = makeApiMock();
 		api.updateMemo = vi.fn(async () => {
 			throw new Error('HTTP error! status: 400');
@@ -296,6 +314,9 @@ describe('MemoBridge — online with network failure', () => {
 				},
 			]);
 			await expect(bridge.updateMemo('m1', { title: 'x' })).rejects.toThrow(/HTTP error/);
+
+			const pending = await repository.listPending();
+			expect(pending.filter((p) => p.memoId === 'm1' && p.kind === 'update')).toHaveLength(0);
 		} finally {
 			db.close();
 		}
