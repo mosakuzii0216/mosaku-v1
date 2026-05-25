@@ -10,7 +10,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import * as session from 'express-session';
+import session from 'express-session';
 import cookieParser from 'cookie-parser';
 import { ConfigService } from './config/config.service';
 import helmet from 'helmet';
