@@ -1,6 +1,7 @@
 import { useNetworkStatusStore } from '../../stores/useNetworkStatusStore';
 import { apiClient } from '../api';
 import { getOfflineRepository } from '../offline/instance';
+import { getSyncEngine } from '../sync/instance';
 
 import { MemoBridge } from './memo-bridge';
 
@@ -12,6 +13,7 @@ export function getMemoBridge(): MemoBridge {
 		repository: getOfflineRepository().repository,
 		api: apiClient,
 		isOnline: () => useNetworkStatusStore.getState().status === 'online',
+		onPendingChanged: () => getSyncEngine().notifyEnqueueChanged(),
 	});
 	return bridgeInstance;
 }
