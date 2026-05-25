@@ -10,7 +10,6 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
 	[ERROR_CODES.AUTH.AUTHENTICATION_REQUIRED]: '認証が必要です',
 	[ERROR_CODES.AUTH.INVALID_TOKEN]: 'トークンが無効です',
 	[ERROR_CODES.AUTH.USER_NOT_FOUND]: 'ユーザーが見つかりません',
-	[ERROR_CODES.AUTH.INVITATION_REQUIRED]: '招待コードが必要です',
 	[ERROR_CODES.AUTH.EMAIL_ALREADY_EXISTS]: 'このメールアドレスは既に登録されています',
 	[ERROR_CODES.AUTH.USER_ALREADY_EXISTS]: 'このユーザーは既に存在します',
 	[ERROR_CODES.AUTH.PASSWORD_NOT_SET]: 'パスワードが設定されていません',

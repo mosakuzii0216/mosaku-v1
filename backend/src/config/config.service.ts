@@ -231,10 +231,6 @@ export class ConfigService {
 		return `${this.frontendUrl}?token=${accessToken}&user=${encodeURIComponent(JSON.stringify(user))}`;
 	}
 
-	generateInvitationRequiredUrl(providerName: string, userData: unknown): string {
-		return `${this.frontendUrl}?error=invitation_required&${providerName.toLowerCase()}_user=${encodeURIComponent(JSON.stringify(userData))}`;
-	}
-
 	generateAuthFailedUrl(): string {
 		return `${this.frontendUrl}?error=auth_failed`;
 	}
