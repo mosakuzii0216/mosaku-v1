@@ -132,3 +132,8 @@ docs/private/
 # Claude Code local settings (machine-specific)
 .claude/settings.local.json
 .claude/prompt-log.jsonl
+.claude/scheduled_tasks.lock
+
+# Playwright / E2E test artifacts
+backend/test-results/
+frontend/test-results/
