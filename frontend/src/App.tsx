@@ -10,6 +10,7 @@ import { DesktopLayout } from './components/layouts/DesktopLayout';
 import AuthGuard from './components/auth/AuthGuard';
 import AuthCallback from './components/auth/AuthCallback';
 import PasswordReset from './components/auth/PasswordReset';
+import InvitePage from './components/auth/InvitePage';
 import InvitationManager from './components/admin/InvitationManager';
 import { SwUpdatePrompt } from './components/pwa/SwUpdatePrompt';
 import { SyncToast } from './components/ui/SyncToast';
@@ -60,6 +61,7 @@ function App() {
 					<Routes>
 						<Route path="/auth/callback" element={<AuthCallback />} />
 						<Route path="/auth/reset-password" element={<PasswordReset />} />
+						<Route path="/invite/:code" element={<InvitePage />} />
 						<Route
 							path="/admin/invitations"
 							element={
