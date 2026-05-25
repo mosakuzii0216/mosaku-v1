@@ -61,6 +61,16 @@ describe('SentryUserContextInterceptor (e2e)', () => {
 			.overrideProvider(InvitationService)
 			.useValue({
 				verifyInvitation: jest.fn().mockResolvedValue({ valid: true }),
+				findValidInvitation: jest.fn().mockResolvedValue({
+					id: 'inv-stub',
+					code: 'STUB000001',
+					maxUses: 1,
+					usedCount: 0,
+					expiresAt: null,
+					createdAt: new Date(),
+					createdById: 'user-stub',
+				}),
+				useInvitation: jest.fn().mockResolvedValue(undefined),
 			})
 			.overrideProvider(PrismaService)
 			.useValue({
