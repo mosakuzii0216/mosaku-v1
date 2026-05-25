@@ -91,7 +91,10 @@ export class OAuthService {
 					},
 				});
 			} else {
-				throwBadRequest(ERROR_CODES.AUTH.INVITATION_REQUIRED);
+				// 新フローでは admin email 以外の新規ユーザーは `/invite/:code` →
+				// `/auth/oauth/:provider/start` 経由の state 由来登録のみが正規ルート。
+				// このコードパスに到達した場合はクライアントが旧フローを叩いた等の不正経路。
+				throwBadRequest(ERROR_CODES.AUTHZ.ADMIN_EMAIL_REQUIRED);
 			}
 		}
 
@@ -104,16 +107,92 @@ export class OAuthService {
 		return { ...tokens, user: this.excludePassword(user), refresh };
 	}
 
-	/**
-	 * 共通 OAuth 招待コード付き登録処理
-	 */
-	async handleOAuthRegistrationWithInvitation(
+	// ─── Google ─────────────────────────────────────────────────────────────
+
+	async googleLogin(
+		googleUser: GoogleStrategyUser,
+		ctx: AuthRequestContext = EMPTY_CONTEXT,
+	): Promise<OAuthLoginResult> {
+		const normalizedUser: BaseOAuthUser = {
+			id: googleUser.googleId,
+			email: googleUser.email,
+			name: googleUser.name,
+			provider: 'google',
+		};
+		return this.handleOAuthLogin(normalizedUser, googleUser.googleId, 'oauthId', ctx);
+	}
+
+	// ─── GitHub ─────────────────────────────────────────────────────────────
+
+	async githubLogin(
+		githubUser: GitHubStrategyUser,
+		ctx: AuthRequestContext = EMPTY_CONTEXT,
+	): Promise<OAuthLoginResult> {
+		const normalizedUser: BaseOAuthUser = {
+			id: githubUser.githubId,
+			email: githubUser.email,
+			name: githubUser.name,
+			provider: 'github',
+		};
+		return this.handleOAuthLogin(normalizedUser, githubUser.githubId, 'oauthId', ctx);
+	}
+
+	// ─── LINE ────────────────────────────────────────────────────────────────
+
+	async lineLogin(
+		lineUser: LineStrategyUser,
+		ctx: AuthRequestContext = EMPTY_CONTEXT,
+	): Promise<OAuthLoginResult> {
+		const normalizedUser: BaseOAuthUser = {
+			id: lineUser.lineId,
+			email: lineUser.email,
+			name: lineUser.name,
+			provider: 'line',
+		};
+		return this.handleOAuthLogin(normalizedUser, lineUser.lineId, 'lineId', ctx);
+	}
+
+	// ─── Apple ──────────────────────────────────────────────────────────────
+
+	async appleLogin(
+		appleUser: AppleStrategyUser,
+		ctx: AuthRequestContext = EMPTY_CONTEXT,
+	): Promise<OAuthLoginResult> {
+		const normalizedUser: BaseOAuthUser = {
+			id: appleUser.appleId,
+			email: appleUser.email,
+			name: appleUser.name,
+			provider: 'apple',
+		};
+		return this.handleOAuthLogin(normalizedUser, appleUser.appleId, 'appleId', ctx);
+	}
+
+	// ─── X ──────────────────────────────────────────────────────────────────
+
+	async xLogin(
+		xUser: XStrategyUser,
+		ctx: AuthRequestContext = EMPTY_CONTEXT,
+	): Promise<OAuthLoginResult> {
+		const normalizedUser: BaseOAuthUser = {
+			id: xUser.xId,
+			email: xUser.email,
+			name: xUser.name,
+			provider: 'x',
+		};
+		return this.handleOAuthLogin(normalizedUser, xUser.xId, 'xId', ctx);
+	}
+
+	// ─── state 由来登録（OAuth 順序逆転新フロー）──────────────────────────────
+	// state 検証は `InvitationStateService` が AuthController 層で完了している前提。
+	// 再検証 → 新規ユーザー作成 → 招待コード消費 → token 発行までを一括で行う。
+
+	private async consumeAndIssue(
 		oauthUser: BaseOAuthUser,
 		providerId: string,
+		providerField: UserProviderField,
 		invitationCode: string,
-		fallbackEmail?: string,
-		providerField: UserProviderField = 'oauthId',
-		ctx: AuthRequestContext = EMPTY_CONTEXT,
+		fallbackEmail: string | undefined,
+		ctx: AuthRequestContext,
 	): Promise<OAuthLoginResult> {
 		await this.invitationService.verifyInvitation(invitationCode);
 
@@ -153,209 +232,6 @@ export class OAuthService {
 			userAgent: ctx.userAgent,
 		});
 		return { ...tokens, user: this.excludePassword(user), refresh };
-	}
-
-	// ─── Google ─────────────────────────────────────────────────────────────
-
-	async googleLogin(
-		googleUser: GoogleStrategyUser,
-		ctx: AuthRequestContext = EMPTY_CONTEXT,
-	): Promise<OAuthLoginResult> {
-		const normalizedUser: BaseOAuthUser = {
-			id: googleUser.googleId,
-			email: googleUser.email,
-			name: googleUser.name,
-			provider: 'google',
-		};
-		return this.handleOAuthLogin(normalizedUser, googleUser.googleId, 'oauthId', ctx);
-	}
-
-	async googleRegisterWithInvitation(
-		googleUser: GoogleStrategyUser,
-		invitationCode: string,
-		ctx: AuthRequestContext = EMPTY_CONTEXT,
-	): Promise<OAuthLoginResult> {
-		const normalizedUser: BaseOAuthUser = {
-			id: googleUser.googleId,
-			email: googleUser.email,
-			name: googleUser.name,
-			provider: 'google',
-		};
-		return this.handleOAuthRegistrationWithInvitation(
-			normalizedUser,
-			googleUser.googleId,
-			invitationCode,
-			undefined,
-			'oauthId',
-			ctx,
-		);
-	}
-
-	// ─── GitHub ─────────────────────────────────────────────────────────────
-
-	async githubLogin(
-		githubUser: GitHubStrategyUser,
-		ctx: AuthRequestContext = EMPTY_CONTEXT,
-	): Promise<OAuthLoginResult> {
-		const normalizedUser: BaseOAuthUser = {
-			id: githubUser.githubId,
-			email: githubUser.email,
-			name: githubUser.name,
-			provider: 'github',
-		};
-		return this.handleOAuthLogin(normalizedUser, githubUser.githubId, 'oauthId', ctx);
-	}
-
-	async githubRegisterWithInvitation(
-		githubUser: GitHubStrategyUser,
-		invitationCode: string,
-		ctx: AuthRequestContext = EMPTY_CONTEXT,
-	): Promise<OAuthLoginResult> {
-		const normalizedUser: BaseOAuthUser = {
-			id: githubUser.githubId,
-			email: githubUser.email,
-			name: githubUser.name,
-			provider: 'github',
-		};
-		return this.handleOAuthRegistrationWithInvitation(
-			normalizedUser,
-			githubUser.githubId,
-			invitationCode,
-			undefined,
-			'oauthId',
-			ctx,
-		);
-	}
-
-	// ─── LINE ────────────────────────────────────────────────────────────────
-
-	async lineLogin(
-		lineUser: LineStrategyUser,
-		ctx: AuthRequestContext = EMPTY_CONTEXT,
-	): Promise<OAuthLoginResult> {
-		const normalizedUser: BaseOAuthUser = {
-			id: lineUser.lineId,
-			email: lineUser.email,
-			name: lineUser.name,
-			provider: 'line',
-		};
-		return this.handleOAuthLogin(normalizedUser, lineUser.lineId, 'lineId', ctx);
-	}
-
-	async lineRegisterWithInvitation(
-		lineUser: LineStrategyUser,
-		invitationCode: string,
-		ctx: AuthRequestContext = EMPTY_CONTEXT,
-	): Promise<OAuthLoginResult> {
-		const normalizedUser: BaseOAuthUser = {
-			id: lineUser.lineId,
-			email: lineUser.email,
-			name: lineUser.name,
-			provider: 'line',
-		};
-		return this.handleOAuthRegistrationWithInvitation(
-			normalizedUser,
-			lineUser.lineId,
-			invitationCode,
-			undefined,
-			'lineId',
-			ctx,
-		);
-	}
-
-	// ─── Apple ──────────────────────────────────────────────────────────────
-
-	async appleLogin(
-		appleUser: AppleStrategyUser,
-		ctx: AuthRequestContext = EMPTY_CONTEXT,
-	): Promise<OAuthLoginResult> {
-		const normalizedUser: BaseOAuthUser = {
-			id: appleUser.appleId,
-			email: appleUser.email,
-			name: appleUser.name,
-			provider: 'apple',
-		};
-		return this.handleOAuthLogin(normalizedUser, appleUser.appleId, 'appleId', ctx);
-	}
-
-	async appleRegisterWithInvitation(
-		appleUser: AppleStrategyUser,
-		invitationCode: string,
-		fallbackEmail?: string,
-		ctx: AuthRequestContext = EMPTY_CONTEXT,
-	): Promise<OAuthLoginResult> {
-		const normalizedUser: BaseOAuthUser = {
-			id: appleUser.appleId,
-			email: appleUser.email,
-			name: appleUser.name,
-			provider: 'apple',
-		};
-		return this.handleOAuthRegistrationWithInvitation(
-			normalizedUser,
-			appleUser.appleId,
-			invitationCode,
-			fallbackEmail,
-			'appleId',
-			ctx,
-		);
-	}
-
-	// ─── X ──────────────────────────────────────────────────────────────────
-
-	async xLogin(
-		xUser: XStrategyUser,
-		ctx: AuthRequestContext = EMPTY_CONTEXT,
-	): Promise<OAuthLoginResult> {
-		const normalizedUser: BaseOAuthUser = {
-			id: xUser.xId,
-			email: xUser.email,
-			name: xUser.name,
-			provider: 'x',
-		};
-		return this.handleOAuthLogin(normalizedUser, xUser.xId, 'xId', ctx);
-	}
-
-	async xRegisterWithInvitation(
-		xUser: XStrategyUser,
-		invitationCode: string,
-		ctx: AuthRequestContext = EMPTY_CONTEXT,
-	): Promise<OAuthLoginResult> {
-		const normalizedUser: BaseOAuthUser = {
-			id: xUser.xId,
-			email: xUser.email,
-			name: xUser.name,
-			provider: 'x',
-		};
-		return this.handleOAuthRegistrationWithInvitation(
-			normalizedUser,
-			xUser.xId,
-			invitationCode,
-			undefined,
-			'xId',
-			ctx,
-		);
-	}
-
-	// ─── state 由来登録（OAuth 順序逆転新フロー）──────────────────────────────
-	// state 検証は `InvitationStateService` が AuthController 層で完了している前提。
-	// ここでは再検証 → 新規ユーザー作成 → 招待コード消費 → token 発行までを一括で行う。
-
-	private async consumeAndIssue(
-		oauthUser: BaseOAuthUser,
-		providerId: string,
-		providerField: UserProviderField,
-		invitationCode: string,
-		fallbackEmail: string | undefined,
-		ctx: AuthRequestContext,
-	): Promise<OAuthLoginResult> {
-		return this.handleOAuthRegistrationWithInvitation(
-			oauthUser,
-			providerId,
-			invitationCode,
-			fallbackEmail,
-			providerField,
-			ctx,
-		);
 	}
 
 	async googleRegisterWithStateInvitation(

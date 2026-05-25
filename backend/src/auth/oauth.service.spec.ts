@@ -111,69 +111,27 @@ describe('OAuthService', () => {
 			expect(result.user).not.toHaveProperty('password');
 		});
 
-		it('should throw when a new non-admin user tries to login without invitation', async () => {
+		it('admin 以外の新規 OAuth ログインは ADMIN_EMAIL_REQUIRED (AUTHZ005) で弾かれること', async () => {
+			// Task 9.1: 旧 INVITATION_REQUIRED (AUTH005) 経路を撤去。新フローでは admin email 例外のみ。
 			mockPrismaService.user.findFirst.mockResolvedValue(null);
 			mockConfigService.isAdminEmail.mockReturnValue(false);
 
-			await expect(service.handleOAuthLogin(oauthUser, 'provider-id-123')).rejects.toBeInstanceOf(
-				AppException,
-			);
+			await expect(service.handleOAuthLogin(oauthUser, 'provider-id-123')).rejects.toMatchObject({
+				code: 'AUTHZ005',
+			});
 		});
 	});
 
-	describe('handleOAuthRegistrationWithInvitation', () => {
-		const oauthUser = {
-			id: 'provider-id-456',
-			email: 'newuser@example.com',
-			name: 'New OAuth User',
-			provider: 'google' as const,
-		};
-
-		it('should create user and use invitation when everything is valid', async () => {
-			mockInvitationService.verifyInvitation.mockResolvedValue({ id: 'invite-1', code: 'CODE123' });
-			mockPrismaService.user.findFirst.mockResolvedValue(null);
-			mockPrismaService.user.create.mockResolvedValue({
-				...mockUser,
-				email: oauthUser.email,
-				oauthId: oauthUser.id,
-			});
-			mockConfigService.isAdminEmail.mockReturnValue(false);
-
-			const result = await service.handleOAuthRegistrationWithInvitation(
-				oauthUser,
-				'provider-id-456',
-				'CODE123',
-			);
-
-			expect(mockPrismaService.user.create).toHaveBeenCalled();
-			expect(mockInvitationService.useInvitation).toHaveBeenCalledWith('CODE123');
-			expect(result.user).not.toHaveProperty('password');
-		});
-
-		it('should throw when user with same email already exists', async () => {
-			mockInvitationService.verifyInvitation.mockResolvedValue({ id: 'invite-1', code: 'CODE123' });
-			mockPrismaService.user.findFirst.mockResolvedValue(mockUser);
-
-			await expect(
-				service.handleOAuthRegistrationWithInvitation(oauthUser, 'provider-id-456', 'CODE123'),
-			).rejects.toBeInstanceOf(AppException);
-		});
-
-		it('should throw when no email is provided', async () => {
-			mockInvitationService.verifyInvitation.mockResolvedValue({ id: 'invite-1', code: 'CODE123' });
-			const noEmailUser = { ...oauthUser, email: undefined };
-
-			await expect(
-				service.handleOAuthRegistrationWithInvitation(noEmailUser, 'provider-id-456', 'CODE123'),
-			).rejects.toBeInstanceOf(AppException);
-		});
-
-		it('should propagate error when invitation is invalid', async () => {
-			mockInvitationService.verifyInvitation.mockRejectedValue(new AppException('INV001', 400));
-
-			await expect(
-				service.handleOAuthRegistrationWithInvitation(oauthUser, 'provider-id-456', 'INVALID'),
-			).rejects.toBeInstanceOf(AppException);
+	describe('旧 register-with-invitation メソッドが削除されていること', () => {
+		it.each([
+			'handleOAuthRegistrationWithInvitation',
+			'googleRegisterWithInvitation',
+			'githubRegisterWithInvitation',
+			'lineRegisterWithInvitation',
+			'appleRegisterWithInvitation',
+			'xRegisterWithInvitation',
+		])('OAuthService.%s は削除されている', (method) => {
+			expect((service as unknown as Record<string, unknown>)[method]).toBeUndefined();
 		});
 	});
 
@@ -243,37 +201,12 @@ describe('OAuthService', () => {
 			expect(result.accessToken).toBeDefined();
 		});
 
-		it('新規ユーザーの場合に招待コード要求エラーをスローすること', async () => {
+		it('新規ユーザーの場合に ADMIN_EMAIL_REQUIRED で弾かれること', async () => {
 			mockPrismaService.user.findFirst.mockResolvedValue(null);
 			mockConfigService.isAdminEmail.mockReturnValue(false);
 			const lineUser = { lineId: 'U9999', name: 'New LINE User' };
 
-			await expect(service.lineLogin(lineUser)).rejects.toBeInstanceOf(AppException);
-		});
-	});
-
-	describe('lineRegisterWithInvitation', () => {
-		it('招待コードが有効な場合に lineId でユーザーを作成すること', async () => {
-			mockInvitationService.verifyInvitation.mockResolvedValue({ id: 'invite-1', code: 'CODE' });
-			mockPrismaService.user.findFirst.mockResolvedValue(null);
-			mockPrismaService.user.create.mockResolvedValue({ ...mockUser, lineId: 'U1234' });
-			mockConfigService.isAdminEmail.mockReturnValue(false);
-
-			const lineUser = { lineId: 'U1234', name: 'LINE User', email: 'line@example.com' };
-			const result = await service.lineRegisterWithInvitation(lineUser, 'CODE');
-
-			expect(mockPrismaService.user.create).toHaveBeenCalled();
-			expect(mockInvitationService.useInvitation).toHaveBeenCalledWith('CODE');
-			expect(result.accessToken).toBeDefined();
-		});
-
-		it('無効な招待コードの場合に AppException をスローすること', async () => {
-			mockInvitationService.verifyInvitation.mockRejectedValue(new AppException('INV001', 400));
-			const lineUser = { lineId: 'U1234', name: 'LINE User', email: 'line@example.com' };
-
-			await expect(service.lineRegisterWithInvitation(lineUser, 'INVALID')).rejects.toBeInstanceOf(
-				AppException,
-			);
+			await expect(service.lineLogin(lineUser)).rejects.toMatchObject({ code: 'AUTHZ005' });
 		});
 	});
 
@@ -295,40 +228,12 @@ describe('OAuthService', () => {
 			expect(result.accessToken).toBeDefined();
 		});
 
-		it('新規ユーザーの場合に招待コード要求エラーをスローすること', async () => {
+		it('新規ユーザーの場合に ADMIN_EMAIL_REQUIRED で弾かれること', async () => {
 			mockPrismaService.user.findFirst.mockResolvedValue(null);
 			mockConfigService.isAdminEmail.mockReturnValue(false);
 			const appleUser = { appleId: 'apple-new-id', name: 'New Apple User', email: undefined };
 
-			await expect(service.appleLogin(appleUser)).rejects.toBeInstanceOf(AppException);
-		});
-	});
-
-	describe('appleRegisterWithInvitation', () => {
-		it('email なし・fallbackEmail ありで登録できること', async () => {
-			mockInvitationService.verifyInvitation.mockResolvedValue({ id: 'invite-1', code: 'CODE' });
-			mockPrismaService.user.findFirst.mockResolvedValue(null);
-			mockPrismaService.user.create.mockResolvedValue({ ...mockUser, appleId: 'apple-sub-id' });
-			mockConfigService.isAdminEmail.mockReturnValue(false);
-
-			const appleUser = { appleId: 'apple-sub-id', name: 'Apple User', email: undefined };
-			const result = await service.appleRegisterWithInvitation(
-				appleUser,
-				'CODE',
-				'fallback@example.com',
-			);
-
-			expect(mockPrismaService.user.create).toHaveBeenCalled();
-			expect(result.accessToken).toBeDefined();
-		});
-
-		it('email も fallbackEmail もない場合にエラーをスローすること', async () => {
-			mockInvitationService.verifyInvitation.mockResolvedValue({ id: 'invite-1', code: 'CODE' });
-			const appleUser = { appleId: 'apple-sub-id', name: 'Apple User', email: undefined };
-
-			await expect(
-				service.appleRegisterWithInvitation(appleUser, 'CODE', undefined),
-			).rejects.toBeInstanceOf(AppException);
+			await expect(service.appleLogin(appleUser)).rejects.toMatchObject({ code: 'AUTHZ005' });
 		});
 	});
 
@@ -350,37 +255,12 @@ describe('OAuthService', () => {
 			expect(result.accessToken).toBeDefined();
 		});
 
-		it('新規ユーザーの場合に招待コード要求エラーをスローすること', async () => {
+		it('新規ユーザーの場合に ADMIN_EMAIL_REQUIRED で弾かれること', async () => {
 			mockPrismaService.user.findFirst.mockResolvedValue(null);
 			mockConfigService.isAdminEmail.mockReturnValue(false);
 			const xUser = { xId: 'x-new-id', name: 'New X User' };
 
-			await expect(service.xLogin(xUser)).rejects.toBeInstanceOf(AppException);
-		});
-	});
-
-	describe('xRegisterWithInvitation', () => {
-		it('招待コードが有効な場合に xId でユーザーを作成すること', async () => {
-			mockInvitationService.verifyInvitation.mockResolvedValue({ id: 'invite-1', code: 'CODE' });
-			mockPrismaService.user.findFirst.mockResolvedValue(null);
-			mockPrismaService.user.create.mockResolvedValue({ ...mockUser, xId: '1234' });
-			mockConfigService.isAdminEmail.mockReturnValue(false);
-
-			const xUser = { xId: '1234', name: 'X User', email: 'x@example.com' };
-			const result = await service.xRegisterWithInvitation(xUser, 'CODE');
-
-			expect(mockPrismaService.user.create).toHaveBeenCalled();
-			expect(mockInvitationService.useInvitation).toHaveBeenCalledWith('CODE');
-			expect(result.accessToken).toBeDefined();
-		});
-
-		it('無効な招待コードの場合に AppException をスローすること', async () => {
-			mockInvitationService.verifyInvitation.mockRejectedValue(new AppException('INV001', 400));
-			const xUser = { xId: '1234', name: 'X User', email: 'x@example.com' };
-
-			await expect(service.xRegisterWithInvitation(xUser, 'INVALID')).rejects.toBeInstanceOf(
-				AppException,
-			);
+			await expect(service.xLogin(xUser)).rejects.toMatchObject({ code: 'AUTHZ005' });
 		});
 	});
 

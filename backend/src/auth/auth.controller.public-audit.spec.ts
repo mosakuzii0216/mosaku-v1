@@ -28,12 +28,15 @@ describe('AuthController @Public() 監査', () => {
 		{ method: 'appleAuthCallback', description: 'Apple OAuth コールバック' },
 		{ method: 'xAuth', description: 'X OAuth 開始' },
 		{ method: 'xAuthCallback', description: 'X OAuth コールバック' },
-		{ method: 'googleRegisterWithInvitation', description: 'Google 招待コード登録' },
-		{ method: 'githubRegisterWithInvitation', description: 'GitHub 招待コード登録' },
-		{ method: 'lineRegisterWithInvitation', description: 'LINE 招待コード登録' },
-		{ method: 'appleRegisterWithInvitation', description: 'Apple 招待コード登録' },
-		{ method: 'xRegisterWithInvitation', description: 'X 招待コード登録' },
 		{ method: 'startOAuthRegistration', description: 'OAuth 開始（招待コード state 引き継ぎ）' },
+	];
+
+	const removedHandlers: ReadonlyArray<string> = [
+		'googleRegisterWithInvitation',
+		'githubRegisterWithInvitation',
+		'lineRegisterWithInvitation',
+		'appleRegisterWithInvitation',
+		'xRegisterWithInvitation',
 	];
 
 	publicHandlers.forEach(({ method, description }) => {
@@ -46,5 +49,14 @@ describe('AuthController @Public() 監査', () => {
 		expect(isPublic('getMe')).toBe(false);
 		expect(isPublic('changePassword')).toBe(false);
 		expect(isPublic('updateAdminRole')).toBe(false);
+	});
+
+	// Task 9.1: 旧 OAuth 招待コード登録 5 本は新フロー（state 引き継ぎ）に統合され削除済み。
+	removedHandlers.forEach((method) => {
+		it(`旧 ${method} ハンドラは AuthController から削除されている`, () => {
+			expect(
+				(AuthController.prototype as unknown as Record<string, unknown>)[method],
+			).toBeUndefined();
+		});
 	});
 });

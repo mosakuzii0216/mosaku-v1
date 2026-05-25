@@ -21,15 +21,10 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 
 	const mockOAuthService = {
 		lineLogin: jest.fn(),
-		lineRegisterWithInvitation: jest.fn(),
 		appleLogin: jest.fn(),
-		appleRegisterWithInvitation: jest.fn(),
 		xLogin: jest.fn(),
-		xRegisterWithInvitation: jest.fn(),
 		googleLogin: jest.fn(),
 		githubLogin: jest.fn(),
-		googleRegisterWithInvitation: jest.fn(),
-		githubRegisterWithInvitation: jest.fn(),
 		googleRegisterWithStateInvitation: jest.fn(),
 		githubRegisterWithStateInvitation: jest.fn(),
 		lineRegisterWithStateInvitation: jest.fn(),
@@ -39,9 +34,6 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 
 	const mockConfigService = {
 		generateSuccessRedirectUrl: jest.fn().mockReturnValue('http://localhost?token=xxx'),
-		generateInvitationRequiredUrl: jest
-			.fn()
-			.mockReturnValue('http://localhost?error=invitation_required'),
 		generateAuthFailedUrl: jest.fn().mockReturnValue('http://localhost?error=auth_failed'),
 		generateInvitationStateInvalidUrl: jest
 			.fn()
@@ -282,110 +274,6 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 		});
 	});
 
-	// ─── LINE ───────────────────────────────────────────────────────────────
-
-	describe('lineRegisterWithInvitation', () => {
-		it('有効な lineUser と invitationCode で登録に成功し Cookie を設定すること', async () => {
-			mockOAuthService.lineRegisterWithInvitation.mockResolvedValue(oauthLoginResult);
-
-			const result = await controller.lineRegisterWithInvitation(
-				{
-					lineUser: { lineId: 'U1234', name: 'LINE User', email: 'line@example.com' },
-					invitationCode: 'CODE123',
-				},
-				buildReq() as never,
-				buildRes() as never,
-			);
-
-			expect(result).toMatchObject({
-				message: 'Registration successful',
-				accessToken: 'jwt-token',
-			});
-			expect(mockOAuthService.lineRegisterWithInvitation).toHaveBeenCalled();
-			expect(mockRefreshCookieHelper.setRefreshCookie).toHaveBeenCalled();
-		});
-
-		it('lineId が未指定の場合に BadRequest をスローすること', async () => {
-			await expect(
-				controller.lineRegisterWithInvitation(
-					{
-						lineUser: { name: 'LINE User' },
-						invitationCode: 'CODE123',
-					},
-					buildReq() as never,
-					buildRes() as never,
-				),
-			).rejects.toBeInstanceOf(AppException);
-		});
-	});
-
-	// ─── Apple ──────────────────────────────────────────────────────────────
-
-	describe('appleRegisterWithInvitation', () => {
-		it('有効な appleUser と invitationCode で登録に成功し Cookie を設定すること', async () => {
-			mockOAuthService.appleRegisterWithInvitation.mockResolvedValue(oauthLoginResult);
-
-			const result = await controller.appleRegisterWithInvitation(
-				{
-					appleUser: { appleId: 'sub-id', name: 'Apple User' },
-					invitationCode: 'CODE123',
-					fallbackEmail: 'apple@example.com',
-				},
-				buildReq() as never,
-				buildRes() as never,
-			);
-
-			expect(result).toMatchObject({ message: 'Registration successful' });
-			expect(mockRefreshCookieHelper.setRefreshCookie).toHaveBeenCalled();
-		});
-
-		it('appleId が未指定の場合に BadRequest をスローすること', async () => {
-			await expect(
-				controller.appleRegisterWithInvitation(
-					{
-						appleUser: { name: 'Apple User' },
-						invitationCode: 'CODE123',
-					},
-					buildReq() as never,
-					buildRes() as never,
-				),
-			).rejects.toBeInstanceOf(AppException);
-		});
-	});
-
-	// ─── X ──────────────────────────────────────────────────────────────────
-
-	describe('xRegisterWithInvitation', () => {
-		it('有効な xUser と invitationCode で登録に成功し Cookie を設定すること', async () => {
-			mockOAuthService.xRegisterWithInvitation.mockResolvedValue(oauthLoginResult);
-
-			const result = await controller.xRegisterWithInvitation(
-				{
-					xUser: { xId: '1234', name: 'X User' },
-					invitationCode: 'CODE123',
-				},
-				buildReq() as never,
-				buildRes() as never,
-			);
-
-			expect(result).toMatchObject({ message: 'Registration successful' });
-			expect(mockRefreshCookieHelper.setRefreshCookie).toHaveBeenCalled();
-		});
-
-		it('xId が未指定の場合に BadRequest をスローすること', async () => {
-			await expect(
-				controller.xRegisterWithInvitation(
-					{
-						xUser: { name: 'X User' },
-						invitationCode: 'CODE123',
-					},
-					buildReq() as never,
-					buildRes() as never,
-				),
-			).rejects.toBeInstanceOf(AppException);
-		});
-	});
-
 	// ─── コールバック（Apple POST / X GET）───────────────────────────────────
 
 	describe('appleAuthCallback (POST /auth/apple/callback)', () => {
@@ -404,8 +292,10 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 			expect(mockRes.redirect).toHaveBeenCalledWith('http://localhost?token=xxx');
 		});
 
-		it('新規ユーザーの場合にinvitation_requiredリダイレクトURLへリダイレクトすること', async () => {
-			mockOAuthService.appleLogin.mockRejectedValue(new Error('Please provide invitation code'));
+		it('新フローでは appleLogin が失敗しても invitation_required リダイレクトせず auth_failed へ', async () => {
+			// Task 9.1: 旧 INVITATION_REQUIRED 経路を撤去したため、admin 以外の新規ユーザーが
+			// state なしで callback に到達した場合は ADMIN_EMAIL_REQUIRED で弾かれ auth_failed リダイレクトとなる。
+			mockOAuthService.appleLogin.mockRejectedValue(new AppException('AUTHZ005', 400));
 			const mockReq = {
 				ip: '10.0.0.1',
 				headers: { 'user-agent': 'jest' },
@@ -415,7 +305,16 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 
 			await controller.appleAuthCallback(mockReq as never, mockRes as never);
 
-			expect(mockRes.redirect).toHaveBeenCalledWith('http://localhost?error=invitation_required');
+			expect(mockRes.redirect).toHaveBeenCalledWith('http://localhost?error=auth_failed');
+			expect(Sentry.captureMessage).toHaveBeenCalledWith(
+				'oauth_callback_failed',
+				expect.objectContaining({
+					tags: expect.objectContaining({
+						feature_area: 'invitation',
+						invitation_failure_code: 'AUTHZ005',
+					}) as unknown,
+				}),
+			);
 		});
 	});
 
@@ -450,55 +349,17 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 		});
 	});
 
-	// ─── Prisma ユニーク制約違反 ───────────────────────────────────────────
+	// ─── Task 9.1: 旧 register-with-invitation 5 本の削除確認 ──────────────
 
-	describe('Prisma unique constraint violation handling', () => {
-		it('lineId が重複している場合に AppException をスローすること', async () => {
-			const prismaError = new Error('Unique constraint failed on the fields: (`line_id`)');
-			mockOAuthService.lineRegisterWithInvitation.mockRejectedValue(prismaError);
-
-			await expect(
-				controller.lineRegisterWithInvitation(
-					{
-						lineUser: { lineId: 'U1234', name: 'LINE User' },
-						invitationCode: 'CODE123',
-					},
-					buildReq() as never,
-					buildRes() as never,
-				),
-			).rejects.toBeInstanceOf(AppException);
-		});
-
-		it('appleId が重複している場合に AppException をスローすること', async () => {
-			const prismaError = new Error('Unique constraint failed on the fields: (`apple_id`)');
-			mockOAuthService.appleRegisterWithInvitation.mockRejectedValue(prismaError);
-
-			await expect(
-				controller.appleRegisterWithInvitation(
-					{
-						appleUser: { appleId: 'apple-dup', name: 'Apple User' },
-						invitationCode: 'CODE123',
-					},
-					buildReq() as never,
-					buildRes() as never,
-				),
-			).rejects.toBeInstanceOf(AppException);
-		});
-
-		it('xId が重複している場合に AppException をスローすること', async () => {
-			const prismaError = new Error('Unique constraint failed on the fields: (`x_id`)');
-			mockOAuthService.xRegisterWithInvitation.mockRejectedValue(prismaError);
-
-			await expect(
-				controller.xRegisterWithInvitation(
-					{
-						xUser: { xId: 'x-dup', name: 'X User' },
-						invitationCode: 'CODE123',
-					},
-					buildReq() as never,
-					buildRes() as never,
-				),
-			).rejects.toBeInstanceOf(AppException);
+	describe('旧 register-with-invitation ハンドラ削除', () => {
+		it.each([
+			'googleRegisterWithInvitation',
+			'githubRegisterWithInvitation',
+			'lineRegisterWithInvitation',
+			'appleRegisterWithInvitation',
+			'xRegisterWithInvitation',
+		])('controller.%s が AuthController から削除されている', (method) => {
+			expect((controller as unknown as Record<string, unknown>)[method]).toBeUndefined();
 		});
 	});
 

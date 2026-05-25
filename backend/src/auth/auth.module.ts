@@ -25,14 +25,18 @@ import { RefreshTokenService } from './refresh-token.service';
 import { InvitationStateService } from './invitation-state.service';
 import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
+import { CommonModule } from '../common/common.module';
 import { ConfigService } from '../config/config.service';
 import { InvitationService } from '../invitation/invitation.service';
+import { CODE_GENERATOR, NanoidCodeGenerator } from '../invitation/utils/code-generator';
+import { QUOTA_POLICY, PrismaQuotaPolicy } from '../invitation/utils/quota-policy';
 import { JWT_EXPIRATION } from '../config/auth-constants';
 
 @Module({
 	imports: [
 		PrismaModule,
 		PassportModule,
+		CommonModule,
 		JwtModule.registerAsync({
 			inject: [ConfigService],
 			useFactory: (configService: ConfigService) => ({
@@ -64,6 +68,8 @@ import { JWT_EXPIRATION } from '../config/auth-constants';
 		RefreshTokenService,
 		InvitationService,
 		InvitationStateService,
+		{ provide: CODE_GENERATOR, useClass: NanoidCodeGenerator },
+		{ provide: QUOTA_POLICY, useClass: PrismaQuotaPolicy },
 	],
 	exports: [
 		AuthService,

@@ -27,13 +27,9 @@ import type {
 	AppleStrategyUser,
 	XStrategyUser,
 	OAuthStrategyUser,
+	OAuthProvider,
 } from './types/oauth.types';
 import { ConfigService } from '../config/config.service';
-import { GoogleRegisterWithInvitationDto } from './dto/google-register-with-invitation.dto';
-import { GithubRegisterWithInvitationDto } from './dto/github-register-with-invitation.dto';
-import { LineRegisterWithInvitationDto } from './dto/line-register-with-invitation.dto';
-import { AppleRegisterWithInvitationDto } from './dto/apple-register-with-invitation.dto';
-import { XRegisterWithInvitationDto } from './dto/x-register-with-invitation.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import {
@@ -64,7 +60,6 @@ import { RefreshCookieHelper } from './refresh-cookie.helper';
 import { RefreshCsrfGuard } from './refresh-csrf.guard';
 import * as Sentry from '@sentry/nestjs';
 import { AppException } from '../common/exceptions/app.exception';
-import type { OAuthProvider } from './types/oauth.types';
 import type { OAuthRegisterArgs } from './oauth.service';
 
 @Controller('auth')
@@ -263,15 +258,21 @@ export class AuthController {
 			return res.redirect(redirectUrl);
 		} catch (error: unknown) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
+			const failureCode = error instanceof AppException ? error.code : 'unknown';
 			this.logger.error(`${providerName} auth error: ${errorMessage}`);
 
-			// 新規ユーザーで招待コードが必要な場合
-			if (errorMessage.includes('invitation code')) {
-				const redirectUrl = this.configService.generateInvitationRequiredUrl(
-					providerName,
-					req.user,
+			try {
+				Sentry.captureMessage('oauth_callback_failed', {
+					level: 'warning',
+					tags: {
+						feature_area: 'invitation',
+						invitation_failure_code: failureCode,
+					},
+				});
+			} catch (sentryError) {
+				this.logger.warn(
+					`Sentry captureMessage failed: ${sentryError instanceof Error ? sentryError.message : String(sentryError)}`,
 				);
-				return res.redirect(redirectUrl);
 			}
 
 			const errorUrl = this.configService.generateAuthFailedUrl();
@@ -566,58 +567,6 @@ export class AuthController {
 		);
 	}
 
-	/**
-	 * OAuth招待コード登録の共通処理
-	 */
-	private async handleOAuthRegisterWithInvitation<TUser extends OAuthStrategyUser>(
-		user: Record<string, unknown>,
-		invitationCode: string,
-		parser: (user: Record<string, unknown>) => TUser,
-		registerMethod: (
-			user: TUser,
-			code: string,
-			ctx: AuthRequestContext,
-		) => Promise<OAuthLoginResult>,
-		req: ExpressRequest,
-		res: ExpressResponse,
-	) {
-		const parsedUser = parser(user);
-
-		try {
-			const ctx = this.extractRequestContext(req);
-			const result = await registerMethod(parsedUser, invitationCode, ctx);
-
-			this.refreshCookieHelper.setRefreshCookie(
-				res,
-				result.refresh.plainRt,
-				result.refresh.expiresAt,
-			);
-
-			return this.buildAuthResponse(result, 'Registration successful');
-		} catch (error: unknown) {
-			const message = error instanceof Error ? error.message : 'Registration failed';
-			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_INPUT, message);
-		}
-	}
-
-	@Public()
-	@Post('google/register-with-invitation')
-	async googleRegisterWithInvitation(
-		@Body() body: GoogleRegisterWithInvitationDto,
-		@Req() req: ExpressRequest,
-		@Response({ passthrough: true }) res: ExpressResponse,
-	) {
-		const { googleUser, invitationCode } = body;
-		return this.handleOAuthRegisterWithInvitation(
-			googleUser,
-			invitationCode,
-			(value) => this.parseGoogleUser(value),
-			(user, code, ctx) => this.oauthService.googleRegisterWithInvitation(user, code, ctx),
-			req,
-			res,
-		);
-	}
-
 	// GitHub OAuth エンドポイント
 	@Public()
 	@Get('github')
@@ -643,63 +592,6 @@ export class AuthController {
 		);
 	}
 
-	@Public()
-	@Post('github/register-with-invitation')
-	async githubRegisterWithInvitation(
-		@Body() body: GithubRegisterWithInvitationDto,
-		@Req() req: ExpressRequest,
-		@Response({ passthrough: true }) res: ExpressResponse,
-	) {
-		const { githubUser, invitationCode } = body;
-		return this.handleOAuthRegisterWithInvitation(
-			githubUser,
-			invitationCode,
-			(value) => this.parseGithubUser(value),
-			(user, code, ctx) => this.oauthService.githubRegisterWithInvitation(user, code, ctx),
-			req,
-			res,
-		);
-	}
-
-	private parseGoogleUser(value: Record<string, unknown>): GoogleStrategyUser {
-		const googleId = value.googleId;
-		const name = value.name;
-		if (typeof googleId !== 'string' || typeof name !== 'string') {
-			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_PAYLOAD);
-		}
-
-		const email = typeof value.email === 'string' ? value.email : undefined;
-		return {
-			googleId,
-			name,
-			email,
-			accessToken: typeof value.accessToken === 'string' ? value.accessToken : undefined,
-			refreshToken: typeof value.refreshToken === 'string' ? value.refreshToken : undefined,
-			firstName: typeof value.firstName === 'string' ? value.firstName : undefined,
-			lastName: typeof value.lastName === 'string' ? value.lastName : undefined,
-			picture: typeof value.picture === 'string' ? value.picture : undefined,
-		};
-	}
-
-	private parseGithubUser(value: Record<string, unknown>): GitHubStrategyUser {
-		const githubId = value.githubId;
-		const name = value.name;
-		if (typeof githubId !== 'string' || typeof name !== 'string') {
-			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_PAYLOAD);
-		}
-
-		const email = typeof value.email === 'string' ? value.email : undefined;
-		return {
-			githubId,
-			name,
-			email,
-			username: typeof value.username === 'string' ? value.username : undefined,
-			picture: typeof value.picture === 'string' ? value.picture : undefined,
-			accessToken: typeof value.accessToken === 'string' ? value.accessToken : undefined,
-			refreshToken: typeof value.refreshToken === 'string' ? value.refreshToken : undefined,
-		};
-	}
-
 	// LINE OAuth エンドポイント
 	@Public()
 	@Get('line')
@@ -722,24 +614,6 @@ export class AuthController {
 			req,
 			res,
 			'LINE',
-		);
-	}
-
-	@Public()
-	@Post('line/register-with-invitation')
-	async lineRegisterWithInvitation(
-		@Body() body: LineRegisterWithInvitationDto,
-		@Req() req: ExpressRequest,
-		@Response({ passthrough: true }) res: ExpressResponse,
-	) {
-		const { lineUser, invitationCode } = body;
-		return this.handleOAuthRegisterWithInvitation(
-			lineUser,
-			invitationCode,
-			(value) => this.parseLineUser(value),
-			(user, code, ctx) => this.oauthService.lineRegisterWithInvitation(user, code, ctx),
-			req,
-			res,
 		);
 	}
 
@@ -768,38 +642,6 @@ export class AuthController {
 		);
 	}
 
-	@Public()
-	@Post('apple/register-with-invitation')
-	async appleRegisterWithInvitation(
-		@Body() body: AppleRegisterWithInvitationDto,
-		@Req() req: ExpressRequest,
-		@Response({ passthrough: true }) res: ExpressResponse,
-	) {
-		const { appleUser, invitationCode, fallbackEmail } = body;
-		const parsedUser = this.parseAppleUser(appleUser);
-
-		try {
-			const ctx = this.extractRequestContext(req);
-			const result = await this.oauthService.appleRegisterWithInvitation(
-				parsedUser,
-				invitationCode,
-				fallbackEmail,
-				ctx,
-			);
-
-			this.refreshCookieHelper.setRefreshCookie(
-				res,
-				result.refresh.plainRt,
-				result.refresh.expiresAt,
-			);
-
-			return this.buildAuthResponse(result, 'Registration successful');
-		} catch (error: unknown) {
-			const message = error instanceof Error ? error.message : 'Registration failed';
-			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_INPUT, message);
-		}
-	}
-
 	// X OAuth エンドポイント
 	@Public()
 	@Get('x')
@@ -823,71 +665,5 @@ export class AuthController {
 			res,
 			'X',
 		);
-	}
-
-	@Public()
-	@Post('x/register-with-invitation')
-	async xRegisterWithInvitation(
-		@Body() body: XRegisterWithInvitationDto,
-		@Req() req: ExpressRequest,
-		@Response({ passthrough: true }) res: ExpressResponse,
-	) {
-		const { xUser, invitationCode } = body;
-		return this.handleOAuthRegisterWithInvitation(
-			xUser,
-			invitationCode,
-			(value) => this.parseXUser(value),
-			(user, code, ctx) => this.oauthService.xRegisterWithInvitation(user, code, ctx),
-			req,
-			res,
-		);
-	}
-
-	private parseLineUser(value: Record<string, unknown>): LineStrategyUser {
-		const lineId = value.lineId;
-		const name = value.name;
-		if (typeof lineId !== 'string' || typeof name !== 'string') {
-			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_PAYLOAD);
-		}
-
-		return {
-			lineId,
-			name,
-			email: typeof value.email === 'string' ? value.email : undefined,
-			picture: typeof value.picture === 'string' ? value.picture : undefined,
-			accessToken: typeof value.accessToken === 'string' ? value.accessToken : undefined,
-		};
-	}
-
-	private parseAppleUser(value: Record<string, unknown>): AppleStrategyUser {
-		const appleId = value.appleId;
-		const name = value.name;
-		if (typeof appleId !== 'string' || typeof name !== 'string') {
-			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_PAYLOAD);
-		}
-
-		return {
-			appleId,
-			name,
-			email: typeof value.email === 'string' ? value.email : undefined,
-			accessToken: typeof value.accessToken === 'string' ? value.accessToken : undefined,
-		};
-	}
-
-	private parseXUser(value: Record<string, unknown>): XStrategyUser {
-		const xId = value.xId;
-		const name = value.name;
-		if (typeof xId !== 'string' || typeof name !== 'string') {
-			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_PAYLOAD);
-		}
-
-		return {
-			xId,
-			name,
-			username: typeof value.username === 'string' ? value.username : undefined,
-			email: typeof value.email === 'string' ? value.email : undefined,
-			picture: typeof value.picture === 'string' ? value.picture : undefined,
-			accessToken: typeof value.accessToken === 'string' ? value.accessToken : undefined,
-		};
 	}
 }
