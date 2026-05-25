@@ -43,4 +43,11 @@ export const queryKeys = {
 		category: (category: string) => [...queryKeys.themes.all, 'category', category] as const,
 		favorites: () => [...queryKeys.themes.all, 'favorites'] as const,
 	},
+
+	invitations: {
+		all: ['invitations'] as const,
+		context: (code: string) => [...queryKeys.invitations.all, 'context', code] as const,
+		myList: () => [...queryKeys.invitations.all, 'me', 'list'] as const,
+		myQuota: () => [...queryKeys.invitations.all, 'me', 'quota'] as const,
+	},
 } as const;

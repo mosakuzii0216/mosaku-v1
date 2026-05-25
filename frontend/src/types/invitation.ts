@@ -38,3 +38,52 @@ export interface InvitationVerificationResponse {
 	expiresAt: Date | null;
 	isActive: boolean;
 }
+
+/**
+ * 招待コードの招待者文脈レスポンス（受信者向け / `POST /invitation/verify-context`）
+ * email など PII は含まない
+ */
+export interface InvitationContextResponse {
+	code: string;
+	status: 'valid';
+	creator: {
+		name: string | null;
+		maskedId: string;
+	};
+	expiresAt: string | null;
+	usesRemaining: number;
+}
+
+/**
+ * 共有 URL 付きの招待コードレスポンス（`POST /invitation/me` / `GET /invitation/me`）
+ */
+export interface InvitationWithShareUrlResponse {
+	id: string;
+	code: string;
+	shareUrl: string;
+	maxUses: number;
+	usedCount: number;
+	expiresAt: string | null;
+	createdAt: string;
+}
+
+/**
+ * ユーザーの招待 quota スナップショット（`GET /invitation/me/quota`）
+ */
+export interface UserQuotaResponse {
+	invitationQuota: number;
+	unlimited: boolean;
+	role: 'USER' | 'ADMIN';
+}
+
+/**
+ * OAuth 開始エンドポイントの対象プロバイダ
+ */
+export type InvitationOAuthProvider = 'google' | 'github' | 'line' | 'apple' | 'x';
+
+/**
+ * OAuth 開始エンドポイントのレスポンス（`POST /auth/oauth/:provider/start`）
+ */
+export interface OAuthStartResponse {
+	authorizationUrl: string;
+}
