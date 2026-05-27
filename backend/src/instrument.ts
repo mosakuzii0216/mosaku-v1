@@ -1,8 +1,15 @@
 import * as Sentry from '@sentry/nestjs';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import { createScrubber } from './common/sentry/sentry-scrubber';
 import { applyStandardTags } from './common/sentry/sentry-tags';
 import { SENTRY_ENV_KEYS } from './common/sentry/sentry-env-keys';
+
+// @sentry/profiling-node は native binary をロードするため、SENTRY_DSN なしの環境では import 自体を回避する。
+// Ubuntu 24.04 / Node 22 ランナーで native ロードが silent hang する事象を踏むため、DSN ありの時だけ require する。
+function loadProfilingIntegration(): unknown {
+	// eslint-disable-next-line @typescript-eslint/no-require-imports
+	const mod = require('@sentry/profiling-node') as { nodeProfilingIntegration: () => unknown };
+	return mod.nodeProfilingIntegration();
+}
 
 const scrubber = createScrubber();
 
@@ -59,7 +66,7 @@ export function initializeSentry(): void {
 			defaultSampleRate,
 		),
 		sendDefaultPii: false,
-		integrations: [nodeProfilingIntegration()],
+		integrations: [loadProfilingIntegration()],
 		ignoreErrors: [...IGNORED_ERROR_NAMES],
 		beforeSend(event: Record<string, unknown>) {
 			try {
