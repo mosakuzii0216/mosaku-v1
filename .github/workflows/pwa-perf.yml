@@ -146,8 +146,20 @@ jobs:
 
       - name: Start backend
         run: |
-          nohup node dist/main > backend.log 2>&1 &
-          echo "Backend started (pid=$!)"
+          echo "=== dist/main.js ==="
+          ls -la dist/main.js || echo "(missing)"
+          nohup setsid node dist/main > backend.log 2>&1 < /dev/null &
+          BACKEND_PID=$!
+          disown || true
+          echo "Backend started (pid=$BACKEND_PID)"
+          sleep 5
+          echo "=== After 5s: process alive? ==="
+          if kill -0 $BACKEND_PID 2>/dev/null; then echo "ALIVE"; else echo "DEAD"; fi
+          echo "=== backend.log (size: $(wc -c < backend.log) bytes) ==="
+          cat backend.log || echo "(no log file)"
+          echo "=== process tree ==="
+          ps -ef | grep -E "node|nohup|setsid" | grep -v grep || true
+          echo "=== end debug ==="
         working-directory: backend
 
       - name: Wait for backend
@@ -158,7 +170,11 @@ jobs:
             fi
             sleep 2
           done
-          echo "Backend did not become ready"; tail -n 200 backend/backend.log || true
+          echo "=== Backend did not become ready ==="
+          echo "=== backend.log (size: $(wc -c < backend/backend.log 2>/dev/null || echo 0) bytes) ==="
+          tail -n 200 backend/backend.log || true
+          echo "=== process check ==="
+          ps -ef | grep -E "node|nohup" | grep -v grep || echo "(no node process)"
           exit 1
 
       # -----------------------------------------------------------------------
