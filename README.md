@@ -20,8 +20,7 @@ cp .env.example .env
    - アプリケーションの種類：「ウェブアプリケーション」
    - 承認済みのリダイレクト URI：`http://localhost/api/auth/google/callback`
 5. `.env`ファイルに以下を設定：
-   ```
-   GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+   ``` GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
    GOOGLE_CLIENT_SECRET=your-client-secret
    VITE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
    ```
