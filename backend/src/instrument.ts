@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/nestjs';
 import { createScrubber } from './common/sentry/sentry-scrubber';
-import { applyStandardTags } from './common/sentry/sentry-tags';
+import { applyStandardTags, sanitizeRequestUrl } from './common/sentry/sentry-tags';
 import { SENTRY_ENV_KEYS } from './common/sentry/sentry-env-keys';
 
 // @sentry/profiling-node は native binary をロードするため、SENTRY_DSN なしの環境では import 自体を回避する。
@@ -70,7 +70,7 @@ export function initializeSentry(): void {
 		ignoreErrors: [...IGNORED_ERROR_NAMES],
 		beforeSend(event: Record<string, unknown>) {
 			try {
-				const scrubbed = scrubber.scrub(event);
+				const scrubbed = sanitizeRequestUrl(scrubber.scrub(event));
 				const tagged = applyStandardTags(scrubbed);
 				const existingTags = (scrubbed.tags ?? {}) as Record<string, unknown>;
 				return {

@@ -37,6 +37,33 @@ const FEATURE_AREA_PREFIXES: ReadonlyArray<readonly [string, FeatureArea]> = [
 	['/system', 'system'],
 ];
 
+// 公開メモ読み取り経路（GET /memos/public/:token）のトークンは「秘密値」かつ「1件ごとに別ラベル化する
+// 高カーディナリティ値」のため、route タグ・request.url の双方で安定ラベル :token に正規化する。
+// これにより公開経路を 1 ルートに集約して計測でき（Req 1.1）、秘密トークンの Sentry 流出も防ぐ。
+const PUBLIC_MEMO_TOKEN_PATTERN = /\/memos\/public\/[^/?#]+/;
+const PUBLIC_MEMO_NORMALIZED_PATH = '/memos/public/:token';
+
+export function normalizeRoute(value: string): string {
+	return value.replace(PUBLIC_MEMO_TOKEN_PATTERN, PUBLIC_MEMO_NORMALIZED_PATH);
+}
+
+// scrubber は JWT / UUID パターンしか値 redact しないため、base64url の公開トークンは素通りする。
+// route タグだけでなく event.request.url 本体からもトークンを取り除き、秘密値の保存を防ぐ。
+export function sanitizeRequestUrl<TEvent extends Record<string, unknown>>(event: TEvent): TEvent {
+	const request = event.request as { url?: string } | undefined;
+	if (!request || typeof request.url !== 'string') {
+		return event;
+	}
+	const normalized = normalizeRoute(request.url);
+	if (normalized === request.url) {
+		return event;
+	}
+	return {
+		...event,
+		request: { ...request, url: normalized },
+	};
+}
+
 export function resolveFeatureArea(url: string | undefined): FeatureArea {
 	if (!url) {
 		return 'unknown';
@@ -72,7 +99,7 @@ export function applyStandardTags<TEvent extends Record<string, unknown>>(
 		user_facing: userFacing,
 		...(controller !== undefined ? { controller } : {}),
 		...(handler !== undefined ? { handler } : {}),
-		...(pathname !== undefined ? { route: pathname } : {}),
+		...(pathname !== undefined ? { route: normalizeRoute(pathname) } : {}),
 	};
 
 	return { event, tags };

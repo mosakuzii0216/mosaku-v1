@@ -470,6 +470,20 @@ describe('MemoSharingService', () => {
 			});
 		});
 
+		it('非公開化された（publicToken を剥奪された）メモの旧トークンは 404 を返す', async () => {
+			// 非公開化で publicToken=null になったメモは where: { publicToken } に一致せず null が返る
+			mockPrismaService.memo.findFirst.mockResolvedValue(null);
+
+			await expect(service.findByToken('revoked-token')).rejects.toMatchObject({
+				statusCode: HttpStatus.NOT_FOUND,
+			});
+
+			const [[args]] = mockPrismaService.memo.findFirst.mock.calls as Array<
+				[{ where: { publicToken: string } }]
+			>;
+			expect(args.where.publicToken).toBe('revoked-token');
+		});
+
 		it('ゴミ箱内メモのトークンは 404 を返す（findFirst の trashedAt: null フィルタで除外）', async () => {
 			// findFirst が null を返すケース（クエリ自体がゴミ箱内を除外する）
 			mockPrismaService.memo.findFirst.mockResolvedValue(null);
