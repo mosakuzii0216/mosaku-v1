@@ -15,6 +15,7 @@ import InvitationManager from './components/admin/InvitationManager';
 import { SwUpdatePrompt } from './components/pwa/SwUpdatePrompt';
 import { SyncToast } from './components/ui/SyncToast';
 import { SettingsPage } from './components/settings/SettingsPage';
+import { PublicMemoPage } from './components/public/PublicMemoPage';
 
 const MOBILE_BREAKPOINT = 768;
 
@@ -62,6 +63,7 @@ function App() {
 						<Route path="/auth/callback" element={<AuthCallback />} />
 						<Route path="/auth/reset-password" element={<PasswordReset />} />
 						<Route path="/invite/:code" element={<InvitePage />} />
+						<Route path="/p/:token" element={<PublicMemoPage />} />
 						<Route
 							path="/admin/invitations"
 							element={
