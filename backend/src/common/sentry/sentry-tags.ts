@@ -41,7 +41,7 @@ const FEATURE_AREA_PREFIXES: ReadonlyArray<readonly [string, FeatureArea]> = [
 // 高カーディナリティ値」のため、route タグ・request.url の双方で安定ラベル :token に正規化する。
 // これにより公開経路を 1 ルートに集約して計測でき（Req 1.1）、秘密トークンの Sentry 流出も防ぐ。
 const PUBLIC_MEMO_TOKEN_PATTERN = /\/memos\/public\/[^/?#]+/;
-const PUBLIC_MEMO_NORMALIZED_PATH = '/memos/public/:token';
+export const PUBLIC_MEMO_NORMALIZED_PATH = '/memos/public/:token';
 
 export function normalizeRoute(value: string): string {
 	return value.replace(PUBLIC_MEMO_TOKEN_PATTERN, PUBLIC_MEMO_NORMALIZED_PATH);

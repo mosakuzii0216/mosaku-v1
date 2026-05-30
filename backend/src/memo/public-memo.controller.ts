@@ -1,8 +1,9 @@
-import { Controller, Get, Header, Param } from '@nestjs/common';
+import { Controller, Get, Header, Param, UseInterceptors } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { IsString, Length, Matches } from 'class-validator';
 import { Public } from '../common/decorators/public.decorator';
 import { MemoSharingService } from './memo-sharing.service';
+import { PublicReadObservabilityInterceptor } from './public-read-observability.interceptor';
 
 class GetPublicMemoParamsDto {
 	@IsString()
@@ -14,6 +15,7 @@ class GetPublicMemoParamsDto {
 @Public()
 @Controller('memos/public')
 @Throttle({ default: { ttl: 60_000, limit: 60 } })
+@UseInterceptors(PublicReadObservabilityInterceptor)
 export class PublicMemoController {
 	constructor(private readonly memoSharingService: MemoSharingService) {}
 

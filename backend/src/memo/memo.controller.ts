@@ -8,10 +8,12 @@ import {
 	Delete,
 	Query,
 	UseGuards,
+	UseInterceptors,
 	Request,
 } from '@nestjs/common';
 import { MemoService } from './memo.service';
 import { MemoSharingService } from './memo-sharing.service';
+import { MemoEditObservabilityInterceptor } from './memo-edit-observability.interceptor';
 import { CreateMemoDto } from './dto/create-memo.dto';
 import { UpdateMemoDto } from './dto/update-memo.dto';
 import { SearchMemoDto } from './dto/search-memo.dto';
@@ -21,6 +23,7 @@ import type { AuthenticatedRequest } from '../auth/types';
 
 @Controller('memos')
 @UseGuards(JwtAuthGuard)
+@UseInterceptors(MemoEditObservabilityInterceptor)
 export class MemoController {
 	constructor(
 		private readonly memoService: MemoService,
