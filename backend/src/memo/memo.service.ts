@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthorizationService } from '../common/services/authorization.service';
+import { MemoSharingService } from './memo-sharing.service';
 import { BaseOwnableService, PrismaModelDelegate } from '../common/services/base-ownable.service';
 import {
 	PaginationQueryDto,
@@ -19,7 +20,11 @@ type MemoWithRelations = Memo & { userId: string };
 
 @Injectable()
 export class MemoService extends BaseOwnableService<MemoWithRelations> {
-	constructor(prisma: PrismaService, authorizationService: AuthorizationService) {
+	constructor(
+		prisma: PrismaService,
+		authorizationService: AuthorizationService,
+		private readonly memoSharingService: MemoSharingService,
+	) {
 		super(prisma, authorizationService);
 	}
 
@@ -273,9 +278,11 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 
 	/**
 	 * メモをゴミ箱に移動する（Requirements: 1.1, 1.3）
+	 * 公開中のメモは自動的に非公開化する（cascade-trash）
 	 */
 	async trash(id: string, userId: string): Promise<MemoWithRelations> {
 		await this.findOne(id, userId); // 所有者検証（ゴミ箱内メモはここで 404）
+		await this.memoSharingService.unpublishIfPublished(id, userId);
 		return this.prisma.memo.update({
 			where: { id },
 			data: { trashedAt: new Date() },
