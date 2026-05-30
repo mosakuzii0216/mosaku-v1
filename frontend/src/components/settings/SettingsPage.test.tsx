@@ -12,6 +12,7 @@ vi.mock('../../utils/api', () => ({
 		getMyInvitationQuota: vi
 			.fn()
 			.mockResolvedValue({ invitationQuota: 5, unlimited: false, role: 'USER' }),
+		getMyPublicMemos: vi.fn().mockResolvedValue([]),
 	},
 }));
 
@@ -46,5 +47,10 @@ describe('SettingsPage', () => {
 	it('開発者向け DebugPanel も引き続き表示される', () => {
 		renderPage();
 		expect(screen.getByTestId('debug-panel')).toBeTruthy();
+	});
+
+	it('公開メモ管理カードが描画される', () => {
+		renderPage();
+		expect(screen.getByTestId('public-memos-card')).toBeTruthy();
 	});
 });
