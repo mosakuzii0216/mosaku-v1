@@ -29,6 +29,12 @@ export interface SeededMemo {
 	updatedAt: string;
 }
 
+export interface PublishMemoResult {
+	memoId: string;
+	publicToken: string;
+	publishedAt: string;
+}
+
 export interface BackendApiOptions {
 	baseUrl: string;
 }
@@ -119,5 +125,21 @@ export class BackendApi {
 			await this.trashMemo(accessToken, memo.id).catch(() => {});
 		}
 		await this.emptyTrash(accessToken).catch(() => {});
+	}
+
+	async publishMemo(accessToken: string, id: string): Promise<PublishMemoResult> {
+		return this.request<PublishMemoResult>(`/memos/${id}/share`, { method: 'POST' }, accessToken);
+	}
+
+	async unpublishMemo(accessToken: string, id: string): Promise<void> {
+		await this.request<unknown>(`/memos/${id}/share`, { method: 'DELETE' }, accessToken);
+	}
+
+	async getPublicMemo(
+		token: string,
+	): Promise<{ title: string; content: string; updatedAt: string }> {
+		return this.request<{ title: string; content: string; updatedAt: string }>(
+			`/memos/public/${token}`,
+		);
 	}
 }
