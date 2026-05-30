@@ -9,6 +9,7 @@ import { useViewStore } from '../../stores/useViewStore';
 import { TagDropdownIcon } from '../tag/TagDropdownIcon';
 import { OfflineBadge } from '../ui/OfflineBadge';
 import { RichTextEditor } from '../editor/RichTextEditor';
+import { ShareMemoControl } from './ShareMemoControl';
 import type { Memo } from '../../types/memo';
 import type { MemoUpdateOutcome } from '../../utils/memo/memo-bridge';
 import type { SaveStatus } from '../../hooks/useAutoSave';
@@ -244,6 +245,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 			<div className="border-b border-gray-200 p-4 flex items-center justify-end">
 				<div className="flex items-center space-x-2">
 					<OfflineBadge variant="detail" className="mr-1" />
+					{!isCreate && memo && <ShareMemoControl memo={memo} />}
 					<TagDropdownIcon
 						selectedTagIds={selectedTagIds}
 						onToggleTag={(id) => {
