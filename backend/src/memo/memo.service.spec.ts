@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpStatus } from '@nestjs/common';
 import { MemoService } from './memo.service';
+import { MemoSharingService } from './memo-sharing.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthorizationService } from '../common/services/authorization.service';
 
@@ -13,6 +14,8 @@ const mockMemo = (overrides = {}) => ({
 	trashedAt: null,
 	userId: 'user-1',
 	notebookId: null,
+	publicToken: null,
+	publishedAt: null,
 	memoTags: [],
 	notebook: null,
 	...overrides,
@@ -30,6 +33,10 @@ const mockPrismaService = {
 	},
 };
 
+const mockMemoSharingService = {
+	unpublishIfPublished: jest.fn(),
+};
+
 describe('MemoService', () => {
 	let service: MemoService;
 
@@ -38,6 +45,7 @@ describe('MemoService', () => {
 			providers: [
 				MemoService,
 				{ provide: PrismaService, useValue: mockPrismaService },
+				{ provide: MemoSharingService, useValue: mockMemoSharingService },
 				AuthorizationService, // 実際の AuthorizationService を使用
 			],
 		}).compile();
@@ -81,6 +89,31 @@ describe('MemoService', () => {
 			await expect(service.trash('memo-1', 'user-1')).rejects.toMatchObject({
 				statusCode: HttpStatus.FORBIDDEN,
 			});
+		});
+
+		it('should call unpublishIfPublished before trashing a published memo', async () => {
+			const publishedMemo = mockMemo({ publicToken: 'tok-abc', publishedAt: new Date() });
+			const trashedMemo = mockMemo({ trashedAt: new Date(), publicToken: null, publishedAt: null });
+			mockPrismaService.memo.findFirst.mockResolvedValue(publishedMemo);
+			mockMemoSharingService.unpublishIfPublished.mockResolvedValue(undefined);
+			mockPrismaService.memo.update.mockResolvedValue(trashedMemo);
+
+			await service.trash('memo-1', 'user-1');
+
+			expect(mockMemoSharingService.unpublishIfPublished).toHaveBeenCalledWith('memo-1', 'user-1');
+			expect(mockMemoSharingService.unpublishIfPublished).toHaveBeenCalledTimes(1);
+		});
+
+		it('should call unpublishIfPublished even when memo is not published (no-op)', async () => {
+			const unpublishedMemo = mockMemo({ publicToken: null, publishedAt: null });
+			const trashedMemo = mockMemo({ trashedAt: new Date() });
+			mockPrismaService.memo.findFirst.mockResolvedValue(unpublishedMemo);
+			mockMemoSharingService.unpublishIfPublished.mockResolvedValue(undefined);
+			mockPrismaService.memo.update.mockResolvedValue(trashedMemo);
+
+			await service.trash('memo-1', 'user-1');
+
+			expect(mockMemoSharingService.unpublishIfPublished).toHaveBeenCalledWith('memo-1', 'user-1');
 		});
 	});
 
