@@ -17,6 +17,9 @@ export interface Memo {
 				theme?: Pick<Theme, 'id' | 'name' | 'styles' | 'cssFilePath'> | null;
 		  })
 		| null;
+	// 公開共有関連
+	publicToken?: string | null;
+	publishedAt?: string | null;
 }
 
 export interface CreateMemoDto {
@@ -34,3 +37,23 @@ export interface UpdateMemoDto {
 export type ViewType = 'list' | 'detail' | 'edit' | 'create' | 'tags' | 'trash';
 
 export type ObjectType = 'memo' | 'notebook' | 'tag' | 'theme';
+
+export interface PublishMemoResponseDto {
+	memoId: string;
+	publicToken: string;
+	publishedAt: string;
+}
+
+export interface PublicMemoListItemDto {
+	memoId: string;
+	title: string;
+	publicToken: string;
+	publishedAt: string;
+	updatedAt: string;
+}
+
+export interface PublicMemoResponseDto {
+	title: string;
+	content: string;
+	updatedAt: string;
+}

@@ -1,4 +1,11 @@
-import type { Memo, CreateMemoDto, UpdateMemoDto } from '../types/memo';
+import type {
+	Memo,
+	CreateMemoDto,
+	UpdateMemoDto,
+	PublishMemoResponseDto,
+	PublicMemoListItemDto,
+	PublicMemoResponseDto,
+} from '../types/memo';
 import type {
 	Tag,
 	CreateTagDto,
@@ -499,6 +506,39 @@ class ApiClient {
 	// ヘルスチェック（オフライン状態判定用 heartbeat。認証不要）
 	async health(): Promise<{ status: string }> {
 		return this.request<{ status: string }>('/health', { authLevel: 'NONE' });
+	}
+
+	// ========== メモ公開系API ==========
+
+	// メモを公開する（所有者向け）
+	async publishMemo(id: string): Promise<PublishMemoResponseDto> {
+		return this.request<PublishMemoResponseDto>(`/memos/${id}/share`, {
+			method: 'POST',
+		});
+	}
+
+	// メモを非公開にする（所有者向け）
+	async unpublishMemo(id: string): Promise<{ success: boolean }> {
+		return this.request<{ success: boolean }>(`/memos/${id}/share`, {
+			method: 'DELETE',
+		});
+	}
+
+	// 公開トークンを再生成する（所有者向け）
+	async regenerateMemoToken(id: string): Promise<PublishMemoResponseDto> {
+		return this.request<PublishMemoResponseDto>(`/memos/${id}/share/regenerate`, {
+			method: 'POST',
+		});
+	}
+
+	// 自分の公開中メモ一覧を取得する（所有者向け）
+	async getMyPublicMemos(): Promise<PublicMemoListItemDto[]> {
+		return this.request<PublicMemoListItemDto[]>('/memos/me/public-memos');
+	}
+
+	// 公開トークンでメモを取得する（未ログイン閲覧者向け、認証不要）
+	async getPublicMemo(token: string): Promise<PublicMemoResponseDto> {
+		return this.requestPublic<PublicMemoResponseDto>(`/memos/public/${token}`);
 	}
 }
 
