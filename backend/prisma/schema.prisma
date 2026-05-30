@@ -44,18 +44,21 @@ model MemoTag {
 }
 
 model Memo {
-  id         String    @id @default(cuid())
-  title      String    @db.VarChar(100)
-  content    String
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  trashedAt  DateTime? @map("trashed_at")
-  userId     String    @map("user_id")
-  notebookId String?   @map("notebook_id")
-  memoTags   MemoTag[]
-  notebook   Notebook? @relation(fields: [notebookId], references: [id])
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  title       String    @db.VarChar(100)
+  content     String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  trashedAt   DateTime? @map("trashed_at")
+  userId      String    @map("user_id")
+  notebookId  String?   @map("notebook_id")
+  publicToken String?   @unique @map("public_token") @db.VarChar(64)
+  publishedAt DateTime? @map("published_at")
+  memoTags    MemoTag[]
+  notebook    Notebook? @relation(fields: [notebookId], references: [id])
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, publishedAt(sort: Desc)])
   @@map("memos")
 }
 
