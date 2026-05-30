@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { HttpStatus } from '@nestjs/common';
+import { HttpException, HttpStatus } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/nestjs';
 import { MemoSharingService } from './memo-sharing.service';
@@ -496,6 +496,74 @@ describe('MemoSharingService', () => {
 				[{ where: { trashedAt: null } }]
 			>;
 			expect(args.where.trashedAt).toBeNull();
+		});
+	});
+
+	// ─── 3.1 データ境界回帰（存在秘匿・フィールド非露出） ───────────────
+	// memo-public-isolation Task 3.1 / Req 4.1-4.3。
+	// findByToken の where 条件 (publicToken 一致 + trashedAt null) により、未公開・
+	// ゴミ箱（soft delete）・無効トークンはいずれも findFirst が null となり、区別
+	// 不能な同一 404 として秘匿される。返却 shape は公開3フィールドに限定される。
+
+	describe('データ境界回帰 (Task 3.1)', () => {
+		it.each([
+			['未公開（publicToken 未設定）のメモ', 'unpublished-token-123456'],
+			['ゴミ箱（soft delete, trashedAt non-null）のメモ', 'trashed-token-1234567890'],
+			['存在しない無効トークン', 'invalid-token-1234567890'],
+		])('%s は 404（NotFoundException）として秘匿される', async (_label, token) => {
+			// where 条件に合致しないため Prisma は null を返す
+			mockPrismaService.memo.findFirst.mockResolvedValue(null);
+
+			await expect(service.findByToken(token)).rejects.toMatchObject({
+				statusCode: HttpStatus.NOT_FOUND,
+			});
+		});
+
+		it('未公開・ゴミ箱・無効トークンの 404 応答が同一で、どのケースかを判別させない（存在秘匿）', async () => {
+			mockPrismaService.memo.findFirst.mockResolvedValue(null);
+
+			const responses: unknown[] = [];
+			for (const token of ['unpublished', 'trashed', 'nonexistent']) {
+				const error = await service.findByToken(token).catch((e: HttpException) => ({
+					status: e.getStatus(),
+					body: e.getResponse(),
+				}));
+				responses.push(error);
+			}
+
+			// 3 ケースとも区別不能な同一応答であること（ケース別の情報を漏らさない）
+			expect(responses[0]).toEqual(responses[1]);
+			expect(responses[1]).toEqual(responses[2]);
+		});
+
+		it('返却 shape に内部 ID・所有者識別・編集系フィールドを含めない（Req 4.3）', async () => {
+			mockPrismaService.memo.findFirst.mockResolvedValue({
+				title: 'Public Title',
+				content: '<p>body</p>',
+				updatedAt: new Date('2026-05-30T12:00:00.000Z'),
+			});
+
+			const result = await service.findByToken('valid-token-1234567890');
+
+			for (const leaked of [
+				'id',
+				'userId',
+				'ownerId',
+				'publicToken',
+				'publishedAt',
+				'trashedAt',
+				'createdAt',
+				'notebookId',
+			]) {
+				expect(result).not.toHaveProperty(leaked);
+			}
+			expect(Object.keys(result).sort()).toEqual(['content', 'title', 'updatedAt']);
+
+			// 露出制御の源泉である select が公開3フィールドに限定されていること
+			const [[args]] = mockPrismaService.memo.findFirst.mock.calls as Array<
+				[{ select: Record<string, boolean> }]
+			>;
+			expect(args.select).toEqual({ title: true, content: true, updatedAt: true });
 		});
 	});
 
