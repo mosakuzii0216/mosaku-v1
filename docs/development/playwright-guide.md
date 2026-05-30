@@ -269,3 +269,237 @@ test.beforeEach(async ({ page }) => {
 - [Playwright 公式ドキュメント](https://playwright.dev/)
 - [Best Practices](https://playwright.dev/docs/best-practices)
 - [Locators ガイド](https://playwright.dev/docs/locators)
+
+---
+
+## 写経ハンズオン
+
+実際にコードを書いて覚えるための手順。`frontend/e2e/handson.spec.ts` を新規作成して写経していく。
+
+```bash
+touch frontend/e2e/handson.spec.ts
+```
+
+### Step 1：基本構造（5 分）
+
+```ts
+import { test, expect } from '@playwright/test';
+
+// API モック（未認証状態を再現）
+test.beforeEach(async ({ page }) => {
+	await page.route('**/auth/me', (route) => {
+		route.fulfill({ status: 401, body: JSON.stringify({ message: 'Unauthorized' }) });
+	});
+});
+
+test('ログインページが表示される', async ({ page }) => {
+	await page.goto('/');
+	await page.waitForSelector('input[type="email"]', { timeout: 10000 });
+
+	await expect(page.locator('input[type="email"]')).toBeVisible();
+});
+```
+
+```bash
+cd frontend
+npx playwright test e2e/handson.spec.ts --headed   # ブラウザを見ながら実行
+```
+
+### Step 2：describe でグループ化（5 分）
+
+```ts
+test.describe('ログインページ', () => {
+	test('メールとパスワードの入力欄が表示される', async ({ page }) => {
+		await page.goto('/');
+		await page.waitForSelector('input[type="email"]', { timeout: 10000 });
+
+		await expect(page.locator('input[type="email"]')).toBeVisible();
+		await expect(page.locator('input[type="password"]')).toBeVisible();
+	});
+
+	test('ログインボタンが表示される', async ({ page }) => {
+		await page.goto('/');
+		await page.waitForSelector('input[type="email"]', { timeout: 10000 });
+
+		await expect(page.getByRole('button', { name: /ログイン/ })).toBeVisible();
+	});
+});
+```
+
+```bash
+npx playwright test e2e/handson.spec.ts --headed --grep "ログインページ"
+```
+
+### Step 3：フォームを操作する（10 分）
+
+```ts
+test.describe('フォーム操作', () => {
+	test('メールアドレスを入力できる', async ({ page }) => {
+		await page.goto('/');
+		await page.waitForSelector('input[type="email"]', { timeout: 10000 });
+
+		await page.locator('input[type="email"]').fill('test@example.com');
+
+		await expect(page.locator('input[type="email"]')).toHaveValue('test@example.com');
+	});
+
+	test('Tab キーでフォーカスが移動する', async ({ page }) => {
+		await page.goto('/');
+		await page.waitForSelector('input[type="email"]', { timeout: 10000 });
+
+		await page.locator('input[type="email"]').focus();
+		await expect(page.locator('input[type="email"]')).toBeFocused();
+
+		await page.keyboard.press('Tab');
+		await expect(page.locator('input[type="password"]')).toBeFocused();
+	});
+
+	test('不正なメール形式だとバリデーションエラーになる', async ({ page }) => {
+		await page.goto('/');
+		await page.waitForSelector('input[type="email"]', { timeout: 10000 });
+
+		await page.locator('input[type="email"]').fill('not-an-email');
+		await page.locator('input[type="password"]').fill('password123');
+		await page.getByRole('button', { name: /ログイン/ }).click();
+
+		const isValid = await page
+			.locator('input[type="email"]')
+			.evaluate((el: HTMLInputElement) => el.validity.valid);
+		expect(isValid).toBe(false);
+	});
+});
+```
+
+### Step 4：API をモックする（10 分）
+
+```ts
+test.describe('API モック', () => {
+	test('サーバーエラー時にエラー表示される', async ({ page }) => {
+		// ログイン API を 500 に差し替え
+		await page.route('**/auth/login', (route) => {
+			route.fulfill({
+				status: 500,
+				body: JSON.stringify({ message: 'Internal Server Error' }),
+			});
+		});
+
+		await page.goto('/');
+		await page.waitForSelector('input[type="email"]', { timeout: 10000 });
+
+		await page.locator('input[type="email"]').fill('test@example.com');
+		await page.locator('input[type="password"]').fill('password123');
+		await page.getByRole('button', { name: /ログイン/ }).click();
+
+		await expect(page.locator('[role="alert"], [data-testid*="error"]').first()).toBeVisible({
+			timeout: 5000,
+		});
+	});
+
+	test('リクエストの中身をスパイできる', async ({ page }) => {
+		let capturedBody: unknown = null;
+
+		await page.route('**/auth/login', (route) => {
+			capturedBody = route.request().postDataJSON();
+			route.continue();
+		});
+
+		await page.goto('/');
+		await page.waitForSelector('input[type="email"]', { timeout: 10000 });
+
+		await page.locator('input[type="email"]').fill('spy@example.com');
+		await page.locator('input[type="password"]').fill('spypass');
+		await page.getByRole('button', { name: /ログイン/ }).click();
+
+		expect((capturedBody as { email?: string })?.email).toBe('spy@example.com');
+	});
+});
+```
+
+### Step 5：JavaScript を直接実行する（5 分）
+
+```ts
+test.describe('ブラウザ内部確認', () => {
+	test('ページタイトルが設定されている', async ({ page }) => {
+		await page.goto('/');
+		await page.waitForSelector('input[type="email"]', { timeout: 10000 });
+
+		const title = await page.title();
+		expect(title.length).toBeGreaterThan(0);
+	});
+
+	test('FCP が 3 秒以内', async ({ page }) => {
+		await page.goto('/');
+		await page.waitForSelector('input[type="email"]', { timeout: 10000 });
+
+		const fcp = await page.evaluate(() => {
+			const entries = performance.getEntriesByName('first-contentful-paint');
+			return entries[0]?.startTime ?? -1;
+		});
+
+		if (fcp !== -1) {
+			console.log(`FCP: ${fcp.toFixed(0)}ms`);
+			expect(fcp).toBeLessThan(3000);
+		}
+	});
+
+	test('localStorage が読み書きできる', async ({ page }) => {
+		await page.goto('/');
+
+		await page.evaluate(() => {
+			localStorage.setItem('handson_test_key', 'hello');
+		});
+
+		const value = await page.evaluate(() => localStorage.getItem('handson_test_key'));
+		expect(value).toBe('hello');
+	});
+});
+```
+
+### Step 6：スクリーンショット（おまけ）
+
+```ts
+test('ログインページのスクリーンショットを保存', async ({ page }) => {
+	await page.goto('/');
+	await page.waitForSelector('input[type="email"]', { timeout: 10000 });
+
+	await page.screenshot({ path: 'e2e/screenshots/login.png', fullPage: true });
+});
+```
+
+### 写経コマンドまとめ
+
+```bash
+# 全テスト実行（ヘッドレス）
+npx playwright test
+
+# ブラウザを表示して実行
+npx playwright test --headed
+
+# 特定ファイルだけ
+npx playwright test e2e/handson.spec.ts --headed
+
+# 特定テスト名だけ
+npx playwright test --grep "FCP"
+
+# 失敗時に自動でデバッグモード
+npx playwright test --debug
+
+# HTML レポートを開く
+npx playwright show-report
+```
+
+### 写経の進め方
+
+```
+① 基本構造（test / expect / goto）
+    ↓
+② describe でグループ化
+    ↓
+③ fill / click / keyboard でフォーム操作
+    ↓
+④ page.route で API モック
+    ↓
+⑤ page.evaluate で JS 直接実行
+```
+
+各ステップで `--headed` を付けてブラウザの動作を目で確認しながら進めると理解が速い。
