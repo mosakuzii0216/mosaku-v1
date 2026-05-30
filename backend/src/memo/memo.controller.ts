@@ -11,6 +11,7 @@ import {
 	Request,
 } from '@nestjs/common';
 import { MemoService } from './memo.service';
+import { MemoSharingService } from './memo-sharing.service';
 import { CreateMemoDto } from './dto/create-memo.dto';
 import { UpdateMemoDto } from './dto/update-memo.dto';
 import { SearchMemoDto } from './dto/search-memo.dto';
@@ -21,7 +22,10 @@ import type { AuthenticatedRequest } from '../auth/types';
 @Controller('memos')
 @UseGuards(JwtAuthGuard)
 export class MemoController {
-	constructor(private readonly memoService: MemoService) {}
+	constructor(
+		private readonly memoService: MemoService,
+		private readonly memoSharingService: MemoSharingService,
+	) {}
 
 	@Post()
 	create(@Body() createMemoDto: CreateMemoDto, @Request() req: AuthenticatedRequest) {
@@ -103,6 +107,15 @@ export class MemoController {
 		return { count: result.count };
 	}
 
+	/**
+	 * 自分の公開中メモ一覧を取得する
+	 * GET /memos/me/public-memos（:id と衝突しないよう先に定義）
+	 */
+	@Get('me/public-memos')
+	listMyPublicMemos(@Request() req: AuthenticatedRequest) {
+		return this.memoSharingService.listMyPublicMemos(req.user.id);
+	}
+
 	@Get(':id')
 	findOne(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
 		return this.memoService.findOne(id, req.user.id);
@@ -142,5 +155,33 @@ export class MemoController {
 	@Delete(':id/permanent')
 	permanentDelete(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
 		return this.memoService.permanentDelete(id, req.user.id);
+	}
+
+	/**
+	 * メモを公開状態に切り替える
+	 * POST /memos/:id/share
+	 */
+	@Post(':id/share')
+	publish(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
+		return this.memoSharingService.publishMemo(id, req.user.id);
+	}
+
+	/**
+	 * メモの公開を解除する
+	 * DELETE /memos/:id/share
+	 */
+	@Delete(':id/share')
+	async unpublish(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
+		await this.memoSharingService.unpublishMemo(id, req.user.id);
+		return { success: true };
+	}
+
+	/**
+	 * 公開トークンを再生成する
+	 * POST /memos/:id/share/regenerate
+	 */
+	@Post(':id/share/regenerate')
+	regenerateShare(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
+		return this.memoSharingService.regenerateToken(id, req.user.id);
 	}
 }

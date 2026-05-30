@@ -72,6 +72,9 @@ async function bootstrap() {
 	// レート制限エラーのカスタムフィルター
 	app.useGlobalFilters(new ThrottlerExceptionFilter());
 
+	// リバースプロキシ（GCLB / Cloud Run）配下で正しい接続元 IP を解決する
+	app.getHttpAdapter().getInstance().set('trust proxy', 1);
+
 	await app.listen(configService.port);
 }
 void bootstrap();
