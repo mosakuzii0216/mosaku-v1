@@ -32,6 +32,54 @@
 
 ---
 
+## 2026-05-31（Phase 1 ドッグフーディング中 / 摩擦駆動 spec を量産 — 認証・招待・公開共有が前進）
+
+### 今週やったこと（5/20〜5/31 の2週間ぶん）
+
+- **`refresh-token-auto-login` を実装完走**（5/21〜23）
+  - Backend: cookie-parser 導入 + Refresh Cookie ヘルパ、Refresh Token 用 CSRF Guard、Refresh Token のリポジトリ／サービス層、`/auth/refresh` `/logout` 新設、`JwtAuthGuard` をグローバル化し `@Public()` opt-out に統一、`refresh_token_issue_failed` イベント + tokenHash scrubber
+  - Frontend: `AuthContext` を Refresh Token 復元優先に再構築、API Client の 401 経路で透過リフレッシュ発火、Refresh Client モジュール新設
+  - E2E: バックエンドの Refresh フロー、フロントの「ブラウザ再起動相当の自動復元」Playwright。`docs/deployment/cloud-run.md` にリリース後検証チェックリスト追加
+  - ※ `spec.json` の phase は `tasks-approved` のままだが tasks.md は完了マーク済み（実態は実装完了）
+- **`viral-invitation` を実装**（5/24〜26、phase=`implemented`）
+  - Backend: `InvitationStateService` を HMAC-SHA256 で実装、OAuth 開始 API 新設 + コールバックに state 検証分岐、`QuotaPolicy` をロール別評価 + 楽観ロック減算、`CodeGenerator`（nanoid no-look-alike）、`InvitationController/Service` を verify-context / 自分用 CRUD / shareUrl 付与に拡張、`User.invitationQuota` カラム追加、`INVITATION_STATE_SECRET` を `JWT_SECRET` と分離
+  - Frontend: `/invite/:code` ページ、`AuthForm` を新フロー（prefill / OAuth start / 自動ログイン）に整合、`useInvitationsQueries`、`shareInvitation`（Web Share + clipboard フォールバック）、`ApiError` 導入、設定ページに招待管理セクション
+- **`memo-public-sharing`（メモ公開共有）を実装**（5/28〜30、tasks 35/35 完了）
+  - Backend: `memos` に公開トークン・公開日時カラム追加、`MemoSharingService`、公開/解除/再生成/閲覧 API（リバースプロキシ対応）、ゴミ箱遷移時の公開自動解除カスケード
+  - Frontend: 公開系データアクセス層、未ログイン閲覧者向け公開ビュー、エディタヘッダーの公開コントロール、設定ページの公開メモ管理カード、E2E シナリオ
+  - ※ phase は `implementing` のままだが tasks 全完了（実態は実装完了）
+- **`memo-public-isolation`（公開メモ隔離）を新規起票 → 実装まで完走**（5/30〜31）
+  - 公開読み取り／編集経路の対称な観測 Interceptor、メトリクスの公開／編集分離、一方向 DI 継ぎ目のフィットネステスト、データ境界回帰テスト、公開メモトークンの Sentry 流出防止、運用 runbook（ログメトリクス / アラート / 段階的分離 Playbook）、不変則テスト（bk+fe）
+  - 差分を 6 コミットにタスク単位で整理し main に fast-forward 済み（backend 65 / frontend 13 テスト緑）
+- **ドッグフーディング運用ルールを steering に正式追加**（`.kiro/steering/dogfooding.md`、5/22）。5/19 時点の未着手タスクを解消
+- **メモ一覧の UX 改善**（5/21〜22）: 検索バー / ソート切替 / タイトル・件数表示 / 新規作成ボタン / 空状態の作成 CTA
+- **自動保存のデバウンスを 1000ms → 200ms に短縮**（5/25、体感改善）
+- **オンライン編集も IndexedDB キュー経由に統一**（5/26、`MemoBridge`/`SyncEngine` の pending 通知配線）
+- **CLAUDE.md 更新**（5/22）: アーキ不変則・dogfooding・コミット規約を追記し環境変数を圧縮
+- **OAuth Strategy 未設定時の起動継続**を Google / GitHub にも適用（警告降格）
+- **lint クリーンアップ多数**（`no-unsafe-*` 警告を auth/test・sentry・backend test で計数十件解消）
+
+### 来週の予定
+
+- 実装完了済み spec の phase 整合（`refresh-token-auto-login` / `memo-public-sharing` / `memo-public-isolation` を `/kiro:validate-impl` で `implementation-validated` へ）
+- 6月テーマ作成（+5、計15）に着手
+- モバイル実機確認・エディタ E2E（TipTap v3 安定性検知）
+- 次の摩擦 Top の選定 → `/kiro:spec-init`
+
+### ブロッカー・懸念
+
+- **spec.json の phase と実装実態のズレ**が複数（`refresh-token-auto-login`=tasks-approved / `memo-public-sharing`=implementing / `memo-public-isolation`=tasks-generated だが、いずれも実装・テスト完了）。validate-impl で締めて整合させたい
+- main がローカル先行（push 未実施の分あり）
+
+### メモ
+
+- 期間中コミット数: 約100（5/19〜5/31、2週間ぶん）。大型 spec 4本が並行で進んだ密度の高い2週間
+- 完了 spec 状況: 18 spec 中、completed / implementation-validated が 14、implemented が 1（`viral-invitation`）、実装完了だが phase 未整合が 3（`refresh-token-auto-login` / `memo-public-sharing` / `memo-public-isolation`）
+- テーマ数: 10（変わらず）。9月マイルストーン（23テーマ）に向け 6〜8月で +13 ペースが必要
+- `refresh-token` / `viral-invitation` / メモ一覧 UX / 自動保存高速化は、いずれもドッグフーディングで露出した摩擦の解消にあたる
+
+---
+
 ## 2026-05-19（Phase 1 / 5月マイルストーンほぼ達成 + 認識ズレ訂正）
 
 ### 今週やったこと
