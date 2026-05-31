@@ -283,32 +283,69 @@ gcloud alpha monitoring policies create \
   --policy-from-file=alert_instance_util.yaml
 ```
 
-### 2.4 DB コネクションプール使用率超過（Supabase pooler）
+### 2.4 DB コネクションプール使用率超過
 
-Supabase pooler（6543）の使用率はネイティブで Cloud Monitoring に出ないため、Supabase の DB メトリクス
-（`pg_stat_activity` 由来の接続数 / プール上限比）を **Supabase ダッシュボードのアラート**、もしくは
-接続数を定期 export するメトリクスで監視する。閾値はプール上限の 80%。
+Supabase pooler（6543）の使用率はネイティブで Cloud Monitoring に出ないため、**公開/編集 Interceptor と同一の
+「構造化ログ → ログベースメトリクス → アラート」パイプライン**で計測する。新規インフラ（Cloud Scheduler 等）は足さず、
+既存の `@nestjs/schedule`（`TrashCleanupService` と同じ足場）で発出する。
+
+- 発出源（実装済み）: `DbPoolObservabilityService`（`backend/src/memo/db-pool-observability.service.ts`）。
+  1 分毎に `SELECT count(*), current_setting('max_connections') FROM pg_stat_activity WHERE datname = current_database()`
+  を実行し、`message:"db_pool_utilization"` 固定キーの 1 行 JSON（`used` / `max` / `util_ratio` / `severity`）を発出する。
+- 分母 `max` は環境変数 **`DB_POOL_MAX_CONNECTIONS`** を優先（未設定時は Postgres `max_connections`）。
+  **⚠️ 注意**: pooler（pgBouncer）は接続を多重化するため、`max_connections` を分母にすると pooler のプール枯渇を
+  **過小評価**しうる。本番では Supabase のプール上限（pool size）を `DB_POOL_MAX_CONNECTIONS` に設定して分母を実態に合わせること。
+- メトリクス定義（§1.6）:
 
 ```yaml
-# alert_db_pool.yaml（接続数メトリクスを別途 export している場合の例）
+# db_pool_utilization.yaml
+name: db_pool_utilization
+description: 'DB コネクションプール使用率（util_ratio 0..1）。Stage 3 トリガーの一次データ'
+filter: 'resource.type="cloud_run_revision" AND jsonPayload.message="db_pool_utilization"'
+metricDescriptor:
+  metricKind: DELTA
+  valueType: DISTRIBUTION
+  unit: '1'
+valueExtractor: 'EXTRACT(jsonPayload.util_ratio)'
+bucketOptions:
+  linearBuckets:
+    numFiniteBuckets: 20
+    width: 0.05
+    offset: 0.0
+```
+
+```bash
+gcloud logging metrics create db_pool_utilization \
+  --project="${PROJECT_ID}" \
+  --config-from-file=db_pool_utilization.yaml
+```
+
+- アラートポリシー（MQL・distribution の平均を閾値判定）:
+
+```yaml
+# alert_db_pool.yaml
 displayName: '[memo-isolation] DB プール使用率超過 (> 80% for 5m)'
 combiner: OR
 conditions:
-  - displayName: 'Supabase pooler 使用率 > 80%'
-    conditionThreshold:
-      filter: 'metric.type="custom.googleapis.com/supabase/pooler_utilization"'
-      aggregations:
-        - alignmentPeriod: 60s
-          perSeriesAligner: ALIGN_MEAN
-      comparison: COMPARISON_GT
-      thresholdValue: 0.8
+  - displayName: 'DB プール使用率 > 80%'
+    conditionMonitoringQueryLanguage:
+      query: |
+        fetch cloud_run_revision
+        | metric 'logging.googleapis.com/user/db_pool_utilization'
+        | align delta(1m)
+        | every 1m
+        | group_by [], [v: mean(value.db_pool_utilization)]
+        | condition val() > 0.8 '1'
       duration: 300s
 notificationChannels:
   - 'CHANNEL_ID'
 ```
 
-> プール使用率のネイティブ計測が未整備の場合は、暫定で Supabase ダッシュボードのアラート（Database → Reports →
-> Connections）を `#mosaku-alerts` に連携する。
+```bash
+gcloud alpha monitoring policies create \
+  --project="${PROJECT_ID}" \
+  --policy-from-file=alert_db_pool.yaml
+```
 
 ---
 
@@ -323,7 +360,7 @@ notificationChannels:
 | T1  | 公開 req レート              | `public_memo_read_count` + `public_memo_read_throttled_count`（**429 含む和**, §1.4） | > 50 req/s（≒ 3000 req/分）    | 5 分     | **Stage 1**（CDN 化）                   |
 | T2  | Cloud Run インスタンス使用率 | Cloud Run native `instance_count{state=active}`                                       | アクティブ ≥ 7 / 10（70%）     | 10 分    | **Stage 2** 候補                        |
 | T3  | 編集系 p95 劣化              | `memo_edit_latency`（route 別 p95）＋ 公開 req 上昇相関                               | p95 > 800ms（または平常比 2×） | 5 分     | **Stage 2**（影響ありアラート Req 2.4） |
-| T4  | DB コネクションプール使用率  | Supabase pooler（6543）使用率                                                         | > 80%                          | 5 分     | **Stage 3** 検討                        |
+| T4  | DB コネクションプール使用率  | `db_pool_utilization`（`DbPoolObservabilityService` の util_ratio, §2.4）             | > 80%（util_ratio > 0.8）      | 5 分     | **Stage 3** 検討                        |
 
 ### 3.2 トリガー → 分離段階 対応表（Req 2.3）
 

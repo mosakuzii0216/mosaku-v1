@@ -89,3 +89,12 @@
   - helmet セキュリティヘッダー・既存レート制限の方針を破壊していないことを確認する
   - 本フェーズの変更が既存テスト・リント・型チェックを破壊せず品質ゲートを通過することを確認する
   - _Requirements: 6.1, 6.2, 6.4, 6.5_
+
+- [x] 7. DB プール使用率の観測源を実装する（T4 トリガーの一次データ）
+  - 当初設計は DB プール使用率を Supabase ネイティブ/ダッシュボード前提としていたが、運用適用時に
+    公開/編集 Interceptor と同一パイプラインへ寄せる方針へ更新（runbook §2.4 に反映）
+  - 既存 `@nestjs/schedule`（`TrashCleanupService` と同じ足場）で 1 分毎に `pg_stat_activity` の接続数を取得し、
+    `message:"db_pool_utilization"` 固定キーの構造化ログ（`used`/`max`/`util_ratio`/`severity`）を発出する
+  - 分母は `DB_POOL_MAX_CONNECTIONS` env 優先・未設定時は Postgres `max_connections`。クエリ失敗・ゼロ除算は握り潰す
+  - ログベースメトリクス `db_pool_utilization` と DB プール使用率アラート（> 80% for 5m）を作成済み
+  - _Requirements: 2.1, 2.2, 2.3_
