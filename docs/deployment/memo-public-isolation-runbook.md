@@ -62,7 +62,7 @@ metricDescriptor:
       valueType: STRING
       description: 'HTTP status の先頭桁（2=2xx / 4=4xx / 5=5xx）'
 labelExtractors:
-  status_class: 'REGEXP_EXTRACT(string(jsonPayload.status), "^(\\d)")'
+  status_class: 'REGEXP_EXTRACT(jsonPayload.status, "^(\\d)")'
 ```
 
 ```bash
@@ -178,51 +178,70 @@ conditions:
   - displayName: '公開 req レート (served+throttled)'
     conditionMonitoringQueryLanguage:
       query: |
-        { metric 'logging.googleapis.com/user/public_memo_read_count'
-        ; metric 'logging.googleapis.com/user/public_memo_read_throttled_count' }
-        | align rate(1m)
+        { fetch cloud_run_revision
+          | metric 'logging.googleapis.com/user/public_memo_read_count'
+          | align rate(1m)
+          | group_by [], [v: sum(value.value)]
+        ; fetch cloud_run_revision
+          | metric 'logging.googleapis.com/user/public_memo_read_throttled_count'
+          | align rate(1m)
+          | group_by [], [v: sum(value.value)] }
         | union
-        | group_by [], [sum(value.value)]
+        | group_by [], [total: sum(v)]
         | condition val() > 50 '1/s'
       duration: 300s
 notificationChannels:
   - 'CHANNEL_ID'
 ```
 
-```bash
-gcloud alpha monitoring policies create \
-  --project="${PROJECT_ID}" \
-  --policy-from-file=alert_public_req_rate.yaml
-```
+> **MQL の実装上の注意（2026-06-01 実機検証で確定）**:
+>
+> - クエリは `fetch <resource>`（ここでは `cloud_run_revision`）で開始する。`metric '...'` 単体で始めると `Table operator 'metric' requires resource input` で弾かれる。
+> - `union` は**入力テーブルの列名・列型の一致**を要求する。`public_memo_read_count` は `status_class` ラベルを持つため、`union` 前に各ブランチを `group_by [], [v: sum(value.value)]` でラベル無し・**同名の値列 `v`** に畳んでから結合する。
+>
+> ```bash
+> gcloud alpha monitoring policies create \
+>   --project="${PROJECT_ID}" \
+>   --policy-from-file=alert_public_req_rate.yaml
+> ```
 
 ### 2.2 編集 p95 レイテンシ劣化（公開 req 上昇との相関 →「編集体験への影響あり」Req 2.4）
 
 編集 p95 の劣化を主条件とし、`combiner: AND` で公開 req 上昇と相関したときのみ
 **「編集体験への影響あり」**として発火させる（公開スパイクが編集を巻き込んだ兆候を識別可能にする）。
 
+> **GCP 制約（2026-06-01 実機検証で確定）**: `monitoring_query_language` 条件を持つアラートポリシーは
+> **条件を1個しか持てない**（`combiner: AND` で MQL 2条件を並べると `can only have a single condition` で弾かれる）。
+> そのため「編集 p95 劣化 AND 公開 req 上昇」は**単一 MQL 内で `join` ＋ `&&`** に畳んで表現する。`join` は
+> 両入力テーブルを `group_by []`（ラベル無し単一系列）に畳んでおくと 1 行に結合でき、`val(0)`＝編集 p95、
+> `val(1)`＝公開 req レートとして相関条件を書ける。
+
 ```yaml
 # alert_edit_p95_impacted.yaml
 displayName: '[memo-isolation] 編集体験への影響あり (edit p95 > 800ms AND 公開 req 上昇 for 5m)'
-combiner: AND
+combiner: OR
 conditions:
-  - displayName: '編集 p95 劣化 (> 800ms)'
+  - displayName: '編集 p95 劣化 AND 公開 req 上昇'
     conditionMonitoringQueryLanguage:
       query: |
-        metric 'logging.googleapis.com/user/memo_edit_latency'
-        | align delta(1m)
-        | every 1m
-        | group_by [], [percentile(value.value, 95)]
-        | condition val() > 800 'ms'
-      duration: 300s
-  - displayName: '公開 req 上昇 (served+throttled > 30 req/s)'
-    conditionMonitoringQueryLanguage:
-      query: |
-        { metric 'logging.googleapis.com/user/public_memo_read_count'
-        ; metric 'logging.googleapis.com/user/public_memo_read_throttled_count' }
-        | align rate(1m)
-        | union
-        | group_by [], [sum(value.value)]
-        | condition val() > 30 '1/s'
+        { fetch cloud_run_revision
+          | metric 'logging.googleapis.com/user/memo_edit_latency'
+          | align delta(1m)
+          | every 1m
+          | group_by [], [p95: percentile(value.value, 95)]
+        ; { fetch cloud_run_revision
+            | metric 'logging.googleapis.com/user/public_memo_read_count'
+            | align rate(1m)
+            | group_by [], [v: sum(value.value)]
+          ; fetch cloud_run_revision
+            | metric 'logging.googleapis.com/user/public_memo_read_throttled_count'
+            | align rate(1m)
+            | group_by [], [v: sum(value.value)] }
+          | union
+          | every 1m
+          | group_by [], [rate: sum(v)] }
+        | join
+        | condition val(0) > 800 'ms' && val(1) > 30 '1/s'
       duration: 300s
 notificationChannels:
   - 'CHANNEL_ID'
