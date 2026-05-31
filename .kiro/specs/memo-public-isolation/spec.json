@@ -3,7 +3,7 @@
 	"created_at": "2026-05-30T00:00:00Z",
 	"updated_at": "2026-05-31T00:00:00Z",
 	"language": "ja",
-	"phase": "tasks-generated",
+	"phase": "implementation-validated",
 	"approvals": {
 		"requirements": {
 			"generated": true,
@@ -18,5 +18,11 @@
 			"approved": true
 		}
 	},
-	"ready_for_implementation": true
+	"ready_for_implementation": true,
+	"implementation": {
+		"completed": true,
+		"validated": true,
+		"validated_at": "2026-05-31T00:00:00Z",
+		"test_results": "backend memo 105/105 passed (interceptors/invariants/dependency 含む), frontend publicMemoInvariants 13/13 passed"
+	}
 }
