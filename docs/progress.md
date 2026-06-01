@@ -32,6 +32,38 @@
 
 ---
 
+## 2026-06-02（Phase 1 ドッグフーディング中 / spec phase を全整合 + 6月テーマ +5 を前倒し達成）
+
+### 今週やったこと（5/31 エントリ以降）
+
+- **前週末の宿題「実装完了済み spec の phase 整合」を完了**
+  - `refresh-token-auto-login` / `memo-public-sharing` / `memo-public-isolation` の 3 spec を `implementation-validated` に締めた（5/31 時点のブロッカーだった phase ズレを解消）
+  - 本日さらに `viral-invitation` を `/kiro:validate-impl` で検証 → GO（Backend 152/152・Frontend 50/50 緑、旧 `register-with-invitation` 5 本と文字列マッチ判定の残存ゼロを確認）→ `implemented` から `implementation-validated` へ
+  - **これで全 18 spec が `completed` / `implementation-validated` に到達**（phase 未整合ゼロ）
+- **6月マイルストーンのテーマ作成（+5、計15）を前倒し達成**（`sakura` / `yuyake` / `sumi` / `neon` / `wakaba`）
+- **DB プール監視の運用補強**（`memo-public-isolation` 由来）
+  - DB プール使用率の定期観測サービスを追加、`DB_POOL_MAX_CONNECTIONS` を `.env.example` に追記、運用 runbook の gcloud/MQL 断片を実機検証で修正
+
+### 来週の予定
+
+- 7月テーマ作成（+5、計20）に着手 — 6月分を前倒し済みのためペースに余裕
+- モバイル操作感の実機確認・改善
+- エディタ E2E テスト追加（Playwright、TipTap v3 安定性の自動検知）
+- 次の摩擦 Top2〜3 の選定 → `/kiro:spec-init`（候補: ピン留め / Markdown エクスポート / 全文検索 / キーボードショートカット）
+
+### ブロッカー・懸念
+
+- なし（spec phase ズレは全解消）
+- main がローカル先行（push 未実施分の有無を要確認）
+
+### メモ
+
+- 完了 spec 状況: **18 spec すべてが `completed`（8）/ `implementation-validated`（10）**。実装完了率 100%、phase 整合済み
+- テーマ数: **15**（6月マイルストーン達成）。9月マイルストーン（23）に向け 7〜8月で +8 ペース
+- 5/31 の高密度 2 週間の後、今週は「締め」週。実装より phase 整合・運用補強・テーマ量産にウェイト
+
+---
+
 ## 2026-05-31（Phase 1 ドッグフーディング中 / 摩擦駆動 spec を量産 — 認証・招待・公開共有が前進）
 
 ### 今週やったこと（5/20〜5/31 の2週間ぶん）
