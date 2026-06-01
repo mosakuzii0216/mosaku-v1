@@ -137,3 +137,4 @@ docs/private/
 # Playwright / E2E test artifacts
 backend/test-results/
 frontend/test-results/
+.env*
