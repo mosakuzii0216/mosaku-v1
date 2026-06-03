@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import React from 'react';
 
 const mockUseEditor = vi.fn(() => ({ isEditable: false }));
+const mockCreateEditorExtensions = vi.fn(() => ['ext']);
 
 vi.mock('@tiptap/react', () => ({
 	useEditor: (config: unknown) => mockUseEditor(config),
@@ -13,13 +14,16 @@ vi.mock('@tiptap/react', () => ({
 		}),
 }));
 
-vi.mock('@tiptap/starter-kit', () => ({ default: {} }));
+vi.mock('../editor/createEditorExtensions', () => ({
+	createEditorExtensions: (options: unknown) => mockCreateEditorExtensions(options),
+}));
 
 import { PublicMemoRenderer } from './PublicMemoRenderer';
 
 describe('PublicMemoRenderer', () => {
 	beforeEach(() => {
 		mockUseEditor.mockReturnValue({ isEditable: false });
+		mockCreateEditorExtensions.mockClear();
 	});
 
 	it('EditorContent を描画する', () => {
@@ -34,6 +38,28 @@ describe('PublicMemoRenderer', () => {
 			editable: boolean;
 		};
 		expect(lastCall.editable).toBe(false);
+	});
+
+	it('共有ファクトリ createEditorExtensions({ editable: false }) で拡張を構築する', () => {
+		render(React.createElement(PublicMemoRenderer, { content: '<p>テスト</p>' }));
+
+		expect(mockCreateEditorExtensions).toHaveBeenCalledWith({ editable: false });
+
+		const lastCall = mockUseEditor.mock.calls[mockUseEditor.mock.calls.length - 1][0] as {
+			extensions: unknown;
+		};
+		expect(lastCall.extensions).toEqual(['ext']);
+	});
+
+	it('既存の表示属性（pointer-events-none select-text）を維持する', () => {
+		render(React.createElement(PublicMemoRenderer, { content: '<p>テスト</p>' }));
+
+		const lastCall = mockUseEditor.mock.calls[mockUseEditor.mock.calls.length - 1][0] as {
+			editorProps: { attributes: { class: string } };
+		};
+		const className = lastCall.editorProps.attributes.class;
+		expect(className).toContain('pointer-events-none');
+		expect(className).toContain('select-text');
 	});
 
 	it('toolbar が存在しないこと', () => {

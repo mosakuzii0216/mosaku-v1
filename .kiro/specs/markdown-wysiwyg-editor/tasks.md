@@ -89,7 +89,7 @@
   - `/` 起動→ブロック挿入、ノートブック参照→`[[name]]` 挿入の往復を E2E で網羅する
   - _Requirements: 3.1, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8_
 
-- [ ] 4. (P) PublicMemoRenderer を共有ファクトリへ移行
+- [x] 4. (P) PublicMemoRenderer を共有ファクトリへ移行
   - extensions を createEditorExtensions({ editable:false }) へ置換し、編集側と同一ノード定義で描画する
   - editable:false・pointer-events-none select-text の既存表示属性を維持する
   - 新規ノード（コードブロック・タスクリスト・区切り線・リンク）を崩さず公開表示でレンダリングする

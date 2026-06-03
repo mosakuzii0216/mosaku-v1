@@ -1,5 +1,5 @@
 import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
+import { createEditorExtensions } from '../editor/createEditorExtensions';
 
 interface PublicMemoRendererProps {
 	content: string;
@@ -7,7 +7,8 @@ interface PublicMemoRendererProps {
 
 export const PublicMemoRenderer: React.FC<PublicMemoRendererProps> = ({ content }) => {
 	const editor = useEditor({
-		extensions: [StarterKit],
+		// 編集側（RichTextEditor）と同一のノード定義で描画し、保存 HTML の往復一致を担保する（Req9.4）
+		extensions: createEditorExtensions({ editable: false }),
 		content,
 		editable: false,
 		editorProps: {
