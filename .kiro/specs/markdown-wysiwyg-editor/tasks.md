@@ -9,7 +9,7 @@
   - 既存 StarterKit / suggestion / tippy.js は据え置き、Mention 依存は後続タスクで除去する前提を確認する
   - _Requirements: 4.3, 5.1_
 
-- [ ] 1.2 lowlight インスタンスと構文ハイライト基盤の整備
+- [x] 1.2 lowlight インスタンスと構文ハイライト基盤の整備
   - lowlight インスタンスをモジュールスコープで1度だけ生成し編集・公開で共有する
   - 既定の言語サブセット（js/ts/json/html/xml/css/bash/shell/python/sql/markdown/diff 等）を register する
   - 未登録言語はハイライト無しのプレーン code として描画し例外を投げない
