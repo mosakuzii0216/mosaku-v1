@@ -16,7 +16,7 @@
   - ハイライト用 CSS をエディタスコープへ限定し既存テーマ CSS と衝突させない
   - _Requirements: 4.3_
 
-- [ ] 1.3 createEditorExtensions ファクトリの実装
+- [x] 1.3 createEditorExtensions ファクトリの実装
   - StarterKit を configure し、見出しレベルを H1〜H3 に限定、codeBlock を無効化して Lowlight 版へ差し替える
   - Link を autolink/linkOnPaste/protocols 限定/rel 付与/inclusive:false で設定し、URL 自動リンク化と範囲非拡張を成立させる
   - TaskList と TaskItem（nested 有効）を追加し、区切り線・基本装飾・リスト・引用の input rule を有効化する
