@@ -17,7 +17,7 @@
 ### Non-Goals
 
 - 保存フォーマットの Markdown 化（現状の **HTML 保存を維持**）。
-- 自動保存 debounce 値の是正（200ms↔2秒の乖離は Open Question として本機能スコープ外）。
+- 自動保存 debounce 値そのものの調整（要件 8.1 を実効値 約200ms へ修正済み。本機能は既存 debounce を踏襲し値の変更は行わない）。
 - テーブル・画像・コラボ編集など要件外のリッチ機能。
 - ツールバー UI の刷新（既存ボタンの維持のみが対象）。
 
@@ -180,7 +180,7 @@ flowchart TD
 
 ##### State Management
 
-- **State model**: 純関数。`createEditorExtensions(options)` → `Extension[]` を返す（副作用なし）。lowlight インスタンスはモジュールスコープで1度だけ生成し共有。
+- **State model**: 純関数。`createEditorExtensions(options)` → `Extensions`（TipTap の `AnyExtension[]`。`Node`/`Mark` を含むため `Extension[]` では狭い）を返す（副作用なし）。lowlight インスタンスはモジュールスコープで1度だけ生成し共有。
 - **Persistence & consistency**: ノード→HTML 直列化属性（`data-checked`, code 言語 class）が編集・公開で一致。
 - **Concurrency strategy**: 不要（生成は同期・冪等）。
 
@@ -199,7 +199,11 @@ export interface EditorExtensionOptions {
 	slash?: SlashOptions;
 }
 
-export function createEditorExtensions(options: EditorExtensionOptions): Extension[];
+// 返り値は TipTap の `Extensions`（= AnyExtension[]）。StarterKit/TaskList/CodeBlockLowlight 等は
+// Node/Mark を含むため `Extension[]` では型が狭く `as` キャストを誘発する（型安全則: any 禁止）。
+import type { Extensions } from '@tiptap/react';
+
+export function createEditorExtensions(options: EditorExtensionOptions): Extensions;
 ```
 
 - Preconditions: `editable=true` のとき `slash` と `placeholder` を渡しうる。`editable=false` では両者を無視する。
@@ -327,10 +331,19 @@ interface SlashCommandItem {
 function getSlashCommandItems(query: string, mode: 'root' | 'notebook'): SlashCommandItem[];
 ```
 
+##### Mode 状態の所有とサブメニュー遷移（Req3.5 / 3.8 — 最難所）
+
+`@tiptap/suggestion` は doc 上の `/query` 文字列から毎キーストロークで items を再導出し、`command` 実行で原則ポップアップを exit する。`'root' | 'notebook'` の `mode` は **doc に持たせず、suggestion の `render` クロージャ（および `SlashCommandList` のローカル state）が保持**する。すなわち `getSlashCommandItems` は純関数のままで、`mode` は呼び出し側（render/UI）の状態として注入する。
+
+- **root → notebook 遷移**: ノートブック参照コマンドの `run` は **ブロック挿入も `deleteRange` も行わず**、render 層の `mode` を `'notebook'` へ切り替えて `command(item)` の exit を起こさない（suggestion を開いたまま list を差し替える）。以降の入力クエリは `getSlashCommandItems(query, 'notebook')` でノートブックを絞り込む（Req3.3）。
+- **notebook → 確定**: ノートブック候補選択時に初めて `deleteRange(range)` ＋ `insertContent('[[' + name + ']]')` を実行し、suggestion を exit（Req3.5 / Req9.2）。
+- **notebook → 戻る / 中断**: Backspace で `/` まで消えた／Escape／候補なし（Req3.8）のとき `mode` を `'root'` へ戻すか suggestion を閉じる。`SlashCommandList` は「戻る」操作を props で受ける（既存の `onKeyDown` 連携に統合）。
+- **状態の寿命**: `mode` は単一の suggestion セッション内に閉じる（`onExit` でリセット）。doc を汚さないため Req1 の content 同期（echo-ref）に影響しない。
+
 **Implementation Notes**
 
-- Integration: 既存 `setNotebooksData` の注入機構を流用（RichTextEditor の `useNotebooks` → `setNotebooksData`）。
-- Validation: 各ブロック挿入が toolbar 操作と同一ノード構造になること（Req2.10）。
+- Integration: 既存 `setNotebooksData` の注入機構を流用（RichTextEditor の `useNotebooks` → `setNotebooksData`）。`mode` 状態は `suggestion.ts` 相当の `render` クロージャ内 + `SlashCommandList` のローカル state に閉じる。
+- Validation: 各ブロック挿入が toolbar 操作と同一ノード構造になること（Req2.10）。root↔notebook の往復・確定で `[[name]]` 挿入・戻る/Escape での復帰を E2E で網羅（Req3.5/3.8）。
 
 #### SlashCommandList（UI）
 
@@ -405,7 +418,7 @@ function getSlashCommandItems(query: string, mode: 'root' | 'notebook'): SlashCo
 
 ## Open Questions / Risks
 
-1. **自動保存 debounce 値（200ms vs 要件8.1「2秒」）**: 実装は 200ms、要件文は 2秒。本機能では**既存 200ms を踏襲**（auto-save フックの関心事・リグレッション波及大）し、値是正は別途合意とする。要件文の更新可否を要確認。
+1. ~~**自動保存 debounce 値（200ms vs 要件8.1「2秒」）**~~ **【解決済み 2026-06-03】**: 要件 8.1 を実効値（約 200ms）へ修正し、本機能は**既存 debounce を踏襲**する方針で確定。値そのものの変更は本機能スコープ外（Non-Goals 参照）。
 2. **lowlight 言語サブセットの確定**: 既定 common セット（js/ts/json/html/xml/css/bash/shell/python/sql/markdown/diff 等）で開始し、バンドル計測後に動的 import 化を検討（R4）。
 3. **highlight CSS テーマと既存テーマ CSS の両立**: エディタスコープ限定で適用。テーマ切替時の見え方確認が必要（R6）。
 4. **Mention 拡張の完全除去可否**: 現状 `/` 以外で Mention を使っていないか最終確認の上で除去（除去できない場合は無効化）。
