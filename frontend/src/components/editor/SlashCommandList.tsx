@@ -1,77 +1,66 @@
-// TODO: 必要そうなコマンドの列挙からやり直し
-// TODO: コマンドの設計からやり直し
-
-import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import type { Editor } from '@tiptap/react';
-
-interface Range {
-	from: number;
-	to: number;
-}
-
-interface SuggestionProps {
-	editor: Editor;
-	range: Range;
-	query: string;
-	text: string;
-	clientRect?: (() => DOMRect | null) | null;
-}
-
-interface CommandItem {
-	title: string;
-	description?: string;
-	command: (params: SuggestionProps) => void;
-	type?: 'base' | 'notebook';
-}
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import type { SlashCommandItem, SlashCommandMode } from './slashCommandItems';
 
 interface SlashCommandListProps {
-	items: CommandItem[];
-	command: (item: CommandItem) => void;
+	items: SlashCommandItem[];
+	/** 候補確定（root のノートブック参照はモード遷移、それ以外は挿入）。render 層が解釈する */
+	command: (item: SlashCommandItem) => void;
+	/** 表示モード。notebook のとき「戻る」操作を提供する */
+	mode: SlashCommandMode;
+	/** ノートブックサブメニューからルートへ戻る */
+	onBack: () => void;
 }
 
-interface SlashCommandListRef {
+export interface SlashCommandListRef {
 	onKeyDown: ({ event }: { event: KeyboardEvent }) => boolean;
 }
 
+/**
+ * スラッシュコマンド候補リストの presentational コンポーネント。
+ *
+ * 上下キー移動・Enter 確定・クリック選択・候補なし表示・ノートブックサブメニューの「戻る」に対応する（Req3.6/3.8）。
+ * 既存の forwardRef + useImperativeHandle(onKeyDown) 構造を踏襲し、Suggestion 連携を維持する。
+ */
 export const SlashCommandList = forwardRef<SlashCommandListRef, SlashCommandListProps>(
-	(props, ref) => {
+	({ items, command, mode, onBack }, ref) => {
 		const [selectedIndex, setSelectedIndex] = useState(0);
+		// キーボード操作は再レンダリングの完了を待たず同期で連続発火しうるため、
+		// 選択位置の真実源泉は ref に置き、表示用 state と同期させる。
+		const indexRef = useRef(0);
+		const moveTo = (index: number) => {
+			indexRef.current = index;
+			setSelectedIndex(index);
+		};
+
+		// 候補が変わるたびに選択位置を先頭へ戻す
+		useEffect(() => moveTo(0), [items]);
 
 		const selectItem = (index: number) => {
-			const item = props.items[index];
+			const item = items[index];
 			if (item) {
-				props.command(item);
+				command(item);
 			}
 		};
 
-		const upHandler = () => {
-			setSelectedIndex((selectedIndex + props.items.length - 1) % props.items.length);
-		};
-
-		const downHandler = () => {
-			setSelectedIndex((selectedIndex + 1) % props.items.length);
-		};
-
-		const enterHandler = () => {
-			selectItem(selectedIndex);
-		};
-
-		useEffect(() => setSelectedIndex(0), [props.items]);
-
 		useImperativeHandle(ref, () => ({
 			onKeyDown: ({ event }: { event: KeyboardEvent }) => {
+				// 候補なしのときは確定・移動を無効化し、ProseMirror へ素通しする（Req3.8）
+				if (items.length === 0) {
+					return false;
+				}
+
 				if (event.key === 'ArrowUp') {
-					upHandler();
+					moveTo((indexRef.current + items.length - 1) % items.length);
 					return true;
 				}
 
 				if (event.key === 'ArrowDown') {
-					downHandler();
+					moveTo((indexRef.current + 1) % items.length);
 					return true;
 				}
 
 				if (event.key === 'Enter') {
-					enterHandler();
+					selectItem(indexRef.current);
 					return true;
 				}
 
@@ -81,10 +70,20 @@ export const SlashCommandList = forwardRef<SlashCommandListRef, SlashCommandList
 
 		return (
 			<div className="slash-command-list border rounded-lg shadow-lg bg-white overflow-hidden max-h-80 overflow-y-auto">
-				{props.items.length > 0 ? (
-					props.items.map((item, index) => (
+				{mode === 'notebook' && (
+					<button
+						type="button"
+						onClick={onBack}
+						className="block w-full text-left px-4 py-2 text-sm text-gray-500 border-b hover:bg-gray-50 transition-colors"
+					>
+						← コマンドへ戻る
+					</button>
+				)}
+				{items.length > 0 ? (
+					items.map((item, index) => (
 						<button
-							key={index}
+							key={`${item.kind}-${item.title}`}
+							type="button"
 							className={`block w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors ${
 								index === selectedIndex ? 'bg-blue-50' : ''
 							}`}

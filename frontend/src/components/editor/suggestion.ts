@@ -1,8 +1,16 @@
 import { ReactRenderer } from '@tiptap/react';
 import tippy from 'tippy.js';
 import type { Instance as TippyInstance } from 'tippy.js';
-import { SlashCommandList } from './SlashCommandList';
 import type { Editor } from '@tiptap/react';
+import { SlashCommandList, type SlashCommandListRef } from './SlashCommandList';
+import {
+	getSlashCommandItems,
+	type SlashCommandItem,
+	type SlashCommandMode,
+} from './slashCommandItems';
+
+// ノートブックデータ注入は slashCommandItems へ集約。RichTextEditor の import 契約を維持するため再エクスポート。
+export { setNotebooksData } from './slashCommandItems';
 
 interface Range {
 	from: number;
@@ -13,73 +21,67 @@ interface SuggestionProps {
 	editor: Editor;
 	range: Range;
 	query: string;
-	text: string;
 	clientRect?: (() => DOMRect | null) | null;
 }
 
-interface CommandItem {
-	title: string;
-	description?: string;
-	command: (params: SuggestionProps) => void;
-	type?: 'base' | 'notebook';
-}
-
-// ノートブックデータを外部から注入できるようにするためのグローバル変数
-let notebooksData: Array<{ id: string; name: string }> = [];
-
-export const setNotebooksData = (notebooks: Array<{ id: string; name: string }>) => {
-	notebooksData = notebooks;
-};
-
-export const getSuggestionItems = (query: string): CommandItem[] => {
-	// クエリが "notebook" で始まる場合、ノートブック一覧を表示
-	if (query.toLowerCase().startsWith('notebook')) {
-		const searchTerm = query.slice(8).trim().toLowerCase(); // "notebook" の後の文字列
-		return notebooksData
-			.filter((nb) => nb.name.toLowerCase().includes(searchTerm))
-			.map((nb) => ({
-				title: nb.name,
-				description: 'ノートブック',
-				type: 'notebook' as const,
-				command: ({ editor, range }: { editor: Editor; range: Range }) => {
-					editor.chain().focus().deleteRange(range).insertContent(`[[${nb.name}]]`).run();
-				},
-			}));
-	}
-
-	// 基本コマンド
-	const baseCommands: CommandItem[] = [
-		{
-			title: 'notebook',
-			description: 'ノートブックを挿入',
-			type: 'base',
-			command: () => {
-				// notebook を入力済みの状態にするため、何もしない
-				// ユーザーが続けて入力すると自動的にノートブック一覧が表示される
-			},
-		},
-	];
-
-	return baseCommands.filter((item) => item.title.toLowerCase().startsWith(query.toLowerCase()));
-};
-
+/**
+ * `/` スラッシュコマンドの render。
+ *
+ * mode（'root' | 'notebook'）を doc に持たせず、この render クロージャが保持する（Req3.5 の最難所）。
+ * - root → notebook: ノートブック参照（kind='notebook'）選択時、doc を変更せず mode を切り替える。
+ * - notebook → 確定: 個々のノートブック選択で `[[name]]` を挿入し suggestion を exit する。
+ * - notebook → 戻る: 「戻る」操作・Escape・`/` まで消去（query 空）で root へ復帰する（Req3.8）。
+ */
 export const suggestion = {
-	items: ({ query }: { query: string }) => {
-		return getSuggestionItems(query);
-	},
-
 	render: () => {
-		let component: ReactRenderer | null = null;
+		let component: ReactRenderer<SlashCommandListRef> | null = null;
 		let popup: TippyInstance[] | null = null;
+		let mode: SlashCommandMode = 'root';
+		let latest: SuggestionProps | null = null;
+
+		function renderProps() {
+			if (!component || !latest) {
+				return;
+			}
+			component.updateProps({
+				items: getSlashCommandItems(latest.query, mode),
+				mode,
+				command: handleSelect,
+				onBack: backToRoot,
+			});
+		}
+
+		function backToRoot() {
+			if (mode === 'root') {
+				return;
+			}
+			mode = 'root';
+			renderProps();
+		}
+
+		function handleSelect(item: SlashCommandItem) {
+			if (!latest) {
+				return;
+			}
+			// root でノートブック参照を選ぶと、挿入も range 削除も行わずサブメニューへ遷移（Req3.5）
+			if (mode === 'root' && item.kind === 'notebook') {
+				mode = 'notebook';
+				renderProps();
+				return;
+			}
+			item.run({ editor: latest.editor, range: latest.range });
+		}
 
 		return {
 			onStart: (props: SuggestionProps) => {
+				mode = 'root';
+				latest = props;
 				component = new ReactRenderer(SlashCommandList, {
 					props: {
-						items: getSuggestionItems(props.query),
-						command: (item: CommandItem) => {
-							item.command(props);
-						},
+						items: getSlashCommandItems(props.query, mode),
+						mode,
+						command: handleSelect,
+						onBack: backToRoot,
 					},
 					editor: props.editor,
 				});
@@ -100,42 +102,48 @@ export const suggestion = {
 			},
 
 			onUpdate(props: SuggestionProps) {
-				if (!component) return;
-
-				component.updateProps({
-					items: getSuggestionItems(props.query),
-					command: (item: CommandItem) => {
-						item.command(props);
-					},
-				});
-
-				if (!props.clientRect || !popup) {
-					return;
+				latest = props;
+				// notebook モードで `/` まで消えた（query 空）ら root へ戻す（Req3.4/3.8）
+				if (mode === 'notebook' && props.query === '') {
+					mode = 'root';
 				}
+				renderProps();
 
-				popup[0].setProps({
-					getReferenceClientRect: props.clientRect as () => DOMRect,
-				});
+				if (props.clientRect && popup) {
+					popup[0].setProps({
+						getReferenceClientRect: props.clientRect as () => DOMRect,
+					});
+				}
 			},
 
 			onKeyDown(props: { event: KeyboardEvent }) {
-				if (!popup) return false;
+				if (!popup) {
+					return false;
+				}
 
 				if (props.event.key === 'Escape') {
+					// notebook では root へ戻し、root ではメニューを閉じる（Req3.8）
+					if (mode === 'notebook') {
+						backToRoot();
+						return true;
+					}
 					popup[0].hide();
 					return true;
 				}
 
-				// @ts-expect-error - ReactRendererのrefの型が正しく認識されないため
-				return component?.ref?.onKeyDown?.(props) || false;
+				return component?.ref?.onKeyDown?.(props) ?? false;
 			},
 
 			onExit() {
+				mode = 'root';
+				latest = null;
 				if (popup) {
 					popup[0].destroy();
+					popup = null;
 				}
 				if (component) {
 					component.destroy();
+					component = null;
 				}
 			},
 		};
