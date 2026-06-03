@@ -1,8 +1,7 @@
 import React from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Placeholder from '@tiptap/extension-placeholder';
-import Mention from '@tiptap/extension-mention';
+import { createEditorExtensions } from './createEditorExtensions';
+import { decideContentSync } from './contentSync';
 import { suggestion, setNotebooksData } from './suggestion';
 import { useNotebooks } from '../../hooks/useNotebookQueries';
 import { useEditorFocusStore } from '../../stores/useEditorFocusStore';
@@ -37,26 +36,30 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
 	const setEditorFocused = useEditorFocusStore((s) => s.setEditorFocused);
 
-	const editor = useEditor({
-		extensions: [
-			StarterKit,
-			Placeholder.configure({
+	// 直近に onUpdate で emit した HTML を保持し、自己エコーの再適用を防ぐ（Req1.6 / 8.4）
+	const lastEmittedHtmlRef = React.useRef<string>(content);
+
+	// ノード定義は共有ファクトリへ集約。`/` は専用 SlashCommand 拡張で起動し、
+	// ノートブック参照は既存 suggestion.render をブリッジとして引き継ぐ（Mention 流用を除去・Req9.1/9.2）。
+	const extensions = React.useMemo(
+		() =>
+			createEditorExtensions({
+				editable: true,
 				placeholder,
+				slash: { render: suggestion.render },
 			}),
-			Mention.configure({
-				HTMLAttributes: {
-					class: 'mention',
-				},
-				suggestion: {
-					...suggestion,
-					char: '/', // スラッシュをトリガーに変更
-				},
-			}),
-		],
+		[placeholder],
+	);
+
+	const editor = useEditor({
+		extensions,
 		content,
 		autofocus,
 		onUpdate: ({ editor }) => {
-			onChange(editor.getHTML());
+			// emit した HTML を ref に記録してから onChange を発火（自己エコー判定の真実源泉）
+			const html = editor.getHTML();
+			lastEmittedHtmlRef.current = html;
+			onChange(html);
 		},
 		onFocus: () => {
 			setEditorFocused(true);
@@ -78,9 +81,22 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 		};
 	}, [setEditorFocused]);
 
+	// content 同期（echo-ref 方式）。
+	// タイプ中の自己エコー・等価は再適用せず、外部変更（別メモ切替・新規作成・サーバー再取得）の
+	// ときだけ emitUpdate:false で反映する。これにより input rule の巻き戻し（Req1.2/1.3）と
+	// 外部反映による自動保存ループ（Req1.5/8.4）の双方を防ぐ。
 	React.useEffect(() => {
-		if (editor && content !== editor.getHTML()) {
-			editor.commands.setContent(content);
+		if (!editor) {
+			return;
+		}
+		const decision = decideContentSync({
+			content,
+			lastEmitted: lastEmittedHtmlRef.current,
+			currentHtml: editor.getHTML(),
+		});
+		if (decision === 'apply') {
+			editor.commands.setContent(content, { emitUpdate: false });
+			lastEmittedHtmlRef.current = content;
 		}
 	}, [content, editor]);
 

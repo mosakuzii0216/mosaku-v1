@@ -29,28 +29,28 @@
   - 編集・公開でノード定義集合が一致し、保存 HTML が同一ノードへ復元されることをスナップショットで確認する
   - _Requirements: 5.4, 9.4_
 
-- [ ] 2. content 同期の再設計（土台バグ修正・自動保存整合）
-- [ ] 2.1 RichTextEditor を共有ファクトリへ接続し Mention 流用を除去
+- [x] 2. content 同期の再設計（土台バグ修正・自動保存整合）
+- [x] 2.1 RichTextEditor を共有ファクトリへ接続し Mention 流用を除去
   - useEditor の extensions を createEditorExtensions({ editable:true, placeholder, slash }) へ置換する
   - `/` を流用していた Mention 拡張を除去し、ノートブック参照は後続のスラッシュコマンドへ移譲する前提を整える
   - 既存ツールバー操作・placeholder/autofocus/focusKey の props 契約を不変で維持する
   - _Requirements: 9.1, 9.5_
 
-- [ ] 2.2 echo-ref 方式による content 同期ロジックの実装
+- [x] 2.2 echo-ref 方式による content 同期ロジックの実装
   - 直近に emit した HTML を ref に保持し、content が一致する自己エコーは再適用しない
   - content が現在のエディタ内容と等価のときも再適用しない
   - 外部変更（別メモ切替・新規作成・サーバー再取得）のときのみ emitUpdate を抑止して content を反映する
   - タイプ中に content 全置換が走らないことで input rule の巻き戻しを防止する
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
 
-- [ ] 2.3 onChange 配線とフォーカス連携の維持
+- [x] 2.3 onChange 配線とフォーカス連携の維持
   - onUpdate で getHTML を ref へ保存しつつ onChange を発火し、既存の自動保存パイプラインへ接続する
   - 新規ノード（コードブロック・タスクリスト・区切り線・リンク）を含めて HTML 形式で出力する
   - 外部由来の content 反映単体では onChange を発火させず自動保存をスケジュールしない
   - onFocus/onBlur による useEditorFocusStore 更新とテーマエフェクト自動停止連携を維持する
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 9.3_
 
-- [ ] 2.4 content 同期の単体・結合テスト
+- [x] 2.4 content 同期の単体・結合テスト
   - 自己エコー skip / 等価 skip / 外部変更時のみ emitUpdate 抑止反映の分岐を検証する
   - onUpdate→ref→onChange→親 setContent→sync skip の一巡で保存ループが発生しないことを確認する
   - 変換直後の Undo が Markdown 記法テキストへ戻ることを確認する
