@@ -2,7 +2,7 @@
 
 > 並列実行可能なタスクには番号直後に `(P)` を付与。`(P)` の無いタスクは直前タスクの成果物へ依存する。
 
-- [ ] 1. 共有拡張ファクトリ createEditorExtensions の構築（依存追加・ノード定義の単一情報源）
+- [x] 1. 共有拡張ファクトリ createEditorExtensions の構築（依存追加・ノード定義の単一情報源）
 - [x] 1.1 新規依存パッケージの追加とバージョン統一
   - TaskList/TaskItem 用、コードブロック構文ハイライト用、lowlight 本体の3点を追加する
   - TipTap 系2点は既存コア（3.22.2）へバージョンを統一し、lowlight は v3 系を採用する
@@ -24,7 +24,7 @@
   - ノード定義集合は editable に依らず一致させ、保存 HTML の往復一致を構造的に担保する
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.10, 4.1, 4.2, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 6.1, 6.2, 7.1, 7.2, 7.3, 9.1_
 
-- [ ] 1.4 createEditorExtensions の単体テスト
+- [x] 1.4 createEditorExtensions の単体テスト
   - editable=true/false の出し分け（公開時 Placeholder/Slash 非含・TaskItem 読取専用）を検証する
   - 編集・公開でノード定義集合が一致し、保存 HTML が同一ノードへ復元されることをスナップショットで確認する
   - _Requirements: 5.4, 9.4_
