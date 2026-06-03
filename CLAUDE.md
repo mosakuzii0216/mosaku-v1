@@ -135,7 +135,7 @@ Conventional Commits + scope を使用。例: `feat(frontend/memo): メモ一覧
 
 ```
 .kiro/
-├── steering/        # プロジェクト記憶（product.md / tech.md / structure.md / dogfooding.md）
+├── steering/        # プロジェクト記憶（product.md / tech.md / structure.md / dogfooding.md / quality.md）
 └── specs/           # 機能ごとの仕様書（spec-init で生成）
     └── {機能名}/
         ├── requirements.md
