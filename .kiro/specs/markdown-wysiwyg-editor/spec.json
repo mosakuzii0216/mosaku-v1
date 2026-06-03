@@ -1,9 +1,9 @@
 {
 	"feature_name": "markdown-wysiwyg-editor",
 	"created_at": "2026-06-02T00:00:00Z",
-	"updated_at": "2026-06-03T00:00:00Z",
+	"updated_at": "2026-06-04T00:00:00Z",
 	"language": "ja",
-	"phase": "implementation",
+	"phase": "implementation-validated",
 	"approvals": {
 		"requirements": {
 			"generated": true,
@@ -18,5 +18,11 @@
 			"approved": true
 		}
 	},
-	"ready_for_implementation": true
+	"ready_for_implementation": true,
+	"implementation": {
+		"completed": true,
+		"validated": true,
+		"validated_at": "2026-06-04T00:00:00Z",
+		"test_results": "frontend editor 63/63 passed, frontend full suite 747/747 passed (no regressions)"
+	}
 }
