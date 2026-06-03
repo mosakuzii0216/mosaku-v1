@@ -34,3 +34,6 @@ dev-dist
 # Playwright
 test-results/
 playwright-report/
+
+# QA exploration screenshots (一時的な実機QA成果物・コミットしない)
+qa-shots/
