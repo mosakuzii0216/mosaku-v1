@@ -114,7 +114,8 @@ describe('RefreshCookieHelper', () => {
 
 			helper.clearRefreshCookie(res as Response);
 
-			expect(res.clearCookie).toHaveBeenCalledTimes(1);
+			// domain 指定時は host-only 旧 Cookie の駆逐 + 本体削除の 2 回呼ばれる
+			expect(res.clearCookie).toHaveBeenCalledTimes(2);
 			expect(res.clearCookie).toHaveBeenCalledWith(
 				REFRESH_COOKIE_NAME,
 				expect.objectContaining({
@@ -127,7 +128,7 @@ describe('RefreshCookieHelper', () => {
 			);
 		});
 
-		it('domain 未指定なら clearCookie でも domain を付けない', async () => {
+		it('domain 未指定なら clearCookie でも domain を付けない（host-only 駆逐もしない）', async () => {
 			helper = await buildHelperWith({
 				sameSite: 'lax',
 				secure: false,
@@ -137,8 +138,48 @@ describe('RefreshCookieHelper', () => {
 
 			helper.clearRefreshCookie(res as Response);
 
+			// domain 未指定（ローカル開発等）では現行 Cookie 自体が host-only なので駆逐は行わず 1 回のみ
+			expect(res.clearCookie).toHaveBeenCalledTimes(1);
 			const callArg = (res.clearCookie as unknown as ClearCookieMock).mock.calls[0][1];
 			expect(callArg.domain).toBeUndefined();
+		});
+	});
+
+	describe('host-only 旧 Cookie の駆逐', () => {
+		it('domain 指定時の setRefreshCookie は host-only 変種を expire させる', async () => {
+			helper = await buildHelperWith({
+				sameSite: 'none',
+				secure: true,
+				path: '/auth',
+				domain: '.mosaku.jp',
+			});
+			const res = buildRes();
+
+			helper.setRefreshCookie(res as Response, 'plain', new Date('2030-01-01T00:00:00.000Z'));
+
+			// 本体の発行は cookie() で 1 回
+			expect(res.cookie).toHaveBeenCalledTimes(1);
+			// host-only（domain 無し）の駆逐 clearCookie が 1 回
+			expect(res.clearCookie).toHaveBeenCalledTimes(1);
+			const evictArg = (res.clearCookie as unknown as ClearCookieMock).mock.calls[0][1];
+			expect(evictArg.domain).toBeUndefined();
+			expect(evictArg.path).toBe('/auth');
+			expect(evictArg.sameSite).toBe('none');
+			expect(evictArg.secure).toBe(true);
+			expect(evictArg.httpOnly).toBe(true);
+		});
+
+		it('domain 未指定の setRefreshCookie は host-only 駆逐をしない', async () => {
+			helper = await buildHelperWith({
+				sameSite: 'lax',
+				secure: false,
+				path: '/auth',
+			});
+			const res = buildRes();
+
+			helper.setRefreshCookie(res as Response, 'plain', new Date('2030-01-01T00:00:00.000Z'));
+
+			expect(res.clearCookie).not.toHaveBeenCalled();
 		});
 	});
 });
