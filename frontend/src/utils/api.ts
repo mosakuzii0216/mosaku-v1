@@ -68,12 +68,14 @@ class ApiClient {
 		const authHeaders = this.getAuthHeaders(authLevel);
 
 		const finalConfig: RequestInit = {
+			...fetchConfig,
+			// クロスオリジン構成で Cookie（Refresh Token 等）を送受信するために必須
+			credentials: 'include',
 			headers: {
 				'Content-Type': 'application/json',
 				...authHeaders,
 				...fetchConfig.headers,
 			},
-			...fetchConfig,
 		};
 
 		let response: Response;

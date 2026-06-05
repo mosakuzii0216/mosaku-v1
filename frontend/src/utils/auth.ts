@@ -99,6 +99,9 @@ export class AuthAPI {
 
 		return fetch(`${this.BASE_URL}${endpoint}`, {
 			...options,
+			// クロスオリジン（frontend ↔ api.mosaku.jp）で Refresh Token Cookie を
+			// 保存・送信するために必須。これがないとログイン時の Set-Cookie が破棄される。
+			credentials: 'include',
 			headers,
 		});
 	}
