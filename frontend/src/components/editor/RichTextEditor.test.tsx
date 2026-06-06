@@ -64,6 +64,33 @@ describe('RichTextEditor - EditorFocusStore 連携', () => {
 	});
 });
 
+describe('RichTextEditor - prose クラス保持（タイポグラフィ回帰ガード）', () => {
+	beforeEach(() => {
+		useEditorFocusStore.setState({ isEditorFocused: false });
+		cleanup();
+	});
+
+	// prose クラスが外れると @tailwindcss/typography のブロック要素スタイルが失われる（Req 1.2, 6.2）
+	it('.ProseMirror 要素が prose クラスを持つ', () => {
+		const { container } = render(<RichTextEditor content="" onChange={() => {}} />, {
+			wrapper: createWrapper(),
+		});
+		const prosemirror = container.querySelector('.ProseMirror');
+		expect(prosemirror?.className).toContain('prose');
+	});
+
+	it('.ProseMirror 要素がレスポンシブ prose クラスを持つ（prose-sm / prose-base / prose-lg / prose-xl）', () => {
+		const { container } = render(<RichTextEditor content="" onChange={() => {}} />, {
+			wrapper: createWrapper(),
+		});
+		const cls = container.querySelector('.ProseMirror')?.className ?? '';
+		expect(cls).toContain('prose-sm');
+		expect(cls).toContain('sm:prose-base');
+		expect(cls).toContain('lg:prose-lg');
+		expect(cls).toContain('xl:prose-xl');
+	});
+});
+
 describe('RichTextEditor - ツールバー非回帰（共有ファクトリ移行後）', () => {
 	beforeEach(() => {
 		useEditorFocusStore.setState({ isEditorFocused: false });

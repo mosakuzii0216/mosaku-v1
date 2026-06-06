@@ -62,6 +62,18 @@ describe('PublicMemoRenderer', () => {
 		expect(className).toContain('select-text');
 	});
 
+	// prose クラスが外れると @tailwindcss/typography のブロック要素スタイルが失われる（Req 1.2, 6.2）
+	it('editorProps.attributes.class に prose クラスを保持する（タイポグラフィ回帰ガード）', () => {
+		render(React.createElement(PublicMemoRenderer, { content: '<p>テスト</p>' }));
+
+		const lastCall = mockUseEditor.mock.calls[mockUseEditor.mock.calls.length - 1][0] as {
+			editorProps: { attributes: { class: string } };
+		};
+		const className = lastCall.editorProps.attributes.class;
+		expect(className).toContain('prose');
+		expect(className).toContain('prose-sm');
+	});
+
 	it('toolbar が存在しないこと', () => {
 		render(React.createElement(PublicMemoRenderer, { content: '<p>テスト</p>' }));
 		expect(screen.queryByRole('toolbar')).toBeNull();
