@@ -77,6 +77,12 @@ export class ConfigService {
 		return origins.split(',').map((origin) => origin.trim());
 	}
 
+	// Slack Webhook 設定
+	get slackFeedbackWebhookUrl(): string | undefined {
+		const url = process.env.SLACK_FEEDBACK_WEBHOOK_URL;
+		return url && url.length > 0 ? url : undefined;
+	}
+
 	// 環境判定
 	get isProduction(): boolean {
 		return process.env.NODE_ENV === 'production';
