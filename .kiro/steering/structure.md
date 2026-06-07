@@ -61,6 +61,12 @@
 **Purpose**: テーマごとの追加 JS エフェクト（背景・パーティクル等）をテーマ単位で動的ロードする。非エフェクトテーマには独立チャンクをロードしないことでバンドルを汚さない
 **Pattern**: テーマ定義の `metadata.effectKey` でエフェクトを宣言 → `ThemeEffectHost` がレジストリ経由で `React.lazy` マウント → 共通エフェクトコンポーネントは `paused` prop で停止可能
 
+### エディタ拡張（TipTap）
+
+**Location**: `frontend/src/components/editor/`
+**Purpose**: TipTap 拡張・スラッシュコマンド・構文ハイライト等エディタ機能を集約
+**Pattern**: 拡張定義は共有ファクトリ `createEditorExtensions.ts` に一元化し、編集用 `RichTextEditor` と公開表示用 `PublicMemoRenderer` の両方が同じファクトリを使う。新しい拡張を追加する際はファクトリに足すことで編集と表示の差異を生まない。構文ハイライトは `lowlight.ts`（言語登録）+ `codeHighlight.css`、スラッシュコマンドは `slashCommand.ts` / `slashCommandItems.ts` / `SlashCommandList.tsx` に分離
+
 ## Naming Conventions
 
 - **ファイル**: `kebab-case.ts`（バックエンド）、`PascalCase.tsx`（Reactコンポーネント）、`camelCase.ts`（hooks/stores/utils）
