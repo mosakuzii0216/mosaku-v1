@@ -1,4 +1,3 @@
-// JWT Token Management Utilities
 import { getBackendUrl } from './env';
 import { logger } from './logger';
 
@@ -82,7 +81,6 @@ class AuthTokenManager {
 	}
 }
 
-// API Call Helper with Authentication
 export class AuthAPI {
 	private static readonly BASE_URL = getBackendUrl();
 
@@ -90,7 +88,6 @@ export class AuthAPI {
 		const token = AuthTokenManager.getAccessToken();
 		const headers = new Headers(options.headers);
 
-		// Content-Typeをセット。既存の値は上書きされる。
 		headers.set('Content-Type', 'application/json');
 
 		if (token && !AuthTokenManager.isTokenExpired(token)) {

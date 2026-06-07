@@ -1,10 +1,3 @@
-/**
- * AuthContext - 認証状態管理
- *
- * 内部で以下のカスタムフックを使用して責務を分離:
- * - useEmailAuth: Email/Password認証
- * - useOAuth: OAuth認証（Google, GitHub, LINE, Apple, X）
- */
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { AuthAPI, AuthTokenManager } from '../utils/auth';
@@ -22,7 +15,6 @@ export interface AuthState {
 }
 
 export interface AuthActions {
-	// Email認証
 	login: (email: string, password: string) => Promise<void>;
 	register: (
 		email: string,
@@ -32,15 +24,11 @@ export interface AuthActions {
 	) => Promise<void>;
 	resetPassword: (email: string) => Promise<void>;
 	changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
-
-	// OAuth ログイン（既存ユーザー）
 	googleLogin: () => void;
 	githubLogin: () => void;
 	lineLogin: () => void;
 	appleLogin: () => void;
 	xLogin: () => void;
-
-	// 共通
 	logout: () => Promise<void>;
 	refreshUser: () => Promise<void>;
 }
@@ -68,7 +56,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		setUser(userProfile);
 	}, []);
 
-	// 初期化
 	useEffect(() => {
 		const initialize = async () => {
 			try {
@@ -190,6 +177,5 @@ export const useAuth = (): AuthContextType => {
 	return context;
 };
 
-// カスタムフックを再エクスポート
 export { useOAuth, type OAuthProvider } from '../hooks/useOAuth';
 export { useEmailAuth } from '../hooks/useEmailAuth';
