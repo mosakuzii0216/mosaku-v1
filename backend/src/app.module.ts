@@ -10,6 +10,7 @@ import { ConfigModule } from './config/config.module';
 import { NotebookModule } from './notebook/notebook.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { THROTTLE_CONFIG } from './config/auth-constants';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { SentryGlobalFilter } from '@sentry/nestjs/setup';
@@ -21,12 +22,12 @@ import { SentryUserContextInterceptor } from './common/sentry/sentry-user-contex
 	controllers: [AppController],
 	imports: [
 		SentryModule.forRoot(),
-		// レート制限設定（グローバル）
+		// レート制限設定（グローバル）。値は env で上書き可能（THROTTLE_CONFIG.GLOBAL）
 		ThrottlerModule.forRoot([
 			{
 				name: 'default',
-				ttl: 60000, // 60秒
-				limit: 30, // 60秒間に30リクエストまで
+				ttl: THROTTLE_CONFIG.GLOBAL.TTL,
+				limit: THROTTLE_CONFIG.GLOBAL.LIMIT,
 			},
 		]),
 		ScheduleModule.forRoot(),

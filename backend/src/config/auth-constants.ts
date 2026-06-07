@@ -50,10 +50,12 @@ export const THROTTLE_CONFIG = {
 	},
 	/**
 	 * ログインのレート制限（ブルートフォース対策）
-	 * デフォルト: 15分間に5回まで
+	 * `POST oauth/:provider/start` と `POST login` に適用。OAuth が主経路のため
+	 * 共有 IP（同一 WiFi / NAT）配下で複数人が同時ログインしてもブロックしない値にする。
+	 * デフォルト: 15分間に15回まで
 	 */
 	LOGIN: {
-		LIMIT: parseInt(process.env.LOGIN_THROTTLE_LIMIT || '5', 10),
+		LIMIT: parseInt(process.env.LOGIN_THROTTLE_LIMIT || '15', 10),
 		TTL: parseInt(process.env.LOGIN_THROTTLE_TTL || String(15 * MS_PER_MINUTE), 10),
 	},
 	/**
@@ -63,5 +65,14 @@ export const THROTTLE_CONFIG = {
 	REFRESH: {
 		LIMIT: parseInt(process.env.REFRESH_THROTTLE_LIMIT || '10', 10),
 		TTL: parseInt(process.env.REFRESH_THROTTLE_TTL || String(1 * MS_PER_MINUTE), 10),
+	},
+	/**
+	 * 全エンドポイント共通のグローバルレート制限（IP 単位）
+	 * SPA 初回ロードで複数 API を叩くため、共有 IP でも詰まらない値にする。
+	 * デフォルト: 60秒間に60回まで
+	 */
+	GLOBAL: {
+		LIMIT: parseInt(process.env.GLOBAL_THROTTLE_LIMIT || '60', 10),
+		TTL: parseInt(process.env.GLOBAL_THROTTLE_TTL || String(1 * MS_PER_MINUTE), 10),
 	},
 } as const;
