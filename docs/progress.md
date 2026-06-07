@@ -32,6 +32,43 @@
 
 ---
 
+## 2026-06-08（Phase 1 ドッグフーディング中 / エディタ品質を大幅強化 + アプリ内フィードバック完成）
+
+### 今週やったこと（6/02 エントリ以降）
+
+- **`markdown-wysiwyg-editor` 完了 → `implementation-validated`**（大型 spec）
+  - 共有拡張ファクトリ `createEditorExtensions` を新設し、エディタと `PublicMemoRenderer` の拡張定義を一本化
+  - スラッシュコマンドメニュー（トリガー制御・mode 遷移・クエリ絞り込み）を実装
+  - `lowlight` 構文ハイライト基盤を整備、`echo-ref` 方式で content 同期を再設計
+  - 単体・結合（保存 HTML 往復）・E2E・非回帰テストを追加して GO 判定
+- **`editor-prose-typography` 完了 → `implementation-validated`**
+  - `@tailwindcss/typography` を導入し prose スタイルを設定。E2E 視覚検証 + 非回帰ガードテストを追加
+- **`in-app-feedback` 完了 → `implementation-validated`**（本日 validate-impl GO）
+  - backend: DTO + Slack 通知サービス（カテゴリ別絵文字・色、5秒タイムアウト、Slack 障害は Sentry 記録で握りつぶし）+ controller（JWT 保護・Throttle 3req/min）
+  - frontend: Zustand 開閉ストア + React Query mutation + モーダル UI、ヘッダー・設定ページに導線追加
+  - ユニット/統合/E2E テスト全緑（backend 16・frontend 20）
+- **クロスオリジン認証バグを解消**：backend fetch に `credentials:'include'` を付与し、host-only な旧 Refresh Cookie を駆逐してリロード時の 401 を解決
+- **摩擦 UX 修正**：スマホヘッダーのナビラベル非表示・新規メモ編集の blank 画面解消・ノートブックテーマの即時反映/全体維持
+- **レビュー基盤追加**：良い警官・悪い警官の並列レビュースキル（`review`）を導入
+- リファクタ：CLAUDE.md 規約違反コメント削除（8件）・test lint 警告解消
+
+### 来週の予定
+
+- **`feedback-db-persistence`**（フィードバックの DB 永続化）：要件生成済み。並行で設計→タスク→TDD 実装を進行中
+- 6月末公開に向けた未着手タスク：オンボーディング改善・モバイル実機確認・レートリミット見直し
+
+### ブロッカー・懸念
+
+- なし
+
+### メモ
+
+- 今週は 42 コミット、3 spec を `implementation-validated` に締めた
+- エディタ系（WYSIWYG + prose typography）は計画外ボーナス枠。エディタ品質が一段引き上がった
+- `in-app-feedback` は DB 永続化なしの MVP で先行。永続化は `feedback-db-persistence` で追加予定
+
+---
+
 ## 2026-06-02（Phase 1 ドッグフーディング中 / spec phase を全整合 + 6月テーマ +5 を前倒し達成）
 
 ### 今週やったこと（5/31 エントリ以降）
