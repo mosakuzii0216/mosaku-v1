@@ -6,6 +6,7 @@ import type {
 	PublicMemoListItemDto,
 	PublicMemoResponseDto,
 } from '../types/memo';
+import type { SubmitFeedbackDto } from '../types/feedback';
 import type {
 	Tag,
 	CreateTagDto,
@@ -126,6 +127,10 @@ class ApiClient {
 			throw new Error(errorMessage);
 		}
 
+		const contentType = response.headers.get('content-type');
+		if (!contentType?.includes('application/json')) {
+			return undefined as T;
+		}
 		return response.json();
 	}
 
@@ -541,6 +546,14 @@ class ApiClient {
 	// 公開トークンでメモを取得する（未ログイン閲覧者向け、認証不要）
 	async getPublicMemo(token: string): Promise<PublicMemoResponseDto> {
 		return this.requestPublic<PublicMemoResponseDto>(`/memos/public/${token}`);
+	}
+
+	// フィードバック送信（ログイン済みユーザー専用）
+	async submitFeedback(dto: SubmitFeedbackDto): Promise<void> {
+		await this.request('/feedback', {
+			method: 'POST',
+			body: JSON.stringify(dto),
+		});
 	}
 }
 
