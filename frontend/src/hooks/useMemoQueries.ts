@@ -124,7 +124,9 @@ export const useCreateMemo = () => {
 	return useMutation({
 		mutationFn: (data: CreateMemoDto) => getMemoBridge().createMemo(data),
 		networkMode: 'offlineFirst',
-		onSuccess: () => {
+		onSuccess: (createdMemo) => {
+			// 作成直後にdetailキャッシュを注入して、edit遷移時の「メモが選択されていません」瞬間点滅を防ぐ
+			queryClient.setQueryData(queryKeys.memos.detail(createdMemo.id), createdMemo);
 			queryClient.invalidateQueries({ queryKey: queryKeys.memos.list() });
 		},
 	});
