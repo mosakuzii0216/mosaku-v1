@@ -65,7 +65,8 @@ export const Header = (_props?: HeaderProps) => {
 								: 'text-gray-600 hover:text-gray-900'
 						}`}
 					>
-						<StickyNote className="w-4 h-4 mr-1.5" /> メモ
+						<StickyNote className="w-4 h-4 sm:mr-1.5" />
+						<span className="hidden sm:inline">メモ</span>
 					</button>
 					<button
 						onClick={goToNotebookList}
@@ -75,7 +76,8 @@ export const Header = (_props?: HeaderProps) => {
 								: 'text-gray-600 hover:text-gray-900'
 						}`}
 					>
-						<LibraryBig className="w-4 h-4 mr-1.5" /> ノートブック
+						<LibraryBig className="w-4 h-4 sm:mr-1.5" />
+						<span className="hidden sm:inline">ノートブック</span>
 					</button>
 					<button
 						onClick={goToTags}
@@ -85,7 +87,8 @@ export const Header = (_props?: HeaderProps) => {
 								: 'text-gray-600 hover:text-gray-900'
 						}`}
 					>
-						<Tag className="w-4 h-4 mr-1.5" /> タグ
+						<Tag className="w-4 h-4 sm:mr-1.5" />
+						<span className="hidden sm:inline">タグ</span>
 					</button>
 					<button
 						onClick={goToTrash}
@@ -95,7 +98,8 @@ export const Header = (_props?: HeaderProps) => {
 								: 'text-gray-600 hover:text-gray-900'
 						}`}
 					>
-						<Trash2 className="w-4 h-4 mr-1.5" /> ゴミ箱
+						<Trash2 className="w-4 h-4 sm:mr-1.5" />
+						<span className="hidden sm:inline">ゴミ箱</span>
 					</button>
 				</div>
 			</div>
