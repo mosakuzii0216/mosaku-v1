@@ -41,6 +41,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	const { assignTags, tagsQuery } = useTagQueries();
 	const tags = tagsQuery.data ?? [];
 	const setSelectedMemoId = useMemoDataStore((s) => s.setSelectedMemoId);
+	const setStoreNotebookId = useMemoDataStore((s) => s.setSelectedNotebookId);
 	const setCurrentView = useViewStore((s) => s.setCurrentView);
 	const { status: networkStatus } = useNetworkStatus();
 
@@ -174,6 +175,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 			setContent('');
 			setSelectedTagIds([]);
 			setSelectedNotebookId('');
+			setStoreNotebookId(null);
 			setHasChanges(false);
 			setLastSavedAt(null);
 		} else if (memo) {
@@ -181,12 +183,20 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 			setContent(memo.content || '');
 			setSelectedTagIds(memo.memoTags?.map((mt) => mt.tag.id) || []);
 			setSelectedNotebookId(memo.notebookId || '');
+			setStoreNotebookId(memo.notebookId || null);
 			setHasChanges(false);
 			setLastSavedAt(memo.updatedAt ? new Date(memo.updatedAt) : null);
 		}
 		// memo の中身ではなく id の切り替えだけを依存にする。
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [memoId, isCreate, cancelDebounce]);
+
+	// エディタ離脱時にストアのノートブック選択をリセット
+	useEffect(() => {
+		return () => {
+			setStoreNotebookId(null);
+		};
+	}, [setStoreNotebookId]);
 
 	// 変更検知
 	useEffect(() => {
@@ -331,6 +341,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 							value={selectedNotebookId}
 							onChange={(val) => {
 								setSelectedNotebookId(val);
+								setStoreNotebookId(val || null);
 								scheduleAutoSave();
 							}}
 						/>
