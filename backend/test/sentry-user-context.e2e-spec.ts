@@ -22,7 +22,7 @@ jest.mock('@sentry/nestjs', () => {
 
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import * as request from 'supertest';
+import request from 'supertest';
 import { App } from 'supertest/types';
 
 // JWT_SECRET / SESSION_SECRET / DATABASE_URL は ConfigService getter が throw するので
