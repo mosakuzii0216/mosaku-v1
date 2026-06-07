@@ -16,6 +16,8 @@ import { SwUpdatePrompt } from './components/pwa/SwUpdatePrompt';
 import { SyncToast } from './components/ui/SyncToast';
 import { SettingsPage } from './components/settings/SettingsPage';
 import { PublicMemoPage } from './components/public/PublicMemoPage';
+import { FeedbackModal } from './components/feedback/FeedbackModal';
+import { useFeedbackStore } from './stores/useFeedbackStore';
 
 const MOBILE_BREAKPOINT = 768;
 
@@ -51,12 +53,19 @@ function AppContent() {
 	return <DesktopLayout />;
 }
 
+function FeedbackWrapper() {
+	const isOpen = useFeedbackStore((s) => s.isOpen);
+	const close = useFeedbackStore((s) => s.close);
+	return <FeedbackModal isOpen={isOpen} onClose={close} />;
+}
+
 function App() {
 	return (
 		<QueryClientProvider client={queryClient}>
 			<SwUpdatePrompt />
 			<SyncToast />
 			<AuthProvider>
+				<FeedbackWrapper />
 				<Router>
 					<RouteTracker />
 					<Routes>

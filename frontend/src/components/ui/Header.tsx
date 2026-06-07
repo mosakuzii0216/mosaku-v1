@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useViewStore } from '../../stores/useViewStore';
 import { useNavigation } from '../../hooks/useNavigation';
-import { LibraryBig, StickyNote, Tag, LogOut, Settings, Trash2 } from 'lucide-react';
+import { LibraryBig, StickyNote, Tag, LogOut, Settings, Trash2, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router';
 import { OfflineBadge } from './OfflineBadge';
+import { useFeedbackStore } from '../../stores/useFeedbackStore';
 
 interface HeaderProps {
 	onMemoCreateClick?: () => void;
@@ -15,6 +16,7 @@ export const Header = (_props?: HeaderProps) => {
 	const { currentView, currentObject } = useViewStore();
 	const { goToMemoList, goToTags, goToNotebookList, goToTrash } = useNavigation();
 	const { user, logout } = useAuth();
+	const openFeedback = useFeedbackStore((s) => s.open);
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -150,6 +152,17 @@ export const Header = (_props?: HeaderProps) => {
 									<Settings className="w-4 h-4 mr-3" />
 									設定
 								</Link>
+
+								<button
+									onClick={() => {
+										setIsDropdownOpen(false);
+										openFeedback();
+									}}
+									className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+								>
+									<MessageSquare className="w-4 h-4 mr-3" />
+									フィードバックを送る
+								</button>
 
 								<button
 									onClick={() => {
