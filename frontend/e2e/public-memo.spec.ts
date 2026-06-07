@@ -19,7 +19,7 @@
 
 import { test, expect, type BrowserContext } from '@playwright/test';
 import { BackendApi } from './helpers/backend-api';
-import { ensureLoggedIn, getDefaultAuthConfig, injectAccessToken } from './helpers/auth';
+import { ensureLoggedIn, getDefaultAuthConfig } from './helpers/auth';
 
 const config = getDefaultAuthConfig();
 const api = new BackendApi({ baseUrl: config.backendUrl });

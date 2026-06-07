@@ -34,14 +34,6 @@ function buildContext(route: Route): RouteContext {
 	};
 }
 
-async function mockUnauthenticated(route: Route) {
-	await route.fulfill({
-		status: 401,
-		contentType: 'application/json',
-		body: JSON.stringify({ code: 'AUTH010', message: 'Unauthorized', statusCode: 401 }),
-	});
-}
-
 // CORS プリフライト共通: Content-Type: application/json 付きの POST は OPTIONS を発生させる。
 // route.fulfill ではブラウザ側で CORS チェックが効くため、Access-Control-Allow-* ヘッダを
 // 付与しないと preflight でブロックされる。
