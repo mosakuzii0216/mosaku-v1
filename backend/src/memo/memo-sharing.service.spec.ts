@@ -299,7 +299,7 @@ describe('MemoSharingService', () => {
 				}),
 			);
 			const newPublishedAt = new Date('2026-05-30T11:00:00.000Z');
-			mockPrismaService.memo.update.mockImplementation(async ({ data }) => ({
+			mockPrismaService.memo.update.mockImplementation(({ data }) => ({
 				id: 'memo-1',
 				publicToken: data.publicToken,
 				publishedAt: newPublishedAt,
