@@ -63,12 +63,13 @@ describe('POST /feedback (e2e)', () => {
 		})
 			.overrideProvider(ThrottlerStorage)
 			.useValue({
-				increment: async () => ({
-					totalHits: 1,
-					timeToExpire: 60,
-					isBlocked: false,
-					timeToBlockExpire: 0,
-				}),
+				increment: () =>
+					Promise.resolve({
+						totalHits: 1,
+						timeToExpire: 60,
+						isBlocked: false,
+						timeToBlockExpire: 0,
+					}),
 			})
 			.overrideProvider(PrismaService)
 			.useValue({

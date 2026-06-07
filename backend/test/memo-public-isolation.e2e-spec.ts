@@ -50,7 +50,7 @@ const METRIC_KEYS = ['public_memo_read', 'memo_edit_read'];
 /** console.log に積まれた構造化メトリクスログ（既知キーのみ）を抽出する。 */
 const metricLogs = (spy: jest.SpyInstance): MetricLog[] =>
 	spy.mock.calls
-		.map((call) => call[0] as unknown)
+		.map((call) => (call as unknown[])[0])
 		.filter((line): line is string => typeof line === 'string')
 		.map((line) => {
 			try {
