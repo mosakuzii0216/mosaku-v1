@@ -2,8 +2,6 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { ConfigService } from '../config/config.service';
 import { AppException } from '../common/exceptions';
 import { InvitationStateService } from './invitation-state.service';
-import type { OAuthProvider } from './types/oauth.types';
-
 describe('InvitationStateService', () => {
 	let service: InvitationStateService;
 
