@@ -153,6 +153,7 @@ model User {
   appleId                String?             @unique @map("apple_id")
   xId                    String?             @unique @map("x_id")
   invitationQuota        Int                 @default(5) @map("invitation_quota")
+  feedbacks              Feedback[]
   invitationCodes        InvitationCode[]
   memos                  Memo[]
   notebooks              Notebook[]
@@ -162,6 +163,17 @@ model User {
   userFavoriteThemes     UserFavoriteTheme[]
 
   @@map("users")
+}
+
+model Feedback {
+  id        String           @id @default(cuid())
+  userId    String           @map("user_id")
+  category  FeedbackCategory
+  message   String
+  createdAt DateTime         @default(now()) @map("created_at")
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("feedbacks")
 }
 
 model RefreshToken {
@@ -191,4 +203,10 @@ enum RefreshTokenStatus {
   active
   rotated
   revoked
+}
+
+enum FeedbackCategory {
+  bug
+  improvement
+  other
 }
