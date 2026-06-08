@@ -1,9 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as Sentry from '@sentry/nestjs';
 import { ConfigService } from '../config/config.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { FeedbackCategory } from './dto/create-feedback.dto';
 
-interface FeedbackSender {
+interface FeedbackSubmitContext {
+	userId: string;
 	name: string;
 	email: string;
 }
@@ -18,15 +20,52 @@ const CATEGORY_SLACK_CONFIG = {
 export class FeedbackService {
 	private readonly logger = new Logger(FeedbackService.name);
 
-	constructor(private readonly configService: ConfigService) {}
+	constructor(
+		private readonly configService: ConfigService,
+		private readonly prisma: PrismaService,
+	) {}
 
 	async submit(
 		dto: { category: FeedbackCategory; message: string },
-		sender: FeedbackSender,
+		context: FeedbackSubmitContext,
+	): Promise<void> {
+		// Slack は必須・DB は補助。それぞれ独立に settle させ、結果を named outcome に束縛する
+		const slackOutcome = this.sendToSlack(dto, context).then(
+			() => ({ ok: true as const }),
+			(error: unknown) => ({ ok: false as const, error }),
+		);
+		const dbOutcome = this.prisma.feedback
+			.create({
+				data: {
+					userId: context.userId,
+					category: dto.category,
+					message: dto.message,
+				},
+			})
+			.then(
+				() => ({ ok: true as const }),
+				(error: unknown) => ({ ok: false as const, error }),
+			);
+
+		// 両者はすでに catch 済みなので Promise.all は reject しない
+		const [slack, db] = await Promise.all([slackOutcome, dbOutcome]);
+
+		// Slack（必須）失敗 → Sentry でハードアラート。throw はせず 201 を維持
+		if (!slack.ok) {
+			Sentry.captureException(slack.error, { tags: { feature_area: 'system' } });
+		}
+		// DB（補助）失敗 → logger.warn のみ
+		if (!db.ok) {
+			this.logger.warn('フィードバックの DB 保存に失敗しました', db.error);
+		}
+	}
+
+	private async sendToSlack(
+		dto: { category: FeedbackCategory; message: string },
+		context: FeedbackSubmitContext,
 	): Promise<void> {
 		const webhookUrl = this.configService.slackFeedbackWebhookUrl;
 		if (!webhookUrl) {
-			this.logger.warn('SLACK_FEEDBACK_WEBHOOK_URL が未設定のため Slack 通知をスキップします');
 			return;
 		}
 
@@ -40,8 +79,8 @@ export class FeedbackService {
 					color: config.color,
 					fields: [
 						{ title: 'カテゴリ', value: config.label, short: true },
-						{ title: '送信者名', value: sender.name, short: true },
-						{ title: 'メールアドレス', value: sender.email, short: true },
+						{ title: '送信者名', value: context.name, short: true },
+						{ title: 'メールアドレス', value: context.email, short: true },
 						{ title: '送信日時', value: sentAt, short: true },
 						{ title: 'メッセージ', value: dto.message, short: false },
 					],
@@ -53,14 +92,16 @@ export class FeedbackService {
 		const timeoutId = setTimeout(() => controller.abort(), 5000);
 
 		try {
-			await fetch(webhookUrl, {
+			const res = await fetch(webhookUrl, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(payload),
 				signal: controller.signal,
 			});
-		} catch (err) {
-			Sentry.captureException(err, { tags: { feature_area: 'system' } });
+			// fetch は HTTP 4xx/5xx で reject しないため、明示的に throw して失敗を検知する
+			if (!res.ok) {
+				throw new Error(`Slack Webhook returned HTTP ${res.status}`);
+			}
 		} finally {
 			clearTimeout(timeoutId);
 		}

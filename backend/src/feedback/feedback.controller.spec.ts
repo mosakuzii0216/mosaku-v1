@@ -32,13 +32,14 @@ describe('FeedbackController', () => {
 		}) as unknown as AuthenticatedRequest;
 
 	describe('POST /feedback', () => {
-		it('FeedbackService.submit を dto と req.user の name/email を渡して呼ぶこと', async () => {
+		it('FeedbackService.submit を dto と req.user の userId/name/email を渡して呼ぶこと', async () => {
 			const dto = { category: FeedbackCategory.Bug, message: 'テストバグ' };
 			const req = buildAuthReq('喜多川海夢', 'kaito@example.com');
 
 			await controller.submit(dto, req);
 
 			expect(feedbackService.submit).toHaveBeenCalledWith(dto, {
+				userId: 'user-id-1',
 				name: '喜多川海夢',
 				email: 'kaito@example.com',
 			});
@@ -53,6 +54,7 @@ describe('FeedbackController', () => {
 			await controller.submit(dto, req);
 
 			expect(feedbackService.submit).toHaveBeenCalledWith(dto, {
+				userId: 'u1',
 				name: '',
 				email: 'test@example.com',
 			});

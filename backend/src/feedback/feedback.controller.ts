@@ -17,6 +17,7 @@ export class FeedbackController {
 	): Promise<void> {
 		const user = req.user as AuthenticatedRequest['user'] & { name?: string };
 		await this.feedbackService.submit(dto, {
+			userId: user.id,
 			name: user.name ?? '',
 			email: user.email,
 		});
