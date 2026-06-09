@@ -11,6 +11,7 @@ interface ViewState {
 	searchQuery: string;
 	isLoading: boolean;
 	notebookFilter: 'ALL' | 'INBOX' | string;
+	isDisplayMode: boolean;
 
 	// Actions
 	setIsMobile: (isMobile: boolean) => void;
@@ -20,6 +21,8 @@ interface ViewState {
 	setSearchQuery: (query: string) => void;
 	setIsLoading: (isLoading: boolean) => void;
 	setNotebookFilter: (filter: 'ALL' | 'INBOX' | string) => void;
+	openDisplayMode: () => void;
+	closeDisplayMode: () => void;
 
 	// Navigation helpers
 	goToMemoList: () => void;
@@ -41,6 +44,7 @@ export const useViewStore = create<ViewState>((set, get) => ({
 	searchQuery: '',
 	isLoading: false,
 	notebookFilter: 'ALL',
+	isDisplayMode: false,
 
 	// Actions
 	setIsMobile: (isMobile) => set({ isMobile }),
@@ -50,6 +54,8 @@ export const useViewStore = create<ViewState>((set, get) => ({
 	setSearchQuery: (query) => set({ searchQuery: query }),
 	setIsLoading: (isLoading) => set({ isLoading }),
 	setNotebookFilter: (filter) => set({ notebookFilter: filter }),
+	openDisplayMode: () => set({ isDisplayMode: true }),
+	closeDisplayMode: () => set({ isDisplayMode: false }),
 
 	// Navigation helpers
 	goToMemoList: () =>

@@ -16,6 +16,7 @@ import { TagManager } from '../tag/TagManager';
 import { NotebookEditor } from '../notebook/NotebookEditor';
 import { NotebookList } from '../notebook/NotebookList';
 import { MemoPalette } from '../memo/MemoPalette';
+import { FocusMemoOverlay } from '../memo/FocusMemoOverlay';
 
 const EmptyMemoView = () => {
 	const isMac = /Mac|iPod|iPhone|iPad/.test(window.navigator.platform);
@@ -139,6 +140,9 @@ export const DesktopLayout = () => {
 
 			{/* メモパレット */}
 			<MemoPalette isOpen={paletteOpen} onClose={closeMemoPalette} initialMode={paletteMode} />
+
+			{/* 表示モードオーバーレイ */}
+			<FocusMemoOverlay />
 		</div>
 	);
 };

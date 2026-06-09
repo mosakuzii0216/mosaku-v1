@@ -16,6 +16,7 @@ import { TagManager } from '../tag/TagManager';
 import { NotebookList } from '../notebook/NotebookList';
 import { NotebookEditor } from '../notebook/NotebookEditor';
 import { MemoPalette } from '../memo/MemoPalette';
+import { FocusMemoOverlay } from '../memo/FocusMemoOverlay';
 
 export const MobileLayout = () => {
 	const { currentObject, currentView } = useViewStore();
@@ -118,6 +119,9 @@ export const MobileLayout = () => {
 
 			{/* メモパレット */}
 			<MemoPalette isOpen={paletteOpen} onClose={closeMemoPalette} initialMode={paletteMode} />
+
+			{/* 表示モードオーバーレイ */}
+			<FocusMemoOverlay />
 		</div>
 	);
 };

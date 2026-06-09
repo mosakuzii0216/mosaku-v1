@@ -43,6 +43,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	const setSelectedMemoId = useMemoDataStore((s) => s.setSelectedMemoId);
 	const setStoreNotebookId = useMemoDataStore((s) => s.setSelectedNotebookId);
 	const setCurrentView = useViewStore((s) => s.setCurrentView);
+	const openDisplayMode = useViewStore((s) => s.openDisplayMode);
 	const { status: networkStatus } = useNetworkStatus();
 
 	const [title, setTitle] = useState(memo?.title || '');
@@ -288,6 +289,16 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 							</span>
 						);
 					})()}
+					{!isCreate && memo && (
+						<button
+							data-testid="display-mode-button"
+							onClick={openDisplayMode}
+							className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+							title="表示モードで開く"
+						>
+							表示
+						</button>
+					)}
 					<button
 						onClick={async () => {
 							cancelDebounce();

@@ -20,6 +20,7 @@ vi.mock('../../utils/env', () => ({
 }));
 
 import { MemoEditor } from './MemoEditor';
+import { useViewStore } from '../../stores/useViewStore';
 import type { Memo } from '../../types/memo';
 
 // RichTextEditor は tiptap 依存が重いので、content/onChange だけを持つ textarea スタブに置き換える
@@ -192,5 +193,47 @@ describe('MemoEditor - 保存状態インジケーター', () => {
 		});
 
 		expect(screen.getByTestId('save-status-label').textContent).toBe('未保存');
+	});
+});
+
+describe('MemoEditor - 表示モード起動ボタン', () => {
+	beforeEach(() => {
+		cleanup();
+		updateMutate.mockReset();
+		createMutate.mockReset();
+		deleteMutateAsync.mockReset();
+		useViewStore.setState({ isDisplayMode: false });
+	});
+
+	it('既存メモ表示時に表示モードボタンが存在する', () => {
+		const Wrapper = createWrapper();
+		const memo = buildMemo();
+
+		render(<MemoEditor memo={memo} />, { wrapper: Wrapper });
+
+		expect(screen.getByTestId('display-mode-button')).toBeTruthy();
+	});
+
+	it('新規作成モード（isCreate=true）では表示モードボタンが存在しない', () => {
+		const Wrapper = createWrapper();
+
+		render(<MemoEditor isCreate />, { wrapper: Wrapper });
+
+		expect(screen.queryByTestId('display-mode-button')).toBeNull();
+	});
+
+	it('表示モードボタンをクリックすると isDisplayMode が true になる', () => {
+		const Wrapper = createWrapper();
+		const memo = buildMemo();
+
+		render(<MemoEditor memo={memo} />, { wrapper: Wrapper });
+
+		expect(useViewStore.getState().isDisplayMode).toBe(false);
+
+		act(() => {
+			fireEvent.click(screen.getByTestId('display-mode-button'));
+		});
+
+		expect(useViewStore.getState().isDisplayMode).toBe(true);
 	});
 });
