@@ -153,6 +153,7 @@ model User {
   appleId                String?             @unique @map("apple_id")
   xId                    String?             @unique @map("x_id")
   invitationQuota        Int                 @default(5) @map("invitation_quota")
+  onboardingCompleted    Boolean             @default(false) @map("onboarding_completed")
   feedbacks              Feedback[]
   invitationCodes        InvitationCode[]
   memos                  Memo[]

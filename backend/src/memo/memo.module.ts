@@ -22,6 +22,6 @@ import { CommonModule } from '../common/common.module';
 		PublicReadObservabilityInterceptor,
 		MemoEditObservabilityInterceptor,
 	],
-	exports: [MemoSharingService],
+	exports: [MemoService, MemoSharingService],
 })
 export class MemoModule {}
