@@ -555,6 +555,21 @@ class ApiClient {
 			body: JSON.stringify(dto),
 		});
 	}
+
+	// ========== オンボーディング関連API ==========
+
+	async completeOnboarding(themeId: string): Promise<{ notebookId: string; memoIds: string[] }> {
+		return this.request<{ notebookId: string; memoIds: string[] }>('/onboarding/complete', {
+			method: 'POST',
+			body: JSON.stringify({ themeId }),
+		});
+	}
+
+	async skipOnboarding(): Promise<{ message: string }> {
+		return this.request<{ message: string }>('/onboarding/skip', {
+			method: 'POST',
+		});
+	}
 }
 
 export const apiClient = new ApiClient();
