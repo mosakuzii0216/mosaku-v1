@@ -17,6 +17,7 @@ import { NotebookList } from '../notebook/NotebookList';
 import { NotebookEditor } from '../notebook/NotebookEditor';
 import { MemoPalette } from '../memo/MemoPalette';
 import { FocusMemoOverlay } from '../memo/FocusMemoOverlay';
+import { HomeDashboard } from '../home/HomeDashboard';
 
 export const MobileLayout = () => {
 	const { currentObject, currentView } = useViewStore();
@@ -59,6 +60,9 @@ export const MobileLayout = () => {
 
 	const renderContent = () => {
 		switch (currentObject) {
+			case 'home':
+				return <HomeDashboard />;
+
 			case 'memo':
 				switch (currentView) {
 					case 'list':
