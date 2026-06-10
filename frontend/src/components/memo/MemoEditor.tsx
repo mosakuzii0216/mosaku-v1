@@ -20,6 +20,7 @@ import {
 	type SaveStatusTone,
 } from '../../utils/memo/save-status-presentation';
 import { logger } from '../../utils/logger';
+import { getPendingMemoTitle, clearPendingMemoTitle } from '../../hooks/useNavigation';
 
 const SAVE_STATUS_TONE_CLASSES: Record<SaveStatusTone, string> = {
 	idle: 'text-gray-400',
@@ -172,7 +173,13 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	useEffect(() => {
 		cancelDebounce();
 		if (isCreate) {
-			setTitle('');
+			const pending = getPendingMemoTitle();
+			if (pending) {
+				clearPendingMemoTitle();
+				setTitle(pending);
+			} else {
+				setTitle('');
+			}
 			setContent('');
 			setSelectedTagIds([]);
 			setSelectedNotebookId('');

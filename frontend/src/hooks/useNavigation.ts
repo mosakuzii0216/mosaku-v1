@@ -2,10 +2,18 @@ import { useViewStore } from '../stores/useViewStore';
 import { useMemoDataStore } from '../stores/useMemoDataStore';
 import type { Memo } from '../types/memo';
 
+let _pendingMemoTitle: string | null = null;
+export const getPendingMemoTitle = () => _pendingMemoTitle;
+export const clearPendingMemoTitle = () => {
+	_pendingMemoTitle = null;
+};
+
 interface NavigationActions {
 	goToEdit: (memo: Memo) => void;
+	goToMemoEditById: (id: string) => void;
 	goToMemoList: () => void;
 	goToMemoCreate: () => void;
+	goToMemoCreateWithTitle: (title: string) => void;
 	goToNotebookCreate: () => void;
 	goToNotebookEdit: (id: string) => void;
 	goToNotebookList: () => void;
@@ -26,12 +34,25 @@ export const useNavigation = (): NavigationActions => {
 			setSelectedMemoId(memo.id);
 		},
 
+		goToMemoEditById: (id: string) => {
+			viewStore.setCurrentObject('memo');
+			viewStore.setCurrentView('edit');
+			viewStore.setIsEditing(true);
+			setSelectedMemoId(id);
+		},
+
 		goToMemoList: () => {
 			viewStore.goToMemoList();
 			setSelectedMemoId(null);
 		},
 
 		goToMemoCreate: () => {
+			viewStore.goToMemoCreate();
+			setSelectedMemoId(null);
+		},
+
+		goToMemoCreateWithTitle: (title: string) => {
+			_pendingMemoTitle = title;
 			viewStore.goToMemoCreate();
 			setSelectedMemoId(null);
 		},

@@ -25,6 +25,7 @@ interface ViewState {
 	closeDisplayMode: () => void;
 
 	// Navigation helpers
+	goToHome: () => void;
 	goToMemoList: () => void;
 	goToMemoCreate: () => void;
 	goToNotebookCreate: () => void;
@@ -38,8 +39,8 @@ interface ViewState {
 export const useViewStore = create<ViewState>((set, get) => ({
 	// 初期状態
 	isMobile: false,
-	currentObject: 'memo',
-	currentView: 'create',
+	currentObject: 'home',
+	currentView: 'list',
 	isEditing: false,
 	searchQuery: '',
 	isLoading: false,
@@ -58,6 +59,13 @@ export const useViewStore = create<ViewState>((set, get) => ({
 	closeDisplayMode: () => set({ isDisplayMode: false }),
 
 	// Navigation helpers
+	goToHome: () =>
+		set({
+			currentObject: 'home',
+			currentView: 'list',
+			isEditing: false,
+		}),
+
 	goToMemoList: () =>
 		set({
 			currentObject: 'memo',
