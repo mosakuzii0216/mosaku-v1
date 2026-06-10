@@ -52,4 +52,13 @@ export const queryKeys = {
 		myList: () => [...queryKeys.invitations.all, 'me', 'list'] as const,
 		myQuota: () => [...queryKeys.invitations.all, 'me', 'quota'] as const,
 	},
+
+	dashboard: {
+		all: ['dashboard'] as const,
+		recentMemos: () => [...queryKeys.dashboard.all, 'recent-memos'] as const,
+		weeklyCount: () => [...queryKeys.dashboard.all, 'weekly-count'] as const,
+		activityDates: (from: string, to: string) =>
+			[...queryKeys.dashboard.all, 'activity-dates', { from, to }] as const,
+		notebooks: () => [...queryKeys.dashboard.all, 'notebooks'] as const,
+	},
 } as const;

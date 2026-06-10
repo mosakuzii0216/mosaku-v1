@@ -28,6 +28,12 @@ import type {
 	OAuthStartResponse,
 } from '../types/invitation';
 import type { PaginationParams, PaginatedResult } from '../types/pagination';
+import type {
+	RecentMemoDto,
+	WeeklyCountDto,
+	ActivityDatesDto,
+	NotebookWithMemoCountDto,
+} from '../types/dashboard';
 import { AuthTokenManager } from './auth';
 import { getBackendUrl } from './env';
 import { refreshClient } from './refreshClient';
@@ -569,6 +575,25 @@ class ApiClient {
 		return this.request<{ message: string }>('/onboarding/skip', {
 			method: 'POST',
 		});
+	}
+
+	// ========== ダッシュボード関連API ==========
+
+	async getDashboardRecentMemos(): Promise<RecentMemoDto[]> {
+		return this.request<RecentMemoDto[]>('/dashboard/recent-memos');
+	}
+
+	async getDashboardWeeklyCount(): Promise<WeeklyCountDto> {
+		return this.request<WeeklyCountDto>('/dashboard/weekly-count');
+	}
+
+	async getDashboardActivityDates(from: string, to: string): Promise<ActivityDatesDto> {
+		const params = new URLSearchParams({ from, to });
+		return this.request<ActivityDatesDto>(`/dashboard/activity-dates?${params.toString()}`);
+	}
+
+	async getDashboardNotebooks(): Promise<NotebookWithMemoCountDto[]> {
+		return this.request<NotebookWithMemoCountDto[]>('/dashboard/notebooks');
 	}
 }
 

@@ -36,7 +36,7 @@ export interface UpdateMemoDto {
 
 export type ViewType = 'list' | 'detail' | 'edit' | 'create' | 'tags' | 'trash';
 
-export type ObjectType = 'memo' | 'notebook' | 'tag' | 'theme';
+export type ObjectType = 'memo' | 'notebook' | 'tag' | 'theme' | 'home';
 
 export interface PublishMemoResponseDto {
 	memoId: string;
