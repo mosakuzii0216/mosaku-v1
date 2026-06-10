@@ -126,7 +126,7 @@ export const DesktopLayout = () => {
 
 	return (
 		<div
-			className={`h-screen flex flex-col bg-white ${activeTheme ? 'theme-root' : ''}`}
+			className={`h-dvh flex flex-col bg-white ${activeTheme ? 'theme-root' : ''}`}
 			data-theme-id={activeTheme?.id}
 		>
 			<Header onMemoCreateClick={goToMemoCreate} onNotebookCreateClick={goToNotebookCreate} />
