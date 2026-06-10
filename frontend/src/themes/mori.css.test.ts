@@ -102,24 +102,33 @@ describe('mori.css — Mosaku brand theme (Phase A, task 1)', () => {
 		});
 	});
 
-	describe('1.4 サイドバー・ヘッダー・フォーム UI 色味の統一', () => {
-		it.each([['.app-sidebar'], ['.app-header']])(
-			'.theme-root %s へ森パレットを反映する',
+	describe('1.4 テーマ対象をメモ編集面に限定する（friction log: ヘッダー文字消失対策）', () => {
+		// 旧仕様は .app-header / .app-sidebar / 汎用 button・input・a へ配色していたが、
+		// (1) .app-header / .app-sidebar クラスはコンポーネントに存在せず空振り、
+		// (2) .theme-root button が Tailwind text-gray-600 に勝ち、白背景ヘッダーの
+		//     ナビ文字がほぼ白になって消える、という不具合を生んでいた。
+		// 他14テーマと同様、テーマ対象は .memo-title / .memo-content に限定する。
+		it('実在しないアプリ枠クラス (.app-header / .app-sidebar) を参照しない', () => {
+			expect(stripped).not.toMatch(/\.app-header\b/);
+			expect(stripped).not.toMatch(/\.app-sidebar\b/);
+		});
+
+		it.each([['button'], ['input'], ['textarea']])(
+			'要素型セレクタ .theme-root %s でアプリ全体へ配色を漏らさない',
 			(selector) => {
-				const escaped = selector.replace('.', '\\.');
-				expect(stripped).toMatch(new RegExp(`\\.theme-root\\s+${escaped}\\b`));
+				expect(stripped).not.toMatch(new RegExp(`\\.theme-root\\s+${selector}\\b`));
 			},
 		);
 
-		it.each([['input'], ['textarea'], ['button'], ['a']])(
-			'.theme-root %s にフォーム系 UI の配色を適用する',
-			(selector) => {
-				expect(stripped).toMatch(new RegExp(`\\.theme-root\\s+${selector}\\b`));
-			},
-		);
+		it('汎用リンク (.theme-root a) には配色せず、メモ本文内リンクのみ許容する', () => {
+			// .theme-root .memo-content a は許容。直下の .theme-root a は不可。
+			expect(stripped).not.toMatch(/\.theme-root\s+a\b/);
+			expect(stripped).toMatch(/\.theme-root\s+\.memo-content\s+a\b/);
+		});
 
-		it('フォーカスリング色を統一する (:focus / :focus-visible 指定)', () => {
-			expect(stripped).toMatch(/:focus(?:-visible)?\b/);
+		it('テーマ対象はメモ編集面 (.memo-title / .memo-content) に限定する', () => {
+			expect(stripped).toMatch(/\.theme-root\s+\.memo-title\b/);
+			expect(stripped).toMatch(/\.theme-root\s+\.memo-content\b/);
 		});
 	});
 

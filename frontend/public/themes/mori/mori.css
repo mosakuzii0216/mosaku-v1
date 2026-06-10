@@ -55,100 +55,12 @@
 	z-index: 0;
 }
 
-/* 3. サイドバー */
-.theme-root .app-sidebar {
-	background: rgba(0, 41, 21, 0.55);
-	color: var(--theme-text-color);
-	border-right: 1px solid var(--theme-border-color);
-	backdrop-filter: blur(8px);
-}
-
-.theme-root .app-sidebar__item {
-	color: var(--theme-text-color);
-	border-radius: 0.375rem;
-	transition:
-		background-color 150ms ease,
-		color 150ms ease;
-}
-
-.theme-root .app-sidebar__item:hover {
-	background-color: rgba(134, 239, 172, 0.12);
-	color: var(--theme-heading-color);
-}
-
-/* 4. ヘッダー */
-.theme-root .app-header {
-	background: rgba(0, 41, 21, 0.55);
-	color: var(--theme-text-color);
-	border-bottom: 1px solid var(--theme-border-color);
-	backdrop-filter: blur(8px);
-}
-
-.theme-root .app-header__brand {
-	color: var(--theme-heading-color);
-	font-weight: 700;
-	letter-spacing: 0.03em;
-}
-
-/* 5. フォーム系 UI */
-.theme-root input,
-.theme-root textarea {
-	background-color: rgba(255, 255, 255, 0.08);
-	color: var(--theme-text-color);
-	border: 1px solid var(--theme-border-color);
-	border-radius: var(--theme-border-radius);
-	caret-color: var(--theme-accent-color);
-}
-
-.theme-root input::placeholder,
-.theme-root textarea::placeholder {
-	color: rgba(231, 245, 236, 0.55);
-}
-
-.theme-root input:focus,
-.theme-root input:focus-visible,
-.theme-root textarea:focus,
-.theme-root textarea:focus-visible {
-	outline: 2px solid var(--theme-accent-color);
-	outline-offset: 2px;
-	border-color: var(--theme-accent-color);
-}
-
-.theme-root button {
-	background-color: rgba(134, 239, 172, 0.18);
-	color: var(--theme-heading-color);
-	border: 1px solid var(--theme-border-color);
-	border-radius: var(--theme-border-radius);
-	transition:
-		background-color 150ms ease,
-		border-color 150ms ease;
-}
-
-.theme-root button:hover {
-	background-color: rgba(134, 239, 172, 0.28);
-	border-color: var(--theme-accent-color);
-}
-
-.theme-root button:focus-visible {
-	outline: 2px solid var(--theme-accent-color);
-	outline-offset: 2px;
-}
-
-.theme-root a {
-	color: var(--theme-accent-color);
-	text-decoration: underline;
-}
-
-.theme-root a:hover {
-	color: #bbf7d0;
-}
-
-.theme-root a:focus-visible {
-	outline: 2px solid var(--theme-accent-color);
-	outline-offset: 2px;
-}
-
-/* 6. メモタイトル */
+/* 3. メモタイトル
+   NOTE: ヘッダー/サイドバー/汎用 button・input・a への配色は廃止。
+   他14テーマと同様、テーマ対象はメモ編集面（.memo-title / .memo-content）に限定する。
+   理由: .theme-root button が要素型セレクタとして Tailwind の text-gray-600 (詳細度同等)
+   に勝ち、白背景ヘッダーのナビ文字がほぼ白(#f0fdf4)になって消えていたため
+   （friction log: ヘッダー文字消失）。ヘッダーの正式なテーマ化は別途設計で扱う。 */
 .theme-root .memo-title {
 	color: var(--theme-heading-color);
 	font-size: 2rem;
@@ -162,7 +74,7 @@
 	color: rgba(231, 245, 236, 0.5);
 }
 
-/* 7. メモ本文 */
+/* 4. メモ本文 */
 .theme-root .memo-content {
 	color: var(--theme-text-color);
 	font-size: var(--theme-font-size);
@@ -264,7 +176,7 @@
 	color: #bbf7d0;
 }
 
-/* 8. レスポンシブ */
+/* 5. レスポンシブ */
 @media (max-width: 768px) {
 	.theme-root {
 		padding: 1rem;
@@ -287,7 +199,7 @@
 	}
 }
 
-/* 9. アクセシビリティ（prefers-reduced-motion: reduce）
+/* 6. アクセシビリティ（prefers-reduced-motion: reduce）
    アニメーションだけ停止し、森パレット・背景グラデは維持 */
 @media (prefers-reduced-motion: reduce) {
 	.theme-root,
@@ -297,7 +209,7 @@
 	}
 }
 
-/* 10. keyframes — `.theme-root` スコープ外に展開される前提でも、
+/* 7. keyframes — `.theme-root` スコープ外に展開される前提でも、
    他テーマは mori.css を読み込まないため名前衝突は発生しない */
 @keyframes wave-pulse {
 	0% {
