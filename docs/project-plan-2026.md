@@ -1,7 +1,7 @@
 # Mosaku プロジェクト計画（2026年3月〜12月）
 
 作成日: 2026-03-14
-最終更新: 2026-06-08
+最終更新: 2026-06-11
 
 ---
 
@@ -224,6 +224,18 @@
 > 1. **必須**: モバイル実機確認・アプリ内フィードバック・オンボーディング改善
 > 2. **推奨**: レートリミット確認・エディタE2Eテスト
 > 3. **余裕があれば**: 摩擦Top実装・エディタ拡張
+
+#### 6月 追加（計画外 / 摩擦駆動 spec・ダッシュボード系）
+
+| spec / タスク             | 内容                                                                                                   | 状況                          |
+| ------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------- |
+| `feedback-db-persistence` | フィードバックを `feedbacks` テーブルへ永続化（Slack=必須レッグ / DB=補助レッグの named outcome 並列） | ✅ `implementation-validated` |
+| `memo-display-mode`       | リードオンリー全画面フォーカス表示（FocusMemoOverlay / ESC・背景・✕ で終了 / テーマ継承）              | ✅ `implementation-validated` |
+| `home-dashboard`          | ホーム（ランチャー＋ダッシュボード）。最近メモ・今週件数・書いた日カレンダー・NB 一覧・今日のお題      | ✅ `implementation-validated` |
+| `onboarding-experience`   | 初回ログイン体験（テーマ選択→ようこそ NB→サンプルメモ）。BE / ストア / API クライアント完了            | 🔄 implementing（9/18）       |
+| `notebook-autosave`       | NotebookEditor に MemoEditor 同等の debounce 自動保存を導入                                            | 🔄 design（仕様策定中）       |
+
+> `onboarding-experience` は上表「オンボーディング改善」の cc-sdd 実装本体。残りフロント実装・テスト完了で同行を ✅ に更新する。
 
 **エディタ強化・情報整理の摩擦候補（memo-app-spec より）**
 

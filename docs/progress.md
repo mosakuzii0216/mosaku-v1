@@ -32,6 +32,48 @@
 
 ---
 
+## 2026-06-11（Phase 1 ドッグフーディング中 / ダッシュボード・表示モード・フィードバック永続化を確定 + オンボーディング着手）
+
+### 今週やったこと（6/08 エントリ以降）
+
+- **`home-dashboard` 完了 → `implementation-validated`**（大型 spec）
+  - backend: DashboardModule（最近メモ・今週件数・書いた日・NB別件数の4集計 API。JST 週境界固定・`trashedAt IS NULL` 除外・`feature_area:'dashboard'` 追加）
+  - frontend: 型 / apiClient / React Query フック（staleTime 5分・Zustand 非コピー）+ セクション群（NewMemoHero / RecentMemos / WeeklyActivitySummary / ActivityCalendar / HomeNotebookSection / DailyPrompt）
+  - 起動時の初期画面を `home` に変更し、ランチャー＋ダッシュボードを最初に表示。テスト 57 緑（backend 20 + frontend 37）
+  - approvals は3フェーズ済みなのに phase が `tasks-generated` で取り残されていた不整合も是正
+- **`memo-display-mode` 完了 → `implementation-validated`**
+  - リードオンリー全画面フォーカス表示。`FocusMemoOverlay` を `createPortal` で body マウント、ESC・背景クリック・✕ で終了、テーマ CSS 変数継承・スクロールロック
+  - `MemoEditor` に起動ボタンを統合（新規作成時は非表示）。テスト 29 緑
+- **`feedback-db-persistence` 完了 → `implementation-validated`**
+  - フィードバックを `feedbacks` テーブルへ永続化。Slack=必須レッグ（失敗は Sentry）/ DB=補助レッグ（失敗は `logger.warn`）の named outcome 並列副作用。どちらの失敗でも 201 を維持。テスト 21 緑
+- **`onboarding-experience` 着手（9/18 タスク）**
+  - 要件承認 → backend（`onboarding_completed` カラム + complete/skip API）→ frontend（`useOnboardingStore` + apiClient + React Query）まで完了
+  - 残りはテーマ選択 UI・OnboardingModal・OnboardingGate・BE テスト（別ウィンドウで継続中）
+- **`notebook-autosave` 起票（friction log 駆動）**
+  - NotebookEditor に MemoEditor 同等の debounce 自動保存を導入する spec。要件 → 設計まで進行（別ウィンドウ）
+- **認証レートリミットを友人公開向けに緩和**し env で調整可能化
+- 表示/摩擦修正：アプリシェル高さ `h-screen→h-dvh`、mori テーマの枠配色撤廃でヘッダー文字消失を解消
+- steering：`writing-habit` ステアリング追加、エディタ共有ファクトリパターンを structure に追記
+
+### 来週の予定
+
+- **`onboarding-experience` 残り 9 タスク完了 → validate**（テーマ選択 UI・OnboardingModal・OnboardingGate・BE テスト）
+- **`notebook-autosave` 設計承認 → tasks → TDD 実装**
+- 6月末公開準備：**モバイル操作感の実機確認**（必須3項目で唯一の未着手）
+
+### ブロッカー・懸念
+
+- なし
+
+### メモ
+
+- 本日のセッションで完了済み3 spec を `validate-impl` で締め、計 **107 テスト緑**を確認（feedback 21 / display 29 / dashboard 57）
+- `home-dashboard` の phase 取り残しを是正。メタデータ確定は `docs`（正常確定2本）と `fix`（不整合是正1本）の2コミットに分離
+- `npx` 実行で `backend/package-lock.json` が丸ごと書き換わる副作用 → `git checkout` で巻き戻し、コミット汚染を回避
+- 6月末公開の必須3項目（モバイル実機・フィードバック・オンボーディング）のうち、フィードバックは永続化まで完了・オンボーディングは実装中・モバイル実機が残課題
+
+---
+
 ## 2026-06-08（Phase 1 ドッグフーディング中 / エディタ品質を大幅強化 + アプリ内フィードバック完成）
 
 ### 今週やったこと（6/02 エントリ以降）
