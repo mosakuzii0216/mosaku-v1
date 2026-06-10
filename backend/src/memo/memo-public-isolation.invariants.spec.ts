@@ -36,6 +36,7 @@ describe('memo-public-isolation 既存不変則の固定（Task 6.1）', () => {
 		'theme',
 		'auth',
 		'invitation',
+		'dashboard',
 		'system',
 		'unknown',
 	] as const;

@@ -5,6 +5,7 @@ export type FeatureArea =
 	| 'theme'
 	| 'auth'
 	| 'invitation'
+	| 'dashboard'
 	| 'system'
 	| 'unknown';
 
@@ -33,6 +34,7 @@ const FEATURE_AREA_PREFIXES: ReadonlyArray<readonly [string, FeatureArea]> = [
 	['/auth', 'auth'],
 	['/invitation', 'invitation'],
 	['/invitations', 'invitation'],
+	['/dashboard', 'dashboard'],
 	['/health', 'system'],
 	['/system', 'system'],
 ];
