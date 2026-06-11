@@ -72,6 +72,22 @@ class ApiClient {
 		const { authLevel = 'REQUIRED', _retried = false, ...fetchConfig } = config;
 		const url = `${API_BASE_URL}${endpoint}`;
 
+		// アクセストークンがローカルで期限切れ／不在でも、Refresh Token Cookie は
+		// 長寿命なため先回りでリフレッシュを試みる。これをしないと getAuthHeaders が
+		// fetch 前に同期 throw し、401 時の透過リフレッシュ経路へ到達できない
+		// （放置後にメモ一覧を開くと「認証が必要です」になる原因）。
+		if (authLevel === 'REQUIRED' && !_retried) {
+			const token = AuthTokenManager.getAccessToken();
+			if (!token || AuthTokenManager.isTokenExpired(token)) {
+				try {
+					await refreshClient.ensureRefreshed();
+				} catch {
+					throw new Error('認証エラー: ログインし直してください');
+				}
+				return this.request<T>(endpoint, { ...config, _retried: true });
+			}
+		}
+
 		const authHeaders = this.getAuthHeaders(authLevel);
 
 		const finalConfig: RequestInit = {

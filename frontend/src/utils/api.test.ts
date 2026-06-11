@@ -213,18 +213,22 @@ describe('ApiClient.request() 401 透過リフレッシュ', () => {
 	});
 
 	it('再送リクエストには新しい Access Token がヘッダに乗る', async () => {
-		const tokens = ['mock-token', 'fresh-token'];
-		vi.mocked(AuthTokenManager.getAccessToken).mockImplementation(() => tokens.shift() ?? null);
-		ensureRefreshedMock.mockResolvedValueOnce({
-			accessToken: 'fresh-token',
-			user: {
-				id: '1',
-				email: 'e',
-				name: 'n',
-				role: 'USER',
-				createdAt: '',
-				updatedAt: '',
-			},
+		// localStorage は何度読んでも同じ値を返すため、refresh で切り替わる状態として表現
+		let currentToken = 'mock-token';
+		vi.mocked(AuthTokenManager.getAccessToken).mockImplementation(() => currentToken);
+		ensureRefreshedMock.mockImplementationOnce(async () => {
+			currentToken = 'fresh-token';
+			return {
+				accessToken: 'fresh-token',
+				user: {
+					id: '1',
+					email: 'e',
+					name: 'n',
+					role: 'USER',
+					createdAt: '',
+					updatedAt: '',
+				},
+			};
 		});
 		const fetchMock = vi
 			.fn()
@@ -247,6 +251,101 @@ describe('ApiClient.request() 401 透過リフレッシュ', () => {
 		const retryHeaders = fetchMock.mock.calls[1][1].headers as Record<string, string>;
 		expect(firstHeaders.Authorization).toBe('Bearer mock-token');
 		expect(retryHeaders.Authorization).toBe('Bearer fresh-token');
+	});
+});
+
+describe('ApiClient.request() ローカル期限切れの先回りリフレッシュ', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		vi.mocked(AuthTokenManager.getAccessToken).mockReturnValue('expired-token');
+		vi.mocked(AuthTokenManager.isTokenExpired).mockReturnValue(true);
+	});
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it('REQUIRED でローカル期限切れなら fetch 前に refresh し、成功後に再送する', async () => {
+		// 期限切れ → refresh 成功でトークンが有効化される状態遷移を再現
+		let currentToken: string | null = 'expired-token';
+		let expired = true;
+		vi.mocked(AuthTokenManager.getAccessToken).mockImplementation(() => currentToken);
+		vi.mocked(AuthTokenManager.isTokenExpired).mockImplementation(() => expired);
+		ensureRefreshedMock.mockImplementation(async () => {
+			currentToken = 'fresh-token';
+			expired = false;
+			return {
+				accessToken: 'fresh-token',
+				user: { id: '1', email: 'e', name: 'n', role: 'USER', createdAt: '', updatedAt: '' },
+			};
+		});
+		const successPayload = [{ id: 't1', name: 'タグ' }];
+		const fetchMock = vi.fn().mockResolvedValue({
+			ok: true,
+			headers: new Headers({ 'content-type': 'application/json' }),
+			json: vi.fn().mockResolvedValue(successPayload),
+		});
+		vi.stubGlobal('fetch', fetchMock);
+
+		const result = await apiClient.getTags();
+
+		expect(result).toEqual(successPayload);
+		expect(ensureRefreshedMock).toHaveBeenCalledTimes(1);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>;
+		expect(headers.Authorization).toBe('Bearer fresh-token');
+	});
+
+	it('REQUIRED でアクセストークン不在でも refresh を試みる', async () => {
+		let currentToken: string | null = null;
+		let expired = true;
+		vi.mocked(AuthTokenManager.getAccessToken).mockImplementation(() => currentToken);
+		vi.mocked(AuthTokenManager.isTokenExpired).mockImplementation(() => expired);
+		ensureRefreshedMock.mockImplementation(async () => {
+			currentToken = 'fresh-token';
+			expired = false;
+			return {
+				accessToken: 'fresh-token',
+				user: { id: '1', email: 'e', name: 'n', role: 'USER', createdAt: '', updatedAt: '' },
+			};
+		});
+		const fetchMock = vi.fn().mockResolvedValue({
+			ok: true,
+			headers: new Headers({ 'content-type': 'application/json' }),
+			json: vi.fn().mockResolvedValue([]),
+		});
+		vi.stubGlobal('fetch', fetchMock);
+
+		await apiClient.getTags();
+
+		expect(ensureRefreshedMock).toHaveBeenCalledTimes(1);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+
+	it('REQUIRED でローカル期限切れ + refresh 失敗なら認証エラーを throw し fetch しない', async () => {
+		ensureRefreshedMock.mockRejectedValue(new Error('refresh failed'));
+		const fetchMock = vi.fn();
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(apiClient.getTags()).rejects.toThrow('認証エラー: ログインし直してください');
+		expect(ensureRefreshedMock).toHaveBeenCalledTimes(1);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it('OPTIONAL はローカル期限切れでも先回り refresh せずに認証なしで進む', async () => {
+		const fetchMock = vi.fn().mockResolvedValue({
+			ok: true,
+			headers: new Headers({ 'content-type': 'application/json' }),
+			json: vi.fn().mockResolvedValue([]),
+		});
+		vi.stubGlobal('fetch', fetchMock);
+
+		await apiClient.getPublicThemes();
+
+		expect(ensureRefreshedMock).not.toHaveBeenCalled();
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>;
+		expect(headers.Authorization).toBeUndefined();
 	});
 });
 
