@@ -55,22 +55,22 @@
   - タスク 3 と 4.1 の完了後に実装する
   - _Requirements: 4.3, 6.3, 7.1, 7.3, 8.1, 8.3_
 
-- [ ] 5. フロントエンド: テーマ選択 UI コンポーネント
-- [ ] 5.1 (P) ThemePreviewCard の実装
+- [x] 5. フロントエンド: テーマ選択 UI コンポーネント
+- [x] 5.1 (P) ThemePreviewCard の実装
   - `theme.styles.primaryColor` を色チップとして表示し、テーマ名を下部に表示する単一テーマカードを実装する
   - 選択状態（`isSelected` prop）を枠線・チェックマーク等のビジュアルフィードバックで示す
   - ホバーアニメーションを CSS で実装し、`@media (prefers-reduced-motion: reduce)` で抑制する（CSS レベルで対応）
   - タスク 2 / 3 と独立して実装可能
   - _Requirements: 2.2, 2.7_
 
-- [ ] 5.2 ThemeGallery の実装
+- [x] 5.2 ThemeGallery の実装
   - `useSystemThemes()` でテーマ一覧を取得し `ThemePreviewCard` をグリッド表示する
   - レイアウトは `grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3` のレスポンシブグリッド（モバイル 2 列・タブレット 3 列・デスクトップ 5 列）
   - データ取得中はスケルトン UI を表示する
   - タスク 5.1 の完了後に実装する
   - _Requirements: 2.1, 2.6_
 
-- [ ] 6. フロントエンド: OnboardingModal の実装
+- [x] 6. フロントエンド: OnboardingModal の実装
   - `fixed inset-0 z-50` の全画面オーバーレイとして実装する（既存 `FeedbackModal` パターン参照）
   - `ThemeGallery` を内包し、`useOnboardingStore` から `isOpen` / `selectedThemeId` を、`useOnboardingQueries` から `isPending` を受け取る
   - "始める" ボタンは `selectedThemeId === null || isPending` のとき `disabled` にしてテーマ未選択での進行を防ぐ
@@ -79,24 +79,24 @@
   - タスク 3 / 4.2 / 5.2 の完了後に実装する
   - _Requirements: 1.5, 2.4, 2.5, 6.3_
 
-- [ ] 7. フロントエンド: OnboardingGate の実装とアプリへの統合
+- [x] 7. フロントエンド: OnboardingGate の実装とアプリへの統合
   - `user.onboardingCompleted === false` のときに `useOnboardingStore.open()` を呼ぶ副作用コンポーネントを `components/onboarding/OnboardingGate.tsx` として実装する（レンダリング出力はゼロ、`return null`）
   - `useEffect(() => { if (user && !user.onboardingCompleted) open(); }, [user])` パターンで実装する
   - `AuthGuard` 内（`AppContent` の直前）に `<OnboardingGate />` と `<OnboardingModal />` を配置してアプリに統合する
   - タスク 6 の完了後に実装する
   - _Requirements: 1.1, 1.2, 1.4_
 
-- [ ] 8. バックエンドテスト
-- [ ] 8.1 (P) OnboardingService ユニットテスト
+- [x] 8. バックエンドテスト
+- [x] 8.1 (P) OnboardingService ユニットテスト
   - `complete()` 正常系: ようこそノートブック + サンプルメモ 2 枚 + `onboardingCompleted=true` が作成されることを確認する
   - `complete()` べき等: 2 回目の呼び出しで早期リターンし重複作成しないことを確認する
   - `skip()`: `onboardingCompleted=true` のみ更新され、ノートブック・メモが作成されないことを確認する
   - _Requirements: 6.1, 6.2_
 
-- [ ] 8.2 (P) OnboardingController インテグレーションテスト
+- [x] 8.2 (P) OnboardingController インテグレーションテスト
   - `POST /onboarding/complete`: 認証済みユーザーでノートブック + メモが作成され `onboardingCompleted=true` になることを確認する
   - `POST /onboarding/skip`: ノートブック・メモが作成されず `onboardingCompleted=true` になることを確認する
-  - `GET /auth/me`: `onboardingCompleted` フィールドが `UserProfile` レスポンスに含まれることを確認する
+  - `GET /auth/me`: `onboardingCompleted` フィールドが `UserProfile` レスポンスに含まれることを確認する（`auth.controller.spec.ts` の `getMe` ブロックで確認）
   - べき等テスト: `complete` を 2 回呼んだとき 2 回目は重複作成しないことを確認する
   - _Requirements: 6.1, 6.2_
 

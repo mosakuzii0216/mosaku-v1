@@ -514,6 +514,61 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 		});
 	});
 
+	// ─── getMe ──────────────────────────────────────────────────────────────
+
+	describe('getMe', () => {
+		it('onboardingCompleted: true のユーザーでフィールドがレスポンスに含まれること', async () => {
+			mockAuthService.findUserById.mockResolvedValue({
+				id: 'user-1',
+				email: 'u@example.com',
+				name: 'Test User',
+				role: 'USER',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				onboardingCompleted: true,
+			});
+
+			const req = { user: { id: 'user-1', email: 'u@example.com', role: 'USER' } };
+			const result = await controller.getMe(req as never);
+
+			expect(result).toMatchObject({ onboardingCompleted: true });
+		});
+
+		it('onboardingCompleted: false のユーザーでもフィールドがレスポンスに含まれること', async () => {
+			mockAuthService.findUserById.mockResolvedValue({
+				id: 'user-2',
+				email: 'u2@example.com',
+				name: null,
+				role: 'USER',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				onboardingCompleted: false,
+			});
+
+			const req = { user: { id: 'user-2', email: 'u2@example.com', role: 'USER' } };
+			const result = await controller.getMe(req as never);
+
+			expect(result).toMatchObject({ onboardingCompleted: false });
+		});
+
+		it('findUserById を req.user.id で呼び出すこと', async () => {
+			mockAuthService.findUserById.mockResolvedValue({
+				id: 'user-3',
+				email: 'u3@example.com',
+				name: null,
+				role: 'USER',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				onboardingCompleted: false,
+			});
+
+			const req = { user: { id: 'user-3', email: 'u3@example.com', role: 'USER' } };
+			await controller.getMe(req as never);
+
+			expect(mockAuthService.findUserById).toHaveBeenCalledWith('user-3');
+		});
+	});
+
 	describe('startOAuthRegistration', () => {
 		it('招待コード検証 → state 発行 → authorizationUrl を返すこと', async () => {
 			mockInvitationService.verifyInvitation.mockResolvedValue({ code: 'ABCD1234' });

@@ -4,6 +4,7 @@ export type ThemeEffectKey = 'mori';
 
 export interface ThemeMetadata {
 	effectKey?: ThemeEffectKey;
+	previewColor?: string;
 	[key: string]: unknown;
 }
 
