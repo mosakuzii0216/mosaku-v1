@@ -100,7 +100,7 @@
   - べき等テスト: `complete` を 2 回呼んだとき 2 回目は重複作成しないことを確認する
   - _Requirements: 6.1, 6.2_
 
-- [ ]\* 9. フロントエンドユニットテスト（オプション・MVP 後対応可）
+- [x] 9. フロントエンドユニットテスト（オプション・MVP 後対応可）
   - `useOnboardingStore` の初期状態（`isOpen: false`, `selectedThemeId: null`）と各アクションの動作を確認する
   - `useCompleteOnboarding` の mutate 成功時に `refreshUser` + `invalidateQueries` + navigate が呼ばれることを確認する
   - _Requirements: 2.3, 8.1, 8.2_
