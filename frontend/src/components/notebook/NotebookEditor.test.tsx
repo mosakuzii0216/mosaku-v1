@@ -327,6 +327,29 @@ describe('NotebookEditor - 新規作成の自動保存と編集モード内部�
 		expect(useMemoDataStore.getState().selectedNotebookId).toBe('nb-new3');
 		expect(useViewStore.getState().currentView).toBe('edit');
 	});
+
+	it('新規作成の autosave 成功後もユーザーの入力が保持される（一覧遷移なし・入力消失なし）', async () => {
+		const createdNb = buildNotebook({ id: 'nb-input-kept' });
+		createMutateAsync.mockResolvedValue(createdNb);
+
+		const Wrapper = createWrapper();
+		render(<NotebookEditor isCreate />, { wrapper: Wrapper });
+
+		const nameInput = screen.getByPlaceholderText('ノートブック名を入力') as HTMLInputElement;
+
+		await act(async () => {
+			fireEvent.change(nameInput, { target: { value: 'My Draft Title' } });
+		});
+		await act(async () => {
+			vi.advanceTimersByTime(DEBOUNCE_MS + 50);
+		});
+		await act(async () => {
+			await Promise.resolve();
+		});
+
+		// autosave 成功後もフォーム入力は保持される
+		expect(nameInput.value).toBe('My Draft Title');
+	});
 });
 
 describe('NotebookEditor - 編集対象切替の再同期 ref ガード', () => {
@@ -395,6 +418,40 @@ describe('NotebookEditor - 編集対象切替の再同期 ref ガード', () => 
 
 		// nb-b の内容が表示される
 		expect(nameInput.value).toBe('Notebook B');
+	});
+
+	it('別ノートへ切替時に前ノートへの debounce タイマーが混入しない', async () => {
+		const nbA = buildNotebook({ id: 'nb-switch-a', name: 'Notebook Switch A' });
+		const nbB = buildNotebook({ id: 'nb-switch-b', name: 'Notebook Switch B' });
+		mockNotebookMap['nb-switch-a'] = nbA;
+		mockNotebookMap['nb-switch-b'] = nbB;
+		updateMutateAsync.mockResolvedValue(nbA);
+
+		const Wrapper = createWrapper();
+		const { rerender } = render(<NotebookEditor notebookId="nb-switch-a" />, { wrapper: Wrapper });
+
+		const nameInput = screen.getByPlaceholderText('ノートブック名を入力') as HTMLInputElement;
+
+		// notebook A で入力（debounce タイマーがスタート）
+		await act(async () => {
+			fireEvent.change(nameInput, { target: { value: 'Edited before switch' } });
+		});
+
+		// debounce 発火前に notebook B に切り替える
+		rerender(<NotebookEditor notebookId="nb-switch-b" />);
+		await act(async () => {
+			await Promise.resolve();
+		});
+
+		// debounce 時間が経過しても notebook A への保存は発火しない
+		await act(async () => {
+			vi.advanceTimersByTime(DEBOUNCE_MS + 50);
+		});
+		await act(async () => {
+			await Promise.resolve();
+		});
+
+		expect(updateMutateAsync).not.toHaveBeenCalled();
 	});
 });
 
