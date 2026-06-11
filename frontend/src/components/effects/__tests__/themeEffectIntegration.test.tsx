@@ -4,6 +4,10 @@ import { ThemeEffectHost } from '../ThemeEffectHost';
 
 type ChangeHandler = (event: { matches: boolean }) => void;
 
+// MoriEffectLayer は動的 import（lazy）で読み込まれるため、full-suite 実行時の負荷で
+// デフォルト 1 秒のタイムアウトに間に合わず flaky になる。待機時間を延長して安定させる。
+const LAZY_LAYER_TIMEOUT = 5000;
+
 function createMatchMediaMock(matches: boolean) {
 	let changeHandler: ChangeHandler | null = null;
 	return {
@@ -72,7 +76,7 @@ describe('14.2: テーマ切替のライフサイクル整合性テスト', () =
 
 		const { findByTestId, rerender, container } = render(<ThemeEffectHost theme={moriTheme} />);
 
-		await findByTestId('mori-effect-layer');
+		await findByTestId('mori-effect-layer', {}, { timeout: LAZY_LAYER_TIMEOUT });
 
 		const canvasBefore = container.querySelector('canvas');
 		const forestBefore = container.querySelector('.forest-animation');
@@ -95,7 +99,7 @@ describe('14.2: テーマ切替のライフサイクル整合性テスト', () =
 
 		const { findByTestId, rerender } = render(<ThemeEffectHost theme={moriTheme} />);
 
-		await findByTestId('mori-effect-layer');
+		await findByTestId('mori-effect-layer', {}, { timeout: LAZY_LAYER_TIMEOUT });
 
 		await act(async () => {
 			rerender(<ThemeEffectHost theme={kamiTheme} />);
@@ -110,7 +114,7 @@ describe('14.2: テーマ切替のライフサイクル整合性テスト', () =
 
 		const { findByTestId, rerender, container } = render(<ThemeEffectHost theme={moriTheme} />);
 
-		await findByTestId('mori-effect-layer');
+		await findByTestId('mori-effect-layer', {}, { timeout: LAZY_LAYER_TIMEOUT });
 
 		for (let i = 0; i < 5; i++) {
 			await act(async () => {
@@ -151,7 +155,7 @@ describe('14.3: アクセシビリティ — prefers-reduced-motion 回帰テス
 		const moriTheme = createMoriTheme();
 		const { findByTestId, container } = render(<ThemeEffectHost theme={moriTheme} />);
 
-		await findByTestId('mori-effect-layer');
+		await findByTestId('mori-effect-layer', {}, { timeout: LAZY_LAYER_TIMEOUT });
 
 		const waveElement = container.querySelector('[data-animation="wave"]') as HTMLElement;
 		expect(waveElement).toBeTruthy();
@@ -177,7 +181,7 @@ describe('14.3: アクセシビリティ — prefers-reduced-motion 回帰テス
 		const moriTheme = createMoriTheme();
 		const { findByTestId, container } = render(<ThemeEffectHost theme={moriTheme} />);
 
-		await findByTestId('mori-effect-layer');
+		await findByTestId('mori-effect-layer', {}, { timeout: LAZY_LAYER_TIMEOUT });
 
 		const canvas = container.querySelector('canvas');
 		if (canvas) {
