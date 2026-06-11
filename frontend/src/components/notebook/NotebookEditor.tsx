@@ -1,13 +1,25 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { TagDropdownIcon } from '../tag/TagDropdownIcon';
 import { RichTextEditor } from '../editor/RichTextEditor';
 import { useCreateNotebook, useNotebook, useUpdateNotebook } from '../../hooks/useNotebookQueries';
 import { useSystemThemes, usePublicThemes } from '../../hooks/useThemeQueries';
 import { useTagQueries } from '../../hooks/useTagQueries';
 import { useThemeCSS } from '../../hooks/useThemeCSS';
+import { useAutoSave } from '../../hooks/useAutoSave';
+import type { SaveStatus } from '../../hooks/useAutoSave';
 import { useViewStore } from '../../stores/useViewStore';
+import { useMemoDataStore } from '../../stores/useMemoDataStore';
 import { apiClient } from '../../utils/api';
 import { logger } from '../../utils/logger';
+import { queryKeys } from '../../constants/queryKeys';
+import {
+	describeSaveStatus,
+	formatRelativeTime,
+	SAVE_STATUS_TONE_CLASSES,
+} from '../../utils/editor/save-status-presentation';
+
+const CREATE_SENTINEL = '__create__';
 
 interface NotebookEditorProps {
 	isCreate?: boolean;
@@ -16,36 +28,137 @@ interface NotebookEditorProps {
 
 export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) => {
 	const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+	const [originalTagIds, setOriginalTagIds] = useState<string[]>([]);
 	const [content, setContent] = useState<string>('');
 	const [name, setName] = useState<string>('');
 	const [themeId, setThemeId] = useState<string>('default');
 	const [hasChanges, setHasChanges] = useState<boolean>(false);
-	const [saveError, setSaveError] = useState<string | null>(null);
+	const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+	const [, setTick] = useState(0);
+
+	const syncedNotebookIdRef = useRef<string | null>(null);
+
 	const createNotebook = useCreateNotebook();
 	const updateNotebook = useUpdateNotebook();
-	const { goToNotebookList } = useViewStore();
+	const queryClient = useQueryClient();
+	const { goToNotebookList, setCurrentView } = useViewStore();
+	const setSelectedNotebookId = useMemoDataStore((s) => s.setSelectedNotebookId);
 	const { tagsQuery } = useTagQueries();
 	const tags = tagsQuery.data ?? [];
 
 	const isEdit = !isCreate && !!notebookId;
 	const { data: editingNotebook, isLoading: isLoadingNotebook } = useNotebook(notebookId);
 
-	// 編集時、初回ロードでフォームに値をセット & タグ取得
-	useEffect(() => {
-		if (isEdit && editingNotebook) {
-			setName(editingNotebook.name ?? '');
-			setContent(editingNotebook.content ?? '');
-			setThemeId(editingNotebook.themeId ?? editingNotebook.theme?.id ?? 'default');
-			setHasChanges(false);
-			// 既存タグの取得
-			apiClient
-				.getNotebookTags(editingNotebook.id)
-				.then((pairs) => setSelectedTagIds(pairs.map((p) => p.tagId)))
-				.catch((e) => logger.error('failed to load notebook tags', e));
-		}
-	}, [isEdit, editingNotebook]);
+	const isSaving = createNotebook.isPending || updateNotebook.isPending;
+	const canSave = hasChanges && !!(name.trim() || content.trim());
 
-	// 変更検知
+	const reflectTags = useCallback(
+		async (id: string) => {
+			const tagsDiffer =
+				JSON.stringify([...selectedTagIds].sort()) !== JSON.stringify([...originalTagIds].sort());
+			if (!tagsDiffer) return;
+			try {
+				await apiClient.assignTagsToNotebook(id, { tagIds: selectedTagIds });
+				setOriginalTagIds(selectedTagIds);
+			} catch (e) {
+				logger.error('failed to assign tags to notebook', e);
+			}
+		},
+		[selectedTagIds, originalTagIds],
+	);
+
+	const handleSave = useCallback(async (): Promise<void> => {
+		const trimmedName = name.trim();
+		const trimmedContent = content.trim();
+		if (!trimmedName && !trimmedContent) return;
+
+		const payload = {
+			name: trimmedName ? name : null,
+			content: trimmedContent ? content : null,
+			themeId: themeId !== 'default' ? themeId : null,
+		};
+
+		if (isEdit && notebookId) {
+			await updateNotebook.mutateAsync({ id: notebookId, data: payload });
+			await reflectTags(notebookId);
+			return;
+		}
+
+		const nb = await createNotebook.mutateAsync(payload);
+		queryClient.setQueryData(queryKeys.notebooks.detail(nb.id), nb);
+		await reflectTags(nb.id);
+		setSelectedNotebookId(nb.id);
+		setCurrentView('edit');
+	}, [
+		name,
+		content,
+		themeId,
+		isEdit,
+		notebookId,
+		updateNotebook,
+		createNotebook,
+		queryClient,
+		reflectTags,
+		setSelectedNotebookId,
+		setCurrentView,
+	]);
+
+	const { saveStatus, scheduleAutoSave, cancelDebounce } = useAutoSave({
+		canSave,
+		isSaving,
+		onSave: handleSave,
+	});
+
+	// saved に到達したら最終保存時刻を更新
+	useEffect(() => {
+		if (saveStatus === 'saved') {
+			setLastSavedAt(new Date());
+		}
+	}, [saveStatus]);
+
+	// 30 秒ごとに相対時刻表示を更新
+	useEffect(() => {
+		if (!lastSavedAt) return;
+		const id = setInterval(() => setTick((n) => n + 1), 30 * 1000);
+		return () => clearInterval(id);
+	}, [lastSavedAt]);
+
+	// 編集対象切替の再同期（id ベースの ref ガード）
+	useEffect(() => {
+		if (isCreate) {
+			if (syncedNotebookIdRef.current !== CREATE_SENTINEL) {
+				cancelDebounce();
+				setName('');
+				setContent('');
+				setThemeId('default');
+				setSelectedTagIds([]);
+				setOriginalTagIds([]);
+				setLastSavedAt(null);
+				setHasChanges(false);
+				syncedNotebookIdRef.current = CREATE_SENTINEL;
+			}
+			return;
+		}
+		if (!notebookId || !editingNotebook) return;
+		if (syncedNotebookIdRef.current === notebookId) return; // 同一 id の再フェッチは無視
+		cancelDebounce();
+		setName(editingNotebook.name ?? '');
+		setContent(editingNotebook.content ?? '');
+		setThemeId(editingNotebook.themeId ?? editingNotebook.theme?.id ?? 'default');
+		setLastSavedAt(editingNotebook.updatedAt ? new Date(editingNotebook.updatedAt) : null);
+		setHasChanges(false);
+		syncedNotebookIdRef.current = notebookId;
+		apiClient
+			.getNotebookTags(editingNotebook.id)
+			.then((pairs) => {
+				const ids = pairs.map((p) => p.tagId);
+				setSelectedTagIds(ids);
+				setOriginalTagIds(ids);
+			})
+			.catch((e) => logger.error('failed to load notebook tags', e));
+	}, [notebookId, isCreate, editingNotebook, cancelDebounce]);
+
+	// 変更検知（タグ差分を含む）
 	useEffect(() => {
 		if (isCreate) {
 			setHasChanges(name.trim().length > 0 || content.trim().length > 0);
@@ -56,11 +169,31 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 		const originalName = editingNotebook.name ?? '';
 		const originalContent = editingNotebook.content ?? '';
 		const originalThemeId = editingNotebook.themeId ?? editingNotebook.theme?.id ?? 'default';
+		const tagsDiffer =
+			JSON.stringify([...selectedTagIds].sort()) !== JSON.stringify([...originalTagIds].sort());
 
 		setHasChanges(
-			name !== originalName || content !== originalContent || themeId !== originalThemeId,
+			name !== originalName ||
+				content !== originalContent ||
+				themeId !== originalThemeId ||
+				tagsDiffer,
 		);
-	}, [name, content, themeId, selectedTagIds, editingNotebook, isCreate]);
+	}, [name, content, themeId, selectedTagIds, originalTagIds, editingNotebook, isCreate]);
+
+	// キーボードショートカット（Ctrl+S / Cmd+S で即時保存）
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+				event.preventDefault();
+				if (canSave) {
+					cancelDebounce();
+					handleSave().catch((e) => logger.error('手動保存に失敗しました:', e));
+				}
+			}
+		};
+		document.addEventListener('keydown', handleKeyDown);
+		return () => document.removeEventListener('keydown', handleKeyDown);
+	}, [canSave, handleSave, cancelDebounce]);
 
 	// DBからテーマ取得（システム + 公開）
 	const { data: systemThemes = [], isLoading: isLoadingSystem } = useSystemThemes();
@@ -74,84 +207,17 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 		return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'ja'));
 	}, [systemThemes, publicThemes]);
 
-	// 選択されたテーマを取得
 	const selectedTheme = useMemo(() => {
 		if (!themeId || themeId === 'default') return null;
 		return allThemes.find((t) => t.id === themeId);
 	}, [themeId, allThemes]);
 
-	// テーマCSSを読み込む
 	useThemeCSS(selectedTheme);
-
-	const handleSave = () => {
-		setSaveError(null);
-		const payload = {
-			name: name?.trim() ? name : null,
-			content: content?.trim() ? content : null,
-			themeId: themeId && themeId !== 'default' ? themeId : null,
-		};
-
-		logger.debug('[NotebookEditor] handleSave called with selectedTagIds:', selectedTagIds);
-
-		if (isEdit && notebookId) {
-			updateNotebook.mutate(
-				{ id: notebookId, data: payload },
-				{
-					onSuccess: () => {
-						// タグ割り当てを反映
-						logger.debug('[NotebookEditor] Calling assignTagsToNotebook with:', {
-							notebookId,
-							tagIds: selectedTagIds,
-						});
-						apiClient
-							.assignTagsToNotebook(notebookId, { tagIds: selectedTagIds })
-							.then((result) => {
-								logger.debug('[NotebookEditor] assignTagsToNotebook succeeded:', result);
-								goToNotebookList();
-							})
-							.catch((e) => {
-								logger.error('failed to assign tags to notebook', e);
-								goToNotebookList();
-							});
-					},
-					onError: (error) => {
-						logger.error('error update notebook', error);
-						setSaveError('更新に失敗しました。もう一度お試しください。');
-					},
-				},
-			);
-		} else {
-			createNotebook.mutate(payload, {
-				onSuccess: (nb) => {
-					// 作成後にタグ割り当て
-					logger.debug('[NotebookEditor] Calling assignTagsToNotebook with:', {
-						notebookId: nb.id,
-						tagIds: selectedTagIds,
-					});
-					apiClient
-						.assignTagsToNotebook(nb.id, { tagIds: selectedTagIds })
-						.then((result) => {
-							logger.debug('[NotebookEditor] assignTagsToNotebook succeeded:', result);
-							goToNotebookList();
-						})
-						.catch((e) => {
-							logger.error('failed to assign tags to new notebook', e);
-							goToNotebookList();
-						});
-				},
-				onError: (error) => {
-					logger.error('error create notebook', error);
-					setSaveError('保存に失敗しました。もう一度お試しください。');
-				},
-			});
-		}
-	};
 
 	return (
 		<div className="flex flex-col h-full">
 			{/* ヘッダー */}
 			<div className="border-b border-gray-200 p-4 flex items-center justify-between">
-				{saveError && <p className="text-sm text-red-500">{saveError}</p>}
 				<div className="flex items-center space-x-2 ml-auto">
 					<TagDropdownIcon
 						selectedTagIds={selectedTagIds}
@@ -159,29 +225,49 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 							setSelectedTagIds((prev) =>
 								prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
 							);
+							scheduleAutoSave();
 						}}
 					/>
+					{/* 保存状態インジケーター */}
+					{(() => {
+						// 新規作成中でまだ保存対象が確定していない場合は表示しない
+						if (isCreate && saveStatus === 'idle') return null;
+						const displayStatus: SaveStatus =
+							!isCreate && editingNotebook && saveStatus === 'idle' ? 'saved' : saveStatus;
+						const desc = describeSaveStatus(displayStatus);
+						if (!desc.label) return null;
+						const label =
+							displayStatus === 'saved' && lastSavedAt
+								? `${desc.label}（${formatRelativeTime(new Date(), lastSavedAt)}）`
+								: desc.label;
+						return (
+							<span
+								data-testid="notebook-save-status-label"
+								className={`text-sm ${SAVE_STATUS_TONE_CLASSES[desc.tone]}`}
+							>
+								{label}
+							</span>
+						);
+					})()}
 					<button
-						onClick={handleSave}
-						disabled={
-							!hasChanges ||
-							createNotebook.isPending ||
-							updateNotebook.isPending ||
-							(isEdit && isLoadingNotebook)
-						}
+						onClick={async () => {
+							cancelDebounce();
+							try {
+								await handleSave();
+							} catch (e) {
+								logger.error('手動保存に失敗しました:', e);
+							}
+						}}
+						disabled={!canSave || isSaving || (isEdit && isLoadingNotebook)}
 						className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 					>
-						{createNotebook.isPending || updateNotebook.isPending
-							? '保存中...'
-							: isEdit
-								? '更新'
-								: '保存'}
+						{isSaving ? '保存中...' : isEdit ? '更新' : '保存'}
 					</button>
 					<button
 						onClick={goToNotebookList}
 						className="px-3 py-1 text-sm bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors"
 					>
-						キャンセル
+						閉じる
 					</button>
 				</div>
 			</div>
@@ -195,18 +281,24 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 						<input
 							type="text"
 							value={name}
-							onChange={(e) => setName(e.target.value)}
+							onChange={(e) => {
+								setName(e.target.value);
+								scheduleAutoSave();
+							}}
 							placeholder="ノートブック名を入力"
 							className="memo-title text-2xl font-bold border-none outline-none placeholder-gray-400 bg-transparent w-full"
 						/>
 					</div>
 
-					{/* テーマ選択（DBから取得したthemesをセレクト表示） */}
+					{/* テーマ選択 */}
 					<div className="mb-4">
 						<label className="block text-sm font-medium mb-2">テーマ</label>
 						<select
 							value={themeId}
-							onChange={(e) => setThemeId(e.target.value)}
+							onChange={(e) => {
+								setThemeId(e.target.value);
+								scheduleAutoSave();
+							}}
 							className="border rounded px-3 py-2 bg-transparent w-full"
 						>
 							<option value="default">未選択（デフォルト）</option>
@@ -221,7 +313,7 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 						</select>
 					</div>
 
-					{/* 選択中タグ（小さめ表示・現状保存対象外） */}
+					{/* 選択中タグ */}
 					{selectedTagIds.length > 0 && (
 						<div className="mb-4 flex flex-wrap gap-1 text-xs text-gray-600">
 							{selectedTagIds
@@ -245,7 +337,14 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 
 					{/* コンテンツ入力エリア */}
 					<div className="memo-content relative flex-1 flex flex-col">
-						<RichTextEditor content={content} onChange={setContent} className="h-full" />
+						<RichTextEditor
+							content={content}
+							onChange={(v) => {
+								setContent(v);
+								scheduleAutoSave();
+							}}
+							className="h-full"
+						/>
 					</div>
 				</div>
 			</div>

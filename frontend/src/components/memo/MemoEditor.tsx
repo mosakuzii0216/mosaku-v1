@@ -13,22 +13,14 @@ import { ShareMemoControl } from './ShareMemoControl';
 import type { Memo } from '../../types/memo';
 import type { MemoUpdateOutcome } from '../../utils/memo/memo-bridge';
 import type { SaveStatus } from '../../hooks/useAutoSave';
+import { describeDeleteConfirm } from '../../utils/memo/save-status-presentation';
 import {
-	describeDeleteConfirm,
 	describeSaveStatus,
 	formatRelativeTime,
-	type SaveStatusTone,
-} from '../../utils/memo/save-status-presentation';
+	SAVE_STATUS_TONE_CLASSES,
+} from '../../utils/editor/save-status-presentation';
 import { logger } from '../../utils/logger';
 import { getPendingMemoTitle, clearPendingMemoTitle } from '../../hooks/useNavigation';
-
-const SAVE_STATUS_TONE_CLASSES: Record<SaveStatusTone, string> = {
-	idle: 'text-gray-400',
-	progress: 'text-blue-400',
-	success: 'text-green-500',
-	warn: 'text-amber-600',
-	error: 'text-red-500',
-};
 
 interface MemoEditorProps {
 	memo?: Memo;
