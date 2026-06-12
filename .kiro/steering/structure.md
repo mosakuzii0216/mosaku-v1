@@ -16,7 +16,7 @@
 
 **Location**: `backend/src/common/`, `backend/src/prisma/`, `backend/src/config/`
 **Purpose**: 横断的関心事（所有権チェック・DB接続・環境変数）
-**Example**: `AuthorizationService.checkOwnership()` で所有権バリデーションを一元化
+**Example**: `AuthorizationService.validateOwnership()` で所有権バリデーションを一元化
 
 ### Frontend: コンポーネント
 
@@ -91,7 +91,7 @@ import type { CreateMemoDto } from '../types/memo'; // 型のみのimportは typ
 
 ## Code Organization Principles
 
-- **所有権バリデーション**: サービス層で `AuthorizationService.checkOwnership()` を必ず呼ぶ
+- **所有権バリデーション**: サービス層で `AuthorizationService.validateOwnership()` を必ず呼ぶ
 - **API コール**: フロントエンドでは `apiClient`（`utils/api.ts`）経由で統一。直接 `fetch` は禁止
 - **認証ヘッダー**: `AuthTokenManager.getAccessToken()` で取得したトークンを `Authorization: Bearer` に付与
 - **React Query キー**: `queryKeys` 定数（`constants/queryKeys.ts`）で一元管理
