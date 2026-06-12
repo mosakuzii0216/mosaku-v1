@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **サーバー状態の真実の源泉は React Query**。Zustand へのデータコピー禁止
 - **API コールは `apiClient` 経由**（`utils/api.ts`）。直接 `fetch` 禁止
-- **所有権チェックは `AuthorizationService.checkOwnership()` で一元化**
+- **所有権チェックは `AuthorizationService.validateOwnership()` で一元化**
 - **認証はグローバル JWT Guard + `@Public()` オプトアウト**
 - **テーマは CSS ファイル管理**（`frontend/public/themes/{category}/{name}.css`）。DB にはメタデータのみ
 - **ゴミ箱は Soft Delete + cron 物理削除**（`trashedAt` カラム + 30日後削除）
