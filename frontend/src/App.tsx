@@ -10,6 +10,7 @@ import { DesktopLayout } from './components/layouts/DesktopLayout';
 import AuthGuard from './components/auth/AuthGuard';
 import AuthCallback from './components/auth/AuthCallback';
 import PasswordReset from './components/auth/PasswordReset';
+import PasswordResetConfirm from './components/auth/PasswordResetConfirm';
 import InvitePage from './components/auth/InvitePage';
 import InvitationManager from './components/admin/InvitationManager';
 import { SwUpdatePrompt } from './components/pwa/SwUpdatePrompt';
@@ -73,6 +74,7 @@ function App() {
 					<Routes>
 						<Route path="/auth/callback" element={<AuthCallback />} />
 						<Route path="/auth/reset-password" element={<PasswordReset />} />
+						<Route path="/auth/reset-password/confirm" element={<PasswordResetConfirm />} />
 						<Route path="/invite/:code" element={<InvitePage />} />
 						<Route path="/p/:token" element={<PublicMemoPage />} />
 						<Route

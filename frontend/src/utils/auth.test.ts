@@ -197,6 +197,73 @@ describe('AuthAPI.resetPassword()', () => {
 	});
 });
 
+describe('AuthAPI.confirmPasswordReset()', () => {
+	afterEach(() => {
+		vi.unstubAllGlobals();
+		localStorage.clear();
+	});
+
+	it('成功時に message を返す', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn().mockResolvedValue({
+				ok: true,
+				json: vi.fn().mockResolvedValue({ message: 'パスワードを再設定しました' }),
+			}),
+		);
+
+		const result = await AuthAPI.confirmPasswordReset('valid-token-hex', 'NewPass123');
+
+		expect(result).toEqual({ message: 'パスワードを再設定しました' });
+	});
+
+	it('非 OK でサーバーの message を throw する', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn().mockResolvedValue({
+				ok: false,
+				json: vi.fn().mockResolvedValue({ message: 'トークンが無効です' }),
+			}),
+		);
+
+		await expect(AuthAPI.confirmPasswordReset('bad-token', 'NewPass123')).rejects.toThrow(
+			'トークンが無効です',
+		);
+	});
+
+	it('JSON message がない場合は Failed to reset password にフォールバックする', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn().mockResolvedValue({
+				ok: false,
+				json: vi.fn().mockResolvedValue({}),
+			}),
+		);
+
+		await expect(AuthAPI.confirmPasswordReset('bad-token', 'NewPass123')).rejects.toThrow(
+			'Failed to reset password',
+		);
+	});
+
+	it('正しいエンドポイントに token と newPassword を POST する', async () => {
+		const mockFetch = vi.fn().mockResolvedValue({
+			ok: true,
+			json: vi.fn().mockResolvedValue({ message: 'ok' }),
+		});
+		vi.stubGlobal('fetch', mockFetch);
+
+		await AuthAPI.confirmPasswordReset('abc123', 'NewPass123');
+
+		expect(mockFetch).toHaveBeenCalledWith(
+			'http://localhost:3000/auth/reset-password/confirm',
+			expect.objectContaining({
+				method: 'POST',
+				body: JSON.stringify({ token: 'abc123', newPassword: 'NewPass123' }),
+			}),
+		);
+	});
+});
+
 // ===== Task 9.1: 旧 OAuth 招待登録 API は AuthAPI から削除済み =====
 
 describe('AuthAPI 旧 OAuth 招待登録メソッドの撤去', () => {

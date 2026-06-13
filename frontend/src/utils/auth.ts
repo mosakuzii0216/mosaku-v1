@@ -178,6 +178,23 @@ export class AuthAPI {
 		return response.json();
 	}
 
+	static async confirmPasswordReset(
+		token: string,
+		newPassword: string,
+	): Promise<{ message: string }> {
+		const response = await this.makeRequest('/auth/reset-password/confirm', {
+			method: 'POST',
+			body: JSON.stringify({ token, newPassword }),
+		});
+
+		if (!response.ok) {
+			const error = await response.json();
+			throw new Error(error.message || 'Failed to reset password');
+		}
+
+		return response.json();
+	}
+
 	static async changePassword(
 		currentPassword: string,
 		newPassword: string,
