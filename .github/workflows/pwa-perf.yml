@@ -102,6 +102,12 @@ jobs:
       DIRECT_URL: postgresql://testuser:testpass@localhost:5432/mosaku_test
       JWT_SECRET: test-jwt-secret-for-ci
       SESSION_SECRET: test-session-secret-for-ci
+      # E2E は多数の spec が beforeAll で register/login を繰り返すため、本番デフォルトの
+      # レート制限（register 5/min・login 15/15min・global 60/min）だと 429 → ensureUser が
+      # re-throw → 連鎖失敗する。CI のみ大幅緩和する（本番の THROTTLE_CONFIG には影響しない）。
+      REGISTER_THROTTLE_LIMIT: '1000'
+      LOGIN_THROTTLE_LIMIT: '1000'
+      GLOBAL_THROTTLE_LIMIT: '1000'
       # ADMIN_EMAIL を E2E_USER_EMAIL と同じ値にして招待コード無しで register できるようにする
       ADMIN_EMAIL: pwa-e2e-admin@test.example
       CORS_ORIGINS: http://localhost:5173,http://localhost:4173
