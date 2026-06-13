@@ -78,7 +78,7 @@ describe('PasswordResetService', () => {
 			await service.requestReset('test@example.com');
 			const after = Date.now();
 
-			expect(prisma.user.update).toHaveBeenCalledTimes(1);
+			expect(prisma.user.update as jest.Mock).toHaveBeenCalledTimes(1);
 			const updateCall = (prisma.user.update as jest.Mock).mock.calls[0][0];
 			const { resetPasswordToken, resetPasswordExpires } = updateCall.data;
 
@@ -126,7 +126,7 @@ describe('PasswordResetService', () => {
 
 			await service.requestReset('oauth@example.com');
 
-			expect(prisma.user.update).not.toHaveBeenCalled();
+			expect(prisma.user.update as jest.Mock).not.toHaveBeenCalled();
 			expect(mailService.sendPasswordResetEmail).not.toHaveBeenCalled();
 		});
 
@@ -135,7 +135,7 @@ describe('PasswordResetService', () => {
 
 			await expect(service.requestReset('notfound@example.com')).resolves.toBeUndefined();
 
-			expect(prisma.user.update).not.toHaveBeenCalled();
+			expect(prisma.user.update as jest.Mock).not.toHaveBeenCalled();
 			expect(mailService.sendPasswordResetEmail).not.toHaveBeenCalled();
 		});
 
@@ -177,7 +177,7 @@ describe('PasswordResetService', () => {
 			await expect(service.confirmReset('wrongtoken', 'NewPass1')).rejects.toMatchObject({
 				code: ERROR_CODES.AUTH.INVALID_TOKEN,
 			});
-			expect(prisma.user.update).not.toHaveBeenCalled();
+			expect(prisma.user.update as jest.Mock).not.toHaveBeenCalled();
 		});
 
 		it('期限切れトークンで期限切れエラー（AUTH014）を投げる', async () => {
@@ -191,7 +191,7 @@ describe('PasswordResetService', () => {
 			await expect(service.confirmReset(plainToken, 'NewPass1')).rejects.toMatchObject({
 				code: ERROR_CODES.AUTH.RESET_TOKEN_EXPIRED,
 			});
-			expect(prisma.user.update).not.toHaveBeenCalled();
+			expect(prisma.user.update as jest.Mock).not.toHaveBeenCalled();
 		});
 
 		it('使用済みトークン（クリア済み）再使用で無効トークンエラー（AUTH003）を投げる', async () => {
