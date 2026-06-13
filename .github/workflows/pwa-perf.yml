@@ -153,6 +153,30 @@ jobs:
         run: npx prisma migrate deploy
         working-directory: backend
 
+      # register は DTO で invitationCode 必須のため、E2E の管理者ユーザーは register 経由で
+      # 作れない（ensureUser の 400 は握りつぶされ login 401 になる）。テスト用ユーザーを
+      # DB へ直接 seed する。アプリコードには触れない（本番デプロイは起こさない）。
+      - name: Seed E2E test user
+        working-directory: backend
+        run: |
+          node <<'NODE'
+          const { PrismaClient } = require('@prisma/client');
+          const bcrypt = require('bcrypt');
+          (async () => {
+            const prisma = new PrismaClient();
+            const email = process.env.E2E_USER_EMAIL;
+            const name = process.env.E2E_USER_NAME || 'PWA E2E User';
+            const hash = await bcrypt.hash(process.env.E2E_USER_PASSWORD, 12);
+            await prisma.user.upsert({
+              where: { email },
+              update: { password: hash, role: 'ADMIN', name },
+              create: { email, password: hash, role: 'ADMIN', name },
+            });
+            console.log('Seeded E2E user:', email);
+            await prisma.$disconnect();
+          })().catch((e) => { console.error(e); process.exit(1); });
+          NODE
+
       - name: Build backend
         run: npm run build
         working-directory: backend
