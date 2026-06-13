@@ -110,6 +110,13 @@ jobs:
       E2E_BACKEND_URL: http://localhost:3000
       E2E_FRONTEND_ORIGIN: http://localhost:5173
       VITE_BACKEND_URL: http://localhost:3000
+      # main.tsx の envValidator.validate() が必須にしている VITE 変数。
+      # frontend/.env.production は gitignore で CI に存在しないため、ここで明示的に供給する。
+      # 認証は NestJS 経由・/auth/me はテストでモックするため Supabase 値はダミーで可
+      # （validate() は非空であれば通過する）。
+      VITE_APP_URL: http://localhost:5173
+      VITE_SUPABASE_URL: https://dummy.supabase.co
+      VITE_SUPABASE_ANON_KEY: dummy-anon-key-for-ci
 
     steps:
       - name: Checkout code
