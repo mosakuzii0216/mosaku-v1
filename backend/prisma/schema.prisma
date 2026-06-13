@@ -59,6 +59,9 @@ model Memo {
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, publishedAt(sort: Desc)])
+  // 一覧/検索のホットパス（where: userId + trashedAt IS NULL, orderBy: updatedAt desc）用。
+  // trashedAt を含めることでゴミ箱一覧（trashedAt IS NOT NULL）も同一インデックスで賄う。
+  @@index([userId, trashedAt, updatedAt(sort: Desc)])
   @@map("memos")
 }
 
