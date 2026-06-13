@@ -78,6 +78,7 @@ describe('PasswordResetService', () => {
 			await service.requestReset('test@example.com');
 			const after = Date.now();
 
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			expect(prisma.user.update as jest.Mock).toHaveBeenCalledTimes(1);
 			const updateCall = (prisma.user.update as jest.Mock).mock.calls[0][0];
 			const { resetPasswordToken, resetPasswordExpires } = updateCall.data;
@@ -126,6 +127,7 @@ describe('PasswordResetService', () => {
 
 			await service.requestReset('oauth@example.com');
 
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			expect(prisma.user.update as jest.Mock).not.toHaveBeenCalled();
 			expect(mailService.sendPasswordResetEmail).not.toHaveBeenCalled();
 		});
@@ -135,6 +137,7 @@ describe('PasswordResetService', () => {
 
 			await expect(service.requestReset('notfound@example.com')).resolves.toBeUndefined();
 
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			expect(prisma.user.update as jest.Mock).not.toHaveBeenCalled();
 			expect(mailService.sendPasswordResetEmail).not.toHaveBeenCalled();
 		});
@@ -177,6 +180,7 @@ describe('PasswordResetService', () => {
 			await expect(service.confirmReset('wrongtoken', 'NewPass1')).rejects.toMatchObject({
 				code: ERROR_CODES.AUTH.INVALID_TOKEN,
 			});
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			expect(prisma.user.update as jest.Mock).not.toHaveBeenCalled();
 		});
 
@@ -191,6 +195,7 @@ describe('PasswordResetService', () => {
 			await expect(service.confirmReset(plainToken, 'NewPass1')).rejects.toMatchObject({
 				code: ERROR_CODES.AUTH.RESET_TOKEN_EXPIRED,
 			});
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			expect(prisma.user.update as jest.Mock).not.toHaveBeenCalled();
 		});
 
