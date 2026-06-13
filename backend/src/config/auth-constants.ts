@@ -75,4 +75,12 @@ export const THROTTLE_CONFIG = {
 		LIMIT: parseInt(process.env.GLOBAL_THROTTLE_LIMIT || '60', 10),
 		TTL: parseInt(process.env.GLOBAL_THROTTLE_TTL || String(1 * MS_PER_MINUTE), 10),
 	},
+	/**
+	 * パスワードリセット要求・確定のレート制限（総当たり・スパム送信対策）
+	 * デフォルト: 15分間に5回まで。env で上書き可能。
+	 */
+	PASSWORD_RESET: {
+		LIMIT: parseInt(process.env.PASSWORD_RESET_THROTTLE_LIMIT || '5', 10),
+		TTL: parseInt(process.env.PASSWORD_RESET_THROTTLE_TTL || String(15 * MS_PER_MINUTE), 10),
+	},
 } as const;

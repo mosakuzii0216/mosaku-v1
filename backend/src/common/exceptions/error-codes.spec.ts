@@ -1,6 +1,25 @@
 import { ERROR_CODES, type ErrorCode } from './error-codes';
 import { ERROR_MESSAGES } from './error-messages';
 
+describe('ERROR_CODES.AUTH', () => {
+	it('RESET_TOKEN_EXPIRED が AUTH014 として定義されていること', () => {
+		expect(ERROR_CODES.AUTH.RESET_TOKEN_EXPIRED).toBe('AUTH014');
+	});
+
+	it('既存の AUTH コード（AUTH001〜AUTH013）が変更されていないこと', () => {
+		expect(ERROR_CODES.AUTH.INVALID_CREDENTIALS).toBe('AUTH001');
+		expect(ERROR_CODES.AUTH.AUTHENTICATION_REQUIRED).toBe('AUTH002');
+		expect(ERROR_CODES.AUTH.INVALID_TOKEN).toBe('AUTH003');
+		expect(ERROR_CODES.AUTH.USER_NOT_FOUND).toBe('AUTH004');
+		expect(ERROR_CODES.AUTH.REFRESH_TOKEN_EXPIRED).toBe('AUTH013');
+	});
+
+	it('ErrorCode 型が RESET_TOKEN_EXPIRED を含んでいること（型レベルの網羅性）', () => {
+		const code: ErrorCode = ERROR_CODES.AUTH.RESET_TOKEN_EXPIRED;
+		expect(code).toBe('AUTH014');
+	});
+});
+
 describe('ERROR_CODES.INVITATION', () => {
 	it('QUOTA_EXHAUSTED が INV005 として定義されていること', () => {
 		expect(ERROR_CODES.INVITATION.QUOTA_EXHAUSTED).toBe('INV005');

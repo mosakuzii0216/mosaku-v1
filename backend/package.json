@@ -52,6 +52,7 @@
 		"passport-line-auth": "^0.2.9",
 		"passport-twitter": "^1.0.4",
 		"reflect-metadata": "^0.2.2",
+		"resend": "^6.12.4",
 		"rxjs": "^7.8.1",
 		"socket.io": "^4.8.1",
 		"zod": "^3.25.67",

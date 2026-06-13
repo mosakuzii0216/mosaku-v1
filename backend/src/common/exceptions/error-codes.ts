@@ -29,6 +29,8 @@ export const ERROR_CODES = {
 		REFRESH_TOKEN_REUSED: 'AUTH012',
 		// AUTH013: expiresAt を過ぎた RT が使われたケース。FE はログイン画面に静かにフォールバック
 		REFRESH_TOKEN_EXPIRED: 'AUTH013',
+		// AUTH014: パスワードリセットトークンの有効期限切れ
+		RESET_TOKEN_EXPIRED: 'AUTH014',
 	},
 
 	// 認可エラー (AUTHZ001~)

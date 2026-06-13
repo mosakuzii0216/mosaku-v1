@@ -44,7 +44,7 @@ export interface RotateResult extends IssueResult {
 	userId: string;
 }
 
-export type RevokeAllReason = 'password_change' | 'admin';
+export type RevokeAllReason = 'password_change' | 'admin' | 'password_reset';
 
 @Injectable()
 export class RefreshTokenService {

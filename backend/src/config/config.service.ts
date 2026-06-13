@@ -77,6 +77,24 @@ export class ConfigService {
 		return origins.split(',').map((origin) => origin.trim());
 	}
 
+	// メール設定
+	get resendApiKey(): string | undefined {
+		const key = process.env.RESEND_API_KEY;
+		return key && key.length > 0 ? key : undefined;
+	}
+
+	get mailFrom(): string {
+		return process.env.MAIL_FROM || 'onboarding@resend.dev';
+	}
+
+	get passwordResetUrlBase(): string {
+		const base = process.env.PASSWORD_RESET_URL_BASE;
+		if (base && base.length > 0) {
+			return base;
+		}
+		return `${this.frontendUrl}/auth/reset-password/confirm`;
+	}
+
 	// Slack Webhook 設定
 	get slackFeedbackWebhookUrl(): string | undefined {
 		const url = process.env.SLACK_FEEDBACK_WEBHOOK_URL;

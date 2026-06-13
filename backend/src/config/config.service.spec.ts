@@ -208,6 +208,51 @@ describe('ConfigService - LINE/Apple/X OAuth', () => {
 		});
 	});
 
+	// ─── パスワードリセット・メール設定 ────────────────────────────────────
+
+	describe('resendApiKey', () => {
+		it('RESEND_API_KEY が設定されている場合に値を返すこと', () => {
+			process.env.RESEND_API_KEY = 're_test_key_123';
+			expect(service.resendApiKey).toBe('re_test_key_123');
+		});
+
+		it('RESEND_API_KEY が未設定の場合に undefined を返すこと', () => {
+			delete process.env.RESEND_API_KEY;
+			expect(service.resendApiKey).toBeUndefined();
+		});
+	});
+
+	describe('mailFrom', () => {
+		it('MAIL_FROM が設定されている場合に値を返すこと', () => {
+			process.env.MAIL_FROM = 'noreply@mosaku.jp';
+			expect(service.mailFrom).toBe('noreply@mosaku.jp');
+		});
+
+		it('MAIL_FROM が未設定の場合にデフォルト値 onboarding@resend.dev を返すこと', () => {
+			delete process.env.MAIL_FROM;
+			expect(service.mailFrom).toBe('onboarding@resend.dev');
+		});
+	});
+
+	describe('passwordResetUrlBase', () => {
+		it('PASSWORD_RESET_URL_BASE が設定されている場合にその値を返すこと', () => {
+			process.env.PASSWORD_RESET_URL_BASE = 'https://mosaku.jp/auth/reset-password/confirm';
+			expect(service.passwordResetUrlBase).toBe('https://mosaku.jp/auth/reset-password/confirm');
+		});
+
+		it('PASSWORD_RESET_URL_BASE が未設定の場合に frontendUrl からパスを導出すること', () => {
+			delete process.env.PASSWORD_RESET_URL_BASE;
+			process.env.FRONTEND_URL = 'https://mosaku.jp';
+			expect(service.passwordResetUrlBase).toBe('https://mosaku.jp/auth/reset-password/confirm');
+		});
+
+		it('PASSWORD_RESET_URL_BASE が未設定で FRONTEND_URL も未設定の場合にデフォルト導出すること', () => {
+			delete process.env.PASSWORD_RESET_URL_BASE;
+			delete process.env.FRONTEND_URL;
+			expect(service.passwordResetUrlBase).toBe('http://localhost/auth/reset-password/confirm');
+		});
+	});
+
 	// ─── X ──────────────────────────────────────────────────────────────────
 
 	describe('X クレデンシャル', () => {

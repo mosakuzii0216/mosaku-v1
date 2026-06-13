@@ -21,6 +21,8 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
 		'セキュリティ上の理由でセッションを終了しました。再度ログインしてください',
 	[ERROR_CODES.AUTH.REFRESH_TOKEN_EXPIRED]:
 		'セッションの有効期限が切れました。再度ログインしてください',
+	[ERROR_CODES.AUTH.RESET_TOKEN_EXPIRED]:
+		'パスワードリセットリンクの有効期限が切れました。再度リセットを要求してください',
 
 	// 認可エラー
 	[ERROR_CODES.AUTHZ.FORBIDDEN]: 'アクセスが拒否されました',
