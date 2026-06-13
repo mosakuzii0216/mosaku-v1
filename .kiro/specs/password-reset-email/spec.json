@@ -1,0 +1,22 @@
+{
+	"feature_name": "password-reset-email",
+	"created_at": "2026-06-13T14:17:50Z",
+	"updated_at": "2026-06-13T23:55:00Z",
+	"language": "ja",
+	"phase": "implementing",
+	"approvals": {
+		"requirements": {
+			"generated": true,
+			"approved": true
+		},
+		"design": {
+			"generated": true,
+			"approved": true
+		},
+		"tasks": {
+			"generated": true,
+			"approved": true
+		}
+	},
+	"ready_for_implementation": true
+}
