@@ -51,8 +51,13 @@ import {
 } from './dto/oauth-start.dto';
 import { RegisterUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
-import { ResetPasswordRequestDto, ChangePasswordDto } from './dto/reset-password.dto';
+import {
+	ResetPasswordRequestDto,
+	ResetPasswordDto,
+	ChangePasswordDto,
+} from './dto/reset-password.dto';
 import { THROTTLE_CONFIG, REFRESH_COOKIE_NAME } from '../config/auth-constants';
+import { PasswordResetService } from './password-reset.service';
 import { AppLogger } from '../common/logger/app-logger.service';
 import { JwtTokenService } from './jwt.service';
 import { RefreshTokenService } from './refresh-token.service';
@@ -76,6 +81,7 @@ export class AuthController {
 		private readonly refreshCookieHelper: RefreshCookieHelper,
 		private readonly invitationService: InvitationService,
 		private readonly invitationStateService: InvitationStateService,
+		private readonly passwordResetService: PasswordResetService,
 	) {
 		this.logger.setContext('AuthController');
 	}
@@ -425,42 +431,34 @@ export class AuthController {
 	}
 
 	@Public()
+	@Throttle({
+		default: {
+			limit: THROTTLE_CONFIG.PASSWORD_RESET.LIMIT,
+			ttl: THROTTLE_CONFIG.PASSWORD_RESET.TTL,
+		},
+	})
+	@HttpCode(HttpStatus.OK)
 	@Post('reset-password')
 	async resetPassword(@Body() resetPasswordRequestDto: ResetPasswordRequestDto) {
-		const { email } = resetPasswordRequestDto;
+		await this.passwordResetService.requestReset(resetPasswordRequestDto.email);
+		return { message: 'パスワードリセットリンクをお送りしました。メールをご確認ください。' };
+	}
 
-		try {
-			// パスワードリセット機能の実装（メール送信など）
-			// 現在は簡単なレスポンスのみ
-			const user = await this.prisma.user.findUnique({
-				where: { email },
-			});
-
-			if (!user) {
-				// セキュリティ上、存在しないメールでも成功レスポンスを返す
-				return {
-					message: 'If the email exists, a password reset link has been sent.',
-				};
-			}
-
-			// TODO: メール送信機能を実装
-			// const resetToken = crypto.randomUUID();
-			// await this.prisma.user.update({
-			//   where: { id: user.id },
-			//   data: {
-			//     resetPasswordToken: resetToken,
-			//     resetPasswordExpires: new Date(Date.now() + 3600000), // 1時間後
-			//   },
-			// });
-
-			return {
-				message: 'If the email exists, a password reset link has been sent.',
-			};
-		} catch (error: unknown) {
-			const message =
-				error instanceof Error ? error.message : 'Failed to send password reset email';
-			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_INPUT, message);
-		}
+	@Public()
+	@Throttle({
+		default: {
+			limit: THROTTLE_CONFIG.PASSWORD_RESET.LIMIT,
+			ttl: THROTTLE_CONFIG.PASSWORD_RESET.TTL,
+		},
+	})
+	@HttpCode(HttpStatus.OK)
+	@Post('reset-password/confirm')
+	async resetPasswordConfirm(@Body() resetPasswordDto: ResetPasswordDto) {
+		await this.passwordResetService.confirmReset(
+			resetPasswordDto.token,
+			resetPasswordDto.newPassword,
+		);
+		return { message: 'パスワードを再設定しました' };
 	}
 
 	@Post('change-password')

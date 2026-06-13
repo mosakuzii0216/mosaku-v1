@@ -9,6 +9,7 @@ import { JwtTokenService } from './jwt.service';
 import { RefreshTokenService } from './refresh-token.service';
 import { RefreshCookieHelper } from './refresh-cookie.helper';
 import { InvitationStateService } from './invitation-state.service';
+import { PasswordResetService } from './password-reset.service';
 import * as Sentry from '@sentry/nestjs';
 import { AppException } from '../common/exceptions';
 
@@ -64,6 +65,11 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 		hashPassword: jest.fn(),
 	};
 
+	const mockPasswordResetService = {
+		requestReset: jest.fn(),
+		confirmReset: jest.fn(),
+	};
+
 	const mockInvitationService = { verifyInvitation: jest.fn(), useInvitation: jest.fn() };
 	const mockPrismaService = { user: { findUnique: jest.fn(), update: jest.fn() } };
 	const mockJwtTokenService = {
@@ -106,6 +112,7 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 				{ provide: RefreshTokenService, useValue: mockRefreshTokenService },
 				{ provide: RefreshCookieHelper, useValue: mockRefreshCookieHelper },
 				{ provide: InvitationStateService, useValue: mockInvitationStateService },
+				{ provide: PasswordResetService, useValue: mockPasswordResetService },
 			],
 		}).compile();
 

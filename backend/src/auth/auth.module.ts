@@ -31,12 +31,16 @@ import { InvitationService } from '../invitation/invitation.service';
 import { CODE_GENERATOR, NanoidCodeGenerator } from '../invitation/utils/code-generator';
 import { QUOTA_POLICY, PrismaQuotaPolicy } from '../invitation/utils/quota-policy';
 import { JWT_EXPIRATION } from '../config/auth-constants';
+import { PasswordResetService, MAIL_SERVICE } from './password-reset.service';
+import { MailModule } from '../mail/mail.module';
+import { MailService } from '../mail/mail.service';
 
 @Module({
 	imports: [
 		PrismaModule,
 		PassportModule,
 		CommonModule,
+		MailModule,
 		JwtModule.registerAsync({
 			inject: [ConfigService],
 			useFactory: (configService: ConfigService) => ({
@@ -70,6 +74,8 @@ import { JWT_EXPIRATION } from '../config/auth-constants';
 		InvitationStateService,
 		{ provide: CODE_GENERATOR, useClass: NanoidCodeGenerator },
 		{ provide: QUOTA_POLICY, useClass: PrismaQuotaPolicy },
+		PasswordResetService,
+		{ provide: MAIL_SERVICE, useExisting: MailService },
 	],
 	exports: [
 		AuthService,
