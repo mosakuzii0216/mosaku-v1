@@ -29,11 +29,11 @@ PWA E2E スイート（.github/workflows/pwa-perf.yml の e2e ジョブ）を完
 
 ### Requirement 1: ネットワーク再接続時のサーバー状態再取得（アプリ本体のバグ是正）
 
-**Objective:** As a 新端末やキャッシュ削除直後の利用者, I want オンライン接続が確立した時点でメモ・ノート・タグの一覧が自動で最新化されること, so that 空の一覧を見続けることなく自分のデータにアクセスできる
+**Objective:** As a 新端末やキャッシュ削除直後の利用者, I want オンライン接続が確立した時点でメモ・ノート・タグの一覧、およびログイン直後に着地するホームダッシュボードの最近メモが自動で最新化されること, so that 着地直後のホームを含め空の一覧を見続けることなく自分のデータにアクセスできる
 
 #### Acceptance Criteria
 
-1. When ネットワーク状態が `online` 以外（`unstable` / `offline`）から `online` に遷移したとき, the Network Sync Module shall メモ・ノート・タグのサーバー状態クエリを再取得（invalidate / refetch）する。
+1. When ネットワーク状態が `online` 以外（`unstable` / `offline`）から `online` に遷移したとき, the Network Sync Module shall メモ・ノート・タグ、およびホームダッシュボードの最近メモ（`dashboard.recentMemos`）のサーバー状態クエリを再取得（invalidate / refetch）する。
 2. While ネットワーク状態が `online` でないとき, the Memo Data Module shall ローカル（IndexedDB）由来の結果のみを返し、空結果をネットワーク取得済みの確定値として固定しない。
 3. When ローカルが空の状態でオンライン接続が確立したとき, the Memo Data Module shall サーバーへ一覧取得リクエストを発行し、取得結果で一覧を更新する。
 4. If ネットワーク再接続が短時間に複数回発生したとき, then the Network Sync Module shall 再取得リクエストが過剰に多重発行されないよう抑制する。
