@@ -53,6 +53,16 @@ export const FEATURES = {
 		process.env.FEATURE_VERBOSE_LOGGING,
 		process.env.NODE_ENV !== 'production',
 	),
+
+	/**
+	 * MCP（Model Context Protocol）エンドポイント
+	 * - true: `/mcp` および OAuth 認可サーバー入口を有効化
+	 * - false: MCP 入口を完全に無効化（既存機能には無影響）
+	 *
+	 * 環境変数: FEATURE_MCP_ENDPOINT
+	 * デフォルト: false（段階公開のため既定で off。flag off で本番デプロイ可能）
+	 */
+	MCP_ENDPOINT: getFeatureFlag(process.env.FEATURE_MCP_ENDPOINT, false),
 } as const;
 
 /**

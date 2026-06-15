@@ -126,6 +126,44 @@ export class ConfigService {
 		return parseInt(process.env.PORT || '3000', 10);
 	}
 
+	/**
+	 * backend 自身の公開 URL。OAuth コールバックや MCP canonical URI の組み立てに使う。
+	 * 既定はローカル開発（`http://localhost:{PORT}`）。
+	 */
+	get backendUrl(): string {
+		return process.env.BACKEND_URL || `http://localhost:${this.port}`;
+	}
+
+	/**
+	 * MCP の canonical リソース URI（RFC 8707 の audience）。
+	 * 発行トークンの `aud` と検証時の期待値に用いる単一の真実の源泉。
+	 */
+	get mcpCanonicalUrl(): string {
+		return `${this.backendUrl.replace(/\/+$/, '')}/mcp`;
+	}
+
+	/**
+	 * DNS rebinding 対策で許可する Host ヘッダ値の集合。
+	 * BACKEND_URL のホストに加え、ローカル開発の host を許可する。
+	 */
+	get mcpAllowedHosts(): string[] {
+		const hosts = new Set<string>([
+			'localhost',
+			`localhost:${this.port}`,
+			'127.0.0.1',
+			`127.0.0.1:${this.port}`,
+		]);
+		try {
+			const host = new URL(this.backendUrl).host;
+			if (host) {
+				hosts.add(host);
+			}
+		} catch {
+			// BACKEND_URL が不正な場合はローカル既定のみを許可
+		}
+		return [...hosts];
+	}
+
 	// OAuth Google設定
 	get googleClientId(): string | undefined {
 		return process.env.GOOGLE_CLIENT_ID;

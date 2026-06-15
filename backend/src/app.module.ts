@@ -11,6 +11,7 @@ import { NotebookModule } from './notebook/notebook.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { OnboardingModule } from './onboarding/onboarding.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { McpModule } from './mcp/mcp.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { THROTTLE_CONFIG } from './config/auth-constants';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -44,6 +45,7 @@ import { SentryUserContextInterceptor } from './common/sentry/sentry-user-contex
 		FeedbackModule,
 		OnboardingModule,
 		DashboardModule,
+		McpModule,
 	],
 	providers: [
 		{ provide: APP_FILTER, useClass: SentryGlobalFilter },
