@@ -4,13 +4,21 @@
 
 X OAuth のセッションを永続化して Cloud Run 複数インスタンスでも安定させる。
 
-【背景】backend の main.ts の express-session がストア未指定＝デフォルト MemoryStore。Google/GitHub/LINE/Apple は InvitationStateService の署名付き state（HMAC）でステートレスだが、X のみ x.strategy.ts:35 で state:true を使い、CSRF state と PKCE code_verifier を session に保存する。本番 Cloud Run は複数インスタンス/再起動が前提のため、ログイン開始と OAuth コールバックが別インスタンスに当たると session が見つからず X ログインが散発的に失敗する。加えてデフォルト MemoryStore は本番でメモリリーク源（公式に非推奨）。
+【背景】backend の main.ts の express-session がストア未指定＝デフォルト MemoryStore。Google/GitHub/LINE/Apple は InvitationStateService の署名付き state（HMAC）でステートレスだが、X のみ x.strategy.ts:35 で state:true を使い、CSRF state と PKCE code_verifier を session に保存する。本番 Cloud Run は複数インスタンス/再起動が前提のため、ログイン開始と OAuth コールバックが別インスタンスに当たると session が見つからず X ログインが失敗する。加えてデフォルト MemoryStore は本番でメモリリーク源（公式に非推奨）。
 
-【ゴール】セッションストアを全インスタンス共有可能な永続化方式（第一候補: 署名付き Cookie ベース＝サーバーストア不要、次点: 既存 Supabase Postgres を使う connect-pg-simple）に置き換え、X OAuth が複数インスタンス環境でも確実に成立するようにする。X 以外のプロバイダ挙動は不変。
+【ギャップ分析で判明した実態（重要）】X OAuth は複数インスタンス以前に、現状**両フローとも成立していない**（詳細は gap-analysis.md §3.5 発見 A）。
+
+- Flow A（既存ログイン `/auth/x`→passport）: passport は単一インスタンスなら成功するが、その直後に controller `runOAuthCallbackWithStateSupport` が passport のランダム CSRF state を招待署名 state と誤認し `verifyState` が必ず throw → `invalid_state` リダイレクトで失敗。
+- Flow B（招待登録 `POST /auth/oauth/x/start`）: `generateOAuthAuthorizationUrl('x')` がダミー PKCE（`code_challenge:'challenge'`/`plain`）を発行し、かつ start が passport を経由しないため、callback で XAuthGuard が空 session を参照して 401。
+- 根本原因: X だけ passport が state を所有する（`state:true`）のに、controller は「passport は state を所有しない」前提で書かれている設計矛盾。
+
+【ゴール】セッションストアを全インスタンス共有可能な永続化方式（第一候補: 署名付き Cookie ベース＝サーバーストア不要、次点: 既存 Supabase Postgres を使う connect-pg-simple）に置き換え、**かつ上記の X 経路不整合（controller の二重 state 解釈・ダミー PKCE）を解消して**、X OAuth が複数インスタンス環境でも確実に成立するようにする。X 以外のプロバイダ挙動は不変。
+
+【方針（gap-analysis で確定: 案 b）】X は passport 経路（`state:true/pkce:true` の session 方式）に一本化する。(1) controller が passport の CSRF state と招待署名 state を構造で判別して誤認をやめる、(2) 招待登録の X は招待コードを session 経由で往復させる、(3) ダミー PKCE の start 経路は撤去または作り直す。session ストアの共有化（上記ゴール）と併せて多インスタンス耐性を確保する。
 
 【非機能・制約】Cookie 方式の場合は secure/httpOnly/sameSite を本番で適切に設定し、ペイロード（state + PKCE verifier）がサイズ上限に収まること。Postgres 方式の場合は session テーブルの TTL/クリーンアップを設計。session secret は環境変数化し .env.example に追記。既存の helmet / CORS / cookie-parser 設定および本番のクロスオリジン（mosaku.jp ↔ api.mosaku.jp）構成と整合させる。
 
-【対象外】X 以外のプロバイダのフロー変更、OAuth を完全 stateless 化する大規模リファクタ（PKCE verifier の署名 state 移植。将来の別 spec で検討）。
+【対象外】X 以外のプロバイダのフロー変更、OAuth を完全 stateless 化する大規模リファクタ（5 社統一＋PKCE verifier の署名 state 移植＝案 a。将来の別 spec で検討）。
 
 ## Requirements
 
@@ -26,17 +34,19 @@ X OAuth のセッションを永続化して Cloud Run 複数インスタンス�
 4. When ログイン開始を処理したインスタンスとは別のインスタンスが同一セッションのデータを参照する, the Auth Session Store shall 当該セッションに保存された値を解決できる。
 5. The Auth Session Store shall X 以外のプロバイダ（Google・GitHub・LINE・Apple）の認証フローおよびその他のセッション非依存の挙動を変更しない。
 
-### Requirement 2: X OAuth の複数インスタンス耐性
+### Requirement 2: X OAuth の成立と複数インスタンス耐性
 
-**Objective:** X でログインするユーザーとして、ログイン開始とコールバックが別々の Cloud Run インスタンスに到達しても、X ログインが確実に成立してほしい。これにより、散発的な X ログイン失敗をなくす。
+**Objective:** X でログインするユーザーとして、X ログイン自体が確実に成立し、かつログイン開始とコールバックが別々の Cloud Run インスタンスに到達しても成功してほしい。これにより、現状成立していない X ログインを成立させ、複数インスタンス起因の失敗もなくす。
 
 #### Acceptance Criteria
 
 1. When ユーザーが X ログインを開始する, the X OAuth Flow shall CSRF state と PKCE code_verifier を全インスタンス共有可能な永続化方式で保存する。
 2. When X からのコールバックがログイン開始時とは別のインスタンスに到達する, the X OAuth Flow shall 保存済みの CSRF state と PKCE code_verifier を解決し、認証を継続する。
-3. If コールバック時に CSRF state が一致しない、または保存値が見つからない, then the X OAuth Flow shall 認証を拒否し、ユーザーをエラーとして扱う。
-4. When X 認証が成立する, the X OAuth Flow shall 既存と同一のユーザー識別・JWT 発行・リダイレクト挙動を維持する。
-5. While X OAuth プロバイダが未構成（Client ID/Secret が空）, the X OAuth Flow shall 既存どおり警告ログを出して起動を継続し、X ログイン要求に対して構成不備を示す応答を返す。
+3. When X の正規コールバックが到達する, the X OAuth Callback Handler shall passport が発行した CSRF state を招待署名 state と区別し、正規フローを誤って拒否しない。
+4. When 招待コード経由で X 登録を開始する, the X OAuth Flow shall 招待コードを全インスタンス共有可能な方式で引き継ぎ、コールバック時に解決して登録に用いる。
+5. If コールバック時に CSRF state が一致しない、または保存値が見つからない, then the X OAuth Flow shall 認証を拒否し、ユーザーをエラーとして扱う。
+6. When X 認証が成立する, the X OAuth Flow shall 既存と同一のユーザー識別・JWT 発行・リダイレクト挙動を維持する。
+7. While X OAuth プロバイダが未構成（Client ID/Secret が空）, the X OAuth Flow shall 既存どおり警告ログを出して起動を継続し、X ログイン要求に対して構成不備を示す応答を返す。
 
 ### Requirement 3: セキュリティ設定とクロスオリジン構成の整合
 
