@@ -51,6 +51,7 @@ const EXTENDED_CONTENT = [
 ].join('');
 
 async function openMemoInEditor(page: Page, title: string) {
+	await gotoMemoList(page);
 	await page.locator('[data-testid="memo-item"]', { hasText: title }).first().click();
 	await expect(page.locator('input[placeholder="タイトル"]')).toBeVisible({ timeout: 10000 });
 	return page.locator('.ProseMirror[contenteditable="true"]').first();
@@ -113,8 +114,6 @@ test.describe('prose タイポグラフィ 実描画視覚検証', () => {
 	test.beforeEach(async ({ context, page }) => {
 		await loginViaContext(context, config);
 		await page.goto('/');
-		await gotoMemoList(page);
-		await page.waitForSelector('[data-testid="memo-item"]', { timeout: 15000 });
 	});
 
 	test.describe('3.1 エディタのブロック要素 computed style 検証', () => {

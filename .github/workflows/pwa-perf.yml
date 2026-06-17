@@ -107,6 +107,7 @@ jobs:
       # re-throw → 連鎖失敗する。CI のみ大幅緩和する（本番の THROTTLE_CONFIG には影響しない）。
       REGISTER_THROTTLE_LIMIT: '1000'
       LOGIN_THROTTLE_LIMIT: '1000'
+      REFRESH_THROTTLE_LIMIT: '1000'
       GLOBAL_THROTTLE_LIMIT: '1000'
       # ADMIN_EMAIL を E2E_USER_EMAIL と同じ値にして招待コード無しで register できるようにする
       ADMIN_EMAIL: pwa-e2e-admin@test.example

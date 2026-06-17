@@ -55,7 +55,7 @@
   - _Contracts: CISeedStep Batch_
   - _Requirements: 3.1, 3.2, 3.3, 6.3_
 
-- [ ] 5. 対象 spec の統一と E2E スイートの完全緑化・回帰防止
+- [x] 5. 対象 spec の統一と E2E スイートの完全緑化・回帰防止
 
 - [x] 5.1 対象 5 spec の beforeEach を共有ヘルパーへ統一
   - markdown-editor / prose-typography / slash-command / train-scenario / feedback の各 spec の beforeEach を「コンテキスト経由ログイン → ルート遷移 → メモ一覧遷移ヘルパー → memo-item 待機」に統一する
@@ -63,7 +63,7 @@
   - fresh コンテキスト（空 IndexedDB）でメモ一覧が再接続後にサーバー状態で満たされることを前提に memo-item の表示を確認する
   - _Requirements: 2.2, 3.2, 4.1, 4.2, 5.1, 5.2_
 
-- [ ] 5.2 隔離環境ローカル全件実行と CI 緑化・回帰確認
+- [x] 5.2 隔離環境ローカル全件実行と CI 緑化・回帰確認
   - 隔離 DB `mosaku_e2e` と代替ポート（backend:3100 / preview:4173）で全 spec を反復実行し、dev 環境・dev DB を汚さずに緑化を再現する
   - `pwa-perf.yml` の e2e ジョブを実行し、残り約 12 件（markdown-editor / prose-typography / slash-command / train-scenario / feedback 系）を含む全 spec がパスすることを確認する
   - 既存パス済み 29 件（特に refresh-token-auto-login / public-memo / auth-flow）に回帰がないことを確認する（invalidate は active クエリのみ・steady online では無発火）
