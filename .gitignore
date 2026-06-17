@@ -135,6 +135,7 @@ docs/private/
 .claude/scheduled_tasks.lock
 
 # Playwright / E2E test artifacts
+test-results/
 backend/test-results/
 frontend/test-results/
 .env*
