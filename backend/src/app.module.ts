@@ -9,7 +9,6 @@ import { ThemeModule } from './theme/theme.module';
 import { ConfigModule } from './config/config.module';
 import { NotebookModule } from './notebook/notebook.module';
 import { FeedbackModule } from './feedback/feedback.module';
-import { OnboardingModule } from './onboarding/onboarding.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { McpModule } from './mcp/mcp.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -43,7 +42,6 @@ import { SentryUserContextInterceptor } from './common/sentry/sentry-user-contex
 		ThemeModule,
 		NotebookModule,
 		FeedbackModule,
-		OnboardingModule,
 		DashboardModule,
 		McpModule,
 	],
