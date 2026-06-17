@@ -174,6 +174,67 @@ describe('ConfigService - LINE/Apple/X OAuth', () => {
 		});
 	});
 
+	// ─── Session Cookie 設定（OAuth セッション永続化）─────────────────────────
+
+	describe('sessionCookieOptions', () => {
+		it('開発既定では sameSite=lax, secure=false, httpOnly=true, maxAge=10分 を返すこと', () => {
+			process.env.NODE_ENV = 'development';
+			delete process.env.SESSION_COOKIE_SAMESITE;
+			delete process.env.SESSION_COOKIE_SECURE;
+			delete process.env.SESSION_COOKIE_MAXAGE;
+			const opts = service.sessionCookieOptions;
+			expect(opts.sameSite).toBe('lax');
+			expect(opts.secure).toBe(false);
+			expect(opts.httpOnly).toBe(true);
+			expect(opts.maxAge).toBe(1000 * 60 * 10);
+		});
+
+		it('本番既定では secure=true, httpOnly=true を返すこと', () => {
+			process.env.NODE_ENV = 'production';
+			delete process.env.SESSION_COOKIE_SAMESITE;
+			delete process.env.SESSION_COOKIE_SECURE;
+			delete process.env.SESSION_COOKIE_MAXAGE;
+			const opts = service.sessionCookieOptions;
+			expect(opts.secure).toBe(true);
+			expect(opts.httpOnly).toBe(true);
+			expect(opts.sameSite).toBe('lax');
+		});
+
+		it('SESSION_COOKIE_SAMESITE で値を上書きできること', () => {
+			process.env.SESSION_COOKIE_SAMESITE = 'none';
+			expect(service.sessionCookieOptions.sameSite).toBe('none');
+			process.env.SESSION_COOKIE_SAMESITE = 'strict';
+			expect(service.sessionCookieOptions.sameSite).toBe('strict');
+		});
+
+		it('SESSION_COOKIE_SAMESITE に不正値が来たら lax にフォールバックすること', () => {
+			process.env.SESSION_COOKIE_SAMESITE = 'invalid';
+			expect(service.sessionCookieOptions.sameSite).toBe('lax');
+		});
+
+		it('SESSION_COOKIE_SECURE で値を強制上書きできること', () => {
+			process.env.NODE_ENV = 'production';
+			process.env.SESSION_COOKIE_SECURE = 'false';
+			expect(service.sessionCookieOptions.secure).toBe(false);
+
+			process.env.NODE_ENV = 'development';
+			process.env.SESSION_COOKIE_SECURE = 'true';
+			expect(service.sessionCookieOptions.secure).toBe(true);
+		});
+
+		it('SESSION_COOKIE_MAXAGE で有効期間（ms）を上書きできること', () => {
+			process.env.SESSION_COOKIE_MAXAGE = '300000';
+			expect(service.sessionCookieOptions.maxAge).toBe(300000);
+		});
+
+		it('SESSION_COOKIE_MAXAGE に不正値が来たら既定（10分）にフォールバックすること', () => {
+			process.env.SESSION_COOKIE_MAXAGE = 'not-a-number';
+			expect(service.sessionCookieOptions.maxAge).toBe(1000 * 60 * 10);
+			process.env.SESSION_COOKIE_MAXAGE = '0';
+			expect(service.sessionCookieOptions.maxAge).toBe(1000 * 60 * 10);
+		});
+	});
+
 	// ─── Invitation State Secret ─────────────────────────────────────────────
 
 	describe('invitationStateSecret', () => {
@@ -254,6 +315,33 @@ describe('ConfigService - LINE/Apple/X OAuth', () => {
 	});
 
 	// ─── X ──────────────────────────────────────────────────────────────────
+
+	describe('generateXRegisterStartUrl', () => {
+		it('BACKEND_URL 未設定時は localhost ベースの register-start URL を返すこと', () => {
+			delete process.env.BACKEND_URL;
+			delete process.env.PORT;
+			const url = service.generateXRegisterStartUrl('signed.state');
+			expect(url).toBe('http://localhost:3000/auth/x/register-start?state=signed.state');
+		});
+
+		it('BACKEND_URL が設定されていれば それを使った register-start URL を返すこと', () => {
+			process.env.BACKEND_URL = 'https://api.mosaku.jp';
+			const url = service.generateXRegisterStartUrl('abc.def');
+			expect(url).toBe('https://api.mosaku.jp/auth/x/register-start?state=abc.def');
+		});
+
+		it('BACKEND_URL の末尾スラッシュを除去して正しい URL を返すこと', () => {
+			process.env.BACKEND_URL = 'https://api.mosaku.jp/';
+			const url = service.generateXRegisterStartUrl('my.state');
+			expect(url).toBe('https://api.mosaku.jp/auth/x/register-start?state=my.state');
+		});
+	});
+
+	describe('generateOAuthAuthorizationUrl - X case 撤去', () => {
+		it("'x' を渡すと Error を throw すること（ダミー PKCE 撤去）", () => {
+			expect(() => service.generateOAuthAuthorizationUrl('x', 'some.state')).toThrow();
+		});
+	});
 
 	describe('X クレデンシャル', () => {
 		it('X_CLIENT_ID が設定されている場合に値を返すこと', () => {

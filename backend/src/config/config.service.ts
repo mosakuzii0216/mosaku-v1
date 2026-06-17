@@ -26,6 +26,21 @@ const VALID_SAME_SITE_VALUES: ReadonlySet<RefreshCookieOptions['sameSite']> = ne
 	'strict',
 ]);
 
+/**
+ * OAuth セッション Cookie（cookie-session）属性。`main.ts` のセッションミドルウェアが参照する。
+ * X OAuth の CSRF state / PKCE code_verifier / 招待コードを格納する署名付き Cookie の構成。
+ */
+export interface SessionCookieOptions {
+	readonly sameSite: 'lax' | 'none' | 'strict';
+	readonly secure: boolean;
+	readonly httpOnly: boolean;
+	/** Cookie 有効期間（ミリ秒）。OAuth フロー完了に十分かつ過度に長くない範囲。 */
+	readonly maxAge: number;
+}
+
+/** セッション Cookie 有効期間の既定値（10 分）。OAuth 往復に十分かつ過度に長くない。 */
+const DEFAULT_SESSION_COOKIE_MAX_AGE = 1000 * 60 * 10;
+
 @Injectable()
 export class ConfigService {
 	// JWT設定
@@ -111,6 +126,15 @@ export class ConfigService {
 	}
 
 	// セッション設定
+	/**
+	 * cookie-session の署名鍵。未設定なら本番・開発を問わず fail-fast。
+	 *
+	 * 【不変則】全 Cloud Run インスタンスで完全同一の単一値であること。
+	 * これが多インスタンス耐性（Req 1.4 / 2.2）の前提。インスタンスごとに異なる値・
+	 * 自動生成だと、ログイン開始とは別インスタンスに到達したコールバックで署名検証が
+	 * サイレントに失敗し、session（state/verifier/招待コード）が解決できず durability が壊れる。
+	 * Cloud Run の単一 env 注入で同一値は満たされる。ローテーション時は進行中フロー無効化を許容。
+	 */
 	get sessionSecret(): string {
 		const secret = process.env.SESSION_SECRET;
 		if (!secret) {
@@ -119,6 +143,29 @@ export class ConfigService {
 			);
 		}
 		return secret;
+	}
+
+	/**
+	 * OAuth セッション Cookie（cookie-session）属性。env で全て上書き可能。
+	 * 既定: 本番は secure=true、それ以外は secure=false。httpOnly は常に true（XSS 対策）。
+	 * sameSite は lax 既定でクロスオリジン構成時のみ `none` 上書き。maxAge 既定 10 分。
+	 */
+	get sessionCookieOptions(): SessionCookieOptions {
+		const rawSameSite = process.env.SESSION_COOKIE_SAMESITE?.toLowerCase();
+		const sameSite: SessionCookieOptions['sameSite'] = VALID_SAME_SITE_VALUES.has(
+			rawSameSite as SessionCookieOptions['sameSite'],
+		)
+			? (rawSameSite as SessionCookieOptions['sameSite'])
+			: 'lax';
+
+		const rawSecure = process.env.SESSION_COOKIE_SECURE?.toLowerCase();
+		const secure = rawSecure === 'true' ? true : rawSecure === 'false' ? false : this.isProduction;
+
+		const rawMaxAge = Number(process.env.SESSION_COOKIE_MAXAGE);
+		const maxAge =
+			Number.isFinite(rawMaxAge) && rawMaxAge > 0 ? rawMaxAge : DEFAULT_SESSION_COOKIE_MAX_AGE;
+
+		return { sameSite, secure, httpOnly: true, maxAge };
 	}
 
 	// サーバー設定
@@ -307,9 +354,19 @@ export class ConfigService {
 	}
 
 	/**
-	 * 5 OAuth プロバイダの認可エンドポイント URL を state 付きで組み立てる。
-	 * `InvitationStateService` で発行した signedState を query state に乗せて
-	 * passport の state: true 機構をバイパスする。
+	 * X 招待登録の開始 URL（backend の register-start 経路）を state 付きで組み立てる。
+	 * `startOAuthRegistration` で X プロバイダを選択した場合のみ使用する。
+	 * ダミー PKCE を発行していた旧 `generateOAuthAuthorizationUrl('x')` の代替。
+	 */
+	generateXRegisterStartUrl(signedState: string): string {
+		const base = this.backendUrl.replace(/\/+$/, '');
+		return `${base}/auth/x/register-start?state=${signedState}`;
+	}
+
+	/**
+	 * Google・GitHub・LINE・Apple の認可エンドポイント URL を state 付きで組み立てる。
+	 * X は passport の PKCE/state 機構（`x.strategy.ts`）を使うため、
+	 * X の招待登録開始は `generateXRegisterStartUrl` を使用すること。
 	 */
 	generateOAuthAuthorizationUrl(provider: string, state: string): string {
 		switch (provider) {
@@ -346,15 +403,9 @@ export class ConfigService {
 					state,
 				});
 			case 'x':
-				return this.buildOAuthAuthorizationUrl('https://twitter.com/i/oauth2/authorize', {
-					response_type: 'code',
-					client_id: this.xClientId ?? '',
-					redirect_uri: this.xRedirectUri,
-					scope: 'tweet.read users.read offline.access',
-					state,
-					code_challenge: 'challenge',
-					code_challenge_method: 'plain',
-				});
+				throw new Error(
+					'X OAuth は passport PKCE/state 方式を使用します。招待登録は generateXRegisterStartUrl() を使用してください。',
+				);
 			default:
 				throw new Error(`Unsupported OAuth provider: ${provider}`);
 		}

@@ -18,6 +18,8 @@ import {
 	AppleAuthGuard,
 	XAuthGuard,
 } from './oauth-auth.guards';
+import { XRegisterStartGuard } from './x-register-start.guard';
+import { InvitationStateInvalidFilter } from './x-register-start.filter';
 import { RefreshCookieHelper } from './refresh-cookie.helper';
 import { RefreshCsrfGuard } from './refresh-csrf.guard';
 import { RefreshTokenRepository } from './refresh-token.repository';
@@ -66,6 +68,8 @@ import { MailService } from '../mail/mail.service';
 		LineAuthGuard,
 		AppleAuthGuard,
 		XAuthGuard,
+		XRegisterStartGuard,
+		InvitationStateInvalidFilter,
 		RefreshCookieHelper,
 		RefreshCsrfGuard,
 		RefreshTokenRepository,
