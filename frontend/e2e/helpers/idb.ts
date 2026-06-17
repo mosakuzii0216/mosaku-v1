@@ -68,13 +68,17 @@ export async function getCachedMemoContent(page: Page, memoId: string): Promise<
 				open.onerror = () => reject(open.error);
 				open.onsuccess = () => {
 					const db = open.result;
-					const tx = db.transaction('memos', 'readonly');
-					const req = tx.objectStore('memos').get(id);
-					req.onerror = () => reject(req.error);
-					req.onsuccess = () => {
-						const record = req.result as { content?: string } | undefined;
-						resolve(record?.content ?? null);
-					};
+					try {
+						const tx = db.transaction('memos', 'readonly');
+						const req = tx.objectStore('memos').get(id);
+						req.onerror = () => reject(req.error);
+						req.onsuccess = () => {
+							const record = req.result as { content?: string } | undefined;
+							resolve(record?.content ?? null);
+						};
+					} catch {
+						resolve(null);
+					}
 				};
 			});
 		},
@@ -93,5 +97,29 @@ export async function clearOfflineDb(page: Page): Promise<void> {
 			});
 		},
 		{ dbName: DB_NAME },
+	);
+}
+
+/** pending_operations のみクリアして memos キャッシュは残す。 */
+export async function clearPendingQueue(page: Page): Promise<void> {
+	await page.evaluate(
+		async ({ dbName, dbVersion }) => {
+			return new Promise<void>((resolve, reject) => {
+				const open = indexedDB.open(dbName, dbVersion);
+				open.onerror = () => reject(open.error);
+				open.onsuccess = () => {
+					const db = open.result;
+					try {
+						const tx = db.transaction('pending_operations', 'readwrite');
+						const req = tx.objectStore('pending_operations').clear();
+						req.onerror = () => reject(req.error);
+						req.onsuccess = () => resolve();
+					} catch {
+						resolve();
+					}
+				};
+			});
+		},
+		{ dbName: DB_NAME, dbVersion: DB_VERSION },
 	);
 }

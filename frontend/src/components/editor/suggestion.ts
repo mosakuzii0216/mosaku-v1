@@ -39,12 +39,13 @@ export const suggestion = {
 		let mode: SlashCommandMode = 'root';
 		let latest: SuggestionProps | null = null;
 
-		function renderProps() {
+		function renderProps(queryOverride?: string) {
 			if (!component || !latest) {
 				return;
 			}
+			const q = queryOverride !== undefined ? queryOverride : latest.query;
 			component.updateProps({
-				items: getSlashCommandItems(latest.query, mode),
+				items: getSlashCommandItems(q, mode),
 				mode,
 				command: handleSelect,
 				onBack: backToRoot,
@@ -56,7 +57,9 @@ export const suggestion = {
 				return;
 			}
 			mode = 'root';
-			renderProps();
+			// notebook から戻るとき latest.query はサブメニュー検索文字列のままなので
+			// root では空クエリ（全件）で表示する
+			renderProps('');
 		}
 
 		function handleSelect(item: SlashCommandItem) {

@@ -169,8 +169,8 @@ jobs:
             const hash = await bcrypt.hash(process.env.E2E_USER_PASSWORD, 12);
             await prisma.user.upsert({
               where: { email },
-              update: { password: hash, role: 'ADMIN', name },
-              create: { email, password: hash, role: 'ADMIN', name },
+              update: { password: hash, role: 'ADMIN', name, onboardingCompleted: true },
+              create: { email, password: hash, role: 'ADMIN', name, onboardingCompleted: true },
             });
             console.log('Seeded E2E user:', email);
             await prisma.$disconnect();

@@ -49,6 +49,10 @@ vi.mock('../../hooks/useAppInit', () => ({
 	useAppInit: vi.fn(),
 }));
 
+vi.mock('../../hooks/useReconnectSync', () => ({
+	useReconnectSync: vi.fn(),
+}));
+
 vi.mock('../ui/Header', () => ({
 	Header: () => <div data-testid="header">Header</div>,
 }));

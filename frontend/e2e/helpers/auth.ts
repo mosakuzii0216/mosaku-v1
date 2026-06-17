@@ -48,6 +48,31 @@ export async function ensureLoggedIn(
 }
 
 /**
+ * BrowserContext 経由でログインし、HttpOnly refresh cookie を context の cookie jar に保存する。
+ *
+ * `injectAccessToken`（localStorage 注入）のみに依存しない主経路。
+ * 起動時 `/auth/refresh` が credentials:include で cookie を送出するため、
+ * fresh コンテキストでもログイン状態が復元される。
+ */
+export async function loginViaContext(
+	context: BrowserContext,
+	config: E2EAuthConfig,
+): Promise<E2EAuthSession> {
+	const response = await context.request.post(`${config.backendUrl}/auth/login`, {
+		headers: { 'Content-Type': 'application/json' },
+		data: { email: config.email, password: config.password },
+	});
+
+	if (!response.ok()) {
+		const text = await response.text().catch(() => '');
+		throw new Error(`loginViaContext: /auth/login failed (${response.status()}): ${text}`);
+	}
+
+	const body = (await response.json()) as { accessToken: string; user: { id: string } };
+	return { accessToken: body.accessToken, userId: body.user.id };
+}
+
+/**
  * BrowserContext の指定オリジンの localStorage にアクセストークンを事前注入する。
  *
  * Playwright で addInitScript を使う方法もあるが、AuthGuard / AuthContext が

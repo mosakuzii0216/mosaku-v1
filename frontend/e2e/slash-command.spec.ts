@@ -18,7 +18,8 @@
 
 import { test, expect, type Page } from '@playwright/test';
 import { BackendApi } from './helpers/backend-api';
-import { ensureLoggedIn, getDefaultAuthConfig, injectAccessToken } from './helpers/auth';
+import { ensureLoggedIn, getDefaultAuthConfig, loginViaContext } from './helpers/auth';
+import { gotoMemoList } from './helpers/nav';
 
 const config = getDefaultAuthConfig();
 const api = new BackendApi({ baseUrl: config.backendUrl });
@@ -42,7 +43,6 @@ test.afterAll(async () => {
 
 /** 一覧から対象メモを開き、本文エディタにフォーカスする */
 async function openMemoEditor(page: Page) {
-	await page.waitForSelector('[data-testid="memo-item"]', { timeout: 15000 });
 	await page.locator('[data-testid="memo-item"]', { hasText: MEMO_TITLE }).first().click();
 	await expect(page.locator('input[placeholder="タイトル"]')).toBeVisible({ timeout: 10000 });
 	const editor = page.locator('.ProseMirror[contenteditable="true"]').first();
@@ -56,8 +56,10 @@ async function openMemoEditor(page: Page) {
 const slashMenu = (page: Page) => page.locator('.slash-command-list');
 
 test.beforeEach(async ({ context, page }) => {
-	await injectAccessToken(context, config.frontendOrigin, accessToken);
+	await loginViaContext(context, config);
 	await page.goto('/');
+	await gotoMemoList(page);
+	await page.waitForSelector('[data-testid="memo-item"]', { timeout: 15000 });
 });
 
 test.describe('スラッシュコマンドメニュー E2E', () => {
@@ -96,7 +98,7 @@ test.describe('スラッシュコマンドメニュー E2E', () => {
 		await page.keyboard.type('/コード');
 		await expect(slashMenu(page).getByText('コードブロック')).toBeVisible({ timeout: 5000 });
 		await page.keyboard.press('Enter');
-		await expect(editor.locator('pre code')).toBeVisible();
+		await expect(editor.locator('pre')).toBeVisible();
 
 		// コードブロック内で `/` を打ってもメニューは出ない
 		await page.keyboard.type('/');

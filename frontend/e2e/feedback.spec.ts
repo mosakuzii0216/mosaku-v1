@@ -2,38 +2,39 @@
  * フィードバック機能 E2E テスト（Task 5.4）
  *
  * 前提:
- *   - フロントエンド（http://localhost:5173）が起動済みであること
- *   - バックエンドへのリクエストはすべてモックで代替する
+ *   - バックエンド（http://localhost:3000）とフロントエンド（http://localhost:5173）が起動済みであること
+ *   - E2E_USER_EMAIL が ADMIN として作成できること
  *
  * Requirements 対応: 1.1, 1.2, 1.5, 3.5
  */
 
 import { test, expect } from '@playwright/test';
+import { BackendApi } from './helpers/backend-api';
+import { ensureLoggedIn, getDefaultAuthConfig, loginViaContext } from './helpers/auth';
+import { gotoMemoList } from './helpers/nav';
 
-const FAKE_USER = {
-	id: 'test-user-id',
-	name: 'テストユーザー',
-	email: 'test@example.com',
-	role: 'USER',
-};
+const config = getDefaultAuthConfig();
+const api = new BackendApi({ baseUrl: config.backendUrl });
+
+const FEEDBACK_MEMO_TITLE = 'Feedback E2E（セットアップ用）';
+
+let accessToken = '';
+
+test.beforeAll(async () => {
+	const session = await ensureLoggedIn(api, config);
+	accessToken = session.accessToken;
+	await api.resetUserMemos(accessToken);
+	await api.createMemo(accessToken, { title: FEEDBACK_MEMO_TITLE, content: '<p></p>' });
+});
+
+test.afterAll(async () => {
+	if (accessToken) {
+		await api.resetUserMemos(accessToken).catch(() => {});
+	}
+});
 
 test.beforeEach(async ({ context, page }) => {
-	// 有効期限が遠い未来のフェイク JWT を LocalStorage に注入
-	await context.addInitScript(() => {
-		const payload = btoa(JSON.stringify({ sub: 'test-user-id', exp: 9999999999 }));
-		window.localStorage.setItem('auth_access_token', `eyJhbGciOiJIUzI1NiJ9.${payload}.sig`);
-	});
-
-	// auth/me → 認証済みユーザーを返す
-	await page.route('**/auth/me', (route) => {
-		route.fulfill({
-			status: 200,
-			contentType: 'application/json',
-			body: JSON.stringify(FAKE_USER),
-		});
-	});
-
-	// POST /feedback → 201
+	// POST /feedback はテスト DB に書き込まれるため、モックで代替する
 	await page.route('**/feedback', (route) => {
 		if (route.request().method() === 'POST') {
 			route.fulfill({ status: 201, body: '' });
@@ -42,46 +43,19 @@ test.beforeEach(async ({ context, page }) => {
 		}
 	});
 
-	// メモ・ノートブック・タグ API → 空配列で応答（401 によるログアウトを防ぐ）
-	await page.route('**/memos**', (route) => {
-		route.fulfill({
-			status: 200,
-			contentType: 'application/json',
-			body: JSON.stringify([]),
-		});
-	});
-	await page.route('**/notebooks**', (route) => {
-		route.fulfill({
-			status: 200,
-			contentType: 'application/json',
-			body: JSON.stringify([]),
-		});
-	});
-	await page.route('**/tags**', (route) => {
-		route.fulfill({
-			status: 200,
-			contentType: 'application/json',
-			body: JSON.stringify([]),
-		});
-	});
-	await page.route('**/themes**', (route) => {
-		route.fulfill({
-			status: 200,
-			contentType: 'application/json',
-			body: JSON.stringify([]),
-		});
-	});
+	await loginViaContext(context, config);
+	await page.goto('/');
+	await gotoMemoList(page);
+	await page.waitForSelector('[data-testid="memo-item"]', { timeout: 15000 });
 });
 
 test.describe('フィードバック機能', () => {
 	test('ヘッダーからフィードバックを送信し成功メッセージが表示される', async ({ page }) => {
-		await page.goto('/');
-
-		// ヘッダーのユーザーアバターが表示されるまで待機
-		await page.waitForSelector(`button[title="${FAKE_USER.name}"]`, { timeout: 15000 });
+		// ユーザーアバターが表示されるまで待機
+		await page.waitForSelector(`button[title="${config.name}"]`, { timeout: 15000 });
 
 		// ユーザーアバターをクリックしてドロップダウンを開く
-		await page.getByTitle(FAKE_USER.name).click();
+		await page.getByTitle(config.name).click();
 
 		// ドロップダウンのフィードバックボタンをクリック
 		await page.getByRole('button', { name: 'フィードバックを送る' }).click();
@@ -108,13 +82,11 @@ test.describe('フィードバック機能', () => {
 	});
 
 	test('モーダル外クリックでモーダルが閉じる', async ({ page }) => {
-		await page.goto('/');
-
 		// ユーザーアバターが表示されるまで待機
-		await page.waitForSelector(`button[title="${FAKE_USER.name}"]`, { timeout: 15000 });
+		await page.waitForSelector(`button[title="${config.name}"]`, { timeout: 15000 });
 
 		// フィードバックモーダルを開く
-		await page.getByTitle(FAKE_USER.name).click();
+		await page.getByTitle(config.name).click();
 		await page.getByRole('button', { name: 'フィードバックを送る' }).click();
 
 		// モーダルが表示されていることを確認

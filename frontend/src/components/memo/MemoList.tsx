@@ -51,7 +51,7 @@ export const MemoList = () => {
 
 	if (isLoading) {
 		return (
-			<div className="flex-1 flex items-center justify-center">
+			<div data-testid="memo-list-view" className="flex-1 flex items-center justify-center">
 				<div className="text-gray-500">読み込み中...</div>
 			</div>
 		);
@@ -59,7 +59,7 @@ export const MemoList = () => {
 
 	if (error) {
 		return (
-			<div className="flex-1 flex items-center justify-center">
+			<div data-testid="memo-list-view" className="flex-1 flex items-center justify-center">
 				<div className="text-red-500">
 					<div>エラーが発生しました</div>
 					<div className="text-sm mt-2">
@@ -72,7 +72,7 @@ export const MemoList = () => {
 
 	if (filteredMemos.length === 0) {
 		return (
-			<div className="flex-1 flex items-center justify-center">
+			<div data-testid="memo-list-view" className="flex-1 flex items-center justify-center">
 				<div className="text-center text-gray-500">
 					<div className="mb-3">
 						{isSearching ? '該当するメモが見つかりません' : 'メモがありません'}
@@ -99,7 +99,7 @@ export const MemoList = () => {
 				: 'ノートブック内のメモ';
 
 	return (
-		<div className="flex-1 overflow-y-auto">
+		<div data-testid="memo-list-view" className="flex-1 overflow-y-auto">
 			<div className="max-w-4xl mx-auto p-4">
 				<div className="mb-4 flex items-baseline justify-between">
 					<div className="flex items-baseline gap-3">

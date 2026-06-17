@@ -19,8 +19,9 @@
 import { test, expect } from '@playwright/test';
 
 import { BackendApi } from './helpers/backend-api';
-import { ensureLoggedIn, getDefaultAuthConfig, injectAccessToken } from './helpers/auth';
-import { clearOfflineDb, getCachedMemoContent, getPendingOperations } from './helpers/idb';
+import { ensureLoggedIn, getDefaultAuthConfig, loginViaContext } from './helpers/auth';
+import { clearPendingQueue, getCachedMemoContent, getPendingOperations } from './helpers/idb';
+import { gotoMemoList } from './helpers/nav';
 
 const SEED_MEMOS = [
 	{ title: 'Train Memo Alpha', content: 'これは電車内で読み返す予定のメモ Alpha です。' },
@@ -52,12 +53,13 @@ test.afterAll(async () => {
 });
 
 test.beforeEach(async ({ context, page }) => {
-	await injectAccessToken(context, config.frontendOrigin, accessToken);
+	await loginViaContext(context, config);
 	await page.goto('/');
+	await gotoMemoList(page);
 	// メモが画面に並ぶまで待機（一覧にキャッシュされる）
 	await page.waitForSelector('[data-testid="memo-item"]', { timeout: 15000 });
-	// クリーンな pending キューで開始
-	await clearOfflineDb(page);
+	// クリーンな pending キューで開始（memos キャッシュは残す）
+	await clearPendingQueue(page);
 });
 
 test.describe('電車内シナリオ', () => {
@@ -77,7 +79,7 @@ test.describe('電車内シナリオ', () => {
 
 		// step 2: オフラインに切替
 		await context.setOffline(true);
-		await expect(page.locator('[data-testid="offline-badge-status"]')).toBeVisible({
+		await expect(page.locator('[data-testid="offline-badge-status"]').first()).toBeVisible({
 			timeout: 10000,
 		});
 
@@ -112,11 +114,11 @@ test.describe('電車内シナリオ', () => {
 
 	test('オフライン中もキャッシュ範囲内のキーワード検索ができる', async ({ context, page }) => {
 		await context.setOffline(true);
-		await expect(page.locator('[data-testid="offline-badge-status"]')).toBeVisible({
+		await expect(page.locator('[data-testid="offline-badge-status"]').first()).toBeVisible({
 			timeout: 10000,
 		});
 
-		const search = page.locator('input[placeholder="検索"]').first();
+		const search = page.locator('input[placeholder="タイトル・本文で検索..."]').first();
 		await search.fill('keyword-zeta');
 		// 1 件以上ヒットする（Gamma が含まれる）
 		await expect(page.locator('[data-testid="memo-item"]', { hasText: 'Gamma' })).toBeVisible({

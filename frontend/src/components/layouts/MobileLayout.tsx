@@ -5,6 +5,7 @@ import { usePaletteStore } from '../../stores/usePaletteStore';
 import { useNavigation } from '../../hooks/useNavigation';
 import { useMemo as useMemoQuery } from '../../hooks/useMemoQueries';
 import { useAppInit } from '../../hooks/useAppInit';
+import { useReconnectSync } from '../../hooks/useReconnectSync';
 import { useActiveTheme } from '../../hooks/useActiveTheme';
 import { useThemeCSS } from '../../hooks/useThemeCSS';
 import { ThemeEffectHost } from '../effects/ThemeEffectHost';
@@ -28,6 +29,7 @@ export const MobileLayout = () => {
 	const activeTheme = useActiveTheme();
 	useThemeCSS(activeTheme);
 	useAppInit(); // アプリ初期化（タグロード等）
+	useReconnectSync(); // 再接続時のサーバー状態再取得
 
 	// ショートカットキーのハンドリング
 	useEffect(() => {

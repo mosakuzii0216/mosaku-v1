@@ -14,24 +14,17 @@
  *   describe.configure({ mode: 'serial' }) により 1 worker で直列実行し、
  *   beforeAll の resetUserMemos → createMemo 競合を防ぐ。
  *
- *   beforeAll で api.login() を呼び、実際の JWT とユーザープロファイルを取得する。
- *
- *   beforeEach で context.addInitScript() を使い:
- *     1. localStorage に auth_access_token を設定する
- *     2. window.fetch を上書きして /auth/refresh をインターセプトする
- *        → クロスオリジン X-Refresh-Request ヘッダーによる CORS 問題を回避
- *        → tryAutoRefresh が成功し、トークンが削除されずに済む
- *        → GET /auth/me も不要になる（refresh レスポンスで user が直接返る）
- *
- *   useViewStore の初期値は currentView:'create' なのでエディタが表示される。
- *   openMemoInEditor でヘッダーの「メモ」ボタンをクリックして list ビューに切り替える。
+ *   beforeEach で loginViaContext を使い BrowserContext の cookie jar に
+ *   HttpOnly refresh cookie を取得する。起動時 /auth/refresh が成功し
+ *   ログイン状態が復元される。その後 gotoMemoList でメモ一覧へ遷移する。
  *
  * Requirements 対応: 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 4.1, 4.2, 6.2, 6.3, 6.4
  */
 
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
-import { BackendApi, type BackendUser } from './helpers/backend-api';
-import { getDefaultAuthConfig } from './helpers/auth';
+import { BackendApi } from './helpers/backend-api';
+import { getDefaultAuthConfig, loginViaContext } from './helpers/auth';
+import { gotoMemoList } from './helpers/nav';
 
 const config = getDefaultAuthConfig();
 const api = new BackendApi({ baseUrl: config.backendUrl });
@@ -58,10 +51,6 @@ const EXTENDED_CONTENT = [
 ].join('');
 
 async function openMemoInEditor(page: Page, title: string) {
-	// useViewStore の初期値は currentView:'create'（新規作成画面）なので、
-	// ヘッダーの「メモ」ボタンをクリックして currentView:'list' に切り替える。
-	await page.locator('button:has-text("メモ"), a:has-text("メモ")').first().click();
-	await page.waitForSelector('[data-testid="memo-item"]', { timeout: 15000 });
 	await page.locator('[data-testid="memo-item"]', { hasText: title }).first().click();
 	await expect(page.locator('input[placeholder="タイトル"]')).toBeVisible({ timeout: 10000 });
 	return page.locator('.ProseMirror[contenteditable="true"]').first();
@@ -93,7 +82,6 @@ test.describe('prose タイポグラフィ 実描画視覚検証', () => {
 	test.describe.configure({ mode: 'serial' });
 
 	let apiToken = '';
-	let apiUser: BackendUser | null = null;
 	let publicToken = '';
 
 	test.beforeAll(async () => {
@@ -102,7 +90,6 @@ test.describe('prose タイポグラフィ 実描画視覚検証', () => {
 		await api.ensureUser(config.email, config.password, config.name);
 		const loginResult = await api.login(config.email, config.password);
 		apiToken = loginResult.accessToken;
-		apiUser = loginResult.user;
 
 		await api.resetUserMemos(apiToken);
 		await api.createMemo(apiToken, {
@@ -124,59 +111,10 @@ test.describe('prose タイポグラフィ 実描画視覚検証', () => {
 	});
 
 	test.beforeEach(async ({ context, page }) => {
-		const token = apiToken;
-		const user = apiUser;
-
-		// initScript でブラウザ内の fetch を上書きし、/auth/refresh を傍受する。
-		// これにより CORS の X-Refresh-Request ヘッダー問題を回避し、
-		// tryAutoRefresh が成功してトークンが消えずに済む。
-		await context.addInitScript(
-			({ origin, token, user }) => {
-				if (window.location.origin !== origin) return;
-
-				// localStorage にアクセストークンを事前注入する
-				window.localStorage.setItem('auth_access_token', token);
-
-				// window.fetch をパッチして /auth/refresh をインターセプトする。
-				// CORS（credentials: include + X-Refresh-Request ヘッダー）が
-				// テスト環境で TypeError: Failed to fetch を起こすのを防ぐ。
-				const originalFetch = window.fetch.bind(window);
-				window.fetch = async function (
-					input: RequestInfo | URL,
-					init?: RequestInit,
-				): Promise<Response> {
-					const url =
-						typeof input === 'string'
-							? input
-							: input instanceof URL
-								? input.href
-								: (input as Request).url;
-					if (url.includes('/auth/refresh')) {
-						// tryAutoRefresh が期待する RefreshOutcome を返す
-						return new Response(
-							JSON.stringify({
-								accessToken: token,
-								user: {
-									id: user.id,
-									email: user.email,
-									name: user.name,
-									role: user.role,
-									createdAt: new Date().toISOString(),
-									updatedAt: new Date().toISOString(),
-								},
-							}),
-							{ status: 200, headers: { 'Content-Type': 'application/json' } },
-						);
-					}
-					return originalFetch(input, init);
-				};
-			},
-			{ origin: config.frontendOrigin, token, user },
-		);
-
+		await loginViaContext(context, config);
 		await page.goto('/');
-		// ADMIN ユーザーでのみ表示される要素を待ち、認証完了を確認する
-		await page.waitForSelector('a[href="/admin/invitations"]', { timeout: 15000 });
+		await gotoMemoList(page);
+		await page.waitForSelector('[data-testid="memo-item"]', { timeout: 15000 });
 	});
 
 	test.describe('3.1 エディタのブロック要素 computed style 検証', () => {

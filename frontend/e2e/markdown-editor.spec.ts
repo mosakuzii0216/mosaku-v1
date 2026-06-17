@@ -20,7 +20,8 @@
 
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
 import { BackendApi } from './helpers/backend-api';
-import { ensureLoggedIn, getDefaultAuthConfig, injectAccessToken } from './helpers/auth';
+import { ensureLoggedIn, getDefaultAuthConfig, loginViaContext } from './helpers/auth';
+import { gotoMemoList } from './helpers/nav';
 
 const config = getDefaultAuthConfig();
 const api = new BackendApi({ baseUrl: config.backendUrl });
@@ -65,17 +66,19 @@ test.afterAll(async () => {
 	}
 });
 
-/** 一覧から対象メモを開き、本文エディタを返す */
+/** 一覧へ戻ってから対象メモを開き、本文エディタを返す */
 async function openMemo(page: Page, title: string) {
-	await page.waitForSelector('[data-testid="memo-item"]', { timeout: 15000 });
+	await gotoMemoList(page);
 	await page.locator('[data-testid="memo-item"]', { hasText: title }).first().click();
 	await expect(page.locator('input[placeholder="タイトル"]')).toBeVisible({ timeout: 10000 });
 	return page.locator('.ProseMirror[contenteditable="true"]').first();
 }
 
 test.beforeEach(async ({ context, page }) => {
-	await injectAccessToken(context, config.frontendOrigin, accessToken);
+	await loginViaContext(context, config);
 	await page.goto('/');
+	await gotoMemoList(page);
+	await page.waitForSelector('[data-testid="memo-item"]', { timeout: 15000 });
 });
 
 test.describe('Markdown WYSIWYG 主要シナリオ E2E', () => {
