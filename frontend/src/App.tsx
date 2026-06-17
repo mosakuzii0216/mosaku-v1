@@ -19,8 +19,6 @@ import { SettingsPage } from './components/settings/SettingsPage';
 import { PublicMemoPage } from './components/public/PublicMemoPage';
 import { FeedbackModal } from './components/feedback/FeedbackModal';
 import { useFeedbackStore } from './stores/useFeedbackStore';
-import { OnboardingGate } from './components/onboarding/OnboardingGate';
-import { OnboardingModal } from './components/onboarding/OnboardingModal';
 
 const MOBILE_BREAKPOINT = 768;
 
@@ -97,8 +95,6 @@ function App() {
 							path="/*"
 							element={
 								<AuthGuard>
-									<OnboardingGate />
-									<OnboardingModal />
 									<AppContent />
 								</AuthGuard>
 							}

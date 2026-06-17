@@ -8,7 +8,6 @@ export interface UserProfile {
 	role: 'USER' | 'ADMIN';
 	createdAt: string;
 	updatedAt: string;
-	onboardingCompleted: boolean;
 }
 
 export interface AuthTokens {
