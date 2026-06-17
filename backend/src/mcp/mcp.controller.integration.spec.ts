@@ -1,13 +1,18 @@
-import { INestApplication } from '@nestjs/common';
+import { CanActivate, ExecutionContext, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { McpModule } from './mcp.module';
 import * as features from '../config/features.config';
 import { MCP_TOOL_NAMES } from './mcp.constants';
+import { McpBearerGuard } from './auth/mcp-bearer.guard';
 
 /**
  * MCP Streamable HTTP 入口（McpController + McpServerService）の疎通テスト。
  * task 1.2（transport 結線・flag gating）と task 1.3（initialize / tools/list / 未知メソッド）を担保する。
+ *
+ * McpBearerGuard は McpTokenVerifier.spec.ts で完全にユニットテスト済みのため、
+ * 本 integration spec では Always-pass スタブに差し替えてプロトコル挙動に集中する。
+ * Bearer 検証の通過・拒否はそちらで担保する。
  */
 describe('McpController (integration)', () => {
 	let app: INestApplication;
@@ -21,10 +26,22 @@ describe('McpController (integration)', () => {
 		Host: 'localhost',
 	};
 
+	/** テスト用 Bearer Guard スタブ（常に通過・userId を注入）。 */
+	const alwaysPassGuard: CanActivate = {
+		canActivate: (ctx: ExecutionContext) => {
+			const req = ctx.switchToHttp().getRequest<{ mcpUser?: unknown }>();
+			req.mcpUser = { userId: 'test-user', scopes: ['memo:read', 'memo:write'] };
+			return true;
+		},
+	};
+
 	beforeAll(async () => {
 		const moduleRef: TestingModule = await Test.createTestingModule({
 			imports: [McpModule],
-		}).compile();
+		})
+			.overrideGuard(McpBearerGuard)
+			.useValue(alwaysPassGuard)
+			.compile();
 		app = moduleRef.createNestApplication();
 		await app.init();
 	});

@@ -29,6 +29,7 @@ describe('memo-public-isolation 既存不変則の固定（Task 6.1）', () => {
 	] as const;
 
 	// feature_area enum の正準集合（Req 6.3）。公開/編集は feature_area ではなく route で区別する（Req 1.2）。
+	// 'mcp' は MCP エンドポイント（/mcp, /oauth, /.well-known/oauth）の feature_area として追加（mcp-endpoint spec）。
 	const CANONICAL_FEATURE_AREAS = [
 		'memo',
 		'notebook',
@@ -38,6 +39,7 @@ describe('memo-public-isolation 既存不変則の固定（Task 6.1）', () => {
 		'invitation',
 		'dashboard',
 		'system',
+		'mcp',
 		'unknown',
 	] as const;
 

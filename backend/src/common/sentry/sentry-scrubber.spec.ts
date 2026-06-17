@@ -111,6 +111,30 @@ describe('SentryScrubber', () => {
 			expect(result.extra.clientSecret).toBe('[REDACTED]');
 			expect(result.extra.privateKey).toBe('[REDACTED]');
 		});
+
+		it('codeChallenge を [REDACTED] に置換すること（MCP OAuth PKCE）', () => {
+			const event = {
+				extra: {
+					codeChallenge: 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM',
+				},
+			};
+
+			const result = scrubber.scrub(event);
+
+			expect(result.extra.codeChallenge).toBe('[REDACTED]');
+		});
+
+		it('codeVerifier を [REDACTED] に置換すること（MCP OAuth PKCE）', () => {
+			const event = {
+				extra: {
+					codeVerifier: 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk',
+				},
+			};
+
+			const result = scrubber.scrub(event);
+
+			expect(result.extra.codeVerifier).toBe('[REDACTED]');
+		});
 	});
 
 	describe('値の正規表現マッチ', () => {

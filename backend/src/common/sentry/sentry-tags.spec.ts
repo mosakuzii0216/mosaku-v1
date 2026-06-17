@@ -23,6 +23,13 @@ describe('SentryTags', () => {
 			['/invitation/validate', 'invitation'],
 			['/invitations', 'invitation'],
 			['/health', 'system'],
+			['/mcp', 'mcp'],
+			['/mcp/tools', 'mcp'],
+			['/oauth/token', 'mcp'],
+			['/oauth/authorize', 'mcp'],
+			['/oauth/register', 'mcp'],
+			['/.well-known/oauth-protected-resource', 'mcp'],
+			['/.well-known/oauth-authorization-server', 'mcp'],
 		])('URL %s から feature_area %s を解決すること', (url, expected) => {
 			expect(resolveFeatureArea(url)).toBe(expected);
 		});

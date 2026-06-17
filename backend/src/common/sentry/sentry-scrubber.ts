@@ -13,6 +13,8 @@ export const DEFAULT_REDACTABLE_KEYS: ReadonlySet<string> = new Set([
 	'invitationCode',
 	'clientSecret',
 	'privateKey',
+	'codeChallenge',
+	'codeVerifier',
 ]);
 
 const JWT_REGEX = /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/;

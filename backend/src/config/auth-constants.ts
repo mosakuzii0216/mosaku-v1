@@ -30,6 +30,14 @@ export const REFRESH_TOKEN_EXPIRATION: StringValue =
 	(process.env.REFRESH_TOKEN_EXPIRATION as StringValue) || '30d';
 
 /**
+ * MCP アクセストークン有効期限
+ * 通常の REST トークン（15m）より長め・リフレッシュ回転前提の短命設定。
+ * デフォルト: 1時間。env で上書き可能。
+ */
+export const MCP_ACCESS_TOKEN_EXPIRATION: StringValue =
+	(process.env.MCP_ACCESS_TOKEN_EXPIRATION as StringValue) || '1h';
+
+/**
  * Refresh Token Cookie 名。サーバー側で一元管理し、FE には公開しない。
  */
 export const REFRESH_COOKIE_NAME = 'refresh_token' as const;
@@ -82,5 +90,23 @@ export const THROTTLE_CONFIG = {
 	PASSWORD_RESET: {
 		LIMIT: parseInt(process.env.PASSWORD_RESET_THROTTLE_LIMIT || '5', 10),
 		TTL: parseInt(process.env.PASSWORD_RESET_THROTTLE_TTL || String(15 * MS_PER_MINUTE), 10),
+	},
+	/**
+	 * MCP tool 実行エンドポイントのレート制限（AI クライアントの連続実行対策）
+	 * デフォルト: 1分間に30回まで。env で上書き可能。
+	 * グローバル (60/min) より低めに設定し、AI クライアントが短時間に集中送信しても
+	 * 他のユーザーの REST 操作に影響しないようにする（R6.4）。
+	 */
+	MCP: {
+		LIMIT: parseInt(process.env.MCP_THROTTLE_LIMIT || '30', 10),
+		TTL: parseInt(process.env.MCP_THROTTLE_TTL || String(1 * MS_PER_MINUTE), 10),
+	},
+	/**
+	 * MCP OAuth 認可エンドポイント（register / authorize / token）のレート制限
+	 * デフォルト: 1分間に10回まで（DCR 濫用・総当たり対策）。env で上書き可能。
+	 */
+	MCP_OAUTH: {
+		LIMIT: parseInt(process.env.MCP_OAUTH_THROTTLE_LIMIT || '10', 10),
+		TTL: parseInt(process.env.MCP_OAUTH_THROTTLE_TTL || String(1 * MS_PER_MINUTE), 10),
 	},
 } as const;

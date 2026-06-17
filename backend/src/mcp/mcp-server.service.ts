@@ -7,6 +7,9 @@ import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { ConfigService } from '../config/config.service';
 import { MCP_SERVER_INFO } from './mcp.constants';
 import { CREATE_MEMO_TOOL, SEARCH_MEMOS_TOOL } from './mcp.tools';
+import type { AuthenticatedMcpUser } from './auth/mcp-token.verifier';
+import { CreateMemoTool } from './tools/create-memo.tool';
+import { SearchMemosTool } from './tools/search-memos.tool';
 
 /**
  * `McpServer.registerTool` は zod shape を深く型展開するため、literal な inputSchema を渡すと
@@ -15,15 +18,8 @@ import { CREATE_MEMO_TOOL, SEARCH_MEMOS_TOOL } from './mcp.tools';
 type RegisterTool = (
 	name: string,
 	config: { title: string; description: string; inputSchema: ZodRawShape },
-	cb: () => CallToolResult,
+	cb: (args: Record<string, unknown>) => CallToolResult | Promise<CallToolResult>,
 ) => void;
-
-interface StubToolDef {
-	name: string;
-	title: string;
-	description: string;
-	inputShape: ZodRawShape;
-}
 
 /**
  * MCP Streamable HTTP のリクエスト処理を担うサービス。
@@ -35,13 +31,23 @@ interface StubToolDef {
  */
 @Injectable()
 export class McpServerService {
-	constructor(private readonly config: ConfigService) {}
+	constructor(
+		private readonly config: ConfigService,
+		private readonly createMemoTool: CreateMemoTool,
+		private readonly searchMemosTool: SearchMemosTool,
+	) {}
 
 	/**
 	 * 1 件の MCP リクエストを処理する。レスポンス整形は SDK transport に委譲する。
+	 * user は McpBearerGuard 検証済み。tool ハンドラへのクロージャ束縛は task 5 で実装。
 	 */
-	async handle(req: ExpressRequest, res: ExpressResponse): Promise<void> {
-		const server = this.buildServer();
+
+	async handle(
+		req: ExpressRequest,
+		res: ExpressResponse,
+		user: AuthenticatedMcpUser,
+	): Promise<void> {
+		const server = this.buildServer(user);
 		const transport = new StreamableHTTPServerTransport({
 			// ステートレス: セッションを保持しない
 			sessionIdGenerator: undefined,
@@ -64,48 +70,36 @@ export class McpServerService {
 	}
 
 	/**
-	 * 認証ユーザー文脈を束縛した `McpServer` を構築する。
+	 * 認証ユーザー文脈をクロージャ束縛した `McpServer` を構築する。
 	 *
-	 * task 1（スパイク）では tool ハンドラはスタブ（未実装エラー結果）。
-	 * `tools/list` で name / description / inputSchema を返す疎通までを担保する。
-	 * 実ロジック（既存ドメインサービス直呼び）は task 5 で差し替える。
+	 * userId の出所は認証文脈（user）のみ。クライアント入力で上書き不可。
+	 * tool ハンドラは CreateMemoTool / SearchMemosTool に委譲（既存ドメインサービス直呼び）。
 	 */
-	private buildServer(): McpServer {
+	private buildServer(user: AuthenticatedMcpUser): McpServer {
 		const server = new McpServer(MCP_SERVER_INFO);
+		// TS2589 回避: ZodRawShape を渡すと型推論が無限再帰するため非ジェネリックにキャスト
+		const registerTool = server.registerTool.bind(server) as RegisterTool;
 
-		server.registerTool(
+		registerTool(
 			CREATE_MEMO_TOOL.name,
 			{
 				title: CREATE_MEMO_TOOL.title,
 				description: CREATE_MEMO_TOOL.description,
 				inputSchema: CREATE_MEMO_TOOL.inputShape,
 			},
-			() => this.notImplemented(CREATE_MEMO_TOOL.name),
+			(args) => this.createMemoTool.execute(args as { content: string; notebook?: string }, user),
 		);
 
-		server.registerTool(
+		registerTool(
 			SEARCH_MEMOS_TOOL.name,
 			{
 				title: SEARCH_MEMOS_TOOL.title,
 				description: SEARCH_MEMOS_TOOL.description,
 				inputSchema: SEARCH_MEMOS_TOOL.inputShape,
 			},
-			() => this.notImplemented(SEARCH_MEMOS_TOOL.name),
+			(args) => this.searchMemosTool.execute(args as { query: string }, user),
 		);
 
 		return server;
-	}
-
-	/** task 1 段階の tool ハンドラ・スタブ。実装は task 5。 */
-	private notImplemented(tool: string) {
-		return {
-			isError: true,
-			content: [
-				{
-					type: 'text' as const,
-					text: `tool "${tool}" は未実装です（task 5 で実装予定）。`,
-				},
-			],
-		};
 	}
 }

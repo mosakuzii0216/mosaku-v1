@@ -7,6 +7,7 @@ export type FeatureArea =
 	| 'invitation'
 	| 'dashboard'
 	| 'system'
+	| 'mcp'
 	| 'unknown';
 
 export interface StandardTags {
@@ -37,6 +38,10 @@ const FEATURE_AREA_PREFIXES: ReadonlyArray<readonly [string, FeatureArea]> = [
 	['/dashboard', 'dashboard'],
 	['/health', 'system'],
 	['/system', 'system'],
+	['/mcp', 'mcp'],
+	['/oauth', 'mcp'],
+	['/.well-known/oauth-protected-resource', 'mcp'],
+	['/.well-known/oauth-authorization-server', 'mcp'],
 ];
 
 // 公開メモ読み取り経路（GET /memos/public/:token）のトークンは「秘密値」かつ「1件ごとに別ラベル化する
