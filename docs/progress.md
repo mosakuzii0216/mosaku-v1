@@ -32,6 +32,44 @@
 
 ---
 
+## 2026-06-18（Phase 1 ドッグフーディング中 / オンボーディング・自動保存・パスワードリセット・OAuth durability 確定 + MCP / PWA E2E 完了）
+
+### 今週やったこと（6/11 エントリ以降）
+
+- **`onboarding-experience` 完了 → `implementation-validated`**
+  - 残っていたフロント UI（テーマ選択 → ようこそ NB → サンプルメモ）と統合テストを完成させ、6 月計画の「オンボーディング改善」本体を着地
+- **`notebook-autosave` 完了 → `implementation-validated`**
+  - NotebookEditor に MemoEditor 同等の debounce 自動保存を実装。入力保持・タブ切替時のタイマー混入防止までテストで固定
+- **`password-reset-email` 完了 → `implementation-validated`**
+  - Resend ラッパの `MailModule` / `MailService`、`PasswordResetService` + `/reset-password/*` エンドポイント、フロントのリセット確定画面 + API クライアントを実装。設定・エラーコード基盤も追加
+- **`mcp-endpoint` 完了 → implementation-complete**
+  - MCP エンドポイントを実装。OAuth を完全実装（スキーマ・認可・tool・観測性）し、フィーチャーフラグで安全に隔離。ブレストから要件 → 設計 → タスク → 実装まで一気通貫
+- **`pwa-e2e-greenup` 完了 → `completed`**
+  - PWA E2E を緑化。env 欠落（白画面）・login 401 / register 429 の seed・レート制限を解消し、再接続 sync とヘルパーを統一して全 5 スペック緑を確認
+- **`oauth-session-durability` 完了 → `implementation-validated`**
+  - X OAuth が両フロー（既存ログイン / 招待登録）とも未成立だった設計矛盾を是正。`express-session`（MemoryStore）を `cookie-session`（署名付き Cookie）に置換して多インスタンス耐性を確保し、X を passport 一本化（controller の二重 state 誤認・ダミー PKCE を撤廃、register-start guard + ExceptionFilter で招待コードを session 往復）。全 13 タスク完了・X 関連 180 テスト含む backend 全 803 テスト緑で validate 済み
+- **`ai-billing-foundation` 起票 → 中止・削除**
+  - 課金基盤を要件（R1–R10）・設計準備まで進めたが中止。代わりに**課金モデル v2** を `monetization.md` に正典化し、招待無料枠（COMP）の確定仕様も追記
+- **perf**: メモ一覧ホットパスに複合インデックスを追加
+- **fix**: アクセストークン期限切れ時の先回りリフレッシュ、テーマエフェクト統合テストの flaky 解消
+- **chore/docs**: `/commit-split` コマンド追加、所有権チェックのメソッド名を `validateOwnership` に統一
+
+### 来週の予定
+
+- **モバイル操作感の実機確認・改善**（6 月計画の最後の未着手 ⬜。スマホで全画面を触って摩擦起票）
+- **`oauth-session-durability` の Cloud Run 実機検証**（別インスタンス到達・secure/SameSite Cookie 送出を本番相当で確認 / `SESSION_SECRET` 全インスタンス同一の運用不変則チェック）
+- 余裕があれば 7 月前倒しタスク（content JSONB 移行・テーマ追加）の下調べ
+
+### ブロッカー・懸念
+
+- なし。`oauth-session-durability` はユニット/統合レベルでは validate 済み。残るは Cloud Run 実機での多インスタンス耐性・Cookie 属性の最終確認（E2E/Manual レッグ）のみ
+
+### メモ
+
+- 今週の主要前進: spec を **5 本確定**（onboarding / notebook-autosave / password-reset-email / pwa-e2e-greenup / oauth-session-durability）+ mcp-endpoint 実装完了
+- ai-billing-foundation は「spec 化せず steering 正典化で吸収」という判断。基盤先行 → 別 spec の招待特典構想と整合
+- 6 月計画の残 ⬜ は「モバイル実機確認」のみ。友人公開（6 月末）品質に向けて順調
+
 ## 2026-06-11（Phase 1 ドッグフーディング中 / ダッシュボード・表示モード・フィードバック永続化を確定 + オンボーディング着手）
 
 ### 今週やったこと（6/08 エントリ以降）

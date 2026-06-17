@@ -1,7 +1,7 @@
 # Mosaku プロジェクト計画（2026年3月〜12月）
 
 作成日: 2026-03-14
-最終更新: 2026-06-11
+最終更新: 2026-06-18
 
 ---
 
@@ -213,7 +213,7 @@
 | 摩擦UX修正（スマホヘッダー / 新規メモblank / テーマ全体反映） | 今日対応済み（Fix1〜4）                                             | ✅   |
 | テーマ作成（+5テーマ、計15）                                  | 5h                                                                  | ✅   |
 | **アプリ内フィードバック機能**                                | フォーム → Slack 通知。cc-sdd spec: `in-app-feedback`。2〜3h        | ✅   |
-| **オンボーディング改善**                                      | 初回ログイン後の空画面を改善。最初のメモ作成を促すガイダンス。1〜2h | ⬜   |
+| **オンボーディング改善**                                      | 初回ログイン後の空画面を改善。最初のメモ作成を促すガイダンス。1〜2h | ✅   |
 | **モバイル操作感の実機確認・改善**                            | スマホで全画面を実際に触り、問題を摩擦として起票。2h                | ⬜   |
 | **レートリミット見直し**                                      | 認証系エンドポイントが友人10〜20人規模で問題ないか確認・調整。0.5h  | ✅   |
 | 摩擦Top1〜3を実装（cc-sddで）                                 | 8h（フィードバック機能の工数を充当）                                | ⬜   |
@@ -227,15 +227,20 @@
 
 #### 6月 追加（計画外 / 摩擦駆動 spec・ダッシュボード系）
 
-| spec / タスク             | 内容                                                                                                   | 状況                          |
-| ------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------- |
-| `feedback-db-persistence` | フィードバックを `feedbacks` テーブルへ永続化（Slack=必須レッグ / DB=補助レッグの named outcome 並列） | ✅ `implementation-validated` |
-| `memo-display-mode`       | リードオンリー全画面フォーカス表示（FocusMemoOverlay / ESC・背景・✕ で終了 / テーマ継承）              | ✅ `implementation-validated` |
-| `home-dashboard`          | ホーム（ランチャー＋ダッシュボード）。最近メモ・今週件数・書いた日カレンダー・NB 一覧・今日のお題      | ✅ `implementation-validated` |
-| `onboarding-experience`   | 初回ログイン体験（テーマ選択→ようこそ NB→サンプルメモ）。BE / ストア / API クライアント完了            | 🔄 implementing（9/18）       |
-| `notebook-autosave`       | NotebookEditor に MemoEditor 同等の debounce 自動保存を導入                                            | 🔄 design（仕様策定中）       |
+| spec / タスク              | 内容                                                                                                   | 状況                          |
+| -------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------- |
+| `feedback-db-persistence`  | フィードバックを `feedbacks` テーブルへ永続化（Slack=必須レッグ / DB=補助レッグの named outcome 並列） | ✅ `implementation-validated` |
+| `memo-display-mode`        | リードオンリー全画面フォーカス表示（FocusMemoOverlay / ESC・背景・✕ で終了 / テーマ継承）              | ✅ `implementation-validated` |
+| `home-dashboard`           | ホーム（ランチャー＋ダッシュボード）。最近メモ・今週件数・書いた日カレンダー・NB 一覧・今日のお題      | ✅ `implementation-validated` |
+| `onboarding-experience`    | 初回ログイン体験（テーマ選択→ようこそ NB→サンプルメモ）。BE / フロント UI / テスト完了                 | ✅ `implementation-validated` |
+| `notebook-autosave`        | NotebookEditor に MemoEditor 同等の debounce 自動保存を導入                                            | ✅ `implementation-validated` |
+| `password-reset-email`     | Resend ラッパ MailModule + PasswordResetService + `/reset-password/*` + フロント確定画面               | ✅ `implementation-validated` |
+| `mcp-endpoint`             | MCP エンドポイント（OAuth 完全実装・スキーマ / 認可 / tool / 観測性・フィーチャーフラグ）              | ✅ implementation-complete    |
+| `pwa-e2e-greenup`          | PWA E2E 緑化（env 欠落解消・再接続 sync・ヘルパー統一・seed 修正で全 5 スペック緑）                    | ✅ `completed`                |
+| `oauth-session-durability` | express-session → cookie-session 置換 + X OAuth を passport 一本化（両フロー成立・多インスタンス耐性） | ✅ `implementation-validated` |
+| `ai-billing-foundation`    | 課金基盤 spec。要件 / 設計準備まで進めるも中止・削除（課金モデル v2 を steering に正典化して吸収）     | ⛔ 中止                       |
 
-> `onboarding-experience` は上表「オンボーディング改善」の cc-sdd 実装本体。残りフロント実装・テスト完了で同行を ✅ に更新する。
+> `onboarding-experience` は上表「オンボーディング改善」の cc-sdd 実装本体。フロント UI・テストまで完了し ✅ に更新済み。
 
 **エディタ強化・情報整理の摩擦候補（memo-app-spec より）**
 
