@@ -350,6 +350,44 @@ describe('NotebookEditor - 新規作成の自動保存と編集モード内部�
 		// autosave 成功後もフォーム入力は保持される
 		expect(nameInput.value).toBe('My Draft Title');
 	});
+
+	it('新規作成→編集モード昇格（isCreate→notebookId 遷移）で、保存往復中に打った文字が巻き戻らない', async () => {
+		// create のレスポンスは "te" まで（往復中にユーザーは "test" まで打ち進める）
+		const createdNb = buildNotebook({ id: 'nb-promote', name: 'te', content: '' });
+		createMutateAsync.mockResolvedValue(createdNb);
+		// 昇格後に useNotebook(id) が返す stale な値（サーバーは "te" のまま）
+		mockNotebookMap['nb-promote'] = createdNb;
+
+		const Wrapper = createWrapper();
+		const { rerender } = render(<NotebookEditor isCreate />, { wrapper: Wrapper });
+
+		const nameInput = screen.getByPlaceholderText('ノートブック名を入力') as HTMLInputElement;
+
+		// "te" まで打って debounce 発火 → create 確定（昇格マーカーがセットされる）
+		await act(async () => {
+			fireEvent.change(nameInput, { target: { value: 'te' } });
+		});
+		await act(async () => {
+			vi.advanceTimersByTime(DEBOUNCE_MS + 50);
+		});
+		await act(async () => {
+			await Promise.resolve();
+		});
+		expect(createMutateAsync).toHaveBeenCalledTimes(1);
+
+		// 往復中にさらに打ち進めて "test" に
+		await act(async () => {
+			fireEvent.change(nameInput, { target: { value: 'test' } });
+		});
+		expect(nameInput.value).toBe('test');
+
+		// 親が edit モードへ昇格させ、notebookId 付きで再レンダー（stale な "te" が返る）
+		rerender(<NotebookEditor notebookId="nb-promote" />);
+
+		// バグ: 昇格時の再同期で setName("te") が走り "test" が "te" に巻き戻る。
+		// 期待: 自分が作ったノートへの昇格中はローカル入力を維持する。
+		expect(nameInput.value).toBe('test');
+	});
 });
 
 describe('NotebookEditor - 編集対象切替の再同期 ref ガード', () => {

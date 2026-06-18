@@ -87,6 +87,9 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 		const nb = await createNotebook.mutateAsync(payload);
 		queryClient.setQueryData(queryKeys.notebooks.detail(nb.id), nb);
 		await reflectTags(nb.id);
+		// 昇格先（create→edit）の再同期で、サーバーが返した値がタイピング中の
+		// ローカル入力を上書きしないよう、同期済みマーカーを先に立てる。
+		syncedNotebookIdRef.current = nb.id;
 		setSelectedNotebookId(nb.id);
 		setCurrentView('edit');
 	}, [
@@ -140,7 +143,15 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 			return;
 		}
 		if (!notebookId || !editingNotebook) return;
-		if (syncedNotebookIdRef.current === notebookId) return; // 同一 id の再フェッチは無視
+		if (syncedNotebookIdRef.current === notebookId) {
+			// 同一 id の再フェッチ、または create→edit 昇格直後。
+			// ローカル入力を真実として維持し、サーバー値では上書きしない。
+			// ただしローカルがサーバーより先行していれば、その差分を保存し直す。
+			if ((editingNotebook.name ?? '') !== name || (editingNotebook.content ?? '') !== content) {
+				scheduleAutoSave();
+			}
+			return;
+		}
 		cancelDebounce();
 		setName(editingNotebook.name ?? '');
 		setContent(editingNotebook.content ?? '');
@@ -156,6 +167,10 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 				setOriginalTagIds(ids);
 			})
 			.catch((e) => logger.error('failed to load notebook tags', e));
+		// name/content/scheduleAutoSave は意図的に依存から除外する。
+		// これらを deps に含めるとキー入力のたびに再同期ロジックが走ってしまう。
+		// 末尾差分の flush は最新値を closure 経由で参照すれば十分。
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [notebookId, isCreate, editingNotebook, cancelDebounce]);
 
 	// 変更検知（タグ差分を含む）
