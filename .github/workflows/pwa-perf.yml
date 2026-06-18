@@ -256,3 +256,29 @@ jobs:
           name: playwright-report
           path: frontend/playwright-report
           retention-days: 7
+
+  # ===========================================================================
+  # Job 3: Slack通知（ソフトゲート）
+  # ===========================================================================
+  # main への push で perf / E2E が失敗したら Slack に通知する。
+  # デプロイ自体はブロックしない（速度優先）が、本番に出た後でも E2E の
+  # 失敗に必ず気づけるようにするための「ソフトゲート」。
+  # PR では通知しない（main push 時のみ＝リリース確認のタイミング）。
+  # ===========================================================================
+  notify:
+    name: Slack Notification (soft gate)
+    needs: [perf, e2e]
+    if: always() && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    steps:
+      # perf / e2e のどちらかが失敗したときだけ Slack に飛ばす
+      - name: Slack通知（失敗時のみ）
+        if: env.SLACK_WEBHOOK_URL != '' && (needs.perf.result != 'success' || needs.e2e.result != 'success')
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: ':warning: PWA perf/E2E が失敗しました（デプロイはブロックされません）。本番動作を確認してください。'
+          fields: repo,message,commit,author,workflow
