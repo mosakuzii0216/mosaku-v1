@@ -38,7 +38,9 @@ interface McpSession {
 	mcpAuthorizeParams?: McpAuthorizeParams;
 }
 
-type McpSessionRequest = ExpressRequest & { session: ExpressRequest['session'] & McpSession };
+export type McpSessionRequest = ExpressRequest & {
+	session: NonNullable<ExpressRequest['session']> & McpSession;
+};
 
 const ALLOWED_SOCIAL_PROVIDERS = ['google', 'github', 'line'] as const;
 

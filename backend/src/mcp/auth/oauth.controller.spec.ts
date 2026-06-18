@@ -4,6 +4,7 @@ import { OAuthController } from './oauth.controller';
 import { McpOAuthService } from './mcp-oauth.service';
 import { ConfigService } from '../../config/config.service';
 import { McpFeatureFlagGuard } from '../mcp-feature-flag.guard';
+import type { McpSessionRequest } from './oauth.controller';
 
 const BACKEND_URL = 'https://api.example.com';
 const MCP_URL = `${BACKEND_URL}/mcp`;
@@ -35,7 +36,7 @@ function makeMockReq(sessionOverrides: Record<string, unknown> = {}) {
 		session: { ...sessionOverrides },
 		query: {},
 		body: {},
-	} as unknown as import('express').Request;
+	} as unknown as McpSessionRequest;
 }
 
 describe('OAuthController', () => {
