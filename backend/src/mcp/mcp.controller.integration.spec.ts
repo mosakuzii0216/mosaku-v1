@@ -7,6 +7,10 @@ import { MCP_TOOL_NAMES } from './mcp.constants';
 import { McpBearerGuard } from './auth/mcp-bearer.guard';
 import { PrismaService } from '../prisma/prisma.service';
 
+// 本物の ConfigService.jwtSecret は JWT_SECRET 未設定だと throw する。
+// CI のユニットテストジョブには JWT_SECRET が無いため、e2e spec と同じく hermetic に設定する。
+process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'test-jwt-secret-mcp';
+
 /**
  * MCP Streamable HTTP 入口（McpController + McpServerService）の疎通テスト。
  * task 1.2（transport 結線・flag gating）と task 1.3（initialize / tools/list / 未知メソッド）を担保する。

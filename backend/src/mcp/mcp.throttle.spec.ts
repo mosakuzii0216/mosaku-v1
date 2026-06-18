@@ -9,6 +9,10 @@ import { McpBearerGuard } from './auth/mcp-bearer.guard';
 import { THROTTLE_CONFIG } from '../config/auth-constants';
 import { PrismaService } from '../prisma/prisma.service';
 
+// 本物の ConfigService.jwtSecret は JWT_SECRET 未設定だと throw する。
+// CI のユニットテストジョブには JWT_SECRET が無いため、e2e spec と同じく hermetic に設定する。
+process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'test-jwt-secret-mcp';
+
 /**
  * Task 6.1: MCP レート制限のユニット / 統合テスト。
  *
