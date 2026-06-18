@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useCreateMemo, useUpdateMemo, useDeleteMemo } from '../../hooks/useMemoQueries';
 import { useNotebooks } from '../../hooks/useNotebookQueries';
 import { useTagQueries } from '../../hooks/useTagQueries';
@@ -48,6 +48,11 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 
 	const [hasChanges, setHasChanges] = useState(false);
 
+	// create 成功で自分が作ったメモへ昇格（create→edit）する際、その ID を覚えておく。
+	// 昇格時の state 再同期で、サーバーが返した古いタイトル/本文がタイピング中の
+	// ローカル入力を上書きして消すのを防ぐためのマーカー。
+	const pendingCreatedIdRef = useRef<string | null>(null);
+
 	// 最終保存時刻。初期値は既存メモの updatedAt、自動/手動保存成功時に現在時刻へ更新。
 	const [lastSavedAt, setLastSavedAt] = useState<Date | null>(
 		memo?.updatedAt ? new Date(memo.updatedAt) : null,
@@ -80,6 +85,9 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 					},
 				);
 			});
+
+			// 昇格先の memo を再同期 effect が上書きしないようマーカーを立てる
+			pendingCreatedIdRef.current = result.id;
 
 			// 新規作成後にタグを割り当て
 			if (selectedTagIds.length > 0) {
@@ -179,13 +187,26 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 			setHasChanges(false);
 			setLastSavedAt(null);
 		} else if (memo) {
-			setTitle(memo.title || '');
-			setContent(memo.content || '');
-			setSelectedTagIds(memo.memoTags?.map((mt) => mt.tag.id) || []);
-			setSelectedNotebookId(memo.notebookId || '');
-			setStoreNotebookId(memo.notebookId || null);
-			setHasChanges(false);
-			setLastSavedAt(memo.updatedAt ? new Date(memo.updatedAt) : null);
+			if (pendingCreatedIdRef.current === memo.id) {
+				// 直前にアタシ自身が作成したメモへの昇格（create→edit）。
+				// サーバーが返した値でローカル入力を上書きすると、保存往復中に打った
+				// 文字（"test" が "te" に巻き戻る等）が消える。ローカルを真実として維持する。
+				pendingCreatedIdRef.current = null;
+				setStoreNotebookId(memo.notebookId || null);
+				setLastSavedAt(memo.updatedAt ? new Date(memo.updatedAt) : new Date());
+				// 昇格中にローカルがサーバーより先行していれば、その差分を保存し直す。
+				if ((memo.title || '') !== title || (memo.content || '') !== content) {
+					scheduleAutoSave();
+				}
+			} else {
+				setTitle(memo.title || '');
+				setContent(memo.content || '');
+				setSelectedTagIds(memo.memoTags?.map((mt) => mt.tag.id) || []);
+				setSelectedNotebookId(memo.notebookId || '');
+				setStoreNotebookId(memo.notebookId || null);
+				setHasChanges(false);
+				setLastSavedAt(memo.updatedAt ? new Date(memo.updatedAt) : null);
+			}
 		}
 		// memo の中身ではなく id の切り替えだけを依存にする。
 		// eslint-disable-next-line react-hooks/exhaustive-deps

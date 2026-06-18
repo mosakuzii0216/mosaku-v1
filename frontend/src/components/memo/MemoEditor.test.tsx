@@ -128,6 +128,42 @@ describe('MemoEditor - 自動保存中の入力保持', () => {
 		expect(titleInput.value).toBe('Hello World');
 	});
 
+	it('新規作成→編集モード昇格時に、保存往復中に打った文字が巻き戻らない', async () => {
+		const Wrapper = createWrapper();
+		const createdId = 'created-1';
+		// create のレスポンスは "te" まで（往復中にユーザーは "test" まで打ち進める）
+		createMutate.mockImplementation(
+			(_payload: unknown, opts: { onSuccess: (memo: Memo) => void }) => {
+				opts.onSuccess(buildMemo({ id: createdId, title: 'te', content: '' }));
+			},
+		);
+
+		const { rerender } = render(<MemoEditor isCreate />, { wrapper: Wrapper });
+		const titleInput = screen.getByPlaceholderText('タイトル') as HTMLInputElement;
+
+		// "te" まで打って手動保存 → create 確定（昇格マーカーがセットされる）
+		act(() => {
+			fireEvent.change(titleInput, { target: { value: 'te' } });
+		});
+		await act(async () => {
+			fireEvent.click(screen.getByText('保存'));
+		});
+		expect(createMutate).toHaveBeenCalled();
+
+		// 往復中にさらに打ち進めて "test" に
+		act(() => {
+			fireEvent.change(titleInput, { target: { value: 'test' } });
+		});
+		expect(titleInput.value).toBe('test');
+
+		// 親が create 結果（stale な "te"）を memo prop として渡し、edit モードへ昇格
+		rerender(<MemoEditor memo={buildMemo({ id: createdId, title: 'te', content: '' })} />);
+
+		// バグ: 昇格時の state 再同期で setTitle("te") が走り "test" が "te" に巻き戻る。
+		// 期待: 自分が作ったメモへの昇格中はローカル入力を維持する。
+		expect(titleInput.value).toBe('test');
+	});
+
 	it('別の id の memo に切り替わった場合は、新しい memo の内容で state が更新される', () => {
 		const Wrapper = createWrapper();
 		const memoA = buildMemo({ id: 'memo-a', title: 'A title', content: '<p>A</p>' });
