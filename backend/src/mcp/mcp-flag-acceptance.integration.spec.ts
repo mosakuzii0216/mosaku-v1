@@ -11,6 +11,7 @@ import { McpRefreshTokenStore } from './auth/refresh-token.store';
 import { ConfigService } from '../config/config.service';
 import { MemoService } from '../memo/memo.service';
 import { NotebookService } from '../notebook/notebook.service';
+import { PrismaService } from '../prisma/prisma.service';
 import * as features from '../config/features.config';
 
 /**
@@ -75,6 +76,8 @@ describe('MCP Feature Flag Acceptance (Task 7.3)', () => {
 			.useValue(mockMemoService)
 			.overrideProvider(NotebookService)
 			.useValue(mockNotebookService)
+			.overrideProvider(PrismaService)
+			.useValue({})
 			.compile();
 
 		app = moduleRef.createNestApplication();

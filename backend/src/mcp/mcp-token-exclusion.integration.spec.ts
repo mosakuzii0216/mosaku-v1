@@ -21,6 +21,7 @@ import * as features from '../config/features.config';
 import { McpModule } from './mcp.module';
 import { MemoService } from '../memo/memo.service';
 import { NotebookService } from '../notebook/notebook.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 /**
  * Task 7.2: 既存無影響・トークン相互排他・提供形態の回帰テスト。
@@ -82,6 +83,8 @@ describe('MCP Token Mutual Exclusion (Task 7.2)', () => {
 			.useValue(mockMemoService)
 			.overrideProvider(NotebookService)
 			.useValue(mockNotebookService)
+			.overrideProvider(PrismaService)
+			.useValue({})
 			.compile();
 
 		app = moduleRef.createNestApplication();

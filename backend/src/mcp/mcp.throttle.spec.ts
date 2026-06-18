@@ -7,6 +7,7 @@ import { McpModule } from './mcp.module';
 import * as features from '../config/features.config';
 import { McpBearerGuard } from './auth/mcp-bearer.guard';
 import { THROTTLE_CONFIG } from '../config/auth-constants';
+import { PrismaService } from '../prisma/prisma.service';
 
 /**
  * Task 6.1: MCP レート制限のユニット / 統合テスト。
@@ -79,6 +80,8 @@ describe('MCP Throttle (Task 6.1)', () => {
 			})
 				.overrideGuard(McpBearerGuard)
 				.useValue(alwaysPassGuard)
+				.overrideProvider(PrismaService)
+				.useValue({})
 				.compile();
 			app = moduleRef.createNestApplication();
 			await app.init();

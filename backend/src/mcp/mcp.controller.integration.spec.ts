@@ -5,6 +5,7 @@ import { McpModule } from './mcp.module';
 import * as features from '../config/features.config';
 import { MCP_TOOL_NAMES } from './mcp.constants';
 import { McpBearerGuard } from './auth/mcp-bearer.guard';
+import { PrismaService } from '../prisma/prisma.service';
 
 /**
  * MCP Streamable HTTP 入口（McpController + McpServerService）の疎通テスト。
@@ -41,6 +42,8 @@ describe('McpController (integration)', () => {
 		})
 			.overrideGuard(McpBearerGuard)
 			.useValue(alwaysPassGuard)
+			.overrideProvider(PrismaService)
+			.useValue({})
 			.compile();
 		app = moduleRef.createNestApplication();
 		await app.init();
