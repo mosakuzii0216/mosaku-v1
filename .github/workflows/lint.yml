@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Setup Node.js (root)
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -21,10 +21,6 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install workspaces (root)
         run: npm ci
-      - name: Setup Node.js for frontend
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
 
       - name: Prettier format check
         run: npm run format:check
@@ -44,7 +40,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Setup Node.js (root)
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -52,10 +48,6 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install workspaces (root)
         run: npm ci
-      - name: Setup Node.js for backend
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
 
       - name: Prettier format check
         run: npm run format:check
