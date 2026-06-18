@@ -701,8 +701,8 @@ export class AuthController {
 	): Promise<void> {
 		try {
 			const ctx = this.extractRequestContext(req);
-			// cookie-session は req.session を Record<string, unknown> として扱う。
-			// express-session の型定義と不一致のため unknown を経由してキャスト。
+			// cookie-session は req.session を CookieSessionObject | null | undefined として型付けする。
+			// 任意キー（xInvitationCode）を読むため unknown を経由して Record にキャストする。
 			const session = req.session as unknown as Record<string, unknown> | undefined;
 			const invitationCode = session?.xInvitationCode;
 			let result: OAuthLoginResult;
