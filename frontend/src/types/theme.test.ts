@@ -12,6 +12,16 @@ describe('ThemeEffectKey', () => {
 		const key: ThemeEffectKey = 'umi';
 		expect(key).toBe('umi');
 	});
+
+	it('should accept "yoru" as a valid effect key', () => {
+		const key: ThemeEffectKey = 'yoru';
+		expect(key).toBe('yoru');
+	});
+
+	it('should accept "asa" as a valid effect key', () => {
+		const key: ThemeEffectKey = 'asa';
+		expect(key).toBe('asa');
+	});
 });
 
 describe('ThemeMetadata', () => {
@@ -40,6 +50,11 @@ describe('getEffectKey', () => {
 	it('should return "umi" when metadata contains effectKey "umi"', () => {
 		const theme = { metadata: { effectKey: 'umi' } } as Theme;
 		expect(getEffectKey(theme)).toBe('umi');
+	});
+
+	it('should return "yoru"/"asa" when metadata contains those effectKeys', () => {
+		expect(getEffectKey({ metadata: { effectKey: 'yoru' } } as Theme)).toBe('yoru');
+		expect(getEffectKey({ metadata: { effectKey: 'asa' } } as Theme)).toBe('asa');
 	});
 
 	it('should return undefined when metadata has no effectKey', () => {

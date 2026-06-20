@@ -1,6 +1,6 @@
-const VALID_EFFECT_KEYS = new Set<string>(['mori', 'umi']);
+const VALID_EFFECT_KEYS = new Set<string>(['mori', 'umi', 'yoru', 'asa']);
 
-export type ThemeEffectKey = 'mori' | 'umi';
+export type ThemeEffectKey = 'mori' | 'umi' | 'yoru' | 'asa';
 
 export interface ThemeMetadata {
 	effectKey?: ThemeEffectKey;

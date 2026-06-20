@@ -12,6 +12,16 @@ describe('themeEffectRegistry', () => {
 		expect(themeEffectRegistry.umi).toBeDefined();
 		expect(typeof themeEffectRegistry.umi).toBe('function');
 	});
+
+	it('should have an entry for "yoru"', () => {
+		expect(themeEffectRegistry.yoru).toBeDefined();
+		expect(typeof themeEffectRegistry.yoru).toBe('function');
+	});
+
+	it('should have an entry for "asa"', () => {
+		expect(themeEffectRegistry.asa).toBeDefined();
+		expect(typeof themeEffectRegistry.asa).toBe('function');
+	});
 });
 
 describe('resolveThemeEffect', () => {
@@ -23,6 +33,18 @@ describe('resolveThemeEffect', () => {
 
 	it('should return a loader for "umi"', () => {
 		const loader = resolveThemeEffect('umi');
+		expect(loader).not.toBeNull();
+		expect(typeof loader).toBe('function');
+	});
+
+	it('should return a loader for "yoru"', () => {
+		const loader = resolveThemeEffect('yoru');
+		expect(loader).not.toBeNull();
+		expect(typeof loader).toBe('function');
+	});
+
+	it('should return a loader for "asa"', () => {
+		const loader = resolveThemeEffect('asa');
 		expect(loader).not.toBeNull();
 		expect(typeof loader).toBe('function');
 	});
