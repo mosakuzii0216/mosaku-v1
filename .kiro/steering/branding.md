@@ -44,7 +44,7 @@ Mosaku（模索）の世界観の最上流。テーマ・LP・コピーは全て
 5. 可読性（暗テーマ＝明文字＋`text-shadow` / 明テーマ＝濃文字）
 6. `prefers-reduced-motion` で動き停止・パレットは維持
 
-代表テーマ `mori` のみ JS エフェクト基盤（`metadata.effectKey` + `ParticleCanvas`）を持つ。umi / yoru / asa への展開は phase-2（未着手）。
+JS エフェクト基盤（`metadata.effectKey` + canvas、選択時のみ動的ロード）: `mori`=舞う粒子（葉・マウス追従）、`umi`=海底から昇るアンビエント泡（2026-06-20 追加）。自動停止は共通（reduced-motion / エディタフォーカス / タブ非表示 / 3秒アイドル）。`yoru` / `asa` は未着手 — ただし `yoru` は「墨夜の静寂・余白主役」の世界観上、CSS のまま（粒子追加は矛盾）が妥当。
 
 ---
 
