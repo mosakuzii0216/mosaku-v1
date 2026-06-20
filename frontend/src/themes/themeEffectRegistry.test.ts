@@ -7,11 +7,22 @@ describe('themeEffectRegistry', () => {
 		expect(themeEffectRegistry.mori).toBeDefined();
 		expect(typeof themeEffectRegistry.mori).toBe('function');
 	});
+
+	it('should have an entry for "umi"', () => {
+		expect(themeEffectRegistry.umi).toBeDefined();
+		expect(typeof themeEffectRegistry.umi).toBe('function');
+	});
 });
 
 describe('resolveThemeEffect', () => {
 	it('should return a loader for "mori"', () => {
 		const loader = resolveThemeEffect('mori');
+		expect(loader).not.toBeNull();
+		expect(typeof loader).toBe('function');
+	});
+
+	it('should return a loader for "umi"', () => {
+		const loader = resolveThemeEffect('umi');
 		expect(loader).not.toBeNull();
 		expect(typeof loader).toBe('function');
 	});

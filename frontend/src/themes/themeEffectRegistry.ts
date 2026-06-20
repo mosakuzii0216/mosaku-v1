@@ -5,6 +5,7 @@ export type EffectLoader = () => Promise<{ default: ComponentType }>;
 
 export const themeEffectRegistry: Record<ThemeEffectKey, EffectLoader> = {
 	mori: () => import('../components/effects/mori/MoriEffectLayer'),
+	umi: () => import('../components/effects/umi/UmiEffectLayer'),
 };
 
 export function resolveThemeEffect(key: ThemeEffectKey | undefined): EffectLoader | null {
