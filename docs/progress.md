@@ -32,6 +32,22 @@
 
 ---
 
+## 2026-06-20（onboarding 削除の本番検証 / PWA キャッシュ起因の特定）
+
+### 今週やったこと
+
+- **`onboarding-removal` の本番デプロイ検証完了**
+  - `api.mosaku.jp` で `POST /onboarding/*` が 404（`GET /auth/google` は 302 でサーバー稼働）を確認し、onboarding が本番からも削除デプロイ済みであることを確定。`HEAD = origin/main = dc54b5c`
+  - 「本番でまだ onboarding が出る」事象の真因は PWA Service Worker の `prompt` 方式によるキャッシュ残り（削除作業の漏れではない）と判明。検証証跡を `.kiro/specs/onboarding-removal/verification.md` に記録
+- **SW 更新方式の改善方針を決定（spec 化は次段）**
+  - SW 更新を `registerType: 'autoUpdate'` 化してキャッシュ残り問題を構造的に解消する方針を決定。編集中の自動保存保全・SW の一世代遅れ特性を論点として整理。spec（`pwa-sw-auto-update`）の起票は次段
+
+### ブロッカー・懸念
+
+- なし。SW 更新方式の改善は spec 化（`pwa-sw-auto-update`）を次段で実施予定
+
+---
+
 ## 2026-06-18（Phase 1 ドッグフーディング中 / オンボーディング・自動保存・パスワードリセット・OAuth durability 確定 + MCP / PWA E2E 完了）
 
 ### 今週やったこと（6/11 エントリ以降）
