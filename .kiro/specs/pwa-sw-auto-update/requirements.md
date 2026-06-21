@@ -27,7 +27,7 @@ PWAのService Worker更新方式を現行の registerType: 'prompt' から 'auto
 
 ## Introduction
 
-本機能は PWA の Service Worker 更新方式を現行の `registerType: 'prompt'` から `'autoUpdate'` へ変更し、削除済みフロントエンドバンドルが SW キャッシュに滞留する問題を構造的に解消する（詳細な背景は上記 Project Description を参照）。ユーザー操作ゼロでの最新化を実現しつつ、編集中の未保存データ（`useAutoSave`）の保護と、既存キャッシュ戦略・テーマエフェクト挙動への副作用ゼロを保証する。
+本機能は PWA の Service Worker 更新方式を現行の `registerType: 'prompt'`＋更新トースト方式から、prompt を維持したままガード通過時に `updateServiceWorker(true)` を自動駆動する **autoUpdate 相当**方式へ変更し、削除済みフロントエンドバンドルが SW キャッシュに滞留する問題を構造的に解消する（詳細な背景は上記 Project Description を参照）。ユーザー操作ゼロでの最新化を実現しつつ、編集中の未保存データ（`useAutoSave`）の保護と、既存キャッシュ戦略・テーマエフェクト挙動への副作用ゼロを保証する。
 
 **本要件で確定した方針:**
 
@@ -44,7 +44,7 @@ PWAのService Worker更新方式を現行の registerType: 'prompt' から 'auto
 
 #### Acceptance Criteria
 
-1. The PWA更新機構 shall Service Worker を `registerType: 'autoUpdate'`（`skipWaiting` + `clientsClaim` 相当）で登録する。
+1. The PWA更新機構 shall ユーザー操作ゼロで最新化される autoUpdate **相当**の更新挙動を提供する。実装機構は `registerType: 'prompt'` を維持し、ガード通過時に `updateServiceWorker(true)` を自動呼出して skipWaiting＋reload を発火する（素の `registerType: 'autoUpdate'` 登録は、コード分割下の遅延リロードでチャンク 404 を招くため採らない。根拠は design / research.md）。
 2. When 新しいバージョンの Service Worker がインストール可能になったとき, the PWA更新機構 shall ユーザーの確認操作を求めずに新 Service Worker を有効化する。
 3. When 新 Service Worker がページの制御を獲得したとき, the PWA更新機構 shall アプリケーションを自動的に再読み込みし最新バンドルを適用する。
 4. The PWA更新機構 shall 更新の適用にあたり、確認ダイアログ・更新ボタン等のユーザー操作を一切要求しない。
@@ -63,6 +63,7 @@ PWAのService Worker更新方式を現行の registerType: 'prompt' から 'auto
 4. When 保留条件が解消し自動保存が確定状態（`saved` / `offline-saved` / `idle`）になったとき, the PWA更新機構 shall 保留していた再読み込みを実行する。
 5. The PWA更新機構 shall 再読み込みの実行前に、進行中の自動保存処理の完了を待機する。
 6. The 自動保存機構 shall 本機能の導入後も、編集停止後の自動保存を従来どおりの挙動で継続する。
+7. While `error` 状態によりリロードが保留され続けているとき, the PWA更新機構 shall 当該保留を無制限に放置せず、bounded escape（継続保留の検知と、未保存内容の退避または settled 化を促す導線）を備える。
 
 ### Requirement 3: 旧 Service Worker クライアントの移行と最新性の維持
 
@@ -70,7 +71,7 @@ PWAのService Worker更新方式を現行の registerType: 'prompt' から 'auto
 
 #### Acceptance Criteria
 
-1. The PWA更新機構 shall 既存 prompt 版 SW クライアントを、最大 1 回の更新サイクル（ユーザーによる更新操作または全タブクローズ後の再訪）を経て autoUpdate 方式へ移行させる。
+1. The PWA更新機構 shall 既存 prompt 版 SW クライアントを、最大 1 回の更新サイクル（ユーザーによる更新操作または全タブクローズ後の再訪）を経て autoUpdate 相当方式（prompt 維持＋ガード付き自動駆動）へ移行させる。
 2. While アプリが起動して稼働している間, the PWA更新機構 shall 一定間隔で新バージョンの有無を確認する（定期更新チェック）。
 3. When ユーザーがアプリを再フォーカスまたは再訪問したとき, the PWA更新機構 shall 新バージョンの有無を確認する。
 4. The PWA更新機構 shall SW の一世代遅れ特性に起因する初回移行の制約を、専用 kill-switch を導入せず許容する。
@@ -98,6 +99,7 @@ PWAのService Worker更新方式を現行の registerType: 'prompt' から 'auto
 2. The フロントエンド shall 手動更新導線（`needRefresh` 監視および `update()` ボタン）を撤去する。
 3. While 自動更新が正常に機能している間, the フロントエンド shall 更新に関するユーザー向け通知を表示しない。
 4. The フロントエンド shall `SwUpdatePrompt` 撤去に伴い、関連するマウント箇所（`App.tsx`）および不要になったコード・テストを除去する。
+5. The フロントエンド shall `useSwRegistration` の公開インターフェースのうち、自動更新化により参照されなくなる面（`offlineReady` / `dismiss`）を併せて整理・除去し、未使用コードを残さない。
 
 ### Requirement 6: 削除済みバンドルの再出現防止と検証
 
@@ -106,5 +108,7 @@ PWAのService Worker更新方式を現行の registerType: 'prompt' から 'auto
 #### Acceptance Criteria
 
 1. When 新バンドルがデプロイされ自動更新が完了したとき, the PWA更新機構 shall 削除済み UI（onboarding 等）を含む旧バンドルを表示しない。
-2. The フロントエンド shall 自動更新の中核挙動（`autoUpdate` 登録・未保存ガード・通知撤去）を検証する自動テストを備える。
+2. The フロントエンド shall 自動更新の中核挙動（autoUpdate 相当登録〔`registerType: 'prompt'` 維持＋ガード付き自動駆動〕・未保存ガード・通知撤去）を検証する自動テストを備える。
 3. The 検証プロセス shall 本番環境で自動更新により最新バンドルが適用されることを確認し、結果を記録する。
+4. The フロントエンド shall 旧 prompt 方式を前提とする既存テスト（`pwa-config.test.ts` の `registerType` アサート、`useSwRegistration.test.ts` の `needRefresh` / `update` / `dismiss` ケース）を、新方式（autoUpdate 相当〔prompt 維持＋ガード付き自動駆動〕・未保存ガード・通知撤去）に整合するよう改修または撤去する。
+5. The PWA更新機構 shall 自動更新の保留・不発（`error` 等による恒久保留、`updateServiceWorker(true)` 後に `controllerchange` が発火しない不発）を本番で観測可能にする（Sentry breadcrumb／カウンタ等）。
