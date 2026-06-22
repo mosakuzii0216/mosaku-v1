@@ -53,8 +53,29 @@ export class ConfigService {
 	}
 
 	/**
+	 * PKCE verifier の AES-256-GCM 暗号鍵（32 byte）。
+	 * `OAUTH_STATE_ENC_KEY`（hex 64 字）を decode・長さ検証し、未設定/不正は fail-fast。
+	 * `invitationStateSecret`（HMAC 鍵）とは用途分離して保持する。
+	 */
+	get oauthStateEncKey(): Buffer {
+		const hex = process.env.OAUTH_STATE_ENC_KEY;
+		if (!hex) {
+			throw new Error(
+				'OAUTH_STATE_ENC_KEY is not configured. Please set OAUTH_STATE_ENC_KEY environment variable (e.g. `openssl rand -hex 32`).',
+			);
+		}
+		const key = Buffer.from(hex, 'hex');
+		if (key.length !== 32) {
+			throw new Error(
+				`OAUTH_STATE_ENC_KEY must be a 64-character hex string (32 bytes). Got ${key.length} bytes.`,
+			);
+		}
+		return key;
+	}
+
+	/**
 	 * 招待 OAuth フロー（state 引き継ぎ）の HMAC 署名鍵。
-	 * `JWT_SECRET` とは独立した鍵を要求し、`InvitationStateService` 専用に分離する。
+	 * `JWT_SECRET` とは独立した鍵を要求し、`OAuthStateService` 専用に分離する。
 	 * 未設定なら開発・本番を問わず fail-fast。
 	 */
 	get invitationStateSecret(): string {
@@ -364,11 +385,10 @@ export class ConfigService {
 	}
 
 	/**
-	 * Google・GitHub・LINE・Apple の認可エンドポイント URL を state 付きで組み立てる。
-	 * X は passport の PKCE/state 機構（`x.strategy.ts`）を使うため、
-	 * X の招待登録開始は `generateXRegisterStartUrl` を使用すること。
+	 * 5 社（Google・GitHub・LINE・Apple・X）の認可エンドポイント URL を state 付きで組み立てる。
+	 * X は `codeChallenge`（S256）必須。4 社は `codeChallenge` 不要（渡しても無視）。
 	 */
-	generateOAuthAuthorizationUrl(provider: string, state: string): string {
+	generateOAuthAuthorizationUrl(provider: string, state: string, codeChallenge?: string): string {
 		switch (provider) {
 			case 'google':
 				return this.buildOAuthAuthorizationUrl('https://accounts.google.com/o/oauth2/v2/auth', {
@@ -402,10 +422,22 @@ export class ConfigService {
 					scope: 'name email',
 					state,
 				});
-			case 'x':
-				throw new Error(
-					'X OAuth は passport PKCE/state 方式を使用します。招待登録は generateXRegisterStartUrl() を使用してください。',
-				);
+			case 'x': {
+				if (!codeChallenge) {
+					throw new Error(
+						'X OAuth requires codeChallenge (PKCE S256). Pass codeChallenge parameter.',
+					);
+				}
+				return this.buildOAuthAuthorizationUrl('https://twitter.com/i/oauth2/authorize', {
+					response_type: 'code',
+					client_id: this.xClientId ?? '',
+					redirect_uri: this.xRedirectUri,
+					scope: 'tweet.read users.read',
+					state,
+					code_challenge: codeChallenge,
+					code_challenge_method: 'S256',
+				});
+			}
 			default:
 				throw new Error(`Unsupported OAuth provider: ${provider}`);
 		}

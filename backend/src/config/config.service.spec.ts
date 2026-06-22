@@ -337,8 +337,65 @@ describe('ConfigService - LINE/Apple/X OAuth', () => {
 		});
 	});
 
-	describe('generateOAuthAuthorizationUrl - X case 撤去', () => {
-		it("'x' を渡すと Error を throw すること（ダミー PKCE 撤去）", () => {
+	// ─── OAUTH_STATE_ENC_KEY ──────────────────────────────────────────────
+	describe('oauthStateEncKey', () => {
+		it('OAUTH_STATE_ENC_KEY が有効な hex 64 字なら Buffer(32byte) を返すこと', () => {
+			process.env.OAUTH_STATE_ENC_KEY = 'a'.repeat(64);
+			const key = service.oauthStateEncKey;
+			expect(key).toBeInstanceOf(Buffer);
+			expect(key.length).toBe(32);
+		});
+
+		it('OAUTH_STATE_ENC_KEY が未設定の場合は fail-fast で例外を投げること', () => {
+			delete process.env.OAUTH_STATE_ENC_KEY;
+			expect(() => service.oauthStateEncKey).toThrow(/OAUTH_STATE_ENC_KEY/);
+		});
+
+		it('OAUTH_STATE_ENC_KEY が 64 字未満の場合は fail-fast で例外を投げること', () => {
+			process.env.OAUTH_STATE_ENC_KEY = 'a'.repeat(32);
+			expect(() => service.oauthStateEncKey).toThrow(/OAUTH_STATE_ENC_KEY/);
+		});
+
+		it('OAUTH_STATE_ENC_KEY が 64 字超の場合は fail-fast で例外を投げること', () => {
+			process.env.OAUTH_STATE_ENC_KEY = 'a'.repeat(66);
+			expect(() => service.oauthStateEncKey).toThrow(/OAUTH_STATE_ENC_KEY/);
+		});
+
+		it('INVITATION_STATE_SECRET とは独立した getter を介して取得されること（鍵分離）', () => {
+			process.env.OAUTH_STATE_ENC_KEY = 'b'.repeat(64);
+			process.env.INVITATION_STATE_SECRET = 'other-secret';
+			const encKey = service.oauthStateEncKey;
+			const hmacKey = service.invitationStateSecret;
+			expect(encKey).toBeInstanceOf(Buffer);
+			expect(hmacKey).toBe('other-secret');
+		});
+	});
+
+	// ─── generateOAuthAuthorizationUrl - X case ───────────────────────────
+	describe('generateOAuthAuthorizationUrl - X case', () => {
+		beforeEach(() => {
+			process.env.X_CLIENT_ID = 'x-client-id';
+			process.env.X_REDIRECT_URI = 'https://example.com/auth/x/callback';
+		});
+
+		it("'x' を渡すと code_challenge と code_challenge_method=S256 が載ること", () => {
+			const url = service.generateOAuthAuthorizationUrl('x', 'some.state', 'challenge_abc');
+			expect(url).toContain('code_challenge=challenge_abc');
+			expect(url).toContain('code_challenge_method=S256');
+		});
+
+		it("'x' URL に response_type=code, scope=tweet.read が含まれること", () => {
+			const url = service.generateOAuthAuthorizationUrl('x', 'some.state', 'challenge_xyz');
+			expect(url).toContain('response_type=code');
+			expect(url).toContain('tweet.read');
+		});
+
+		it("'x' URL に state が含まれること", () => {
+			const url = service.generateOAuthAuthorizationUrl('x', 'my.state', 'challenge_xyz');
+			expect(url).toContain('state=my.state');
+		});
+
+		it("codeChallenge なしで 'x' を渡すと例外を投げること", () => {
 			expect(() => service.generateOAuthAuthorizationUrl('x', 'some.state')).toThrow();
 		});
 	});
