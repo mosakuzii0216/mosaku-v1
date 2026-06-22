@@ -1,7 +1,7 @@
 # Mosaku プロジェクト計画（2026年3月〜12月）
 
 作成日: 2026-03-14
-最終更新: 2026-06-18
+最終更新: 2026-06-22
 
 ---
 
@@ -238,6 +238,8 @@
 | `mcp-endpoint`             | MCP エンドポイント（OAuth 完全実装・スキーマ / 認可 / tool / 観測性・フィーチャーフラグ）              | ✅ implementation-complete    |
 | `pwa-e2e-greenup`          | PWA E2E 緑化（env 欠落解消・再接続 sync・ヘルパー統一・seed 修正で全 5 スペック緑）                    | ✅ `completed`                |
 | `oauth-session-durability` | express-session → cookie-session 置換 + X OAuth を passport 一本化（両フロー成立・多インスタンス耐性） | ✅ `implementation-validated` |
+| `onboarding-removal`       | オンボーディング機能を BE / フロントから全面削除（本番デプロイ検証済み）                               | ✅ `implemented`              |
+| `pwa-sw-auto-update`       | SW 更新を prompt 据え置き＋ガード付き自動駆動化。保存状態ガード / one-shot / 通知撤去で完全自動更新    | ✅ `implementation-validated` |
 | `ai-billing-foundation`    | 課金基盤 spec。要件 / 設計準備まで進めるも中止・削除（課金モデル v2 を steering に正典化して吸収）     | ⛔ 中止                       |
 
 > `onboarding-experience` は上表「オンボーディング改善」の cc-sdd 実装本体。フロント UI・テストまで完了し ✅ に更新済み。

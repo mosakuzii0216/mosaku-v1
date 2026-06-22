@@ -32,6 +32,33 @@
 
 ---
 
+## 2026-06-22（Phase 1 ドッグフーディング中 / PWA SW 自動更新を起票〜実装完了）
+
+### 今週やったこと
+
+- **`pwa-sw-auto-update` を起票 → 実装完了 → `implementation-validated` まで一気通貫**
+  - 6/20 に方針決定した「SW 更新方式の構造的改善」を spec 化。ギャップ分析・リサーチ・要件・設計・タスクを承認まで進め、全 6 タスクを TDD で完走
+  - 採用機構は **M1（`registerType:'prompt'` を据え置いたままガード通過時に自動駆動）＋ Option C（関心分離ハイブリッド）**。workbox 設定は無改修で保全契約を維持
+  - 主要コンポーネント: 保存状態の横断レジストリ `useSaveStatusStore`（新設）、`useAutoSave` に publish 副作用を追加、`useSwRegistration` を `updateAvailable`/`applyUpdate` + 定期/フォーカス probe へ再設計、ガード付きオーケストレータ `useGuardedAutoUpdate`（one-shot + bounded escape + 不発検知）、headless マウント点 `SwAutoUpdater`（新設）
+  - 更新トースト `SwUpdatePrompt` をファイルごと撤去し、更新に関するユーザー通知・操作要求をゼロに。完全自動更新へ移行
+  - 観測性は Sentry breadcrumb / カウンタ（`feature_area:'system'`）で自動リロード起動・保留継続・不発を本番観測可能に
+
+### 来週の予定
+
+- `pwa-sw-auto-update` の **本番検証**（デプロイ後に新版 SW の waiting 到達・非フォーカス時の自動リロード・onboarding 削除済み UI 非表示を DevTools で確認）
+- 次 spec 候補: `oauth-stateless-unification`（5 社統一・session 撤去）/ 招待特典 spec の起票検討
+
+### ブロッカー・懸念
+
+- なし。`pwa-sw-auto-update` はローカル検証 GO、本番検証のみデプロイ待ち
+
+### メモ
+
+- 6/21 以降のコミット 9 件（feat 5 / docs 4）。spec ライフサイクルを 1 週間で initialized → validated まで通した
+- これで 6/20 の「PWA キャッシュ残りで旧バンドルが出る」問題が構造的に解消される見込み
+
+---
+
 ## 2026-06-20（onboarding 削除の本番検証 / PWA キャッシュ起因の特定）
 
 ### 今週やったこと
