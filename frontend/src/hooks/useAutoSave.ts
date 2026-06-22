@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useId } from 'react';
+import { useSaveStatusStore } from '../stores/useSaveStatusStore';
 
 export type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'offline-saved';
 
@@ -47,6 +48,14 @@ export function useAutoSave({
 	debounceMs = 200,
 }: UseAutoSaveOptions): UseAutoSaveReturn {
 	const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+
+	const instanceId = useId();
+	const setStatus = useSaveStatusStore((s) => s.setStatus);
+	const clearStatus = useSaveStatusStore((s) => s.clearStatus);
+	useEffect(() => {
+		setStatus(instanceId, saveStatus);
+	}, [instanceId, saveStatus, setStatus]);
+	useEffect(() => () => clearStatus(instanceId), [instanceId, clearStatus]);
 
 	const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 

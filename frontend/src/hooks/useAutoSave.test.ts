@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { OFFLINE_SAVED_SIGNAL, useAutoSave, type OfflineSavedSignal } from './useAutoSave';
+import { useSaveStatusStore } from '../stores/useSaveStatusStore';
 
 describe('useAutoSave', () => {
 	beforeEach(() => {
@@ -244,5 +245,111 @@ describe('useAutoSave', () => {
 			vi.advanceTimersByTime(1);
 		});
 		expect(onSave).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe('useAutoSave — useSaveStatusStore へのステータス publish', () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+		useSaveStatusStore.setState({ statuses: {} });
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+		vi.clearAllMocks();
+		useSaveStatusStore.setState({ statuses: {} });
+	});
+
+	it('マウント後にストアへ idle ステータスを publish する', async () => {
+		const onSave = vi.fn().mockResolvedValue(undefined);
+		await act(async () => {
+			renderHook(() => useAutoSave({ canSave: true, isSaving: false, onSave }));
+		});
+
+		const statuses = Object.values(useSaveStatusStore.getState().statuses);
+		expect(statuses).toHaveLength(1);
+		expect(statuses[0]).toBe('idle');
+	});
+
+	it('scheduleAutoSave() 後に pending がストアへ反映される', async () => {
+		const onSave = vi.fn().mockResolvedValue(undefined);
+		const { result } = renderHook(() => useAutoSave({ canSave: true, isSaving: false, onSave }));
+
+		act(() => {
+			result.current.scheduleAutoSave();
+		});
+
+		const statuses = Object.values(useSaveStatusStore.getState().statuses);
+		expect(statuses).toHaveLength(1);
+		expect(statuses[0]).toBe('pending');
+	});
+
+	it('onSave 成功後に saved がストアへ反映される', async () => {
+		const onSave = vi.fn().mockResolvedValue(undefined);
+		const { result } = renderHook(() => useAutoSave({ canSave: true, isSaving: false, onSave }));
+
+		act(() => {
+			result.current.scheduleAutoSave();
+		});
+
+		await act(async () => {
+			vi.advanceTimersByTime(200);
+		});
+
+		const statuses = Object.values(useSaveStatusStore.getState().statuses);
+		expect(statuses).toHaveLength(1);
+		expect(statuses[0]).toBe('saved');
+	});
+
+	it('onSave 失敗後に error がストアへ反映される', async () => {
+		const onSave = vi.fn().mockRejectedValue(new Error('network error'));
+		const { result } = renderHook(() => useAutoSave({ canSave: true, isSaving: false, onSave }));
+
+		act(() => {
+			result.current.scheduleAutoSave();
+		});
+
+		await act(async () => {
+			vi.advanceTimersByTime(200);
+		});
+
+		const statuses = Object.values(useSaveStatusStore.getState().statuses);
+		expect(statuses).toHaveLength(1);
+		expect(statuses[0]).toBe('error');
+	});
+
+	it('アンマウント後にストアのエントリが削除される（stale blocking 残存なし）', async () => {
+		const onSave = vi.fn().mockResolvedValue(undefined);
+		const { unmount } = await act(async () =>
+			renderHook(() => useAutoSave({ canSave: true, isSaving: false, onSave })),
+		);
+
+		expect(Object.values(useSaveStatusStore.getState().statuses)).toHaveLength(1);
+
+		unmount();
+
+		expect(Object.values(useSaveStatusStore.getState().statuses)).toHaveLength(0);
+	});
+
+	it('複数インスタンスが独立したキーでストアを更新する', async () => {
+		const onSave1 = vi.fn().mockResolvedValue(undefined);
+		const onSave2 = vi.fn().mockResolvedValue(undefined);
+
+		const { result: result1 } = renderHook(() =>
+			useAutoSave({ canSave: true, isSaving: false, onSave: onSave1 }),
+		);
+		const { result: result2 } = renderHook(() =>
+			useAutoSave({ canSave: true, isSaving: false, onSave: onSave2 }),
+		);
+
+		act(() => {
+			result1.current.scheduleAutoSave();
+		});
+
+		const statuses = Object.values(useSaveStatusStore.getState().statuses);
+		expect(statuses).toHaveLength(2);
+		expect(statuses).toContain('pending');
+		expect(statuses).toContain('idle');
+		void result2;
 	});
 });
