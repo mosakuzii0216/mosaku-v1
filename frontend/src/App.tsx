@@ -13,7 +13,7 @@ import PasswordReset from './components/auth/PasswordReset';
 import PasswordResetConfirm from './components/auth/PasswordResetConfirm';
 import InvitePage from './components/auth/InvitePage';
 import InvitationManager from './components/admin/InvitationManager';
-import { SwUpdatePrompt } from './components/pwa/SwUpdatePrompt';
+import { SwAutoUpdater } from './components/pwa/SwAutoUpdater';
 import { SyncToast } from './components/ui/SyncToast';
 import { SettingsPage } from './components/settings/SettingsPage';
 import { PublicMemoPage } from './components/public/PublicMemoPage';
@@ -63,7 +63,7 @@ function FeedbackWrapper() {
 function App() {
 	return (
 		<QueryClientProvider client={queryClient}>
-			<SwUpdatePrompt />
+			<SwAutoUpdater />
 			<SyncToast />
 			<AuthProvider>
 				<FeedbackWrapper />
