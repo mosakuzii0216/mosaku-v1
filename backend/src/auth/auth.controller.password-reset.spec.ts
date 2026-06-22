@@ -8,7 +8,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtTokenService } from './jwt.service';
 import { RefreshTokenService } from './refresh-token.service';
 import { RefreshCookieHelper } from './refresh-cookie.helper';
-import { InvitationStateService } from './invitation-state.service';
+import { OAuthStateService } from './oauth-state.service';
+import { XOAuthService } from './x-oauth.service';
 import { PasswordResetService } from './password-reset.service';
 import { AppException } from '../common/exceptions/app.exception';
 import { ERROR_CODES } from '../common/exceptions';
@@ -52,9 +53,15 @@ describe('AuthController - パスワードリセットエンドポイント', ()
 		isAdminEmail: jest.fn().mockReturnValue(false),
 	};
 
-	const mockInvitationStateService = {
+	const mockOAuthStateService = {
 		issueState: jest.fn(),
 		verifyState: jest.fn(),
+		tryExtractInvitationCode: jest.fn().mockReturnValue(null),
+	};
+
+	const mockXOAuthService = {
+		isConfigured: jest.fn().mockReturnValue(false),
+		exchangeCodeForUser: jest.fn(),
 	};
 
 	const mockInvitationService = { verifyInvitation: jest.fn(), useInvitation: jest.fn() };
@@ -85,7 +92,8 @@ describe('AuthController - パスワードリセットエンドポイント', ()
 				{ provide: JwtTokenService, useValue: mockJwtTokenService },
 				{ provide: RefreshTokenService, useValue: mockRefreshTokenService },
 				{ provide: RefreshCookieHelper, useValue: mockRefreshCookieHelper },
-				{ provide: InvitationStateService, useValue: mockInvitationStateService },
+				{ provide: OAuthStateService, useValue: mockOAuthStateService },
+				{ provide: XOAuthService, useValue: mockXOAuthService },
 				{ provide: PasswordResetService, useValue: mockPasswordResetService },
 			],
 		}).compile();

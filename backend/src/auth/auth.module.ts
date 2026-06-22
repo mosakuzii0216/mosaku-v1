@@ -25,6 +25,9 @@ import { RefreshCsrfGuard } from './refresh-csrf.guard';
 import { RefreshTokenRepository } from './refresh-token.repository';
 import { RefreshTokenService } from './refresh-token.service';
 import { InvitationStateService } from './invitation-state.service';
+import { OAuthStateService } from './oauth-state.service';
+import { OAuthStateCrypto } from './oauth-state-crypto.service';
+import { XOAuthService } from './x-oauth.service';
 import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { CommonModule } from '../common/common.module';
@@ -76,6 +79,9 @@ import { MailService } from '../mail/mail.service';
 		RefreshTokenService,
 		InvitationService,
 		InvitationStateService,
+		OAuthStateCrypto,
+		OAuthStateService,
+		XOAuthService,
 		{ provide: CODE_GENERATOR, useClass: NanoidCodeGenerator },
 		{ provide: QUOTA_POLICY, useClass: PrismaQuotaPolicy },
 		PasswordResetService,
@@ -86,6 +92,8 @@ import { MailService } from '../mail/mail.service';
 		JwtTokenService,
 		OAuthService,
 		InvitationStateService,
+		OAuthStateService,
+		XOAuthService,
 		JwtAuthGuard,
 		GoogleAuthGuard,
 		GitHubAuthGuard,

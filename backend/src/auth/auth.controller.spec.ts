@@ -8,13 +8,21 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtTokenService } from './jwt.service';
 import { RefreshTokenService } from './refresh-token.service';
 import { RefreshCookieHelper } from './refresh-cookie.helper';
-import { InvitationStateService } from './invitation-state.service';
+import { OAuthStateService } from './oauth-state.service';
+import { XOAuthService } from './x-oauth.service';
 import { PasswordResetService } from './password-reset.service';
 import * as Sentry from '@sentry/nestjs';
 import { AppException } from '../common/exceptions';
 
 jest.mock('@sentry/nestjs', () => ({
 	captureMessage: jest.fn(),
+}));
+
+jest.mock('./pkce-codec', () => ({
+	generatePkcePair: jest.fn().mockReturnValue({
+		verifier: 'mock-verifier-43chars-aaaaaaaaaaaaaaaaaaaa',
+		challenge: 'mock-challenge-43chars-aaaaaaaaaaaaaaaaaaaaa',
+	}),
 }));
 
 describe('AuthController - LINE / Apple / X エンドポイント', () => {
@@ -46,19 +54,20 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 			.mockImplementation(
 				(provider: string, state: string) => `https://oauth.example.com/${provider}?state=${state}`,
 			),
-		generateXRegisterStartUrl: jest
-			.fn()
-			.mockImplementation(
-				(state: string) => `http://localhost:3000/auth/x/register-start?state=${state}`,
-			),
 		frontendUrl: 'http://localhost',
 		adminEmail: undefined,
 		isAdminEmail: jest.fn().mockReturnValue(false),
 	};
 
-	const mockInvitationStateService = {
+	const mockOAuthStateService = {
 		issueState: jest.fn().mockReturnValue('signed.state'),
 		verifyState: jest.fn(),
+		tryExtractInvitationCode: jest.fn().mockReturnValue(null),
+	};
+
+	const mockXOAuthService = {
+		isConfigured: jest.fn().mockReturnValue(true),
+		exchangeCodeForUser: jest.fn(),
 	};
 
 	const mockAuthService = {
@@ -102,7 +111,13 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 	};
 
 	const buildReq = () => ({ ip: '10.0.0.1', headers: { 'user-agent': 'jest' } });
-	const buildRes = () => ({ cookie: jest.fn(), redirect: jest.fn(), clearCookie: jest.fn() });
+	const buildRes = () => ({
+		cookie: jest.fn(),
+		redirect: jest.fn(),
+		clearCookie: jest.fn(),
+		status: jest.fn().mockReturnThis(),
+		json: jest.fn(),
+	});
 
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
@@ -116,14 +131,19 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 				{ provide: JwtTokenService, useValue: mockJwtTokenService },
 				{ provide: RefreshTokenService, useValue: mockRefreshTokenService },
 				{ provide: RefreshCookieHelper, useValue: mockRefreshCookieHelper },
-				{ provide: InvitationStateService, useValue: mockInvitationStateService },
+				{ provide: OAuthStateService, useValue: mockOAuthStateService },
+				{ provide: XOAuthService, useValue: mockXOAuthService },
 				{ provide: PasswordResetService, useValue: mockPasswordResetService },
 			],
 		}).compile();
 
 		controller = module.get<AuthController>(AuthController);
 		jest.clearAllMocks();
-		mockInvitationStateService.issueState.mockReturnValue('signed.state');
+		mockOAuthStateService.issueState.mockReturnValue('signed.state');
+		mockXOAuthService.isConfigured.mockReturnValue(true);
+		mockConfigService.generateOAuthAuthorizationUrl.mockImplementation(
+			(provider: string, state: string) => `https://oauth.example.com/${provider}?state=${state}`,
+		);
 	});
 
 	it('AuthController が定義されていること', () => {
@@ -286,7 +306,7 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 		});
 	});
 
-	// ─── コールバック（Apple POST / X GET）───────────────────────────────────
+	// ─── コールバック（Apple POST）──────────────────────────────────────────
 
 	describe('appleAuthCallback (POST /auth/apple/callback)', () => {
 		it('Apple認証成功時にCookie設定とsuccessリダイレクトを行うこと', async () => {
@@ -304,9 +324,7 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 			expect(mockRes.redirect).toHaveBeenCalledWith('http://localhost?token=xxx');
 		});
 
-		it('新フローでは appleLogin が失敗しても invitation_required リダイレクトせず auth_failed へ', async () => {
-			// Task 9.1: 旧 INVITATION_REQUIRED 経路を撤去したため、admin 以外の新規ユーザーが
-			// state なしで callback に到達した場合は ADMIN_EMAIL_REQUIRED で弾かれ auth_failed リダイレクトとなる。
+		it('appleLogin が失敗した場合は auth_failed リダイレクトへ', async () => {
 			mockOAuthService.appleLogin.mockRejectedValue(new AppException('AUTHZ005', 400));
 			const mockReq = {
 				ip: '10.0.0.1',
@@ -330,37 +348,6 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 		});
 	});
 
-	describe('xAuthCallback (GET /auth/x/callback)', () => {
-		it('X認証成功時にCookie設定とsuccessリダイレクトを行うこと', async () => {
-			mockOAuthService.xLogin.mockResolvedValue(oauthLoginResult);
-			const mockReq = {
-				ip: '10.0.0.1',
-				headers: { 'user-agent': 'jest' },
-				user: { xId: '1234', name: 'X User' },
-			};
-			const mockRes = { redirect: jest.fn() };
-
-			await controller.xAuthCallback(mockReq as never, mockRes as never);
-
-			expect(mockRefreshCookieHelper.setRefreshCookie).toHaveBeenCalled();
-			expect(mockRes.redirect).toHaveBeenCalledWith('http://localhost?token=xxx');
-		});
-
-		it('認証エラー時にauth_failedリダイレクトURLへリダイレクトすること', async () => {
-			mockOAuthService.xLogin.mockRejectedValue(new Error('OAuth error'));
-			const mockReq = {
-				ip: '10.0.0.1',
-				headers: { 'user-agent': 'jest' },
-				user: { xId: '1234', name: 'X User' },
-			};
-			const mockRes = { redirect: jest.fn() };
-
-			await controller.xAuthCallback(mockReq as never, mockRes as never);
-
-			expect(mockRes.redirect).toHaveBeenCalledWith('http://localhost?error=auth_failed');
-		});
-	});
-
 	// ─── Task 9.1: 旧 register-with-invitation 5 本の削除確認 ──────────────
 
 	describe('旧 register-with-invitation ハンドラ削除', () => {
@@ -375,9 +362,7 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 		});
 	});
 
-	// ─── Task 5.3: POST /auth/oauth/:provider/start ─────────────────────────
-
-	// ─── Task 5.4: OAuth callback with state-verified register ──────────────
+	// ─── Google callback with state ─────────────────────────────────────────
 
 	describe('Google callback with state', () => {
 		const validState = 'valid.state';
@@ -387,7 +372,8 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 		});
 
 		it('state クエリありで verifyState 成功 → googleRegisterWithStateInvitation を呼び success redirect', async () => {
-			mockInvitationStateService.verifyState.mockReturnValue({
+			mockOAuthStateService.verifyState.mockReturnValue({
+				v: 1,
 				code: 'ABCD1234',
 				provider: 'google',
 				nonce: 'nonce',
@@ -404,7 +390,7 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 
 			await controller.googleAuthRedirect(req as never, res as never);
 
-			expect(mockInvitationStateService.verifyState).toHaveBeenCalledWith(validState, 'google');
+			expect(mockOAuthStateService.verifyState).toHaveBeenCalledWith(validState, 'google');
 			expect(mockOAuthService.googleRegisterWithStateInvitation).toHaveBeenCalledWith(
 				expect.objectContaining({ invitationCode: 'ABCD1234' }),
 			);
@@ -414,9 +400,10 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 		});
 
 		it('state あり verify 失敗 → invalid_state redirect + Sentry.captureMessage', async () => {
-			mockInvitationStateService.verifyState.mockImplementation(() => {
+			mockOAuthStateService.verifyState.mockImplementation(() => {
 				throw new AppException('INV001', 400);
 			});
+			mockOAuthStateService.tryExtractInvitationCode.mockReturnValue('');
 
 			const req = {
 				...buildReq(),
@@ -453,7 +440,7 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 
 			await controller.googleAuthRedirect(req as never, res as never);
 
-			expect(mockInvitationStateService.verifyState).not.toHaveBeenCalled();
+			expect(mockOAuthStateService.verifyState).not.toHaveBeenCalled();
 			expect(mockOAuthService.googleLogin).toHaveBeenCalled();
 			expect(res.redirect).toHaveBeenCalledWith('http://localhost?token=xxx');
 		});
@@ -461,7 +448,8 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 
 	describe('Apple callback with body.state', () => {
 		it('body.state が存在すれば appleRegisterWithStateInvitation 経路に進むこと', async () => {
-			mockInvitationStateService.verifyState.mockReturnValue({
+			mockOAuthStateService.verifyState.mockReturnValue({
+				v: 1,
 				code: 'CODE12345',
 				provider: 'apple',
 				nonce: 'nonce',
@@ -479,10 +467,7 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 
 			await controller.appleAuthCallback(req as never, res as never);
 
-			expect(mockInvitationStateService.verifyState).toHaveBeenCalledWith(
-				'apple.signed.state',
-				'apple',
-			);
+			expect(mockOAuthStateService.verifyState).toHaveBeenCalledWith('apple.signed.state', 'apple');
 			expect(mockOAuthService.appleRegisterWithStateInvitation).toHaveBeenCalled();
 			expect(res.redirect).toHaveBeenCalledWith('http://localhost?token=xxx');
 		});
@@ -493,7 +478,8 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 		['line', 'lineAuthCallback', 'lineRegisterWithStateInvitation', 'lineLogin'],
 	] as const)('%s callback with state', (provider, handler, stateMethod, loginMethod) => {
 		it('state あり成功時に *RegisterWithStateInvitation を呼び success redirect', async () => {
-			mockInvitationStateService.verifyState.mockReturnValue({
+			mockOAuthStateService.verifyState.mockReturnValue({
+				v: 1,
 				code: 'CODE12345',
 				provider,
 				nonce: 'nonce',
@@ -517,84 +503,159 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 				handler
 			](req, res);
 
-			expect(mockInvitationStateService.verifyState).toHaveBeenCalledWith('signed.state', provider);
+			expect(mockOAuthStateService.verifyState).toHaveBeenCalledWith('signed.state', provider);
 			expect(mockOAuthService[stateMethod]).toHaveBeenCalled();
 			expect(mockOAuthService[loginMethod]).not.toHaveBeenCalled();
 			expect(res.redirect).toHaveBeenCalledWith('http://localhost?token=xxx');
 		});
 	});
 
-	// ─── Task 2.2: X callback のセッション分岐（passport state を verifyState に渡さない）───
+	// ─── X コールバック（ステートレスフロー）────────────────────────────────
 
-	describe('xAuthCallback - セッション分岐（Task 2.2）', () => {
-		it('session.xInvitationCode あり → xRegisterWithStateInvitation を呼び invitationCode を削除すること', async () => {
-			mockOAuthService.xRegisterWithStateInvitation.mockResolvedValue(oauthLoginResult);
-			const session: Record<string, unknown> = { xInvitationCode: 'INV-CODE-123' };
-			const mockReq = {
+	describe('xAuthCallback - ステートレスフロー（Phase 2）', () => {
+		const VALID_STATE_PAYLOAD = {
+			v: 1 as const,
+			provider: 'x' as const,
+			nonce: 'abc',
+			iat: Date.now(),
+			verifier: 'plaintext-verifier-43chars-aaaaaaaaaaaaaaaaaaa',
+		};
+
+		beforeEach(() => {
+			(Sentry.captureMessage as jest.Mock).mockClear();
+		});
+
+		it('state + code → verifyState → exchangeCodeForUser → xLogin → success redirect', async () => {
+			mockOAuthStateService.verifyState.mockReturnValue(VALID_STATE_PAYLOAD);
+			mockXOAuthService.exchangeCodeForUser.mockResolvedValue({
+				xId: 'x-123',
+				name: 'X User',
+				accessToken: 'x-access-token',
+			});
+			mockOAuthService.xLogin.mockResolvedValue(oauthLoginResult);
+
+			const req = {
 				...buildReq(),
-				session,
-				user: { xId: 'x-1', name: 'X User' },
+				query: { state: 'valid.signed.state', code: 'auth-code' },
 			};
-			const mockRes = buildRes();
+			const res = buildRes();
 
-			await controller.xAuthCallback(mockReq as never, mockRes as never);
+			await controller.xAuthCallback(req as never, res as never);
 
-			// verifyState は呼ばれない（passport のランダム state を招待 state と誤認しない）
-			expect(mockInvitationStateService.verifyState).not.toHaveBeenCalled();
+			expect(mockOAuthStateService.verifyState).toHaveBeenCalledWith('valid.signed.state', 'x');
+			expect(mockXOAuthService.exchangeCodeForUser).toHaveBeenCalledWith({
+				code: 'auth-code',
+				verifier: 'plaintext-verifier-43chars-aaaaaaaaaaaaaaaaaaa',
+			});
+			expect(mockOAuthService.xLogin).toHaveBeenCalled();
+			expect(mockOAuthService.xRegisterWithStateInvitation).not.toHaveBeenCalled();
+			expect(mockRefreshCookieHelper.setRefreshCookie).toHaveBeenCalled();
+			expect(res.redirect).toHaveBeenCalledWith('http://localhost?token=xxx');
+		});
+
+		it('payload に code あり → xRegisterWithStateInvitation を呼ぶこと', async () => {
+			mockOAuthStateService.verifyState.mockReturnValue({
+				...VALID_STATE_PAYLOAD,
+				code: 'INV-CODE-123',
+			});
+			mockXOAuthService.exchangeCodeForUser.mockResolvedValue({
+				xId: 'x-123',
+				name: 'X User',
+				accessToken: 'x-tok',
+			});
+			mockOAuthService.xRegisterWithStateInvitation.mockResolvedValue(oauthLoginResult);
+
+			const req = {
+				...buildReq(),
+				query: { state: 'valid.signed.state', code: 'auth-code' },
+			};
+			const res = buildRes();
+
+			await controller.xAuthCallback(req as never, res as never);
+
 			expect(mockOAuthService.xRegisterWithStateInvitation).toHaveBeenCalledWith(
 				expect.objectContaining({ invitationCode: 'INV-CODE-123' }),
 			);
 			expect(mockOAuthService.xLogin).not.toHaveBeenCalled();
-			// 消費後に invitationCode は削除されること
-			expect(session.xInvitationCode).toBeUndefined();
-			expect(mockRefreshCookieHelper.setRefreshCookie).toHaveBeenCalled();
-			expect(mockRes.redirect).toHaveBeenCalledWith('http://localhost?token=xxx');
+			expect(res.redirect).toHaveBeenCalledWith('http://localhost?token=xxx');
 		});
 
-		it('session.xInvitationCode なし → xLogin を呼ぶこと（verifyState は不呼び出し）', async () => {
-			mockOAuthService.xLogin.mockResolvedValue(oauthLoginResult);
-			const mockReq = {
-				...buildReq(),
-				session: {},
-				user: { xId: 'x-1', name: 'X User' },
-			};
-			const mockRes = buildRes();
+		it('state クエリなし → auth_failed リダイレクト', async () => {
+			const req = { ...buildReq(), query: { code: 'auth-code' } };
+			const res = buildRes();
 
-			await controller.xAuthCallback(mockReq as never, mockRes as never);
+			await controller.xAuthCallback(req as never, res as never);
 
-			expect(mockInvitationStateService.verifyState).not.toHaveBeenCalled();
-			expect(mockOAuthService.xLogin).toHaveBeenCalled();
-			expect(mockOAuthService.xRegisterWithStateInvitation).not.toHaveBeenCalled();
-			expect(mockRes.redirect).toHaveBeenCalledWith('http://localhost?token=xxx');
+			expect(mockOAuthStateService.verifyState).not.toHaveBeenCalled();
+			expect(res.redirect).toHaveBeenCalledWith('http://localhost?error=auth_failed');
 		});
 
-		it('session なし → xLogin を呼ぶこと', async () => {
-			mockOAuthService.xLogin.mockResolvedValue(oauthLoginResult);
-			const mockReq = {
-				...buildReq(),
-				user: { xId: 'x-1', name: 'X User' },
-			};
-			const mockRes = buildRes();
+		it('code クエリなし → auth_failed リダイレクト', async () => {
+			const req = { ...buildReq(), query: { state: 'valid.state' } };
+			const res = buildRes();
 
-			await controller.xAuthCallback(mockReq as never, mockRes as never);
+			await controller.xAuthCallback(req as never, res as never);
 
-			expect(mockOAuthService.xLogin).toHaveBeenCalled();
-			expect(mockOAuthService.xRegisterWithStateInvitation).not.toHaveBeenCalled();
-			expect(mockRes.redirect).toHaveBeenCalledWith('http://localhost?token=xxx');
+			expect(res.redirect).toHaveBeenCalledWith('http://localhost?error=auth_failed');
 		});
 
-		it('xRegisterWithStateInvitation が失敗 → auth_failed リダイレクトすること', async () => {
-			mockOAuthService.xRegisterWithStateInvitation.mockRejectedValue(new Error('register error'));
-			const mockReq = {
-				...buildReq(),
-				session: { xInvitationCode: 'INV-CODE-123' },
-				user: { xId: 'x-1', name: 'X User' },
-			};
-			const mockRes = buildRes();
+		it('verifyState 失敗 + invitationCode 復号可 → invite ページへリダイレクト', async () => {
+			mockOAuthStateService.verifyState.mockImplementation(() => {
+				throw new AppException('INV001', 400);
+			});
+			mockOAuthStateService.tryExtractInvitationCode.mockReturnValue('INVITE-CODE');
 
-			await controller.xAuthCallback(mockReq as never, mockRes as never);
+			const req = { ...buildReq(), query: { state: 'tampered.state', code: 'c' } };
+			const res = buildRes();
 
-			expect(mockRes.redirect).toHaveBeenCalledWith('http://localhost?error=auth_failed');
+			await controller.xAuthCallback(req as never, res as never);
+
+			expect(res.redirect).toHaveBeenCalledWith(
+				'http://localhost/invite/INVITE-CODE?error=invalid_state',
+			);
+			expect(Sentry.captureMessage).toHaveBeenCalledWith(
+				'invitation_state_invalid',
+				expect.anything(),
+			);
+		});
+
+		it('verifyState 失敗 + invitationCode 復号不可 → auth_failed リダイレクト', async () => {
+			mockOAuthStateService.verifyState.mockImplementation(() => {
+				throw new AppException('INV001', 400);
+			});
+			mockOAuthStateService.tryExtractInvitationCode.mockReturnValue(null);
+
+			const req = { ...buildReq(), query: { state: 'tampered.state', code: 'c' } };
+			const res = buildRes();
+
+			await controller.xAuthCallback(req as never, res as never);
+
+			expect(res.redirect).toHaveBeenCalledWith('http://localhost?error=auth_failed');
+		});
+
+		it('exchangeCodeForUser 失敗 → auth_failed リダイレクト', async () => {
+			mockOAuthStateService.verifyState.mockReturnValue(VALID_STATE_PAYLOAD);
+			mockXOAuthService.exchangeCodeForUser.mockRejectedValue(new Error('token fetch failed'));
+
+			const req = { ...buildReq(), query: { state: 'valid.state', code: 'c' } };
+			const res = buildRes();
+
+			await controller.xAuthCallback(req as never, res as never);
+
+			expect(res.redirect).toHaveBeenCalledWith('http://localhost?error=auth_failed');
+		});
+
+		it('xLogin 失敗 → auth_failed リダイレクト', async () => {
+			mockOAuthStateService.verifyState.mockReturnValue(VALID_STATE_PAYLOAD);
+			mockXOAuthService.exchangeCodeForUser.mockResolvedValue({ xId: 'x-1', name: 'X' });
+			mockOAuthService.xLogin.mockRejectedValue(new Error('login failed'));
+
+			const req = { ...buildReq(), query: { state: 'valid.state', code: 'c' } };
+			const res = buildRes();
+
+			await controller.xAuthCallback(req as never, res as never);
+
+			expect(res.redirect).toHaveBeenCalledWith('http://localhost?error=auth_failed');
 		});
 	});
 
@@ -618,10 +679,11 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 		});
 	});
 
+	// ─── startOAuthRegistration ─────────────────────────────────────────────
+
 	describe('startOAuthRegistration', () => {
-		it('招待コード検証 → state 発行 → authorizationUrl を返すこと', async () => {
+		it('招待コード検証 → state 発行 → authorizationUrl を返すこと（google）', async () => {
 			mockInvitationService.verifyInvitation.mockResolvedValue({ code: 'ABCD1234' });
-			mockInvitationStateService.issueState.mockReturnValue('signed.state');
 
 			const result = await controller.startOAuthRegistration(
 				{ provider: 'google' },
@@ -629,7 +691,10 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 			);
 
 			expect(mockInvitationService.verifyInvitation).toHaveBeenCalledWith('ABCD1234');
-			expect(mockInvitationStateService.issueState).toHaveBeenCalledWith('ABCD1234', 'google');
+			expect(mockOAuthStateService.issueState).toHaveBeenCalledWith({
+				provider: 'google',
+				code: 'ABCD1234',
+			});
 			expect(mockConfigService.generateOAuthAuthorizationUrl).toHaveBeenCalledWith(
 				'google',
 				'signed.state',
@@ -645,8 +710,7 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 			await expect(
 				controller.startOAuthRegistration({ provider: 'google' }, { invitationCode: 'BADCODE12' }),
 			).rejects.toBeInstanceOf(AppException);
-			expect(mockInvitationStateService.issueState).not.toHaveBeenCalled();
-			expect(mockConfigService.generateOAuthAuthorizationUrl).not.toHaveBeenCalled();
+			expect(mockOAuthStateService.issueState).not.toHaveBeenCalled();
 		});
 
 		it.each(['google', 'github', 'line', 'apple'] as const)(
@@ -659,7 +723,10 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 					{ invitationCode: 'ABCD1234' },
 				);
 
-				expect(mockInvitationStateService.issueState).toHaveBeenCalledWith('ABCD1234', provider);
+				expect(mockOAuthStateService.issueState).toHaveBeenCalledWith({
+					provider,
+					code: 'ABCD1234',
+				});
 				expect(mockConfigService.generateOAuthAuthorizationUrl).toHaveBeenCalledWith(
 					provider,
 					'signed.state',
@@ -668,21 +735,28 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 			},
 		);
 
-		it('x プロバイダでは generateXRegisterStartUrl を呼び register-start URL を返すこと', async () => {
+		it('x プロバイダでは PKCE pair を生成して verifier を封緘・challenge を authorize URL に載せること', async () => {
 			mockInvitationService.verifyInvitation.mockResolvedValue({ code: 'ABCD1234' });
+			mockConfigService.generateOAuthAuthorizationUrl.mockReturnValue(
+				'https://twitter.com/i/oauth2/authorize?state=signed.state&code_challenge=mock-challenge',
+			);
 
 			const result = await controller.startOAuthRegistration(
 				{ provider: 'x' },
 				{ invitationCode: 'ABCD1234' },
 			);
 
-			expect(mockInvitationStateService.issueState).toHaveBeenCalledWith('ABCD1234', 'x');
-			expect(mockConfigService.generateXRegisterStartUrl).toHaveBeenCalledWith('signed.state');
-			expect(mockConfigService.generateOAuthAuthorizationUrl).not.toHaveBeenCalledWith(
+			expect(mockOAuthStateService.issueState).toHaveBeenCalledWith({
+				provider: 'x',
+				code: 'ABCD1234',
+				verifier: 'mock-verifier-43chars-aaaaaaaaaaaaaaaaaaaa',
+			});
+			expect(mockConfigService.generateOAuthAuthorizationUrl).toHaveBeenCalledWith(
 				'x',
-				expect.anything(),
+				'signed.state',
+				'mock-challenge-43chars-aaaaaaaaaaaaaaaaaaaaa',
 			);
-			expect(result.authorizationUrl).toContain('/auth/x/register-start');
+			expect(result.authorizationUrl).toContain('twitter.com');
 		});
 	});
 });

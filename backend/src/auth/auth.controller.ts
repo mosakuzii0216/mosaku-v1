@@ -38,7 +38,6 @@ import {
 	GitHubAuthGuard,
 	LineAuthGuard,
 	AppleAuthGuard,
-	XAuthGuard,
 } from './oauth-auth.guards';
 import { XRegisterStartGuard } from './x-register-start.guard';
 import { InvitationStateInvalidFilter } from './x-register-start.filter';
@@ -46,7 +45,9 @@ import { Public } from '../common/decorators/public.decorator';
 import { AuthService, type AuthLoginResult, type AuthRequestContext } from './auth.service';
 import { OAuthService, type OAuthLoginResult } from './oauth.service';
 import { InvitationService } from '../invitation/invitation.service';
-import { InvitationStateService } from './invitation-state.service';
+import { OAuthStateService, type OAuthStatePayload } from './oauth-state.service';
+import { XOAuthService } from './x-oauth.service';
+import { generatePkcePair } from './pkce-codec';
 import {
 	OAuthStartBodyDto,
 	OAuthStartParamsDto,
@@ -83,15 +84,17 @@ export class AuthController {
 		private readonly refreshTokenService: RefreshTokenService,
 		private readonly refreshCookieHelper: RefreshCookieHelper,
 		private readonly invitationService: InvitationService,
-		private readonly invitationStateService: InvitationStateService,
+		private readonly oauthStateService: OAuthStateService,
+		private readonly xOAuthService: XOAuthService,
 		private readonly passwordResetService: PasswordResetService,
 	) {
 		this.logger.setContext('AuthController');
 	}
 
 	/**
-	 * Task 5.3: 5 プロバイダ統一の OAuth 開始エンドポイント。
-	 * 招待コードを開始前に検証し、HMAC 署名 state を passport の state 機構の代わりに渡す。
+	 * 5 プロバイダ統一の OAuth 開始エンドポイント。
+	 * 招待コードを事前検証し、署名 state を発行してプロバイダへリダイレクトする URL を返す。
+	 * X は PKCE pair を生成して verifier を state に封緘し、4 社は従来どおり code のみ。
 	 */
 	@Public()
 	@Throttle({
@@ -105,17 +108,30 @@ export class AuthController {
 	): Promise<OAuthStartResponse> {
 		await this.invitationService.verifyInvitation(body.invitationCode);
 
-		const signedState = this.invitationStateService.issueState(
-			body.invitationCode,
-			params.provider,
-		);
+		let authorizationUrl: string;
 
-		// X は passport PKCE/state 方式のため、backend の register-start 経路 URL を返す（ダミー PKCE 撤去）。
-		// 他 4 社はステートレス HMAC 署名 state でプロバイダへ直接リダイレクト。
-		const authorizationUrl =
-			params.provider === 'x'
-				? this.configService.generateXRegisterStartUrl(signedState)
-				: this.configService.generateOAuthAuthorizationUrl(params.provider, signedState);
+		if (params.provider === 'x') {
+			const pkce = generatePkcePair();
+			const signedState = this.oauthStateService.issueState({
+				provider: 'x',
+				code: body.invitationCode,
+				verifier: pkce.verifier,
+			});
+			authorizationUrl = this.configService.generateOAuthAuthorizationUrl(
+				'x',
+				signedState,
+				pkce.challenge,
+			);
+		} else {
+			const signedState = this.oauthStateService.issueState({
+				provider: params.provider,
+				code: body.invitationCode,
+			});
+			authorizationUrl = this.configService.generateOAuthAuthorizationUrl(
+				params.provider,
+				signedState,
+			);
+		}
 
 		return { authorizationUrl };
 	}
@@ -134,11 +150,75 @@ export class AuthController {
 	}
 
 	/**
-	 * Task 5.4: state 検証込みの OAuth コールバック dispatcher。
-	 * state が `req.query.state` または `req.body.state` に存在すれば
-	 * `InvitationStateService.verifyState` を実行し、成功時のみ
-	 * `*RegisterWithStateInvitation` 経路で新規登録 + 自動ログインを行う。
-	 * state なしは既存ログイン経路（旧フロー）にそのまま委譲する。
+	 * 共通コールバック finalize。`payload.code` の有無で招待登録/ログインを選び、
+	 * refresh cookie 設定・MCP ハンドオフ・成功 redirect を行う（プロバイダ分岐なし）。
+	 * MCP ハンドオフのみ session を読み書きするが、OAuth 認証成立はその成否に非依存。
+	 */
+	private async finalizeOAuthCallback<TUser extends OAuthStrategyUser>(
+		payload: OAuthStatePayload | null,
+		user: TUser,
+		loginFn: (user: TUser, ctx: AuthRequestContext) => Promise<OAuthLoginResult>,
+		registerFn: (
+			args: OAuthRegisterArgs<TUser> & { fallbackEmail?: string },
+		) => Promise<OAuthLoginResult>,
+		req: ExpressRequest,
+		res: ExpressResponse,
+		providerName: string,
+	): Promise<void> {
+		try {
+			const ctx = this.extractRequestContext(req);
+			let result: OAuthLoginResult;
+
+			if (payload?.code) {
+				result = await registerFn({ oauthUser: user, invitationCode: payload.code, ctx });
+			} else {
+				result = await loginFn(user, ctx);
+			}
+
+			this.refreshCookieHelper.setRefreshCookie(
+				res,
+				result.refresh.plainRt,
+				result.refresh.expiresAt,
+			);
+
+			// MCP 認可フロー専用ハンドオフ（OAuth 認証成立はこの session 書き込みに非依存）
+			const mcpSession = req.session as unknown as
+				| { mcpAuthorizeReturn?: string; mcpUserId?: string }
+				| undefined;
+			if (mcpSession?.mcpAuthorizeReturn) {
+				const returnTo = mcpSession.mcpAuthorizeReturn;
+				mcpSession.mcpAuthorizeReturn = undefined;
+				mcpSession.mcpUserId = result.user.id;
+				return res.redirect(returnTo);
+			}
+
+			return res.redirect(
+				this.configService.generateSuccessRedirectUrl(result.accessToken, result.user),
+			);
+		} catch (error: unknown) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			const failureCode = error instanceof AppException ? error.code : 'unknown';
+			this.logger.error(`${providerName} auth error: ${errorMessage}`);
+
+			try {
+				Sentry.captureMessage('oauth_callback_failed', {
+					level: 'warning',
+					tags: { feature_area: 'invitation', invitation_failure_code: failureCode },
+				});
+			} catch (sentryError) {
+				this.logger.warn(
+					`Sentry captureMessage failed: ${sentryError instanceof Error ? sentryError.message : String(sentryError)}`,
+				);
+			}
+
+			return res.redirect(this.configService.generateAuthFailedUrl());
+		}
+	}
+
+	/**
+	 * state 検証込みの OAuth コールバック dispatcher（4 社向け）。
+	 * state があれば OAuthStateService で検証し finalizeOAuthCallback（登録経路）へ。
+	 * state なしは finalizeOAuthCallback（ログイン経路）へ。
 	 */
 	private async runOAuthCallbackWithStateSupport<TUser extends OAuthStrategyUser>(
 		provider: OAuthProvider,
@@ -153,29 +233,12 @@ export class AuthController {
 		const stateValue = this.extractStateFromRequest(req);
 
 		if (stateValue !== null) {
+			let payload: OAuthStatePayload;
 			try {
-				const payload = this.invitationStateService.verifyState(stateValue, provider);
-				const ctx = this.extractRequestContext(req);
-				const result = await stateRegister({
-					oauthUser: req.user,
-					invitationCode: payload.code,
-					ctx,
-				});
-
-				this.refreshCookieHelper.setRefreshCookie(
-					res,
-					result.refresh.plainRt,
-					result.refresh.expiresAt,
-				);
-
-				const redirectUrl = this.configService.generateSuccessRedirectUrl(
-					result.accessToken,
-					result.user,
-				);
-				return res.redirect(redirectUrl);
+				payload = this.oauthStateService.verifyState(stateValue, provider);
 			} catch (error: unknown) {
 				const failureCode = error instanceof AppException ? error.code : 'unknown';
-				const invitationCode = this.tryExtractInvitationCodeFromState(stateValue) ?? '';
+				const invitationCode = this.oauthStateService.tryExtractInvitationCode(stateValue) ?? '';
 
 				try {
 					Sentry.captureMessage('invitation_state_invalid', {
@@ -194,14 +257,29 @@ export class AuthController {
 				this.logger.warn(
 					`${providerName} OAuth state invalid: ${error instanceof Error ? error.message : String(error)}`,
 				);
-
-				const invalidStateUrl =
-					this.configService.generateInvitationStateInvalidUrl(invitationCode);
-				return res.redirect(invalidStateUrl);
+				return res.redirect(this.configService.generateInvitationStateInvalidUrl(invitationCode));
 			}
+
+			return this.finalizeOAuthCallback(
+				payload,
+				req.user,
+				loginMethod,
+				stateRegister,
+				req,
+				res,
+				providerName,
+			);
 		}
 
-		return this.handleOAuthCallback(loginMethod, req, res, providerName);
+		return this.finalizeOAuthCallback(
+			null,
+			req.user,
+			loginMethod,
+			stateRegister,
+			req,
+			res,
+			providerName,
+		);
 	}
 
 	private extractStateFromRequest(req: ExpressRequest): string | null {
@@ -216,91 +294,6 @@ export class AuthController {
 		}
 
 		return null;
-	}
-
-	private tryExtractInvitationCodeFromState(state: string): string | null {
-		const separatorIndex = state.indexOf('.');
-		if (separatorIndex <= 0) {
-			return null;
-		}
-
-		try {
-			const encodedPayload = state.slice(0, separatorIndex);
-			const json = Buffer.from(encodedPayload, 'base64url').toString('utf8');
-			const parsed: unknown = JSON.parse(json);
-			if (
-				parsed &&
-				typeof parsed === 'object' &&
-				typeof (parsed as { code?: unknown }).code === 'string'
-			) {
-				return (parsed as { code: string }).code;
-			}
-			return null;
-		} catch {
-			return null;
-		}
-	}
-
-	/**
-	 * OAuth認証コールバック共通処理
-	 */
-	private async handleOAuthCallback<TUser extends OAuthStrategyUser>(
-		authMethod: (user: TUser, ctx: AuthRequestContext) => Promise<OAuthLoginResult>,
-		req: OAuthRequest<TUser>,
-		res: ExpressResponse,
-		providerName: string,
-	): Promise<void> {
-		try {
-			const ctx = this.extractRequestContext(req);
-			const result = await authMethod(req.user, ctx);
-
-			this.refreshCookieHelper.setRefreshCookie(
-				res,
-				result.refresh.plainRt,
-				result.refresh.expiresAt,
-			);
-
-			// MCP 認可フロー: セッションに戻り先 URL があれば consent ページへリダイレクト。
-			// ソーシャルログイン完了後に mcpUserId を注入して authorize に戻す（design 4.3）。
-			const mcpSession = req.session as unknown as
-				| { mcpAuthorizeReturn?: string; mcpUserId?: string }
-				| undefined;
-			if (mcpSession?.mcpAuthorizeReturn) {
-				const returnTo = mcpSession.mcpAuthorizeReturn;
-				mcpSession.mcpAuthorizeReturn = undefined;
-				mcpSession.mcpUserId = result.user.id;
-				return res.redirect(returnTo);
-			}
-
-			// フロントエンドにトークンを渡すため、URLパラメータとしてリダイレクト
-			const redirectUrl = this.configService.generateSuccessRedirectUrl(
-				result.accessToken,
-				result.user,
-			);
-
-			return res.redirect(redirectUrl);
-		} catch (error: unknown) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
-			const failureCode = error instanceof AppException ? error.code : 'unknown';
-			this.logger.error(`${providerName} auth error: ${errorMessage}`);
-
-			try {
-				Sentry.captureMessage('oauth_callback_failed', {
-					level: 'warning',
-					tags: {
-						feature_area: 'invitation',
-						invitation_failure_code: failureCode,
-					},
-				});
-			} catch (sentryError) {
-				this.logger.warn(
-					`Sentry captureMessage failed: ${sentryError instanceof Error ? sentryError.message : String(sentryError)}`,
-				);
-			}
-
-			const errorUrl = this.configService.generateAuthFailedUrl();
-			return res.redirect(errorUrl);
-		}
 	}
 
 	@Public()
@@ -432,7 +425,6 @@ export class AuthController {
 			throwNotFound(ERROR_CODES.AUTH.USER_NOT_FOUND);
 		}
 
-		// 既存ユーザーの管理者権限を確認・更新
 		const adminEmail = this.configService.adminEmail;
 		const shouldBeAdmin = adminEmail && user.email === adminEmail;
 
@@ -497,7 +489,6 @@ export class AuthController {
 				throwBadRequest(ERROR_CODES.AUTH.PASSWORD_NOT_SET);
 			}
 
-			// 現在のパスワードを検証
 			const isCurrentPasswordValid = await this.authService.comparePassword(
 				currentPassword,
 				user.password,
@@ -507,7 +498,6 @@ export class AuthController {
 				throwUnauthorized(ERROR_CODES.AUTH.INVALID_PASSWORD);
 			}
 
-			// 新しいパスワードをハッシュ化して更新
 			const hashedNewPassword = await this.authService.hashPassword(newPassword);
 			await this.prisma.user.update({
 				where: { id: userId },
@@ -517,9 +507,7 @@ export class AuthController {
 			await this.refreshTokenService.revokeAllForUser(userId, 'password_change');
 			this.refreshCookieHelper.clearRefreshCookie(res);
 
-			return {
-				message: 'Password changed successfully',
-			};
+			return { message: 'Password changed successfully' };
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : 'Failed to change password';
 			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_INPUT, message);
@@ -531,7 +519,6 @@ export class AuthController {
 	async updateAdminRole(@Request() req: AuthenticatedRequest) {
 		const currentUser = req.user;
 
-		// 管理者メールアドレスかどうかをチェック
 		const shouldBeAdmin = this.configService.isAdminEmail(currentUser.email);
 
 		if (!shouldBeAdmin) {
@@ -657,19 +644,35 @@ export class AuthController {
 		);
 	}
 
-	// X OAuth エンドポイント
+	// X OAuth エンドポイント（手組みステートレスフロー）
+
+	/**
+	 * X 通常ログイン開始。passport guard を廃し、PKCE pair 生成 → 署名 state 発行 →
+	 * X authorize へ 302。verifier は state 内（AEAD 暗号化）にのみ保持し session には保存しない。
+	 */
 	@Public()
 	@Get('x')
-	@UseGuards(XAuthGuard)
-	xAuth(@Request() _req: ExpressRequest) {
-		// X認証画面にリダイレクト（passport が twitter へ 302）
+	async xAuth(@Response() res: ExpressResponse): Promise<void> {
+		if (!this.xOAuthService.isConfigured()) {
+			res.status(503).json({ message: 'X OAuth provider is not configured' });
+			return;
+		}
+		const pkce = generatePkcePair();
+		const signedState = this.oauthStateService.issueState({
+			provider: 'x',
+			verifier: pkce.verifier,
+		});
+		const authorizationUrl = this.configService.generateOAuthAuthorizationUrl(
+			'x',
+			signedState,
+			pkce.challenge,
+		);
+		res.redirect(authorizationUrl);
 	}
 
 	/**
-	 * X 招待登録の開始エンドポイント（Task 2.1）。
-	 * XRegisterStartGuard が招待署名 state を検証し、
-	 * session に招待コードを格納してから passport（twitter）へリダイレクトする。
-	 * state 不正時は InvitationStateInvalidFilter が invite ページへリダイレクト。
+	 * X 招待登録の開始エンドポイント（legacy session 経路）。
+	 * Phase 3 で撤去予定。XRegisterStartGuard が session に招待コードを格納し passport へ委譲。
 	 */
 	@Public()
 	@Get('x/register-start')
@@ -680,61 +683,33 @@ export class AuthController {
 	}
 
 	/**
-	 * X コールバック（Task 2.2）。
-	 * passport が CSRF state / PKCE verifier を cookie-session から検証済の前提で req.user を受領。
-	 * session の xInvitationCode 有無で招待登録 / 通常ログインに分岐する。
-	 * runOAuthCallbackWithStateSupport は使わない（passport のランダム state を verifyState に渡さない）。
+	 * X コールバック（手組みステートレスフロー）。
+	 * verifyState → token/profile 交換 → finalizeOAuthCallback で処理。
+	 * session には一切触れない（認証成立に非依存）。
 	 */
 	@Public()
 	@Get('x/callback')
-	@UseGuards(XAuthGuard)
 	async xAuthCallback(
-		@Request() req: OAuthRequest<XStrategyUser>,
+		@Request() req: ExpressRequest,
 		@Response() res: ExpressResponse,
-	) {
-		return this.handleXCallback(req, res);
-	}
-
-	private async handleXCallback(
-		req: OAuthRequest<XStrategyUser>,
-		res: ExpressResponse,
 	): Promise<void> {
+		const stateValue = this.extractStateFromRequest(req);
+		const code = (req.query as Record<string, unknown>).code;
+
+		if (!stateValue || typeof code !== 'string' || code.length === 0) {
+			res.redirect(this.configService.generateAuthFailedUrl());
+			return;
+		}
+
+		let payload: OAuthStatePayload;
 		try {
-			const ctx = this.extractRequestContext(req);
-			// cookie-session は req.session を CookieSessionObject | null | undefined として型付けする。
-			// 任意キー（xInvitationCode）を読むため unknown を経由して Record にキャストする。
-			const session = req.session as unknown as Record<string, unknown> | undefined;
-			const invitationCode = session?.xInvitationCode;
-			let result: OAuthLoginResult;
-
-			if (typeof invitationCode === 'string' && invitationCode.length > 0) {
-				if (session) delete session.xInvitationCode;
-				result = await this.oauthService.xRegisterWithStateInvitation({
-					oauthUser: req.user,
-					invitationCode,
-					ctx,
-				});
-			} else {
-				result = await this.oauthService.xLogin(req.user, ctx);
-			}
-
-			this.refreshCookieHelper.setRefreshCookie(
-				res,
-				result.refresh.plainRt,
-				result.refresh.expiresAt,
-			);
-			const redirectUrl = this.configService.generateSuccessRedirectUrl(
-				result.accessToken,
-				result.user,
-			);
-			return res.redirect(redirectUrl);
+			payload = this.oauthStateService.verifyState(stateValue, 'x');
 		} catch (error: unknown) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
 			const failureCode = error instanceof AppException ? error.code : 'unknown';
-			this.logger.error(`X auth error: ${errorMessage}`);
+			const invitationCode = this.oauthStateService.tryExtractInvitationCode(stateValue) ?? '';
 
 			try {
-				Sentry.captureMessage('oauth_callback_failed', {
+				Sentry.captureMessage('invitation_state_invalid', {
 					level: 'warning',
 					tags: { feature_area: 'invitation', invitation_failure_code: failureCode },
 				});
@@ -744,7 +719,45 @@ export class AuthController {
 				);
 			}
 
-			return res.redirect(this.configService.generateAuthFailedUrl());
+			this.logger.warn(
+				`X OAuth state invalid: ${error instanceof Error ? error.message : String(error)}`,
+			);
+
+			if (invitationCode) {
+				res.redirect(this.configService.generateInvitationStateInvalidUrl(invitationCode));
+			} else {
+				res.redirect(this.configService.generateAuthFailedUrl());
+			}
+			return;
 		}
+
+		if (!payload.verifier) {
+			this.logger.error('X callback: state missing PKCE verifier');
+			res.redirect(this.configService.generateAuthFailedUrl());
+			return;
+		}
+
+		let xUser: XStrategyUser;
+		try {
+			xUser = await this.xOAuthService.exchangeCodeForUser({
+				code,
+				verifier: payload.verifier,
+			});
+		} catch (error: unknown) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.logger.error(`X token/profile exchange failed: ${errorMessage}`);
+			res.redirect(this.configService.generateAuthFailedUrl());
+			return;
+		}
+
+		return this.finalizeOAuthCallback(
+			payload,
+			xUser,
+			(user, ctx) => this.oauthService.xLogin(user, ctx),
+			(args) => this.oauthService.xRegisterWithStateInvitation(args),
+			req,
+			res,
+			'X',
+		);
 	}
 }
