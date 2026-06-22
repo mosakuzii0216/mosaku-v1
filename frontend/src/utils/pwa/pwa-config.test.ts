@@ -4,7 +4,7 @@ import { buildPwaOptions } from './pwa-config';
 describe('buildPwaOptions', () => {
 	const opts = buildPwaOptions();
 
-	it('uses prompt-style registration so SW activation requires user confirmation', () => {
+	it('retains prompt registration as the foundation for guarded auto-update (M1: applyUpdate drives skipWaiting)', () => {
 		expect(opts.registerType).toBe('prompt');
 	});
 
