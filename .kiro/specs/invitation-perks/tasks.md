@@ -6,8 +6,8 @@
 
 ---
 
-- [ ] 1. perk スキーマ・縮退フラグ・共有定数を整備する（Phase 1 基盤 / 既存挙動不変）
-- [ ] 1.1 (P) 招待コードに perk 属性を直付けする
+- [x] 1. perk スキーマ・縮退フラグ・共有定数を整備する（Phase 1 基盤 / 既存挙動不変）
+- [x] 1.1 (P) 招待コードに perk 属性を直付けする
   - `InvitationPerkType` enum（`NONE` / `COMP`）を Prisma スキーマに追加する
   - `InvitationCode` に `perkType`（`@default(NONE)`）と `perkCompMonths`（nullable Int）を追加する
   - enum 追加 + 2 カラム追加のマイグレーションを 1 本作成し、既存行が `NONE` に吸収される（後方互換）ことを確認する
@@ -15,14 +15,14 @@
   - 種別テーブル・階層参照は導入せず最小構造に保つ
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 1.2 (P) COMP 縮退フラグを設定基盤に追加する
+- [x] 1.2 (P) COMP 縮退フラグを設定基盤に追加する
   - `ConfigService` に `compPerkEnabled`（env `COMP_PERK_ENABLED`・既定 false）の getter を新設する
   - `.env.example` に `COMP_PERK_ENABLED` の用途（COMP 縮退ゲート・既定 OFF）を追記する
   - 既定で false に解決され、明示 true で true になることをユニットテストで固定する
   - 1.1 とは別ファイルのため並行実装可
   - _Requirements: 2.2_
 
-- [ ] 1.3 (P) キャンペーン上限の共有定数を定義する
+- [x] 1.3 (P) キャンペーン上限の共有定数を定義する
   - `invitation` ドメインに `MAX_CAMPAIGN_MAX_USES`（目安 20）と `MAX_ACTIVE_INVITE_CODES`（目安 3）を定数として定義する
   - フロントの人数上限メッセージに再利用できる「backend と同期」する共有値として公開する
   - 1.1 / 1.2 とは別ファイルのため並行実装可

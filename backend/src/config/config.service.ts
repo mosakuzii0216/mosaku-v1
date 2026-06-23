@@ -347,6 +347,11 @@ export class ConfigService {
 		return { sameSite, secure, domain, path: '/auth' };
 	}
 
+	// COMP 縮退ゲート（既定 false。基盤未完成での誤適用を構造的に防止）
+	get compPerkEnabled(): boolean {
+		return process.env.COMP_PERK_ENABLED === 'true';
+	}
+
 	// データベース設定
 	get databaseUrl(): string {
 		const url = process.env.DATABASE_URL;
