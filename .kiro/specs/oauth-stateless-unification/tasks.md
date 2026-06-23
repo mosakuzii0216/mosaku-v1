@@ -87,15 +87,15 @@
 
 ---
 
-- [ ] 3. session 依存資産を撤去し cookie-session を MCP 専用へ縮退する（Phase 3 session 撤去）
-- [ ] 3.1 X の passport・register-start 関連資産を撤去する
+- [x] 3. session 依存資産を撤去し cookie-session を MCP 専用へ縮退する（Phase 3 session 撤去）
+- [x] 3.1 X の passport・register-start 関連資産を撤去する
   - `x.strategy.ts`（+spec）・`XAuthGuard`・`x-register-start.guard.ts`（+spec）・`x-register-start.exception.ts`・`x-register-start.filter.ts`・`x-cookie-session-gate.spec.ts` を削除する
   - `GET /auth/x/register-start` ルートと `generateXRegisterStartUrl` を撤去する
   - `auth.module.ts` の providers/exports から撤去クラスを除去し、passport-oauth2 / twitter-oauth2 への X 依存を排除する
   - Phase 2（2.3・2.4）完了後に実施する（X が passport を使わなくなった後）
   - _Requirements: 1.5, 3.3_
 
-- [ ] 3.2 cookie-session を MCP 認可フロー専用へ縮退・明示する
+- [x] 3.2 cookie-session を MCP 認可フロー専用へ縮退・明示する
   - `main.ts` の cookie-session ミドルウェアコメントを「MCP 認可フロー専用」へ更新し、OAuth ログインが非依存である旨を明示する（適用順序 helmet → cookie-parser → cookie-session → CORS は不変）
   - `ConfigService` の `sessionSecret` / `sessionCookieOptions` に MCP 専用注記を付して残置する
   - helmet/CSP・CORS（`credentials:true`）・cookie-parser・Refresh Cookie 系統の構成を変更しない
@@ -104,7 +104,7 @@
 
 ---
 
-- [ ] 4. 統合テストと回帰・クロスオリジン検証を実施する
+- [x] 4. 統合テストと回帰・クロスオリジン検証を実施する
 - [x] 4.1 5 社 × (ログイン / 招待登録) のコールバック routing を統合テストする
   - `auth.x-flow.integration.spec.ts` を stateless X 用に再構成する
   - X ログイン（code なし → `xLogin`）/ X 招待（code あり → `xRegisterWithStateInvitation`）が成立することをテストする
@@ -112,14 +112,14 @@
   - 招待コードが署名 state で引き継がれコールバックで解決されることをテストする
   - _Requirements: 5.2, 5.5, 6.3_
 
-- [ ] 4.2 state / verifier / TTL の拒否経路を統合テストする
+- [x] 4.2 state / verifier / TTL の拒否経路を統合テストする
   - 不正 state（HMAC 不一致・不正形式・provider 不一致）が認証拒否で終わることをテストする
   - verifier の AEAD 復号失敗が認証拒否で終わることをテストする
   - state TTL 超過が認証拒否で終わることをテストする
   - いずれもログイン成立へフォールスルーしないことを確認する
   - _Requirements: 2.4, 4.5, 5.3, 6.4_
 
-- [ ] 4.3 MCP ハンドオフ不変と 4 社回帰を検証する
+- [x] 4.3 MCP ハンドオフ不変と 4 社回帰を検証する
   - `mcpAuthorizeReturn` ありで `mcpUserId` 注入が温存され、X を含む認証成立が session 書き込みの成否に依存しないことをテストする
   - `runOAuthCallbackWithStateSupport` の 4 社 state 経路が従来どおり（ユーザー識別・JWT 発行・リダイレクト不変）であることを回帰テストで固定する
   - _Requirements: 3.4, 5.1, 5.5_
