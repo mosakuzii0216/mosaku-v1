@@ -408,4 +408,64 @@ describe('ConfigService - LINE/Apple/X OAuth', () => {
 			expect(service.xRedirectUri).toBe('https://example.com/auth/x/callback');
 		});
 	});
+
+	// ─── Task 4.4: 本番クロスオリジン構成の整合性検証 ────────────────────────
+	// R6.2: 本番のクロスオリジン構成（mosaku.jp ↔ api.mosaku.jp）で
+	// X を含む全プロバイダのリダイレクトが成立する状態を維持する
+
+	describe('Task 4.4: 5 社 redirect_uri パスとコールバックルートの整合性', () => {
+		const PROD_BACKEND = 'https://api.mosaku.jp';
+
+		const PROVIDER_CALLBACK_PATHS: Record<string, string> = {
+			google: '/auth/google/callback',
+			github: '/auth/github/callback',
+			line: '/auth/line/callback',
+			apple: '/auth/apple/callback',
+			x: '/auth/x/callback',
+		};
+
+		beforeEach(() => {
+			// 本番相当のクロスオリジン構成
+			process.env.GOOGLE_REDIRECT_URI = `${PROD_BACKEND}/auth/google/callback`;
+			process.env.GITHUB_REDIRECT_URI = `${PROD_BACKEND}/auth/github/callback`;
+			process.env.LINE_REDIRECT_URI = `${PROD_BACKEND}/auth/line/callback`;
+			process.env.APPLE_REDIRECT_URI = `${PROD_BACKEND}/auth/apple/callback`;
+			process.env.X_REDIRECT_URI = `${PROD_BACKEND}/auth/x/callback`;
+			process.env.X_CLIENT_ID = 'prod-x-client-id';
+			process.env.OAUTH_STATE_ENC_KEY = 'a'.repeat(64);
+			process.env.INVITATION_STATE_SECRET = 'prod-hmac-secret';
+		});
+
+		it('X_REDIRECT_URI のパスが /auth/x/callback と一致すること（R6.2）', () => {
+			const path = new URL(service.xRedirectUri).pathname;
+			expect(path).toBe(PROVIDER_CALLBACK_PATHS['x']);
+		});
+
+		it('X 認可 URL の redirect_uri が X_REDIRECT_URI と完全一致すること', () => {
+			const url = service.generateOAuthAuthorizationUrl('x', 'signed.state', 'challenge_s256');
+			const params = new URLSearchParams(new URL(url).search);
+			expect(params.get('redirect_uri')).toBe(`${PROD_BACKEND}/auth/x/callback`);
+		});
+
+		it('5 社全ての redirect_uri パスが対応するコールバックルートと一致すること', () => {
+			expect(new URL(service.googleRedirectUri).pathname).toBe(PROVIDER_CALLBACK_PATHS['google']);
+			expect(new URL(service.githubRedirectUri).pathname).toBe(PROVIDER_CALLBACK_PATHS['github']);
+			expect(new URL(service.lineRedirectUri).pathname).toBe(PROVIDER_CALLBACK_PATHS['line']);
+			expect(new URL(service.appleRedirectUri).pathname).toBe(PROVIDER_CALLBACK_PATHS['apple']);
+			expect(new URL(service.xRedirectUri).pathname).toBe(PROVIDER_CALLBACK_PATHS['x']);
+		});
+
+		it('本番クロスオリジン構成: 5 社全ての redirect_uri が api.mosaku.jp を向くこと', () => {
+			const uris = [
+				service.googleRedirectUri,
+				service.githubRedirectUri,
+				service.lineRedirectUri,
+				service.appleRedirectUri,
+				service.xRedirectUri,
+			];
+			for (const uri of uris) {
+				expect(new URL(uri).hostname).toBe('api.mosaku.jp');
+			}
+		});
+	});
 });
