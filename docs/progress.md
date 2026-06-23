@@ -32,6 +32,36 @@
 
 ---
 
+## 2026-06-24（Phase 1 ドッグフーディング中 / X OAuth ステートレス統一を完走・招待特典 spec を承認）
+
+### 今週やったこと
+
+- **`oauth-stateless-unification` を起票 → 全タスク TDD 完走 → `implementation-validated`**（6/22 起票、6/23 実装完了）
+  - 前週 `oauth-session-durability` で passport 一本化した X OAuth を、さらに**ステートレス化**して 4 社（Google / GitHub / LINE / Apple）と同じ手組みフローへ統一。passport-twitter 依存を撤去
+  - 暗号基盤を新設: PKCE verifier/challenge 生成 → **AES-256-GCM AEAD 封緘サービス `OAuthStateCrypto`** → state に PKCE verifier を封緘して持ち回る `OAuthStateService`。`ConfigService` に `oauthStateEncKey` と X 認可 URL 生成を追加
+  - `XOAuthService` を新設（token 交換・profile 取得）し、X コールバックを共通 `finalize` 経路へ合流。cookie-session は **MCP ハンドオフ専用**へ縮退させ、認証フローからセッション依存を排除（多インスタンス耐性）
+  - 回帰テスト: 拒否経路統合テスト（実 `OAuthStateService` + `OAuthStateCrypto`）、MCP ハンドオフ不変、4 社コールバック回帰を追加
+- **`invitation-perks`（招待特典）を起票 → requirements / design 生成 → tasks 承認**（6/22 起票、6/24 tasks 承認）
+  - 旧 `trialDays` + Stripe 案を破棄し、monetization v2 の **COMP 方式**（`subscriptionStatus=COMP`）に統一
+  - スコープを二層化し、本 spec は課金ウォレット非依存の**独立部のみ**（perk 属性直付け / 人数キャンペーン発行 / 登録 UX 刷新）。COMP 適用本体は後続 spec へ分離
+  - `COMP_PERK_ENABLED`（既定 OFF）の縮退フラグでゲートし、フラグ OFF 間は既存挙動不変を担保する設計。Task 4 は登録フローに適用 seam コメントを置くのみ（配線しない）
+
+### 来週の予定
+
+- **`invitation-perks` を `/kiro:spec-impl` で実装着手**（Task 1 基盤から TDD・1 Todo = 1 Commit）。Task 1.1〜1.3 は並列可
+- backend(Task 2〜4) / frontend(Task 5) を並行トラックで進め Task 6 で統合
+
+### ブロッカー・懸念
+
+- `backend/src/config/config.service.spec.ts` に未コミット差分が 1 件残存（oauth 作業の余り）。invitation-perks 着手前に整理する
+
+### メモ
+
+- spec 総数 34 本。うち完了（completed / implementation-validated / implemented / implementation-complete）33 本、進行中 1 本（`invitation-perks` = tasks-approved）
+- X OAuth はメモの「両フローとも壊れていた」状態から、案(b)（passport 一本化）→ ステートレス統一まで 2 週で着地。認証スタックがセッション非依存になった
+
+---
+
 ## 2026-06-22（Phase 1 ドッグフーディング中 / PWA SW 自動更新を起票〜実装完了）
 
 ### 今週やったこと
