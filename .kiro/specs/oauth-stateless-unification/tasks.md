@@ -124,7 +124,7 @@
   - `runOAuthCallbackWithStateSupport` の 4 社 state 経路が従来どおり（ユーザー識別・JWT 発行・リダイレクト不変）であることを回帰テストで固定する
   - _Requirements: 3.4, 5.1, 5.5_
 
-- [ ] 4.4 本番クロスオリジンで 5 社のリダイレクト成立を検証する
+- [x] 4.4 本番クロスオリジンで 5 社のリダイレクト成立を検証する
   - 本番相当のクロスオリジン構成（mosaku.jp ↔ api.mosaku.jp）で X を含む 5 社の authorize リダイレクトと callback 成立を E2E / 手動で検証する
   - `X_REDIRECT_URI` が既存 callback URL と一致することを確認する
   - _Requirements: 5.5, 6.2_
