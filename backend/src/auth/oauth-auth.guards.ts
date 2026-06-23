@@ -17,6 +17,3 @@ export class LineAuthGuard extends AuthGuard('line') {}
 
 @Injectable()
 export class AppleAuthGuard extends AuthGuard('apple') {}
-
-@Injectable()
-export class XAuthGuard extends AuthGuard('x') {}

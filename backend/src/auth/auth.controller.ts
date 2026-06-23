@@ -6,7 +6,6 @@ import {
 	HttpCode,
 	HttpStatus,
 	Param,
-	UseFilters,
 	UseGuards,
 	Request,
 	Response,
@@ -39,8 +38,6 @@ import {
 	LineAuthGuard,
 	AppleAuthGuard,
 } from './oauth-auth.guards';
-import { XRegisterStartGuard } from './x-register-start.guard';
-import { InvitationStateInvalidFilter } from './x-register-start.filter';
 import { Public } from '../common/decorators/public.decorator';
 import { AuthService, type AuthLoginResult, type AuthRequestContext } from './auth.service';
 import { OAuthService, type OAuthLoginResult } from './oauth.service';
@@ -668,18 +665,6 @@ export class AuthController {
 			pkce.challenge,
 		);
 		res.redirect(authorizationUrl);
-	}
-
-	/**
-	 * X 招待登録の開始エンドポイント（legacy session 経路）。
-	 * Phase 3 で撤去予定。XRegisterStartGuard が session に招待コードを格納し passport へ委譲。
-	 */
-	@Public()
-	@Get('x/register-start')
-	@UseGuards(XRegisterStartGuard)
-	@UseFilters(InvitationStateInvalidFilter)
-	xRegisterStart(@Request() _req: ExpressRequest) {
-		// XRegisterStartGuard が session セット + passport へ委譲してリダイレクト
 	}
 
 	/**

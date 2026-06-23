@@ -9,22 +9,17 @@ import { GoogleStrategy } from './google.strategy';
 import { GitHubStrategy } from './github.strategy';
 import { LineStrategy } from './line.strategy';
 import { AppleStrategy } from './apple.strategy';
-import { XStrategy } from './x.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import {
 	GoogleAuthGuard,
 	GitHubAuthGuard,
 	LineAuthGuard,
 	AppleAuthGuard,
-	XAuthGuard,
 } from './oauth-auth.guards';
-import { XRegisterStartGuard } from './x-register-start.guard';
-import { InvitationStateInvalidFilter } from './x-register-start.filter';
 import { RefreshCookieHelper } from './refresh-cookie.helper';
 import { RefreshCsrfGuard } from './refresh-csrf.guard';
 import { RefreshTokenRepository } from './refresh-token.repository';
 import { RefreshTokenService } from './refresh-token.service';
-import { InvitationStateService } from './invitation-state.service';
 import { OAuthStateService } from './oauth-state.service';
 import { OAuthStateCrypto } from './oauth-state-crypto.service';
 import { XOAuthService } from './x-oauth.service';
@@ -64,21 +59,16 @@ import { MailService } from '../mail/mail.service';
 		GitHubStrategy,
 		LineStrategy,
 		AppleStrategy,
-		XStrategy,
 		JwtAuthGuard,
 		GoogleAuthGuard,
 		GitHubAuthGuard,
 		LineAuthGuard,
 		AppleAuthGuard,
-		XAuthGuard,
-		XRegisterStartGuard,
-		InvitationStateInvalidFilter,
 		RefreshCookieHelper,
 		RefreshCsrfGuard,
 		RefreshTokenRepository,
 		RefreshTokenService,
 		InvitationService,
-		InvitationStateService,
 		OAuthStateCrypto,
 		OAuthStateService,
 		XOAuthService,
@@ -91,7 +81,6 @@ import { MailService } from '../mail/mail.service';
 		AuthService,
 		JwtTokenService,
 		OAuthService,
-		InvitationStateService,
 		OAuthStateService,
 		XOAuthService,
 		JwtAuthGuard,
@@ -99,7 +88,6 @@ import { MailService } from '../mail/mail.service';
 		GitHubAuthGuard,
 		LineAuthGuard,
 		AppleAuthGuard,
-		XAuthGuard,
 		RefreshCookieHelper,
 		RefreshCsrfGuard,
 		RefreshTokenRepository,

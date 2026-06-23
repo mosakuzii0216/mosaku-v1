@@ -314,29 +314,6 @@ describe('ConfigService - LINE/Apple/X OAuth', () => {
 		});
 	});
 
-	// ─── X ──────────────────────────────────────────────────────────────────
-
-	describe('generateXRegisterStartUrl', () => {
-		it('BACKEND_URL 未設定時は localhost ベースの register-start URL を返すこと', () => {
-			delete process.env.BACKEND_URL;
-			delete process.env.PORT;
-			const url = service.generateXRegisterStartUrl('signed.state');
-			expect(url).toBe('http://localhost:3000/auth/x/register-start?state=signed.state');
-		});
-
-		it('BACKEND_URL が設定されていれば それを使った register-start URL を返すこと', () => {
-			process.env.BACKEND_URL = 'https://api.mosaku.jp';
-			const url = service.generateXRegisterStartUrl('abc.def');
-			expect(url).toBe('https://api.mosaku.jp/auth/x/register-start?state=abc.def');
-		});
-
-		it('BACKEND_URL の末尾スラッシュを除去して正しい URL を返すこと', () => {
-			process.env.BACKEND_URL = 'https://api.mosaku.jp/';
-			const url = service.generateXRegisterStartUrl('my.state');
-			expect(url).toBe('https://api.mosaku.jp/auth/x/register-start?state=my.state');
-		});
-	});
-
 	// ─── OAUTH_STATE_ENC_KEY ──────────────────────────────────────────────
 	describe('oauthStateEncKey', () => {
 		it('OAUTH_STATE_ENC_KEY が有効な hex 64 字なら Buffer(32byte) を返すこと', () => {

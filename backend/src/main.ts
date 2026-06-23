@@ -38,10 +38,9 @@ async function bootstrap() {
 	// Refresh Token Cookie の読み取りに必要（HttpOnly Cookie 経由で配送）
 	app.use(cookieParser());
 
-	// Session設定（X OAuth用）
-	// 署名付き Cookie ベース（cookie-session）。サーバー側ストアを持たないため
-	// Cloud Run の複数インスタンス・再起動でも session（X の CSRF state / PKCE verifier /
-	// 招待コード）が消失しない。デフォルト MemoryStore（本番非推奨・メモリリーク源）を排除。
+	// MCP 認可フロー専用 session（cookie-session）。
+	// OAuth ログイン（Google/GitHub/LINE/Apple/X）は stateless HMAC 署名 state で完結し、
+	// session には依存しない。session が必要なのは MCP authorize の mcpUserId 注入のみ。
 	// 適用順序は helmet → cookie-parser → cookie-session → CORS を維持する。
 	const sessionCookie = configService.sessionCookieOptions;
 	app.use(
@@ -49,10 +48,10 @@ async function bootstrap() {
 			name: 'mosaku.sid',
 			// 全インスタンス完全同一の単一署名鍵が多インスタンス耐性の前提（ConfigService.sessionSecret 参照）。
 			keys: [configService.sessionSecret],
-			secure: sessionCookie.secure, // 本番環境ではHTTPS必須
-			httpOnly: sessionCookie.httpOnly, // XSS対策
-			sameSite: sessionCookie.sameSite, // CSRF対策・クロスオリジン整合（env 上書き可）
-			maxAge: sessionCookie.maxAge, // OAuth フロー完了に十分な範囲（既定 10 分）
+			secure: sessionCookie.secure,
+			httpOnly: sessionCookie.httpOnly,
+			sameSite: sessionCookie.sameSite,
+			maxAge: sessionCookie.maxAge,
 		}),
 	);
 

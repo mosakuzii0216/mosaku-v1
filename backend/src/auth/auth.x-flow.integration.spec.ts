@@ -25,15 +25,12 @@ import { InvitationService } from '../invitation/invitation.service';
 import { OAuthStateService } from './oauth-state.service';
 import { XOAuthService } from './x-oauth.service';
 import { PasswordResetService } from './password-reset.service';
-import { InvitationStateService } from './invitation-state.service';
-import { InvitationStateInvalidFilter } from './x-register-start.filter';
 import {
 	GoogleAuthGuard,
 	GitHubAuthGuard,
 	LineAuthGuard,
 	AppleAuthGuard,
 } from './oauth-auth.guards';
-import { XRegisterStartGuard } from './x-register-start.guard';
 
 jest.mock('@sentry/nestjs', () => ({ captureMessage: jest.fn() }));
 
@@ -161,24 +158,11 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 				{ provide: OAuthStateService, useValue: oauthStateSvc },
 				{ provide: XOAuthService, useValue: xOAuthSvc },
 				{
-					provide: InvitationStateService,
-					useValue: { issueState: jest.fn(), verifyState: jest.fn() },
-				},
-				{
 					provide: PasswordResetService,
 					useValue: { requestReset: jest.fn(), confirmReset: jest.fn() },
 				},
-				InvitationStateInvalidFilter,
 			],
 		})
-			.overrideGuard(XRegisterStartGuard)
-			.useValue({
-				canActivate: (ctx: ExecutionContext): boolean => {
-					const req = ctx.switchToHttp().getRequest<Record<string, unknown>>();
-					req.user = X_USER;
-					return true;
-				},
-			})
 			.overrideGuard(GoogleAuthGuard)
 			.useValue(makeUserGuard({ googleId: 'g-1', name: 'G', email: 'g@example.com' }))
 			.overrideGuard(GitHubAuthGuard)

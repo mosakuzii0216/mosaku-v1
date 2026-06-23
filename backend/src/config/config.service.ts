@@ -375,16 +375,6 @@ export class ConfigService {
 	}
 
 	/**
-	 * X 招待登録の開始 URL（backend の register-start 経路）を state 付きで組み立てる。
-	 * `startOAuthRegistration` で X プロバイダを選択した場合のみ使用する。
-	 * ダミー PKCE を発行していた旧 `generateOAuthAuthorizationUrl('x')` の代替。
-	 */
-	generateXRegisterStartUrl(signedState: string): string {
-		const base = this.backendUrl.replace(/\/+$/, '');
-		return `${base}/auth/x/register-start?state=${signedState}`;
-	}
-
-	/**
 	 * 5 社（Google・GitHub・LINE・Apple・X）の認可エンドポイント URL を state 付きで組み立てる。
 	 * X は `codeChallenge`（S256）必須。4 社は `codeChallenge` 不要（渡しても無視）。
 	 */

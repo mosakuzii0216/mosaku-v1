@@ -106,10 +106,22 @@
 - **Trade-offs**: 超過は VALIDATION エラーとして返るため、フロントは人数上限をメッセージで提示する。
 - **Follow-up**: `MAX_CAMPAIGN_MAX_USES`（初期値の目安 20）を `invitation` の定数ファイルに置き、フロント表示と共有。
 
+### Decision: R3.3 を「per-code 上限 / 同時有効数 / 生涯発行数」の 3 軸で分離する
+
+- **Context**: R3.3 は「`maxUses` 上限」と「**同時に有効化できるコード数の上限**」の二軸を明示要求。既存 `invitationQuota` は*生涯発行総数*の decrement（削除・失効で返却しない）であり、「同時有効数」とは意味が異なる。さらに `maxUses` 複数化で 1 ユーザー由来の登録サーフェスが `maxUses:1` 固定時より拡大する（生涯 ≤ `invitationQuota × MAX_CAMPAIGN_MAX_USES`）。
+- **Alternatives Considered**:
+  1. `invitationQuota` だけで R3.3 を満たすとみなす（同時有効数軸を実装しない）
+  2. 3 軸に分離: per-code = DTO `@Max(MAX_CAMPAIGN_MAX_USES)` / 同時有効数 = `createForUser` のトランザクション内カウント `MAX_ACTIVE_INVITE_CODES` / 生涯 = 既存 `invitationQuota`
+  3. 「未消化 `(maxUses - usedCount)` の総和」を席予算として上限化
+- **Selected Approach**: 2。R3.3 の文言（コード数上限）に忠実で、既存 quota を生涯軸として温存しつつ最小追加（カウント 1 本）で同時軸を足せる。
+- **Rationale**: 案 1 は R3.3 の「同時有効数」軸を満たさず、quota の意味的ズレも残る。案 3 は席予算として強力だが、招待制小規模には実装過剰（集計クエリ＋新概念）。案 2 が monetization.md「小規模コミュニティ前提」に対し過不足ない。
+- **Trade-offs**: 発行経路に有効コード数のカウントクエリが 1 本増える（同一トランザクション内で実施し整合性を担保）。
+- **Follow-up**: `MAX_ACTIVE_INVITE_CODES`（目安 3）を `invitation` 定数に置き共有。キャンペーン運用開始後に `invitationQuota` 既定（現 5）と各上限の妥当性を再評価する。
+
 ## Risks & Mitigations
 
 - **基盤未完成で COMP コードを誤発行** → `COMP_PERK_ENABLED` OFF の間は verify-context が perk を出さないため、バッジ・適用とも発生せず安全。
-- **キャンペーンコードの乱発** → quota（発行数）＋ `maxUses` 上限（DTO `@Max`）の二重ガード。
+- **キャンペーンコードの乱発** → `invitationQuota`（生涯発行数）＋ `MAX_ACTIVE_INVITE_CODES`（同時有効コード数・サービス層カウント）＋ `maxUses` 上限（DTO `@Max`）の 3 軸ガード。同時サーフェス ≤ `MAX_ACTIVE_INVITE_CODES × MAX_CAMPAIGN_MAX_USES`、生涯サーフェス ≤ `invitationQuota × MAX_CAMPAIGN_MAX_USES`。
 - **フロント perk 型と backend enum の drift** → `INVITATION_ERROR_CODES` と同じく「backend と同期」コメント付き共有型で管理し、テストで整合を確認。
 - **特典バッジが「もらえる」と誤認させる**（R2.2） → フラグ OFF 時は perk 自体を返さないため現状は表示されない。ON 時の文言は適用が確実な前提で後続 spec が設計。
 
