@@ -1,3 +1,4 @@
+import { createHmac } from 'crypto';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { ConfigService } from '../config/config.service';
 import { OAuthStateCrypto } from './oauth-state-crypto.service';
@@ -121,7 +122,6 @@ describe('OAuthStateService', () => {
 
 	it('旧長キー payload（code,provider,nonce,iat）も verifyState で受理されること', () => {
 		const secret = Buffer.from(HMAC_SECRET);
-		const { createHmac } = require('crypto') as typeof import('crypto');
 		const oldPayload = {
 			code: 'OLD_CODE',
 			provider: 'google',
