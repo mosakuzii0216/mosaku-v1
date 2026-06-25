@@ -224,6 +224,7 @@ export class OAuthService {
 		});
 
 		await this.invitationService.useInvitation(invitationCode);
+		// TODO(comp-perk-apply): 後続 spec で PerkGate.applyPerk を配線
 
 		const tokens = this.jwtTokenService.generateTokens(user.id, user.email, user.role);
 		const refresh = await this.refreshTokenService.issue({

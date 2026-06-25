@@ -110,6 +110,7 @@ export class AuthService {
 
 		if (invitationCode) {
 			await this.invitationService.useInvitation(invitationCode);
+			// TODO(comp-perk-apply): 後続 spec で PerkGate.applyPerk を配線
 		}
 
 		return this.excludePassword(user);

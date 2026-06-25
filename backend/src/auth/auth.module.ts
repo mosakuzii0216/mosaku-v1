@@ -28,6 +28,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { CommonModule } from '../common/common.module';
 import { ConfigService } from '../config/config.service';
 import { InvitationService } from '../invitation/invitation.service';
+import { PerkGate } from '../invitation/perk-gate';
 import { CODE_GENERATOR, NanoidCodeGenerator } from '../invitation/utils/code-generator';
 import { QUOTA_POLICY, PrismaQuotaPolicy } from '../invitation/utils/quota-policy';
 import { JWT_EXPIRATION } from '../config/auth-constants';
@@ -69,6 +70,7 @@ import { MailService } from '../mail/mail.service';
 		RefreshTokenRepository,
 		RefreshTokenService,
 		InvitationService,
+		PerkGate,
 		OAuthStateCrypto,
 		OAuthStateService,
 		XOAuthService,

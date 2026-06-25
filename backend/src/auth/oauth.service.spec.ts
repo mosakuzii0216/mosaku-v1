@@ -406,4 +406,50 @@ describe('OAuthService', () => {
 			expect(result.accessToken).toBeDefined();
 		});
 	});
+
+	describe('COMP perk 前方互換縮退（Task 4.2）', () => {
+		it('COMP 特典付きコードでも OAuth 登録が成立すること（perk 非参照）', async () => {
+			const invitationCode = 'COMP-OAUTH-CODE';
+			mockInvitationService.verifyInvitation.mockResolvedValue({
+				code: invitationCode,
+				status: 'valid',
+				creator: { id: 'creator-id', name: 'Creator', maskedId: 'crea***' },
+				expiresAt: null,
+				usesRemaining: 5,
+				perk: { type: 'comp', months: 3 },
+			});
+			mockPrismaService.user.findFirst.mockResolvedValue(null);
+			mockPrismaService.user.create.mockResolvedValue({
+				...mockUser,
+				email: 'comp-oauth@example.com',
+			});
+			mockConfigService.isAdminEmail.mockReturnValue(false);
+			mockInvitationService.useInvitation.mockResolvedValue(undefined);
+
+			const result = await service.googleRegisterWithStateInvitation({
+				oauthUser: {
+					googleId: 'google-comp-id',
+					email: 'comp-oauth@example.com',
+					name: 'COMP User',
+				},
+				invitationCode,
+				ctx: { ip: '10.0.0.1', userAgent: 'jest' },
+			});
+
+			expect(result.accessToken).toBeDefined();
+			expect(mockInvitationService.verifyInvitation).toHaveBeenCalledWith(invitationCode);
+			expect(mockInvitationService.useInvitation).toHaveBeenCalledWith(invitationCode);
+			// 課金カラムへの書き込みが発生しないこと（カラム未実装）
+			expect(mockPrismaService.user.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					data: expect.not.objectContaining({ subscriptionStatus: expect.anything() }) as unknown,
+				}),
+			);
+		});
+
+		it('OAuthService が PerkGate を注入していないこと（applyPerk は後続 spec の責務）', () => {
+			// OAuth 登録フローは perk 非参照のまま。applyPerk 配線は後続 spec で行う
+			expect((service as unknown as Record<string, unknown>)['perkGate']).toBeUndefined();
+		});
+	});
 });
