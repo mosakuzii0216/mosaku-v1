@@ -7,7 +7,9 @@ import {
 	type InvitationContext,
 	type UserQuotaSnapshot,
 } from './invitation.service';
+import { type InvitationPerkView } from './perk-gate';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
+import { CreateMyInvitationDto } from './dto/create-my-invitation.dto';
 import { VerifyInvitationDto } from './dto/verify-invitation.dto';
 import { VerifyInvitationContextDto } from './dto/verify-invitation-context.dto';
 import { AdminGuard } from '../common/guards/admin.guard';
@@ -20,6 +22,14 @@ export interface InvitationContextResponse {
 	creator: { name: string | null; maskedId: string };
 	expiresAt: string | null;
 	usesRemaining: number;
+	perk: InvitationPerkView;
+}
+
+export interface InvitationVerificationResponse {
+	code: string;
+	maxUses: number;
+	usedCount: number;
+	expiresAt: string | null;
 }
 
 export interface InvitationWithShareUrlResponse {
@@ -68,8 +78,11 @@ export class InvitationController {
 	 */
 	@Public()
 	@Post('verify')
-	async verifyInvitation(@Body() verifyInvitationDto: VerifyInvitationDto) {
-		return this.invitationService.findValidInvitation(verifyInvitationDto.code);
+	async verifyInvitation(
+		@Body() verifyInvitationDto: VerifyInvitationDto,
+	): Promise<InvitationVerificationResponse> {
+		const invitation = await this.invitationService.findValidInvitation(verifyInvitationDto.code);
+		return this.toInvitationVerificationResponse(invitation);
 	}
 
 	/**
@@ -88,15 +101,18 @@ export class InvitationController {
 	}
 
 	/**
-	 * 自分の招待コードを発行
+	 * 自分の招待コードを発行（maxUses 可変キャンペーン対応）
 	 * POST /invitation/me
 	 */
 	@Post('me')
 	async createMyInvitation(
+		@Body() dto: CreateMyInvitationDto,
 		@Request() req: AuthenticatedRequest,
 	): Promise<InvitationWithShareUrlResponse> {
 		const actor = { id: req.user.id, role: req.user.role };
-		const invitation = await this.invitationService.createForUser(actor);
+		const invitation = await this.invitationService.createForUser(actor, {
+			maxUses: dto.maxUses ?? 1,
+		});
 		return this.toInvitationWithShareUrl(invitation);
 	}
 
@@ -184,6 +200,18 @@ export class InvitationController {
 			},
 			expiresAt: context.expiresAt ? context.expiresAt.toISOString() : null,
 			usesRemaining: context.usesRemaining,
+			perk: context.perk,
+		};
+	}
+
+	private toInvitationVerificationResponse(
+		invitation: InvitationCode,
+	): InvitationVerificationResponse {
+		return {
+			code: invitation.code,
+			maxUses: invitation.maxUses,
+			usedCount: invitation.usedCount,
+			expiresAt: invitation.expiresAt ? invitation.expiresAt.toISOString() : null,
 		};
 	}
 }

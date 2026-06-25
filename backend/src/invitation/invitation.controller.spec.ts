@@ -60,6 +60,7 @@ describe('InvitationController', () => {
 				creator: { id: 'user-cuid-xxxx', name: 'Marin', maskedId: 'user***' },
 				expiresAt,
 				usesRemaining: 1,
+				perk: { type: 'none' },
 			});
 
 			const result = await controller.verifyInvitationContext({ code: 'abcde12345' });
@@ -71,10 +72,26 @@ describe('InvitationController', () => {
 				creator: { name: 'Marin', maskedId: 'user***' },
 				expiresAt: '2026-12-31T00:00:00.000Z',
 				usesRemaining: 1,
+				perk: { type: 'none' },
 			});
 			// PII (email, creator.id) を含めない
 			expect((result.creator as Record<string, unknown>).id).toBeUndefined();
 			expect((result.creator as Record<string, unknown>).email).toBeUndefined();
+		});
+
+		it('COMP perk が verify-context 応答に含まれる', async () => {
+			service.verifyInvitation.mockResolvedValue({
+				code: 'compcode01',
+				status: 'valid',
+				creator: { id: 'user-cuid-xxxx', name: 'Marin', maskedId: 'user***' },
+				expiresAt: null,
+				usesRemaining: 5,
+				perk: { type: 'comp', months: 3 },
+			});
+
+			const result = await controller.verifyInvitationContext({ code: 'compcode01' });
+
+			expect(result.perk).toEqual({ type: 'comp', months: 3 });
 		});
 
 		it('expiresAt が null の場合は null を返却', async () => {
@@ -84,6 +101,7 @@ describe('InvitationController', () => {
 				creator: { id: 'user-cuid-xxxx', name: null, maskedId: 'user***' },
 				expiresAt: null,
 				usesRemaining: 1,
+				perk: { type: 'none' },
 			});
 
 			const result = await controller.verifyInvitationContext({ code: 'abcde12345' });
@@ -105,8 +123,58 @@ describe('InvitationController', () => {
 		});
 	});
 
+	describe('POST /invitation/verify（旧 API・perk 非露出）', () => {
+		it('COMP コードでも perkType / perkCompMonths / createdById が応答に含まれない', async () => {
+			service.findValidInvitation.mockResolvedValue({
+				id: 'inv-comp',
+				code: 'compcode01',
+				maxUses: 5,
+				usedCount: 1,
+				expiresAt: null,
+				createdAt: new Date('2026-01-01T00:00:00.000Z'),
+				updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+				createdById: 'admin-secret-id',
+				perkType: 'COMP',
+				perkCompMonths: 3,
+			});
+
+			const result = await controller.verifyInvitation({ code: 'compcode01' });
+
+			const raw = result as unknown as Record<string, unknown>;
+			expect(raw.perkType).toBeUndefined();
+			expect(raw.perkCompMonths).toBeUndefined();
+			expect(raw.createdById).toBeUndefined();
+			// 必要な基本情報は含む
+			expect(result.code).toBe('compcode01');
+		});
+
+		it('有効コードで基本情報（code / maxUses / usedCount / expiresAt）を返す', async () => {
+			service.findValidInvitation.mockResolvedValue({
+				id: 'inv-1',
+				code: 'testcode01',
+				maxUses: 3,
+				usedCount: 1,
+				expiresAt: new Date('2026-12-31T00:00:00.000Z'),
+				createdAt: new Date('2026-01-01T00:00:00.000Z'),
+				updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+				createdById: 'user-secret',
+				perkType: 'NONE',
+				perkCompMonths: null,
+			});
+
+			const result = await controller.verifyInvitation({ code: 'testcode01' });
+
+			expect(result).toEqual({
+				code: 'testcode01',
+				maxUses: 3,
+				usedCount: 1,
+				expiresAt: '2026-12-31T00:00:00.000Z',
+			});
+		});
+	});
+
 	describe('POST /invitation/me', () => {
-		it('JWT user.id/role を渡して createForUser を呼び、shareUrl 付きで返却', async () => {
+		it('maxUses 省略時: createForUser に { maxUses:1 } を渡し shareUrl 付きで返却', async () => {
 			service.createForUser.mockResolvedValue({
 				id: 'inv-1',
 				code: 'newcode001',
@@ -117,9 +185,15 @@ describe('InvitationController', () => {
 				createdById: 'user-1',
 			});
 
-			const result = await controller.createMyInvitation(buildAuthReq('user-1', 'USER'));
+			const result = await controller.createMyInvitation(
+				{}, // body: maxUses 省略
+				buildAuthReq('user-1', 'USER'),
+			);
 
-			expect(service.createForUser).toHaveBeenCalledWith({ id: 'user-1', role: 'USER' });
+			expect(service.createForUser).toHaveBeenCalledWith(
+				{ id: 'user-1', role: 'USER' },
+				{ maxUses: 1 },
+			);
 			expect(result).toEqual({
 				id: 'inv-1',
 				code: 'newcode001',
@@ -131,13 +205,46 @@ describe('InvitationController', () => {
 			});
 		});
 
+		it('maxUses=5 を body で受け取り createForUser に { maxUses:5 } を渡す', async () => {
+			service.createForUser.mockResolvedValue({
+				id: 'inv-2',
+				code: 'campcode01',
+				maxUses: 5,
+				usedCount: 0,
+				expiresAt: null,
+				createdAt: new Date('2026-01-01T00:00:00.000Z'),
+				createdById: 'user-1',
+			});
+
+			await controller.createMyInvitation({ maxUses: 5 }, buildAuthReq('user-1', 'USER'));
+
+			expect(service.createForUser).toHaveBeenCalledWith(
+				{ id: 'user-1', role: 'USER' },
+				{ maxUses: 5 },
+			);
+		});
+
 		it('QUOTA_EXHAUSTED は Service の throw をそのまま伝播', async () => {
 			service.createForUser.mockRejectedValue(
 				new AppException(ERROR_CODES.INVITATION.QUOTA_EXHAUSTED, 400),
 			);
 
-			await expect(controller.createMyInvitation(buildAuthReq('user-1'))).rejects.toMatchObject({
+			await expect(
+				controller.createMyInvitation({} as any, buildAuthReq('user-1')),
+			).rejects.toMatchObject({
 				code: ERROR_CODES.INVITATION.QUOTA_EXHAUSTED,
+			});
+		});
+
+		it('INVALID_INPUT（同時有効数超過）は Service の throw をそのまま伝播', async () => {
+			service.createForUser.mockRejectedValue(
+				new AppException(ERROR_CODES.VALIDATION.INVALID_INPUT, 400),
+			);
+
+			await expect(
+				controller.createMyInvitation({ maxUses: 3 } as any, buildAuthReq('user-1')),
+			).rejects.toMatchObject({
+				code: ERROR_CODES.VALIDATION.INVALID_INPUT,
 			});
 		});
 	});
@@ -284,7 +391,7 @@ describe('InvitationController', () => {
 				createdById: 'user-1',
 			});
 
-			const result = await controller.createMyInvitation(buildAuthReq('user-1'));
+			const result = await controller.createMyInvitation({}, buildAuthReq('user-1'));
 
 			expect(result.shareUrl).toBe('https://app.example.com/invite/normCode01');
 		});
@@ -301,7 +408,7 @@ describe('InvitationController', () => {
 				createdById: 'user-1',
 			});
 
-			const result = await controller.createMyInvitation(buildAuthReq('user-1'));
+			const result = await controller.createMyInvitation({}, buildAuthReq('user-1'));
 
 			expect(result.shareUrl).toBe('https://app.example.com/invite/normCode02');
 		});

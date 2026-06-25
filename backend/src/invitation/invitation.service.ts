@@ -1,10 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Prisma, type InvitationCode } from '@prisma/client';
+import * as Sentry from '@sentry/nestjs';
+import { InvitationPerkType, Prisma, type InvitationCode } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { ERROR_CODES, throwBadRequest, throwNotFound } from '../common/exceptions';
 import { AuthorizationService } from '../common/services/authorization.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
+import { PerkGate, type InvitationPerkView } from './perk-gate';
+import { MAX_ACTIVE_INVITE_CODES } from './constants';
 import { CODE_GENERATOR, type CodeGenerator } from './utils/code-generator';
 import { QUOTA_POLICY, type QuotaPolicy } from './utils/quota-policy';
 
@@ -20,6 +23,7 @@ export interface InvitationContext {
 	creator: InvitationCreator;
 	expiresAt: Date | null;
 	usesRemaining: number;
+	perk: InvitationPerkView;
 }
 
 export interface UserQuotaSnapshot {
@@ -31,6 +35,10 @@ export interface UserQuotaSnapshot {
 export interface QuotaActor {
 	id: string;
 	role: 'USER' | 'ADMIN';
+}
+
+export interface CreateCampaignOptions {
+	maxUses?: number;
 }
 
 const CREATE_RETRY_LIMIT = 3;
@@ -46,10 +54,32 @@ export class InvitationService {
 		private authorizationService: AuthorizationService,
 		@Inject(CODE_GENERATOR) private codeGenerator: CodeGenerator,
 		@Inject(QUOTA_POLICY) private quotaPolicy: QuotaPolicy,
+		private perkGate: PerkGate,
 	) {}
 
 	async createInvitation(createInvitationDto: CreateInvitationDto, createdById: string) {
 		const code = this.generateLegacyInvitationCode();
+		const perkType = createInvitationDto.perkType ?? InvitationPerkType.NONE;
+		let perkCompMonths: number | null = null;
+
+		if (perkType === InvitationPerkType.COMP) {
+			const months = createInvitationDto.perkCompMonths;
+			if (months === undefined || months === null || months < 1 || months > 3) {
+				throwBadRequest(ERROR_CODES.VALIDATION.INVALID_INPUT);
+			}
+			perkCompMonths = months!;
+			Sentry.addBreadcrumb({
+				message: 'ADMIN issued COMP invitation code',
+				level: 'info',
+				data: { createdById, perkCompMonths },
+				type: 'default',
+			});
+		} else if (
+			createInvitationDto.perkCompMonths !== undefined &&
+			createInvitationDto.perkCompMonths !== null
+		) {
+			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_INPUT);
+		}
 
 		return this.prisma.invitationCode.create({
 			data: {
@@ -57,6 +87,8 @@ export class InvitationService {
 				maxUses: createInvitationDto.maxUses || 1,
 				expiresAt: createInvitationDto.expiresAt ? new Date(createInvitationDto.expiresAt) : null,
 				createdById,
+				perkType,
+				perkCompMonths,
 			},
 		});
 	}
@@ -98,6 +130,7 @@ export class InvitationService {
 			},
 			expiresAt: invitation.expiresAt,
 			usesRemaining: invitation.maxUses - invitation.usedCount,
+			perk: this.perkGate.resolvePerk(invitation),
 		};
 	}
 
@@ -109,12 +142,28 @@ export class InvitationService {
 		});
 	}
 
-	async createForUser(actor: QuotaActor): Promise<InvitationCode> {
+	async createForUser(actor: QuotaActor, options?: CreateCampaignOptions): Promise<InvitationCode> {
+		const maxUses = options?.maxUses ?? 1;
 		let lastError: unknown = null;
 
 		for (let attempt = 0; attempt < CREATE_RETRY_LIMIT; attempt++) {
 			try {
 				return await this.prisma.$transaction(async (tx) => {
+					// USER のみ: 同時有効コード数（未失効かつ usedCount < maxUses）を確認
+					if (actor.role === 'USER') {
+						const activeCodes = await tx.invitationCode.findMany({
+							where: {
+								createdById: actor.id,
+								OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+							},
+							select: { usedCount: true, maxUses: true },
+						});
+						const activeCount = activeCodes.filter((c) => c.usedCount < c.maxUses).length;
+						if (activeCount >= MAX_ACTIVE_INVITE_CODES) {
+							throwBadRequest(ERROR_CODES.VALIDATION.INVALID_INPUT);
+						}
+					}
+
 					const decision = await this.quotaPolicy.evaluateAndConsume(tx, actor);
 					if (!decision.allowed) {
 						throwBadRequest(decision.code);
@@ -124,7 +173,8 @@ export class InvitationService {
 					return tx.invitationCode.create({
 						data: {
 							code,
-							maxUses: 1,
+							maxUses,
+							perkType: InvitationPerkType.NONE,
 							createdById: actor.id,
 						},
 					});

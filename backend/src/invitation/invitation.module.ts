@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { InvitationController } from './invitation.controller';
 import { InvitationService } from './invitation.service';
+import { PerkGate } from './perk-gate';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
 import { CommonModule } from '../common/common.module';
@@ -12,9 +13,10 @@ import { QUOTA_POLICY, PrismaQuotaPolicy } from './utils/quota-policy';
 	controllers: [InvitationController],
 	providers: [
 		InvitationService,
+		PerkGate,
 		{ provide: CODE_GENERATOR, useClass: NanoidCodeGenerator },
 		{ provide: QUOTA_POLICY, useClass: PrismaQuotaPolicy },
 	],
-	exports: [InvitationService, CODE_GENERATOR, QUOTA_POLICY],
+	exports: [InvitationService, PerkGate, CODE_GENERATOR, QUOTA_POLICY],
 })
 export class InvitationModule {}

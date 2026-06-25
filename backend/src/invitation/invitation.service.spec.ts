@@ -1,9 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { Prisma } from '@prisma/client';
+import { Prisma, InvitationPerkType } from '@prisma/client';
 import { AppException, ERROR_CODES } from '../common/exceptions';
 import { AuthorizationService } from '../common/services/authorization.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { InvitationService } from './invitation.service';
+import { PerkGate } from './perk-gate';
 import { CODE_GENERATOR, type CodeGenerator } from './utils/code-generator';
 import { QUOTA_POLICY, type QuotaPolicy } from './utils/quota-policy';
 
@@ -25,9 +26,10 @@ describe('InvitationService', () => {
 	};
 	let codeGenerator: Mocked<CodeGenerator>;
 	let quotaPolicy: Mocked<QuotaPolicy>;
+	let perkGate: { resolvePerk: jest.Mock };
 	let authorizationService: AuthorizationService;
 	let txMock: {
-		invitationCode: Mocked<{ create: unknown }>;
+		invitationCode: Mocked<{ create: unknown; findMany: unknown }>;
 		user: Mocked<{ updateMany: unknown }>;
 	};
 
@@ -45,7 +47,10 @@ describe('InvitationService', () => {
 			$transaction: jest.fn(),
 		};
 		txMock = {
-			invitationCode: { create: jest.fn() },
+			invitationCode: {
+				create: jest.fn(),
+				findMany: jest.fn().mockResolvedValue([]), // default: active codes = 0
+			},
 			user: { updateMany: jest.fn() },
 		};
 		// default: run callback with txMock
@@ -59,6 +64,9 @@ describe('InvitationService', () => {
 		quotaPolicy = {
 			evaluateAndConsume: jest.fn(),
 		};
+		perkGate = {
+			resolvePerk: jest.fn().mockReturnValue({ type: 'none' }),
+		};
 
 		const moduleRef: TestingModule = await Test.createTestingModule({
 			providers: [
@@ -67,6 +75,7 @@ describe('InvitationService', () => {
 				{ provide: PrismaService, useValue: prisma },
 				{ provide: CODE_GENERATOR, useValue: codeGenerator },
 				{ provide: QUOTA_POLICY, useValue: quotaPolicy },
+				{ provide: PerkGate, useValue: perkGate },
 			],
 		}).compile();
 
@@ -84,6 +93,8 @@ describe('InvitationService', () => {
 		createdAt: new Date('2026-01-01'),
 		updatedAt: new Date('2026-01-01'),
 		createdById: 'user-cuid-abcdefghi',
+		perkType: 'NONE' as InvitationPerkType,
+		perkCompMonths: null as number | null,
 	};
 
 	describe('verifyInvitation', () => {
@@ -107,6 +118,7 @@ describe('InvitationService', () => {
 				},
 				expiresAt: null,
 				usesRemaining: 2,
+				perk: { type: 'none' },
 			});
 			expect(prisma.user.findUnique).toHaveBeenCalledWith({
 				where: { id: 'user-cuid-abcdefghi' },
@@ -115,6 +127,38 @@ describe('InvitationService', () => {
 			// PII (email) を select に含めない
 			const selectArg = prisma.user.findUnique.mock.calls[0][0].select;
 			expect(selectArg.email).toBeUndefined();
+		});
+
+		it('PerkGate.resolvePerk に invitation の perk 属性を渡して結果を perk に含める', async () => {
+			const inv = {
+				...baseInvitation,
+				perkType: 'COMP' as InvitationPerkType,
+				perkCompMonths: 2,
+			};
+			prisma.invitationCode.findUnique.mockResolvedValue(inv);
+			prisma.user.findUnique.mockResolvedValue({ id: 'user-cuid-abcdefghi', name: 'Marin' });
+			perkGate.resolvePerk.mockReturnValue({ type: 'comp', months: 2 });
+
+			const result = await service.verifyInvitation('abcde12345');
+
+			expect(perkGate.resolvePerk).toHaveBeenCalledWith(
+				expect.objectContaining({ perkType: 'COMP', perkCompMonths: 2 }),
+			);
+			expect(result.perk).toEqual({ type: 'comp', months: 2 });
+		});
+
+		it('フラグ OFF のとき perk は { type: "none" } になる', async () => {
+			prisma.invitationCode.findUnique.mockResolvedValue({
+				...baseInvitation,
+				perkType: 'COMP' as InvitationPerkType,
+				perkCompMonths: 3,
+			});
+			prisma.user.findUnique.mockResolvedValue({ id: 'user-cuid-abcdefghi', name: 'Marin' });
+			perkGate.resolvePerk.mockReturnValue({ type: 'none' });
+
+			const result = await service.verifyInvitation('abcde12345');
+
+			expect(result.perk).toEqual({ type: 'none' });
 		});
 
 		it('旧 32 文字 hex コードを同一ロジックで受理する（後方互換）', async () => {
@@ -214,9 +258,10 @@ describe('InvitationService', () => {
 	});
 
 	describe('createForUser', () => {
-		it('USER: quota 1 減算 + 招待発行を同一トランザクションで完了する', async () => {
+		it('USER: quota 1 減算 + 招待発行を同一トランザクションで完了する（perkType=NONE 固定）', async () => {
 			quotaPolicy.evaluateAndConsume.mockResolvedValue({ allowed: true, consumed: true });
 			txMock.invitationCode.create.mockResolvedValue({ ...baseInvitation });
+			txMock.invitationCode.findMany.mockResolvedValue([]);
 
 			const result = await service.createForUser({ id: 'user-cuid-abcdefghi', role: 'USER' });
 
@@ -230,10 +275,89 @@ describe('InvitationService', () => {
 				data: {
 					code: 'abcde12345',
 					maxUses: 1,
+					perkType: 'NONE',
 					createdById: 'user-cuid-abcdefghi',
 				},
 			});
 			expect(result).toEqual(baseInvitation);
+		});
+
+		it('maxUses=5 を options で指定すると create data に反映される', async () => {
+			quotaPolicy.evaluateAndConsume.mockResolvedValue({ allowed: true, consumed: true });
+			txMock.invitationCode.create.mockResolvedValue({ ...baseInvitation, maxUses: 5 });
+			txMock.invitationCode.findMany.mockResolvedValue([]);
+
+			await service.createForUser({ id: 'user-cuid-abcdefghi', role: 'USER' }, { maxUses: 5 });
+
+			expect(txMock.invitationCode.create).toHaveBeenCalledWith({
+				data: expect.objectContaining({ maxUses: 5, perkType: 'NONE' }),
+			});
+		});
+
+		it('USER: 有効コード数が MAX_ACTIVE_INVITE_CODES 到達で INVALID_INPUT を throw', async () => {
+			const { MAX_ACTIVE_INVITE_CODES } = await import('./constants');
+			const activeCodes = Array.from({ length: MAX_ACTIVE_INVITE_CODES }, (_, i) => ({
+				usedCount: 0,
+				maxUses: 1,
+				id: `inv-${i}`,
+			}));
+			txMock.invitationCode.findMany.mockResolvedValue(activeCodes);
+
+			await expect(
+				service.createForUser({ id: 'user-cuid-abcdefghi', role: 'USER' }),
+			).rejects.toMatchObject({
+				code: 'VAL001', // ERROR_CODES.VALIDATION.INVALID_INPUT
+			});
+			expect(txMock.invitationCode.create).not.toHaveBeenCalled();
+		});
+
+		it('USER: 有効コード数が MAX_ACTIVE_INVITE_CODES 未満なら発行できる', async () => {
+			const { MAX_ACTIVE_INVITE_CODES } = await import('./constants');
+			const activeCodes = Array.from({ length: MAX_ACTIVE_INVITE_CODES - 1 }, (_, i) => ({
+				usedCount: 0,
+				maxUses: 1,
+				id: `inv-${i}`,
+			}));
+			txMock.invitationCode.findMany.mockResolvedValue(activeCodes);
+			quotaPolicy.evaluateAndConsume.mockResolvedValue({ allowed: true, consumed: true });
+			txMock.invitationCode.create.mockResolvedValue({ ...baseInvitation });
+
+			await expect(
+				service.createForUser({ id: 'user-cuid-abcdefghi', role: 'USER' }),
+			).resolves.toBeDefined();
+		});
+
+		it('USER: usedCount >= maxUses のコードは有効数カウントに含めない', async () => {
+			const { MAX_ACTIVE_INVITE_CODES } = await import('./constants');
+			// 全て使い切ったコード MAX_ACTIVE_INVITE_CODES 個 → 有効数は 0
+			const exhaustedCodes = Array.from({ length: MAX_ACTIVE_INVITE_CODES }, (_, i) => ({
+				usedCount: 3,
+				maxUses: 3,
+				id: `inv-${i}`,
+			}));
+			txMock.invitationCode.findMany.mockResolvedValue(exhaustedCodes);
+			quotaPolicy.evaluateAndConsume.mockResolvedValue({ allowed: true, consumed: true });
+			txMock.invitationCode.create.mockResolvedValue({ ...baseInvitation });
+
+			await expect(
+				service.createForUser({ id: 'user-cuid-abcdefghi', role: 'USER' }),
+			).resolves.toBeDefined();
+		});
+
+		it('ADMIN: 有効コード数が MAX_ACTIVE_INVITE_CODES 到達でも発行できる（制限なし）', async () => {
+			const { MAX_ACTIVE_INVITE_CODES } = await import('./constants');
+			const activeCodes = Array.from({ length: MAX_ACTIVE_INVITE_CODES }, (_, i) => ({
+				usedCount: 0,
+				maxUses: 1,
+				id: `inv-${i}`,
+			}));
+			txMock.invitationCode.findMany.mockResolvedValue(activeCodes);
+			quotaPolicy.evaluateAndConsume.mockResolvedValue({ allowed: true, consumed: false });
+			txMock.invitationCode.create.mockResolvedValue({ ...baseInvitation, createdById: 'admin-1' });
+
+			await expect(service.createForUser({ id: 'admin-1', role: 'ADMIN' })).resolves.toBeDefined();
+			// ADMIN は findMany を呼ばない
+			expect(txMock.invitationCode.findMany).not.toHaveBeenCalled();
 		});
 
 		it('ADMIN: quota 非減算でコード発行（QuotaPolicy が consumed:false で戻る）', async () => {
@@ -265,6 +389,7 @@ describe('InvitationService', () => {
 
 		it('unique 衝突時は最大 3 回リトライする', async () => {
 			quotaPolicy.evaluateAndConsume.mockResolvedValue({ allowed: true, consumed: true });
+			txMock.invitationCode.findMany.mockResolvedValue([]);
 			const uniqueErr = new Prisma.PrismaClientKnownRequestError('unique', {
 				code: 'P2002',
 				clientVersion: 'test',
@@ -283,6 +408,7 @@ describe('InvitationService', () => {
 
 		it('3 回連続で unique 衝突した場合は最後の Prisma 例外を伝播', async () => {
 			quotaPolicy.evaluateAndConsume.mockResolvedValue({ allowed: true, consumed: true });
+			txMock.invitationCode.findMany.mockResolvedValue([]);
 			const uniqueErr = new Prisma.PrismaClientKnownRequestError('unique', {
 				code: 'P2002',
 				clientVersion: 'test',
@@ -297,6 +423,7 @@ describe('InvitationService', () => {
 
 		it('unique 以外の例外はリトライせず即座に伝播', async () => {
 			quotaPolicy.evaluateAndConsume.mockResolvedValue({ allowed: true, consumed: true });
+			txMock.invitationCode.findMany.mockResolvedValue([]);
 			const otherErr = new Error('boom');
 			txMock.invitationCode.create.mockRejectedValue(otherErr);
 
@@ -304,6 +431,72 @@ describe('InvitationService', () => {
 				otherErr,
 			);
 			expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+		});
+	});
+
+	describe('createInvitation — perk passthrough（ADMIN）', () => {
+		it('perkType=COMP + perkCompMonths=3 → create に perk が反映される', async () => {
+			prisma.invitationCode.create.mockResolvedValue({
+				...baseInvitation,
+				perkType: 'COMP',
+				perkCompMonths: 3,
+			});
+
+			await service.createInvitation(
+				{ maxUses: 1, perkType: 'COMP', perkCompMonths: 3 },
+				'admin-1',
+			);
+
+			expect(prisma.invitationCode.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					data: expect.objectContaining({ perkType: 'COMP', perkCompMonths: 3 }),
+				}),
+			);
+		});
+
+		it('perkType=NONE → perkCompMonths は null で create される', async () => {
+			prisma.invitationCode.create.mockResolvedValue({ ...baseInvitation });
+
+			await service.createInvitation({ maxUses: 1, perkType: 'NONE' }, 'admin-1');
+
+			expect(prisma.invitationCode.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					data: expect.objectContaining({ perkType: 'NONE', perkCompMonths: null }),
+				}),
+			);
+		});
+
+		it('perkType 省略 → perkType=NONE, perkCompMonths=null で create される', async () => {
+			prisma.invitationCode.create.mockResolvedValue({ ...baseInvitation });
+
+			await service.createInvitation({ maxUses: 1 }, 'admin-1');
+
+			expect(prisma.invitationCode.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					data: expect.objectContaining({ perkType: 'NONE', perkCompMonths: null }),
+				}),
+			);
+		});
+
+		it('perkType=COMP + perkCompMonths 未指定 → INVALID_INPUT を throw', async () => {
+			await expect(
+				service.createInvitation({ perkType: 'COMP' as any }, 'admin-1'),
+			).rejects.toMatchObject({ code: 'VAL001' });
+			expect(prisma.invitationCode.create).not.toHaveBeenCalled();
+		});
+
+		it('perkType=COMP + perkCompMonths=4 → INVALID_INPUT を throw', async () => {
+			await expect(
+				service.createInvitation({ perkType: 'COMP' as any, perkCompMonths: 4 }, 'admin-1'),
+			).rejects.toMatchObject({ code: 'VAL001' });
+			expect(prisma.invitationCode.create).not.toHaveBeenCalled();
+		});
+
+		it('perkType=NONE + perkCompMonths=2 → INVALID_INPUT を throw', async () => {
+			await expect(
+				service.createInvitation({ perkType: 'NONE' as any, perkCompMonths: 2 }, 'admin-1'),
+			).rejects.toMatchObject({ code: 'VAL001' });
+			expect(prisma.invitationCode.create).not.toHaveBeenCalled();
 		});
 	});
 
