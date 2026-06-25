@@ -97,6 +97,7 @@ test.describe('viral-invitation E2E', () => {
 				creator: { name: 'モサ子', maskedId: 'usr1***' },
 				expiresAt: null,
 				usesRemaining: 1,
+				perk: { type: 'none' },
 			});
 		});
 
@@ -139,9 +140,9 @@ test.describe('viral-invitation E2E', () => {
 		await page.goto(`/invite/${INVITATION_CODE}`);
 		await expect(page.getByText(/モサ子さんから招待されました/)).toBeVisible({ timeout: 10_000 });
 
-		// 招待コードが prefill されていること
-		const codeInput = page.locator('#invitationCode');
-		await expect(codeInput).toHaveValue(INVITATION_CODE);
+		// 招待コードが適用済みとして読み取り専用表示されること（Task 5.3 改修後の新 UI）
+		await expect(page.getByText(INVITATION_CODE)).toBeVisible();
+		await expect(page.getByText('✓ 適用済み')).toBeVisible();
 
 		// 招待モードでは最初に OAuth ボタンが出るので「メール/パスワードで登録」に切り替える
 		await page.getByRole('button', { name: 'メール/パスワードで登録' }).click();
@@ -352,5 +353,153 @@ test.describe('viral-invitation E2E', () => {
 			timeout: 5_000,
 		});
 		await expect(page.getByRole('button', { name: '共有' })).toBeVisible({ timeout: 5_000 });
+	});
+});
+
+// ─── Task 6.2: invitation-perks 登録 UX の E2E 検証 ────────────────────────────
+
+test.describe('invitation-perks 登録 UX E2E (Task 6.2)', () => {
+	test.beforeEach(async ({ page }) => {
+		await page.route('**/auth/me', async (route) => {
+			if (await handlePreflight(route)) return;
+			await route.fulfill({
+				status: 401,
+				headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+				body: JSON.stringify({ code: 'AUTH010', message: 'Unauthorized', statusCode: 401 }),
+			});
+		});
+		await page.route('**/auth/refresh', async (route) => {
+			if (await handlePreflight(route)) return;
+			await route.fulfill({
+				status: 401,
+				headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+				body: JSON.stringify({ code: 'AUTH010', message: 'Unauthorized', statusCode: 401 }),
+			});
+		});
+	});
+
+	// ─── 4.2 / 4.4 / 4.5 / 4.6: 特典なしコードの全 UI 要素検証 ───────────────
+
+	test('特典なしコードで: バッジ非表示・適用済みコード提示・ログイン導線・主要手段+展開ボタンが表示される (Req 4.2, 4.4, 4.5, 4.6)', async ({
+		page,
+	}) => {
+		await page.route('**/invitation/verify-context', async (route) => {
+			if (await handlePreflight(route)) return;
+			await jsonResponse(route, 201, {
+				code: INVITATION_CODE,
+				status: 'valid',
+				creator: { name: 'テスト招待者', maskedId: 'usr2***' },
+				expiresAt: null,
+				usesRemaining: 1,
+				perk: { type: 'none' },
+			});
+		});
+
+		await page.goto(`/invite/${INVITATION_CODE}`);
+		await expect(page.getByText(/テスト招待者さんから招待されました/)).toBeVisible({
+			timeout: 10_000,
+		});
+
+		// 4.6: 特典なしのとき PerkBadge が非表示
+		await expect(page.getByText(/AI 無料枠つき/)).not.toBeVisible();
+
+		// 4.2: 招待コードが適用済みとして読み取り専用提示
+		await expect(page.getByText(INVITATION_CODE)).toBeVisible();
+		await expect(page.getByText('✓ 適用済み')).toBeVisible();
+		// 編集可能な input は存在しない
+		await expect(page.locator('#invitationCode')).not.toBeAttached();
+
+		// 4.5: 主要手段（Google）が表示される
+		await expect(page.getByRole('button', { name: /Googleで登録/ })).toBeVisible();
+
+		// 4.5: 展開ボタンが表示される
+		await expect(page.getByRole('button', { name: '他の方法で登録' })).toBeVisible();
+
+		// 4.4: ログイン導線が表示される
+		await expect(page.getByRole('button', { name: 'ログイン' })).toBeVisible();
+	});
+
+	// ─── 4.5: 認証手段の展開操作 ──────────────────────────────────────────────
+
+	test('「他の方法で登録」をクリックすると追加プロバイダが表示される (Req 4.5)', async ({
+		page,
+	}) => {
+		await page.route('**/invitation/verify-context', async (route) => {
+			if (await handlePreflight(route)) return;
+			await jsonResponse(route, 201, {
+				code: INVITATION_CODE,
+				status: 'valid',
+				creator: { name: 'テスト招待者', maskedId: 'usr2***' },
+				expiresAt: null,
+				usesRemaining: 1,
+				perk: { type: 'none' },
+			});
+		});
+
+		await page.goto(`/invite/${INVITATION_CODE}`);
+		await expect(page.getByText(/テスト招待者さんから招待されました/)).toBeVisible({
+			timeout: 10_000,
+		});
+
+		// 展開前: GitHub は非表示
+		await expect(page.getByRole('button', { name: /GitHubで登録/ })).not.toBeVisible();
+
+		// 展開操作
+		await page.getByRole('button', { name: '他の方法で登録' }).click();
+
+		// 展開後: 追加プロバイダが表示される
+		await expect(page.getByRole('button', { name: /GitHubで登録/ })).toBeVisible();
+		await expect(page.getByRole('button', { name: /LINEで登録/ })).toBeVisible();
+	});
+
+	// ─── 4.4: ログイン導線 → login モード遷移 ────────────────────────────────
+
+	test('「ログイン」をクリックするとログインフォームに遷移する (Req 4.4)', async ({ page }) => {
+		await page.route('**/invitation/verify-context', async (route) => {
+			if (await handlePreflight(route)) return;
+			await jsonResponse(route, 201, {
+				code: INVITATION_CODE,
+				status: 'valid',
+				creator: { name: 'テスト招待者', maskedId: 'usr2***' },
+				expiresAt: null,
+				usesRemaining: 1,
+				perk: { type: 'none' },
+			});
+		});
+
+		await page.goto(`/invite/${INVITATION_CODE}`);
+		await expect(page.getByRole('button', { name: 'ログイン' })).toBeVisible({ timeout: 10_000 });
+
+		// ログイン導線をクリック
+		await page.getByRole('button', { name: 'ログイン' }).click();
+
+		// login モードに遷移 → メール/パスワード入力フォームが現れる
+		await expect(page.locator('input[type="email"]')).toBeVisible();
+		await expect(page.locator('input[type="password"]')).toBeVisible();
+	});
+
+	// ─── 4.3: 特典ありコードで PerkBadge が表示される ────────────────────────
+
+	test('特典ありコード（COMP 3ヶ月）で PerkBadge が表示される (Req 4.3)', async ({ page }) => {
+		await page.route('**/invitation/verify-context', async (route) => {
+			if (await handlePreflight(route)) return;
+			await jsonResponse(route, 201, {
+				code: INVITATION_CODE,
+				status: 'valid',
+				creator: { name: 'テスト招待者', maskedId: 'usr2***' },
+				expiresAt: null,
+				usesRemaining: 1,
+				perk: { type: 'comp', months: 3 },
+			});
+		});
+
+		await page.goto(`/invite/${INVITATION_CODE}`);
+		await expect(page.getByText(/テスト招待者さんから招待されました/)).toBeVisible({
+			timeout: 10_000,
+		});
+
+		// PerkBadge が表示される
+		await expect(page.getByText(/AI 無料枠つき/)).toBeVisible();
+		await expect(page.getByText(/3 ヶ月/)).toBeVisible();
 	});
 });
