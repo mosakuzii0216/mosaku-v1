@@ -44,6 +44,7 @@ const baseContext: InvitationContextResponse = {
 	creator: { name: 'モサ子', maskedId: 'usr1***' },
 	expiresAt: null,
 	usesRemaining: 1,
+	perk: { type: 'none' },
 };
 
 describe('AuthForm - 新フロー (タスク7.2)', () => {
@@ -96,12 +97,15 @@ describe('AuthForm - 新フロー (タスク7.2)', () => {
 			expect(screen.getByText(/あるユーザーから招待されました/)).toBeTruthy();
 		});
 
-		it('招待コード入力欄に prefilledInvitationCode が入っている', () => {
+		it('招待コードが適用済みとして読み取り専用表示される（編集 input なし）', () => {
 			render(
 				withQuery(<AuthForm prefilledInvitationCode="k9x7m2j3pq" inviterContext={baseContext} />),
 			);
+			// 編集可能な input は出ない
 			const input = document.getElementById('invitationCode') as HTMLInputElement;
-			expect(input.value).toBe('k9x7m2j3pq');
+			expect(input).toBeNull();
+			// コードが読み取り専用で表示される
+			expect(screen.getByText('k9x7m2j3pq')).toBeTruthy();
 		});
 
 		it('Google で登録ボタンを押すと startOAuthRegistration が呼ばれる', async () => {
@@ -127,6 +131,46 @@ describe('AuthForm - 新フロー (タスク7.2)', () => {
 			await waitFor(() => {
 				expect(assignMock).toHaveBeenCalledWith('https://google/auth');
 			});
+		});
+
+		it('Google は主要手段として常に表示される', () => {
+			render(
+				withQuery(<AuthForm prefilledInvitationCode="k9x7m2j3pq" inviterContext={baseContext} />),
+			);
+			expect(screen.getByRole('button', { name: /Googleで登録/ })).toBeTruthy();
+		});
+
+		it('GitHub は展開前に非表示', () => {
+			render(
+				withQuery(<AuthForm prefilledInvitationCode="k9x7m2j3pq" inviterContext={baseContext} />),
+			);
+			expect(screen.queryByRole('button', { name: /GitHubで登録/ })).toBeNull();
+		});
+
+		it('ログイン導線が表示される', () => {
+			render(
+				withQuery(<AuthForm prefilledInvitationCode="k9x7m2j3pq" inviterContext={baseContext} />),
+			);
+			expect(screen.getByText(/ログイン/)).toBeTruthy();
+		});
+
+		it('comp perk のとき PerkBadge が表示される', () => {
+			render(
+				withQuery(
+					<AuthForm
+						prefilledInvitationCode="k9x7m2j3pq"
+						inviterContext={{ ...baseContext, perk: { type: 'comp', months: 3 } }}
+					/>,
+				),
+			);
+			expect(screen.getByText(/AI 無料枠つき/)).toBeTruthy();
+		});
+
+		it('none perk のとき PerkBadge が非表示', () => {
+			render(
+				withQuery(<AuthForm prefilledInvitationCode="k9x7m2j3pq" inviterContext={baseContext} />),
+			);
+			expect(screen.queryByText(/AI 無料枠つき/)).toBeNull();
 		});
 
 		it('startOAuthRegistration が ApiError を投げたとき invitationErrorMessages の文言を表示する', async () => {

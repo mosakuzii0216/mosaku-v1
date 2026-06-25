@@ -100,6 +100,7 @@ describe('InvitePage', () => {
 				creator: { name: 'モサ子', maskedId: 'usr1***' },
 				expiresAt: null,
 				usesRemaining: 1,
+				perk: { type: 'none' },
 			};
 			verifyInvitationContext.mockResolvedValue(mockResponse);
 
@@ -114,26 +115,45 @@ describe('InvitePage', () => {
 				creator: { name: null, maskedId: 'usr1***' },
 				expiresAt: null,
 				usesRemaining: 1,
+				perk: { type: 'none' },
 			});
 
 			renderInvitePage('k9x7m2j3pq');
 			await waitFor(() => expect(screen.getByText(/あるユーザーから招待されました/)).toBeTruthy());
 		});
 
-		it('招待コード入力欄に prefill 値が入る', async () => {
+		it('招待コードが読み取り専用で表示される（編集 input なし）', async () => {
 			verifyInvitationContext.mockResolvedValue({
 				code: 'k9x7m2j3pq',
 				status: 'valid',
 				creator: { name: 'モサ子', maskedId: 'usr1***' },
 				expiresAt: null,
 				usesRemaining: 1,
+				perk: { type: 'none' },
 			});
 
 			renderInvitePage('k9x7m2j3pq');
 			await waitFor(() => {
+				// 編集可能な input は出ない
 				const input = document.getElementById('invitationCode') as HTMLInputElement;
-				expect(input.value).toBe('k9x7m2j3pq');
+				expect(input).toBeNull();
+				// コードが読み取り専用で表示される
+				expect(screen.getByText('k9x7m2j3pq')).toBeTruthy();
 			});
+		});
+
+		it('comp perk のとき PerkBadge が表示される', async () => {
+			verifyInvitationContext.mockResolvedValue({
+				code: 'k9x7m2j3pq',
+				status: 'valid',
+				creator: { name: 'モサ子', maskedId: 'usr1***' },
+				expiresAt: null,
+				usesRemaining: 1,
+				perk: { type: 'comp', months: 3 },
+			});
+
+			renderInvitePage('k9x7m2j3pq');
+			await waitFor(() => expect(screen.getByText(/AI 無料枠つき/)).toBeTruthy());
 		});
 	});
 
@@ -180,6 +200,7 @@ describe('InvitePage', () => {
 				creator: { name: 'モサ子', maskedId: 'usr1***' },
 				expiresAt: null,
 				usesRemaining: 1,
+				perk: { type: 'none' },
 			});
 
 			renderInvitePage('k9x7m2j3pq');

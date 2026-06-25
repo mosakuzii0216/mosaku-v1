@@ -1,3 +1,10 @@
+// backend invitation/constants.ts と同期（変更時は backend/src/invitation/constants.ts も更新）
+export const MAX_CAMPAIGN_MAX_USES = 20;
+export const MAX_ACTIVE_INVITE_CODES = 3;
+
+// backend InvitationPerkType enum と同期（NONE → 'none' / COMP → 'comp'）
+export type InvitationPerkView = { type: 'none' } | { type: 'comp'; months: number };
+
 /**
  * 招待コード関連エラーコード（backend `ERROR_CODES.INVITATION` と同期）
  */
@@ -52,6 +59,8 @@ export interface InvitationContextResponse {
 	};
 	expiresAt: string | null;
 	usesRemaining: number;
+	// backend InvitationPerkView と同期。COMP_PERK_ENABLED=false の間は常に { type:'none' }
+	perk: InvitationPerkView;
 }
 
 /**
