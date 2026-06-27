@@ -1,0 +1,141 @@
+/*
+ * Shell Token Contract — theme-immersive-world / Task 1
+ * =====================================================
+ * シェル全域（玄関＝メモ一覧・ホーム・ヘッダーナビ）の配色を「生の色」ではなく
+ * 「意味単位のセマンティックトークン」で扱うための共通語彙。
+ *
+ * なぜトークンか（ロールバック回避の前提条件）:
+ *   過去 mosaku-brand-theme Phase A で `.theme-root button` 等の要素型セレクタが
+ *   Tailwind ユーティリティ（text-gray-600 等）と同詳細度で競合し、白背景ヘッダーの
+ *   ナビ文字が消失してロールバックした。本契約は「面側にトークンを当て、汎用 HTML
+ *   要素の文字色を要素型セレクタで直接上書きしない」方式（data-theme 属性＋クラス選択子）
+ *   を前提に置くことで、同じ轍を構造的に防ぐ。
+ *
+ * 層所有（Layer①: bundle / render-blocking）:
+ *   本ファイルは index.css から @import される Layer① で、`:root` 中立既定値と
+ *   `[data-theme="<slug>"]` の全「色・構造」トークン値（surface/on-surface/variant/
+ *   outline/accent/state/focus-ring/elevation/space/font）を持つ。
+ *   重量物（テクスチャ／data-URI noise／本文面 .memo-title/.memo-content）は
+ *   ここには置かず Layer③（public/themes/mori/mori.css, mori 有効時のみ fetch）へ分離する。
+ *   → 色トークンの「単一の源泉」を本ファイルに保ち、非森ユーザーのバンドルを増やさない（7.5）。
+ *
+ * 契約の不変則:
+ *   - すべての `--surface*` に、可読性 AA を満たす `--on-surface*` をペアで定義する（1.3）。
+ *   - 役割名は 4 テーマ（mori/umi/yoru/asa）共通。値だけ差し替えで相乗りできる（1.5, 6.2）。
+ *   - 明（朝想定）でも暗（森）でも成立する明暗反転耐性のある役割契約とする（6.3）。
+ *   - 中立既定値（:root）は現行の生 Tailwind と一致させ、data-theme 未設定時は
+ *     本スペック実装前と同一の見た目を保つ（7.1）。
+ */
+
+:root {
+	/* --- 面と前景文字のペア（surface ↔ on-surface） --- */
+	--surface: #ffffff; /* 主要面の地（card / header / list） */
+	--on-surface: #111827; /* 面上の本文文字 ＝ Tailwind gray-900 */
+	--surface-variant: #f9fafb; /* 副次面 ＝ Tailwind gray-50 */
+	--on-surface-variant: #6b7280; /* 低強調文字 ＝ Tailwind gray-500 */
+
+	/* --- 境界・アクセント --- */
+	--outline: #e5e7eb; /* 境界 / 分割 ＝ Tailwind gray-200 */
+	--accent: #3b82f6; /* 強調 / 主要操作 ＝ Tailwind blue-500 */
+	--on-accent: #ffffff; /* accent 上の文字 */
+
+	/* --- 状態（ホバー / 選択 / フォーカス） --- */
+	--state-hover: rgba(17, 24, 39, 0.04); /* ホバー層（gray-900 を薄く重ねる） */
+	--state-selected: #dbeafe; /* 選択層の地 ＝ Tailwind blue-100 */
+	--on-state-selected: #1e40af; /* 選択層上の文字 ＝ Tailwind blue-800 */
+	--focus-ring: #3b82f6; /* フォーカス輪郭 ＝ Tailwind blue-500 */
+
+	/* --- 起動時 critical 用の地色（<html> 背景／pre-mount フォールバック） --- */
+	--shell-base-bg: #ffffff;
+
+	/* --- 奥行き（エレベーション）＝ Tailwind shadow-sm / md / lg 近似 --- */
+	--elevation-1: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+	--elevation-2: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+	--elevation-3: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+
+	/* --- テクスチャ（重量物の実体は Layer③。契約としては既定 none） --- */
+	--surface-texture: none;
+
+	/* --- 余白スケール（Tailwind 近似の意図的なスペーシング） --- */
+	--shell-space-1: 0.25rem;
+	--shell-space-2: 0.5rem;
+	--shell-space-3: 0.75rem;
+	--shell-space-4: 1rem;
+	--shell-space-5: 1.5rem;
+	--shell-space-6: 2rem;
+
+	/* --- タイポグラフィ階層（中立＝現行 body のシステムフォント） --- */
+	--shell-font:
+		-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell',
+		'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+	--shell-text-sm: 0.875rem;
+	--shell-text-base: 1rem;
+	--shell-text-lg: 1.25rem;
+	--shell-text-xl: 1.75rem;
+	--shell-line-height: 1.6;
+	--shell-letter-spacing: 0;
+}
+
+/*
+ * mori（森・dark）の全「色・構造」トークン値（Layer①＝色トークンの単一の源泉）。
+ * ----------------------------------------------------------------------------
+ * 値の正しさ（コントラスト）は tokens.contrast.test.ts が機械検証する。半透明 surface は
+ * 「生きた背景（MoriEffectLayer）の最明値＝白粒子／霧 #ffffff が透けても本文 AA(4.5:1)」を
+ * 満たす alpha の下限で固定している（没入のため不透明にしすぎない）。実測（白床合成・worst-case）:
+ *   on-surface/surface 6.27 ・ on-surface-variant/surface-variant 5.19 ・ focus-ring/surface 4.98。
+ * テクスチャ／data-URI noise／本文面（.memo-title / .memo-content）はここに置かず、
+ * Layer③（public/themes/mori/mori.css, mori 有効時のみ fetch）が後追いで精緻化する（7.5）。
+ */
+[data-theme='mori'] {
+	/* --- 面と前景文字のペア（半透明 scrim で生きた背景を透かす, 5.2） --- */
+	--surface: rgba(6, 38, 22, 0.74); /* 主要面＝深緑 scrim（白床合成でも on-surface 6.27:1） */
+	--on-surface: #e8f6ee; /* 面上の本文＝ほぼ白緑 */
+	--surface-variant: rgba(7, 33, 19, 0.73); /* 副次面＝やや沈んだ recessed 緑 */
+	--on-surface-variant: #bfe6d0; /* 低強調文字＝mint（on-surface より暗いが白床でも 4.5↑, 3.4） */
+
+	/* --- 境界・アクセント --- */
+	--outline: rgba(134, 239, 172, 0.3); /* 境界＝署名グリーンを薄く（非テキスト境界） */
+	--accent: #86efac; /* 強調／主要操作＝署名グリーン */
+	--on-accent: #04230f; /* accent 上の文字＝極深緑（on-accent/accent 11.94:1） */
+
+	/* --- 状態（ホバー／選択／フォーカス）。暗面に署名グリーンを薄く重ねて区別（3.3） --- */
+	--state-hover: rgba(134, 239, 172, 0.1);
+	--state-selected: rgba(134, 239, 172, 0.18);
+	--on-state-selected: #f0fdf4; /* 選択層は薄い緑オーバーレイ＝暗面が残り明文字が読める */
+	--focus-ring: #86efac; /* フォーカス輪郭＝署名グリーン（surface 上 4.98:1, 3.3） */
+
+	/* --- 起動時 critical 用の地色（<html> 背景／pre-mount・reduced-motion フォールバック） --- */
+	--shell-base-bg: #062616; /* 深い森の地＝生きた背景の下の最深床 */
+
+	/* --- 奥行き：緑寄せ多層影＋内側ハイライト（素の影に依存しない意図的階層, 4.2） --- */
+	--elevation-1: 0 1px 2px 0 rgba(0, 18, 9, 0.45), inset 0 1px 0 0 rgba(134, 239, 172, 0.06);
+	--elevation-2:
+		0 4px 6px -1px rgba(0, 18, 9, 0.5), 0 2px 4px -2px rgba(0, 18, 9, 0.4),
+		inset 0 1px 0 0 rgba(134, 239, 172, 0.08);
+	--elevation-3:
+		0 10px 15px -3px rgba(0, 18, 9, 0.55), 0 4px 6px -4px rgba(0, 18, 9, 0.45),
+		inset 0 1px 0 0 rgba(134, 239, 172, 0.1);
+
+	/* --- テクスチャは Layer③（mori.css）が後追いで付与。ここでは :root の none を継承し色の源泉を一本化（7.5） --- */
+
+	/* --- 余白：森は広め基調（意図的な間, 4.3）。小刻みステップは :root を継承 --- */
+	--shell-space-3: 0.875rem;
+	--shell-space-4: 1.125rem;
+	--shell-space-5: 1.75rem;
+	--shell-space-6: 2.5rem;
+
+	/* --- タイポ：游明朝＝ブランド署名フォント（4.4）。字間・行間を緩めて静謐に --- */
+	--shell-font:
+		'Yu Mincho', 'YuMincho', 'Hiragino Mincho ProN', 'Hiragino Mincho Pro', 'Noto Serif JP', serif;
+	--shell-line-height: 1.7;
+	--shell-letter-spacing: 0.02em;
+}
+
+/*
+ * umi（海）／ yoru（夜）／ asa（朝）は本スペックでは値を実装しない（6.4）。
+ * 同一の役割名トークンに値を与えるだけで相乗りできる「受け皿」を placeholder として明示する。
+ * 値実装と全体没入は後続スペックに委ねる（基盤の受け皿のみ用意）。
+ */
+/* [data-theme='umi']  { ...海（青・dark）の値を後続スペックで実装... } */
+/* [data-theme='yoru'] { ...夜（藍・dark）の値を後続スペックで実装... } */
+/* [data-theme='asa']  { ...朝（橙・明）の値を後続スペックで実装（唯一の明テーマ・明暗反転耐性の検証台）... } */

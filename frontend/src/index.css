@@ -1,3 +1,8 @@
+/* Shell Token Contract（Layer① / render-blocking）。
+   @import は他ルールより前に置く必要があるため @tailwind より上に配置する。
+   中立既定値は現行 Tailwind と一致するため data-theme 未設定時の見た目は不変（7.1）。 */
+@import './themes/shell/tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
