@@ -56,6 +56,10 @@
 	/* --- テクスチャ（重量物の実体は Layer③。契約としては既定 none） --- */
 	--surface-texture: none;
 
+	/* --- 面の半透明 backdrop（磨りガラス）。中立は none＝今日の見た目を保つ（7.1）。
+	       テーマ毎に強度を差し替えるだけで相乗りできる構造トークン（6.2） --- */
+	--surface-backdrop: none;
+
 	/* --- 余白スケール（Tailwind 近似の意図的なスペーシング） --- */
 	--shell-space-1: 0.25rem;
 	--shell-space-2: 0.5rem;
@@ -117,6 +121,9 @@
 		inset 0 1px 0 0 rgba(134, 239, 172, 0.1);
 
 	/* --- テクスチャは Layer③（mori.css）が後追いで付与。ここでは :root の none を継承し色の源泉を一本化（7.5） --- */
+
+	/* --- 面の半透明 backdrop：磨りガラスで生きた背景（MoriEffectLayer）を透かし玄関〜本文を連続させる（5.2） --- */
+	--surface-backdrop: blur(12px) saturate(125%);
 
 	/* --- 余白：森は広め基調（意図的な間, 4.3）。小刻みステップは :root を継承 --- */
 	--shell-space-3: 0.875rem;

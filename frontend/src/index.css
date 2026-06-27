@@ -3,6 +3,10 @@
    中立既定値は現行 Tailwind と一致するため data-theme 未設定時の見た目は不変（7.1）。 */
 @import './themes/shell/tokens.css';
 
+/* Quality Primitives（Layer① / render-blocking）。tokens.css のトークンを読む
+   theme-neutral な構造クラス（.shell-*）。色は持たず必ず var(--token) 経由（1.2, 1.4）。 */
+@import './themes/shell/primitives.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
