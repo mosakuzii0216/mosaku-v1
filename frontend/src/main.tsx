@@ -5,6 +5,11 @@ import App from './App.tsx';
 import { envValidator } from './utils/env';
 import { logger } from './utils/logger';
 import { initSentry } from './utils/sentry/init';
+import { bootShellTheme } from './themes/shell/shellThemeBoot';
+
+// シェルテーマを永続値から起動時適用（index.html インラインの module 側 DRY 再利用・冪等）。
+// FOUC の本体はインライン script だが、dev HMR 等インラインを経ない経路でも適用を担保する。
+bootShellTheme();
 
 // アプリケーション起動前に環境変数を検証（fail-fast）
 try {
