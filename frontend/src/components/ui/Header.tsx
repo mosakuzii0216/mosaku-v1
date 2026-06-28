@@ -49,22 +49,17 @@ export const Header = (_props?: HeaderProps) => {
 	};
 
 	return (
-		<header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+		<header className="shell-surface border-b border-[var(--outline)] px-4 py-3 flex items-center justify-between">
 			<div className="flex items-center">
 				{currentView !== 'list' && (
-					<button
-						onClick={goToMemoList}
-						className="mr-3 p-2 text-gray-600 hover:text-gray-900 md:hidden"
-					></button>
+					<button onClick={goToMemoList} className="shell-nav-item mr-3 md:hidden"></button>
 				)}
 				{/* ナビゲーションボタン */}
 				<div className="ml-6 flex items-center space-x-2">
 					<button
 						onClick={goToMemoList}
-						className={`px-3 py-2 rounded text-sm font-medium transition-colors inline-flex items-center ${
-							currentObject === 'memo' && currentView === 'list'
-								? 'bg-blue-100 text-blue-800'
-								: 'text-gray-600 hover:text-gray-900'
+						className={`shell-nav-item text-sm font-medium inline-flex items-center ${
+							currentObject === 'memo' && currentView === 'list' ? 'is-active' : ''
 						}`}
 					>
 						<StickyNote className="w-4 h-4 sm:mr-1.5" />
@@ -72,10 +67,8 @@ export const Header = (_props?: HeaderProps) => {
 					</button>
 					<button
 						onClick={goToNotebookList}
-						className={`px-3 py-2 rounded text-sm font-medium transition-colors inline-flex items-center ${
-							currentObject === 'notebook'
-								? 'bg-blue-100 text-blue-800'
-								: 'text-gray-600 hover:text-gray-900'
+						className={`shell-nav-item text-sm font-medium inline-flex items-center ${
+							currentObject === 'notebook' ? 'is-active' : ''
 						}`}
 					>
 						<LibraryBig className="w-4 h-4 sm:mr-1.5" />
@@ -83,10 +76,8 @@ export const Header = (_props?: HeaderProps) => {
 					</button>
 					<button
 						onClick={goToTags}
-						className={`px-3 py-2 rounded text-sm font-medium transition-colors inline-flex items-center ${
-							currentObject === 'tag'
-								? 'bg-blue-100 text-blue-800'
-								: 'text-gray-600 hover:text-gray-900'
+						className={`shell-nav-item text-sm font-medium inline-flex items-center ${
+							currentObject === 'tag' ? 'is-active' : ''
 						}`}
 					>
 						<Tag className="w-4 h-4 sm:mr-1.5" />
@@ -94,10 +85,8 @@ export const Header = (_props?: HeaderProps) => {
 					</button>
 					<button
 						onClick={goToTrash}
-						className={`px-3 py-2 rounded text-sm font-medium transition-colors inline-flex items-center ${
-							currentView === 'trash'
-								? 'bg-blue-100 text-blue-800'
-								: 'text-gray-600 hover:text-gray-900'
+						className={`shell-nav-item text-sm font-medium inline-flex items-center ${
+							currentView === 'trash' ? 'is-active' : ''
 						}`}
 					>
 						<Trash2 className="w-4 h-4 sm:mr-1.5" />
@@ -131,11 +120,13 @@ export const Header = (_props?: HeaderProps) => {
 
 						{/* ドロップダウンメニュー */}
 						{isDropdownOpen && (
-							<div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
+							<div className="shell-panel absolute right-0 mt-2 w-64 py-2 px-0 z-50">
 								{/* ユーザー情報 */}
-								<div className="px-4 py-3 border-b border-gray-100">
-									<div className="font-medium text-gray-900">{user.name || 'ユーザー'}</div>
-									<div className="text-sm text-gray-500">{user.email}</div>
+								<div className="px-4 py-3 border-b border-[var(--outline)]">
+									<div className="font-medium text-[var(--on-surface)]">
+										{user.name || 'ユーザー'}
+									</div>
+									<div className="text-sm text-[var(--on-surface-variant)]">{user.email}</div>
 									<div className="mt-1">
 										<span className="inline-block px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
 											{user.role}
@@ -147,7 +138,7 @@ export const Header = (_props?: HeaderProps) => {
 								<Link
 									to="/settings"
 									onClick={() => setIsDropdownOpen(false)}
-									className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+									className="w-full px-4 py-2 text-left text-sm text-[var(--on-surface)] hover:bg-[var(--state-hover)] flex items-center"
 								>
 									<Settings className="w-4 h-4 mr-3" />
 									設定
@@ -158,7 +149,7 @@ export const Header = (_props?: HeaderProps) => {
 										setIsDropdownOpen(false);
 										openFeedback();
 									}}
-									className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+									className="w-full px-4 py-2 text-left text-sm text-[var(--on-surface)] hover:bg-[var(--state-hover)] flex items-center"
 								>
 									<MessageSquare className="w-4 h-4 mr-3" />
 									フィードバックを送る
