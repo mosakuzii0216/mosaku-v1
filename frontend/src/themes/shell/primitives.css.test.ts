@@ -191,14 +191,18 @@ describe('primitives.css — Quality Primitives (Layer① / bundle, render-block
 			expect(stripped, 'rgb()/rgba() を直書きしている').not.toMatch(/\brgba?\(/);
 		});
 
-		it('トップレベルセレクタは全て .shell-* クラス（要素型セレクタで配色を漏らさない）', () => {
+		it('トップレベルセレクタは全て .shell-* / .app-shell クラス（要素型セレクタで配色を漏らさない）', () => {
 			for (const header of topLevelHeaders(stripped)) {
 				if (header.startsWith('@')) continue;
 				for (const part of header
 					.split(',')
 					.map((s) => s.trim())
 					.filter(Boolean)) {
-					expect(part.startsWith('.shell-'), `非 .shell- セレクタ: "${part}"`).toBe(true);
+					// .app-shell は玄関ルートの床（クラス選択子＝要素型ではない）。配色漏れの懸念は無い（4.1）。
+					expect(
+						part.startsWith('.shell-') || part === '.app-shell',
+						`非 .shell-/.app-shell セレクタ: "${part}"`,
+					).toBe(true);
 				}
 			}
 		});

@@ -106,6 +106,7 @@ const mockTheme = {
 	name: 'mori',
 	cssFilePath: 'mori/mori.css',
 	styles: undefined,
+	metadata: { effectKey: 'mori' as const },
 };
 
 describe('MobileLayout - ホーム画面ルーティング', () => {
@@ -138,6 +139,27 @@ describe('MobileLayout テーマルート適用', () => {
 		const root = container.firstChild as HTMLElement;
 		expect(root.classList.contains('theme-root')).toBe(false);
 		expect(root.dataset.themeId).toBeUndefined();
+	});
+
+	it('ルート要素には常に app-shell クラスが付与される（玄関の面化 / 2.2）', () => {
+		vi.mocked(useActiveTheme).mockReturnValue(null);
+		const { container } = render(<MobileLayout />);
+		const root = container.firstChild as HTMLElement;
+		expect(root.classList.contains('app-shell')).toBe(true);
+	});
+
+	it('アクティブテーマが null の場合、data-theme 属性は付与されない（中立既定 / 7.1）', () => {
+		vi.mocked(useActiveTheme).mockReturnValue(null);
+		const { container } = render(<MobileLayout />);
+		const root = container.firstChild as HTMLElement;
+		expect(root.dataset.theme).toBeUndefined();
+	});
+
+	it('mori テーマ時、ルートに data-theme="mori" が付与される（玄関へ slug 適用 / 2.1）', () => {
+		vi.mocked(useActiveTheme).mockReturnValue(mockTheme);
+		const { container } = render(<MobileLayout />);
+		const root = container.firstChild as HTMLElement;
+		expect(root.dataset.theme).toBe('mori');
 	});
 
 	it('アクティブテーマが存在する場合、theme-root クラスと data-theme-id が付与される', () => {

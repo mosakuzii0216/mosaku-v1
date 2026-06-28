@@ -19,6 +19,7 @@ import { NotebookEditor } from '../notebook/NotebookEditor';
 import { MemoPalette } from '../memo/MemoPalette';
 import { FocusMemoOverlay } from '../memo/FocusMemoOverlay';
 import { HomeDashboard } from '../home/HomeDashboard';
+import { getEffectKey } from '../../types/theme';
 
 export const MobileLayout = () => {
 	const { currentObject, currentView } = useViewStore();
@@ -74,9 +75,9 @@ export const MobileLayout = () => {
 						return selectedMemo ? (
 							<MemoEditor memo={selectedMemo} />
 						) : (
-							<div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
+							<div className="flex flex-col items-center justify-center h-full text-center text-[var(--on-surface-variant)]">
 								<p>メモが選択されていません</p>
-								<p className="mt-2 text-sm text-gray-400">
+								<p className="mt-2 text-sm text-[var(--on-surface-variant)]">
 									新規作成:{' '}
 									{/Mac|iPod|iPhone|iPad/.test(window.navigator.platform)
 										? 'Cmd + Option'
@@ -107,7 +108,7 @@ export const MobileLayout = () => {
 
 			default:
 				return (
-					<div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
+					<div className="flex flex-col items-center justify-center h-full text-center text-[var(--on-surface-variant)]">
 						<p>メモ一覧は現在利用できません</p>
 					</div>
 				);
@@ -116,7 +117,8 @@ export const MobileLayout = () => {
 
 	return (
 		<div
-			className={`h-dvh flex flex-col bg-white ${activeTheme ? 'theme-root' : ''}`}
+			className={`h-dvh flex flex-col app-shell ${activeTheme ? 'theme-root' : ''}`}
+			data-theme={getEffectKey(activeTheme)}
 			data-theme-id={activeTheme?.id}
 		>
 			<Header onMemoCreateClick={goToMemoCreate} onNotebookCreateClick={goToNotebookCreate} />

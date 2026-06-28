@@ -48,6 +48,10 @@
 	/* --- 起動時 critical 用の地色（<html> 背景／pre-mount フォールバック） --- */
 	--shell-base-bg: #ffffff;
 
+	/* --- app-shell ルート面の地（中立＝地色で今日の白を保つ / 7.1）。テーマ時は透過させ、
+	       生きた背景を一本のソースで透かして不透明グラデ板の二重描画を防ぐ（G-4, 5.2） --- */
+	--app-shell-bg: var(--shell-base-bg);
+
 	/* --- 奥行き（エレベーション）＝ Tailwind shadow-sm / md / lg 近似 --- */
 	--elevation-1: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 	--elevation-2: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
@@ -110,6 +114,10 @@
 
 	/* --- 起動時 critical 用の地色（<html> 背景／pre-mount・reduced-motion フォールバック） --- */
 	--shell-base-bg: #062616; /* 深い森の地＝生きた背景の下の最深床 */
+
+	/* --- app-shell ルート面は透過：MoriEffectLayer（fixed z-0）と <html> 地色を一本のソースで
+	       透かし、シェルが不透明グラデ板を二重描画しない（G-4 解消, 5.2） --- */
+	--app-shell-bg: transparent;
 
 	/* --- 奥行き：緑寄せ多層影＋内側ハイライト（素の影に依存しない意図的階層, 4.2） --- */
 	--elevation-1: 0 1px 2px 0 rgba(0, 18, 9, 0.45), inset 0 1px 0 0 rgba(134, 239, 172, 0.06);

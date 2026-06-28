@@ -19,15 +19,17 @@ import { NotebookList } from '../notebook/NotebookList';
 import { MemoPalette } from '../memo/MemoPalette';
 import { FocusMemoOverlay } from '../memo/FocusMemoOverlay';
 import { HomeDashboard } from '../home/HomeDashboard';
+import { getEffectKey } from '../../types/theme';
+import { ShellThemeSelector } from '../theme/ShellThemeSelector';
 
 const EmptyMemoView = () => {
 	const isMac = /Mac|iPod|iPhone|iPad/.test(window.navigator.platform);
 	const shortcutKey = isMac ? 'Cmd + Option' : 'Ctrl + Alt';
 
 	return (
-		<div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
+		<div className="flex flex-col items-center justify-center h-full text-center text-[var(--on-surface-variant)]">
 			<p>メモを選択してください</p>
-			<p className="mt-2 text-sm text-gray-400">新規作成: {shortcutKey} + N</p>
+			<p className="mt-2 text-sm text-[var(--on-surface-variant)]">新規作成: {shortcutKey} + N</p>
 		</div>
 	);
 };
@@ -87,7 +89,7 @@ export const DesktopLayout = () => {
 						return selectedMemo ? (
 							<MemoEditor memo={selectedMemo} />
 						) : (
-							<div className="flex items-center justify-center h-full text-gray-500">
+							<div className="flex items-center justify-center h-full text-[var(--on-surface-variant)]">
 								メモが選択されていません
 							</div>
 						);
@@ -118,12 +120,7 @@ export const DesktopLayout = () => {
 				}
 
 			case 'theme':
-				// TODO: テーマ管理画面を実装
-				return (
-					<div className="flex items-center justify-center h-full text-gray-500">
-						テーマ管理（未実装）
-					</div>
-				);
+				return <ShellThemeSelector />;
 
 			default:
 				return <EmptyMemoView />;
@@ -132,7 +129,8 @@ export const DesktopLayout = () => {
 
 	return (
 		<div
-			className={`h-dvh flex flex-col bg-white ${activeTheme ? 'theme-root' : ''}`}
+			className={`h-dvh flex flex-col app-shell ${activeTheme ? 'theme-root' : ''}`}
+			data-theme={getEffectKey(activeTheme)}
 			data-theme-id={activeTheme?.id}
 		>
 			<Header onMemoCreateClick={goToMemoCreate} onNotebookCreateClick={goToNotebookCreate} />

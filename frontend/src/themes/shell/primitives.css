@@ -24,6 +24,15 @@
  *     タイポの静的質感は維持する（4.6）。
  */
 
+/* ===== アプリシェルのルート面：玄関全体の床。中立は地色、テーマ時は透過し生きた背景を一本化 ===== */
+
+.app-shell {
+	/* 中立＝地色（今日の白 / 7.1）。テーマ時は tokens 側で transparent になり、MoriEffectLayer
+	   （fixed z-0）と <html> 地色を一本のソースとして透かす（二重背景回避 / G-4, 5.2）。
+	   ルートは「床」に徹し、Header やカード等の各 surface だけが半透明 scrim を重ねる。 */
+	background-color: var(--app-shell-bg);
+}
+
 /* ===== 面の地：半透明 surface ＋ backdrop で生きた背景を透かす（5.2, 4.1） ===== */
 
 .shell-surface {
