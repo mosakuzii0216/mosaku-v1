@@ -21,12 +21,11 @@ export const RecentMemoCard = ({ memo, onClick }: RecentMemoCardProps) => {
 	const displayText = memo.title || memo.contentPreview || '無題';
 
 	return (
-		<button
-			onClick={onClick}
-			className="flex-shrink-0 w-40 p-3 bg-white border border-gray-200 rounded-xl text-left hover:border-gray-300 hover:shadow-sm transition-all"
-		>
-			<p className="text-sm font-medium text-gray-900 line-clamp-2 mb-2">{displayText}</p>
-			<p className="text-xs text-gray-400">{formatDate(memo.updatedAt)}</p>
+		<button onClick={onClick} className="flex-shrink-0 w-40 p-3 shell-card text-left">
+			<p className="text-sm font-medium text-[var(--on-surface)] line-clamp-2 mb-2">
+				{displayText}
+			</p>
+			<p className="text-xs text-[var(--on-surface-variant)]">{formatDate(memo.updatedAt)}</p>
 		</button>
 	);
 };

@@ -14,22 +14,24 @@ export const MemoItem = ({ memo, onClick }: MemoItemProps) => {
 			onClick={onClick}
 			data-testid="memo-item"
 			data-memo-id={memo.id}
-			className="bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer"
+			className="shell-card cursor-pointer"
 		>
 			<div className="flex items-start justify-between">
 				<div className="flex-1 min-w-0">
 					{/* タイトル */}
-					<h3 className="text-lg font-semibold text-gray-900 truncate mb-1">
+					<h3 className="text-lg font-semibold text-[var(--on-surface)] truncate mb-1">
 						{memo.title || '無題'}
 					</h3>
 
 					{/* コンテンツプレビュー */}
 					{plainContent && (
-						<p className="text-sm text-gray-600 line-clamp-2 mb-2">{plainContent}</p>
+						<p className="text-sm text-[var(--on-surface-variant)] line-clamp-2 mb-2">
+							{plainContent}
+						</p>
 					)}
 
 					{/* メタ情報 */}
-					<div className="flex items-center gap-3 text-xs text-gray-400">
+					<div className="flex items-center gap-3 text-xs text-[var(--on-surface-variant)]">
 						<span>{new Date(memo.updatedAt).toLocaleDateString('ja-JP')}</span>
 
 						{/* タグ */}
