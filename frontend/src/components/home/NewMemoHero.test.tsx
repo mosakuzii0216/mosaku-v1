@@ -22,4 +22,10 @@ describe('NewMemoHero', () => {
 		fireEvent.click(getByRole('button', { name: /新しいメモを書く/ }));
 		expect(mockGoToMemoCreate).toHaveBeenCalledTimes(1);
 	});
+
+	it('ボタンは accent トークンで塗られる（シェル世界に同調 / 4.5）', () => {
+		const { getByRole } = render(<NewMemoHero />);
+		const btn = getByRole('button', { name: /新しいメモを書く/ });
+		expect(btn.getAttribute('style')).toMatch(/var\(--accent\)/);
+	});
 });

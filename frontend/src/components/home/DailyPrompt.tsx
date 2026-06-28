@@ -18,13 +18,13 @@ export const DailyPrompt = () => {
 		<div className="px-4 py-3">
 			<button
 				onClick={() => goToMemoCreateWithTitle(prompt)}
-				className="w-full text-left p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+				className="w-full text-left p-3 rounded-xl bg-[var(--surface-variant)] hover:bg-[var(--state-hover)] transition-colors"
 			>
 				<div className="flex items-center gap-2 mb-1">
-					<Lightbulb className="w-3.5 h-3.5 text-gray-400" />
-					<span className="text-xs text-gray-400 font-medium">今日のお題</span>
+					<Lightbulb className="w-3.5 h-3.5 text-[var(--on-surface-variant)]" />
+					<span className="text-xs text-[var(--on-surface-variant)] font-medium">今日のお題</span>
 				</div>
-				<p className="text-sm text-gray-600">{prompt}</p>
+				<p className="text-sm text-[var(--on-surface)]">{prompt}</p>
 			</button>
 		</div>
 	);

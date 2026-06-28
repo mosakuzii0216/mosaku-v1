@@ -31,10 +31,10 @@ export const ActivityCalendar = () => {
 	if (isLoading) {
 		return (
 			<div className="px-4 py-3">
-				<h2 className="text-sm font-semibold text-gray-500 mb-2">書いた日</h2>
+				<h2 className="text-sm font-semibold text-[var(--on-surface-variant)] mb-2">書いた日</h2>
 				<div data-testid="activity-calendar-skeleton" className="grid grid-cols-7 gap-1">
 					{Array.from({ length: 35 }).map((_, i) => (
-						<div key={i} className="w-6 h-6 bg-gray-100 rounded animate-pulse" />
+						<div key={i} className="w-6 h-6 bg-[var(--surface-variant)] rounded animate-pulse" />
 					))}
 				</div>
 			</div>
@@ -44,13 +44,10 @@ export const ActivityCalendar = () => {
 	if (isError) {
 		return (
 			<div className="px-4 py-3">
-				<h2 className="text-sm font-semibold text-gray-500 mb-1">書いた日</h2>
-				<div className="text-sm text-gray-500">
+				<h2 className="text-sm font-semibold text-[var(--on-surface-variant)] mb-1">書いた日</h2>
+				<div className="text-sm text-[var(--on-surface-variant)]">
 					<p>データを取得できませんでした</p>
-					<button
-						onClick={() => refetch()}
-						className="mt-1 text-blue-500 hover:text-blue-600 text-sm"
-					>
+					<button onClick={() => refetch()} className="mt-1 text-[var(--accent)] text-sm">
 						再試行
 					</button>
 				</div>
@@ -60,7 +57,7 @@ export const ActivityCalendar = () => {
 
 	return (
 		<div className="px-4 py-3">
-			<h2 className="text-sm font-semibold text-gray-500 mb-2">書いた日</h2>
+			<h2 className="text-sm font-semibold text-[var(--on-surface-variant)] mb-2">書いた日</h2>
 			<div className="grid grid-cols-7 gap-1">
 				{days.map((day) => {
 					const isActive = activeSet.has(day);
@@ -71,7 +68,10 @@ export const ActivityCalendar = () => {
 							className="w-6 h-6 flex items-center justify-center"
 						>
 							{isActive && (
-								<span data-testid="active-dot" className="w-3 h-3 rounded-full bg-gray-400" />
+								<span
+									data-testid="active-dot"
+									className="w-3 h-3 rounded-full bg-[var(--accent)]"
+								/>
 							)}
 						</div>
 					);

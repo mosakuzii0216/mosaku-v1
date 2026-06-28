@@ -5,28 +5,27 @@ export const WeeklyActivitySummary = () => {
 
 	return (
 		<div className="px-4 py-3">
-			<h2 className="text-sm font-semibold text-gray-500 mb-1">今週の活動</h2>
+			<h2 className="text-sm font-semibold text-[var(--on-surface-variant)] mb-1">今週の活動</h2>
 			{isLoading && (
 				<div
 					data-testid="weekly-count-skeleton"
-					className="h-7 w-48 bg-gray-100 rounded animate-pulse"
+					className="h-7 w-48 bg-[var(--surface-variant)] rounded animate-pulse"
 				/>
 			)}
 			{isError && (
-				<div className="text-sm text-gray-500">
+				<div className="text-sm text-[var(--on-surface-variant)]">
 					<p>データを取得できませんでした</p>
-					<button
-						onClick={() => refetch()}
-						className="mt-1 text-blue-500 hover:text-blue-600 text-sm"
-					>
+					<button onClick={() => refetch()} className="mt-1 text-[var(--accent)] text-sm">
 						再試行
 					</button>
 				</div>
 			)}
 			{!isLoading && !isError && data && (
-				<p className="text-xl font-bold text-gray-800">
+				<p className="text-xl font-bold text-[var(--on-surface)]">
 					{data.count === 0 ? (
-						<span className="text-base font-medium text-gray-500">今週はまだ書いていないよ</span>
+						<span className="text-base font-medium text-[var(--on-surface-variant)]">
+							今週はまだ書いていないよ
+						</span>
 					) : (
 						<>今週 {data.count}個 書いたよ</>
 					)}
