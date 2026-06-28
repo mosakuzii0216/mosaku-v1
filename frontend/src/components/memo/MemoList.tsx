@@ -52,7 +52,7 @@ export const MemoList = () => {
 	if (isLoading) {
 		return (
 			<div data-testid="memo-list-view" className="flex-1 flex items-center justify-center">
-				<div className="text-gray-500">読み込み中...</div>
+				<div className="text-[var(--on-surface-variant)]">読み込み中...</div>
 			</div>
 		);
 	}
@@ -73,14 +73,14 @@ export const MemoList = () => {
 	if (filteredMemos.length === 0) {
 		return (
 			<div data-testid="memo-list-view" className="flex-1 flex items-center justify-center">
-				<div className="text-center text-gray-500">
+				<div className="text-center text-[var(--on-surface-variant)]">
 					<div className="mb-3">
 						{isSearching ? '該当するメモが見つかりません' : 'メモがありません'}
 					</div>
 					{!isSearching && (
 						<button
 							onClick={goToMemoCreate}
-							className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium inline-flex items-center gap-1.5"
+							className="px-4 py-2 shell-button-primary text-sm font-medium inline-flex items-center gap-1.5"
 						>
 							<Plus className="w-4 h-4" />
 							最初のメモを作成
@@ -103,12 +103,14 @@ export const MemoList = () => {
 			<div className="max-w-4xl mx-auto p-4">
 				<div className="mb-4 flex items-baseline justify-between">
 					<div className="flex items-baseline gap-3">
-						<h1 className="text-xl font-semibold text-gray-900">{headerLabel}</h1>
-						<span className="text-sm text-gray-500">{sortedMemos.length} 件</span>
+						<h1 className="text-xl font-semibold text-[var(--on-surface)]">{headerLabel}</h1>
+						<span className="text-sm text-[var(--on-surface-variant)]">
+							{sortedMemos.length} 件
+						</span>
 					</div>
 					<button
 						onClick={goToMemoCreate}
-						className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium inline-flex items-center gap-1 transition-colors"
+						className="px-3 py-1.5 shell-button-primary text-sm font-medium inline-flex items-center gap-1 transition-colors"
 					>
 						<Plus className="w-4 h-4" />
 						新規メモ
@@ -116,19 +118,19 @@ export const MemoList = () => {
 				</div>
 				<div className="mb-4 flex gap-2">
 					<div className="relative flex-1">
-						<Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+						<Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--on-surface-variant)]" />
 						<input
 							type="search"
 							value={query}
 							onChange={(e) => setQuery(e.target.value)}
 							placeholder="タイトル・本文で検索..."
-							className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+							className="w-full pl-9 pr-3 py-2 shell-field text-sm"
 						/>
 					</div>
 					<select
 						value={sortKey}
 						onChange={(e) => setSortKey(e.target.value as SortKey)}
-						className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+						className="px-3 py-2 shell-field text-sm"
 					>
 						<option value="updated_desc">更新日時(新しい順)</option>
 						<option value="updated_asc">更新日時(古い順)</option>
