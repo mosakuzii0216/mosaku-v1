@@ -61,9 +61,13 @@ describe('mori.css — Mosaku brand theme (Phase A, task 1)', () => {
 			expect(stripped).toContain('#47885e');
 		});
 
-		it('外部リソース（@import / url()）を使用しない', () => {
+		it('外部リソース（@import / 外部 url()）を使用しない（自己完結 data: noise は許容）', () => {
 			expect(stripped).not.toMatch(/@import\b/);
-			expect(stripped).not.toMatch(/\burl\(/);
+			// url() は data: スキーム（自己完結インライン）のみ許容。http(s)・相対パス等の
+			// 外部参照は禁止（7.2 外部リソース不使用 / Layer③ の data-URI noise は外部ではない）。
+			for (const m of stripped.matchAll(/url\(\s*(['"]?)([^'")]*)/g)) {
+				expect(m[2].startsWith('data:'), `外部 url 参照: ${m[2]}`).toBe(true);
+			}
 		});
 	});
 
@@ -185,6 +189,71 @@ describe('mori.css — Mosaku brand theme (Phase A, task 1)', () => {
 		it.each(OTHER_THEMES.map((name) => [name]))('他テーマ %s.css を参照しない', (name) => {
 			expect(stripped).not.toContain(`${name}.css`);
 			expect(stripped).not.toContain(`/themes/${name}`);
+		});
+	});
+
+	describe('5.1 森固有リッチテクスチャ（Layer③ / mori 有効時のみ fetch）', () => {
+		it('プリミティブ面（.shell-surface / .shell-panel / .shell-card）へクラス選択子でテクスチャを付与する', () => {
+			expect(stripped).toMatch(/\.theme-root\s+\.shell-surface\b/);
+			expect(stripped).toMatch(/\.theme-root\s+\.shell-panel\b/);
+			expect(stripped).toMatch(/\.theme-root\s+\.shell-card\b/);
+		});
+
+		it('多層グラデ＋内側ハイライト＋noise を background-image に重ねる', () => {
+			const block = findBlock(stripped, /\.theme-root\s+\.shell-card\s*\{/);
+			expect(block, 'リッチテクスチャブロックが取得できない').not.toBeNull();
+			expect(block!).toMatch(/background-image\s*:/);
+			// 木漏れ日（径グラデ）＋内側ハイライト/沈み込み（線グラデ複数）＝多層
+			expect(block!).toMatch(/radial-gradient/);
+			expect((block!.match(/linear-gradient/g) ?? []).length).toBeGreaterThanOrEqual(2);
+			// noise は変数経由で重ねる
+			expect(block!).toMatch(/var\(--mori-noise\)/);
+		});
+
+		it('自己完結の data-URI noise（feTurbulence）を定義し、外部リソースを使わない', () => {
+			expect(stripped).toMatch(/--mori-noise\s*:/);
+			expect(stripped).toContain('data:image/svg+xml');
+			expect(stripped).toMatch(/feTurbulence|fractalNoise/);
+		});
+
+		it('色・構造トークン値を Layer③ で再定義しない（Layer① を単一の源泉に保つ）', () => {
+			// シェルトークン（tokens.css 所有）を mori.css 側で上書きしないこと（半テーマ窓回避 / 7.5）
+			const shellTokens = [
+				'--surface',
+				'--on-surface',
+				'--surface-variant',
+				'--accent',
+				'--outline',
+				'--focus-ring',
+				'--elevation-1',
+				'--elevation-2',
+				'--elevation-3',
+				'--state-hover',
+				'--state-selected',
+			];
+			for (const token of shellTokens) {
+				expect(stripped, `${token} を Layer③ で再定義している`).not.toMatch(
+					new RegExp(`${token}\\s*:`),
+				);
+			}
+		});
+	});
+
+	describe('5.2 本文面の温存と CSS 契約（要素型禁止 / .theme-root スコープ / .shell-* 許容）', () => {
+		it('本文面（.memo-title / .memo-content）配下の主要スタイルを温存する（後退させない）', () => {
+			expect(stripped).toMatch(/\.theme-root\s+\.memo-title\b/);
+			expect(stripped).toMatch(/\.theme-root\s+\.memo-content\b/);
+			for (const child of ['h1', 'h2', 'blockquote', 'pre', 'code']) {
+				expect(stripped, `.memo-content ${child} のスタイルが後退`).toMatch(
+					new RegExp(`\\.memo-content\\s+${child}\\b`),
+				);
+			}
+			// 本文内リンクは許容（汎用 .theme-root a は 1.4 で禁止）
+			expect(stripped).toMatch(/\.theme-root\s+\.memo-content\s+a\b/);
+		});
+
+		it('リッチパックでプリミティブ系クラス（.shell-*）を .theme-root スコープで許容する', () => {
+			expect(stripped).toMatch(/\.theme-root\s+\.shell-[a-z-]+/);
 		});
 	});
 });
