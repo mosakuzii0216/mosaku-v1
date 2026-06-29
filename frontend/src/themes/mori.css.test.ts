@@ -71,38 +71,33 @@ describe('mori.css — Mosaku brand theme (Phase A, task 1)', () => {
 		});
 	});
 
-	describe('1.2 wave-pulse 背景アニメーション', () => {
-		it('@keyframes wave-pulse を定義する', () => {
-			expect(stripped).toMatch(/@keyframes\s+wave-pulse\s*\{/);
-		});
-
-		it('.theme-root で wave-pulse を 12s 周期で適用する', () => {
+	describe('1.2 生きた背景は ForestAnimationLayer に委譲（Task 6 / G-4）', () => {
+		// wave-pulse グラデ・fog-drift 霧（生きた背景）は MoriEffectLayer → ForestAnimationLayer が
+		// position:fixed z-0 の単一ソースとして担う。mori.css の .theme-root は描かない（二重背景解消）。
+		it('.theme-root に animation プロパティを持たない（生きた背景は ForestAnimationLayer が担う）', () => {
 			const rootBlock = findBlock(stripped, /\.theme-root\s*\{/);
 			expect(rootBlock, '.theme-root ブロックが取得できない').not.toBeNull();
-			expect(rootBlock!).toMatch(/wave-pulse/);
-			expect(rootBlock!).toMatch(/12s/);
+			expect(rootBlock!, '.theme-root に animation: wave-pulse が残っている').not.toMatch(
+				/animation\s*:/,
+			);
+		});
+
+		it('mori.css は @keyframes wave-pulse / fog-drift を定義しない（index.css が提供）', () => {
+			expect(stripped, 'mori.css に不要な @keyframes wave-pulse が残っている').not.toMatch(
+				/@keyframes\s+wave-pulse\s*\{/,
+			);
+			expect(stripped, 'mori.css に不要な @keyframes fog-drift が残っている').not.toMatch(
+				/@keyframes\s+fog-drift\s*\{/,
+			);
 		});
 	});
 
-	describe('1.3 fog-drift 擬似要素 2 層', () => {
-		it('@keyframes fog-drift を定義する', () => {
-			expect(stripped).toMatch(/@keyframes\s+fog-drift\s*\{/);
-		});
-
-		it('.theme-root::before と ::after の両方で霧レイヤーを構成する', () => {
-			const before = findBlock(stripped, /\.theme-root::before\s*\{/);
-			const after = findBlock(stripped, /\.theme-root::after\s*\{/);
-			expect(before, '::before が定義されていない').not.toBeNull();
-			expect(after, '::after が定義されていない').not.toBeNull();
-			expect(before!).toMatch(/fog-drift/);
-			expect(after!).toMatch(/fog-drift/);
-		});
-
-		it('擬似要素は pointer-events: none を必ず指定する', () => {
-			const before = findBlock(stripped, /\.theme-root::before\s*\{/);
-			const after = findBlock(stripped, /\.theme-root::after\s*\{/);
-			expect(before!).toMatch(/pointer-events\s*:\s*none/);
-			expect(after!).toMatch(/pointer-events\s*:\s*none/);
+	describe('6.2 霧レイヤーの単一ソース化（Task 6 / G-4）', () => {
+		// 霧（fog-drift）は MoriEffectLayer 内の ForestAnimationLayer が描く。
+		// mori.css の ::before/::after で二重に描かず、生きた背景を一本のソースに保つ。
+		it('.theme-root::before / ::after の霧擬似要素を持たない', () => {
+			expect(stripped, '::before の霧が二重背景を生む').not.toMatch(/\.theme-root::before\s*\{/);
+			expect(stripped, '::after の霧が二重背景を生む').not.toMatch(/\.theme-root::after\s*\{/);
 		});
 	});
 
@@ -136,21 +131,13 @@ describe('mori.css — Mosaku brand theme (Phase A, task 1)', () => {
 		});
 	});
 
-	describe('1.5 prefers-reduced-motion: reduce 対応', () => {
-		it('prefers-reduced-motion: reduce メディアクエリを含む', () => {
-			expect(stripped).toMatch(/@media\s*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)/);
-		});
-
-		it('reduced-motion ブロック内でアニメーションを停止する', () => {
+	describe('6.3 reduced-motion はエフェクト層が一手に担う（Task 6 / 5.3）', () => {
+		// 生きた背景を MoriEffectLayer に一本化したため、mori.css 自身は reduce 時に
+		// 止めるべき背景アニメーションを持たない。reduced-motion 停止は src/index.css
+		// （.forest-animation *）と ForestAnimationLayer（JS の useReducedMotion）が担保する。
+		it('mori.css は生きた背景アニメ用の reduced-motion 停止ブロックを持たない', () => {
 			const block = findBlock(stripped, /@media\s*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)/);
-			expect(block, '@media ブロックが取得できない').not.toBeNull();
-			expect(block!).toMatch(/animation\s*:\s*none/);
-		});
-
-		it('アニメ停止後も森パレット（背景色）を維持するセレクタが存在する', () => {
-			// @media 外の .theme-root 定義で background を明示
-			const rootBlock = findBlock(stripped, /\.theme-root\s*\{/);
-			expect(rootBlock!).toMatch(/background/);
+			expect(block, 'mori.css に不要な reduced-motion 停止ブロックが残っている').toBeNull();
 		});
 	});
 
