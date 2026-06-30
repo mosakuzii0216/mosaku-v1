@@ -1,7 +1,7 @@
 # Mosaku プロジェクト計画（2026年3月〜12月）
 
 作成日: 2026-03-14
-最終更新: 2026-06-24
+最終更新: 2026-07-01
 
 ---
 
@@ -227,22 +227,23 @@
 
 #### 6月 追加（計画外 / 摩擦駆動 spec・ダッシュボード系）
 
-| spec / タスク                 | 内容                                                                                                                  | 状況                          |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| `feedback-db-persistence`     | フィードバックを `feedbacks` テーブルへ永続化（Slack=必須レッグ / DB=補助レッグの named outcome 並列）                | ✅ `implementation-validated` |
-| `memo-display-mode`           | リードオンリー全画面フォーカス表示（FocusMemoOverlay / ESC・背景・✕ で終了 / テーマ継承）                             | ✅ `implementation-validated` |
-| `home-dashboard`              | ホーム（ランチャー＋ダッシュボード）。最近メモ・今週件数・書いた日カレンダー・NB 一覧・今日のお題                     | ✅ `implementation-validated` |
-| `onboarding-experience`       | 初回ログイン体験（テーマ選択→ようこそ NB→サンプルメモ）。BE / フロント UI / テスト完了                                | ✅ `implementation-validated` |
-| `notebook-autosave`           | NotebookEditor に MemoEditor 同等の debounce 自動保存を導入                                                           | ✅ `implementation-validated` |
-| `password-reset-email`        | Resend ラッパ MailModule + PasswordResetService + `/reset-password/*` + フロント確定画面                              | ✅ `implementation-validated` |
-| `mcp-endpoint`                | MCP エンドポイント（OAuth 完全実装・スキーマ / 認可 / tool / 観測性・フィーチャーフラグ）                             | ✅ implementation-complete    |
-| `pwa-e2e-greenup`             | PWA E2E 緑化（env 欠落解消・再接続 sync・ヘルパー統一・seed 修正で全 5 スペック緑）                                   | ✅ `completed`                |
-| `oauth-session-durability`    | express-session → cookie-session 置換 + X OAuth を passport 一本化（両フロー成立・多インスタンス耐性）                | ✅ `implementation-validated` |
-| `onboarding-removal`          | オンボーディング機能を BE / フロントから全面削除（本番デプロイ検証済み）                                              | ✅ `implemented`              |
-| `pwa-sw-auto-update`          | SW 更新を prompt 据え置き＋ガード付き自動駆動化。保存状態ガード / one-shot / 通知撤去で完全自動更新                   | ✅ `implementation-validated` |
-| `oauth-stateless-unification` | X OAuth を passport 撤去＋PKCE/AEAD ステートレス化で 4 社と統一。cookie-session を MCP 専用へ縮退（セッション非依存） | ✅ `implementation-validated` |
-| `invitation-perks`            | 招待コードに COMP 特典属性 + 人数キャンペーン発行 + 登録 UX 刷新（独立部のみ・適用本体は後続 spec）                   | 🚧 `tasks-approved`           |
-| `ai-billing-foundation`       | 課金基盤 spec。要件 / 設計準備まで進めるも中止・削除（課金モデル v2 を steering に正典化して吸収）                    | ⛔ 中止                       |
+| spec / タスク                 | 内容                                                                                                                                    | 状況                          |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| `feedback-db-persistence`     | フィードバックを `feedbacks` テーブルへ永続化（Slack=必須レッグ / DB=補助レッグの named outcome 並列）                                  | ✅ `implementation-validated` |
+| `memo-display-mode`           | リードオンリー全画面フォーカス表示（FocusMemoOverlay / ESC・背景・✕ で終了 / テーマ継承）                                               | ✅ `implementation-validated` |
+| `home-dashboard`              | ホーム（ランチャー＋ダッシュボード）。最近メモ・今週件数・書いた日カレンダー・NB 一覧・今日のお題                                       | ✅ `implementation-validated` |
+| `onboarding-experience`       | 初回ログイン体験（テーマ選択→ようこそ NB→サンプルメモ）。BE / フロント UI / テスト完了                                                  | ✅ `implementation-validated` |
+| `notebook-autosave`           | NotebookEditor に MemoEditor 同等の debounce 自動保存を導入                                                                             | ✅ `implementation-validated` |
+| `password-reset-email`        | Resend ラッパ MailModule + PasswordResetService + `/reset-password/*` + フロント確定画面                                                | ✅ `implementation-validated` |
+| `mcp-endpoint`                | MCP エンドポイント（OAuth 完全実装・スキーマ / 認可 / tool / 観測性・フィーチャーフラグ）                                               | ✅ implementation-complete    |
+| `pwa-e2e-greenup`             | PWA E2E 緑化（env 欠落解消・再接続 sync・ヘルパー統一・seed 修正で全 5 スペック緑）                                                     | ✅ `completed`                |
+| `oauth-session-durability`    | express-session → cookie-session 置換 + X OAuth を passport 一本化（両フロー成立・多インスタンス耐性）                                  | ✅ `implementation-validated` |
+| `onboarding-removal`          | オンボーディング機能を BE / フロントから全面削除（本番デプロイ検証済み）                                                                | ✅ `implemented`              |
+| `pwa-sw-auto-update`          | SW 更新を prompt 据え置き＋ガード付き自動駆動化。保存状態ガード / one-shot / 通知撤去で完全自動更新                                     | ✅ `implementation-validated` |
+| `oauth-stateless-unification` | X OAuth を passport 撤去＋PKCE/AEAD ステートレス化で 4 社と統一。cookie-session を MCP 専用へ縮退（セッション非依存）                   | ✅ `implementation-validated` |
+| `invitation-perks`            | 招待コードに COMP 特典属性 + 人数キャンペーン発行 + 登録 UX 刷新（独立部のみ・適用本体は後続 spec）                                     | ✅ `completed`                |
+| `theme-immersive-world`       | テーマを「色替え」から玄関ごと切り替わる"入る世界"へ。森を 3 層 CSS トークン契約＋質感 primitive で完全没入化（海・夜・朝の相乗り基盤） | ✅ `implementation-validated` |
+| `ai-billing-foundation`       | 課金基盤 spec。要件 / 設計準備まで進めるも中止・削除（課金モデル v2 を steering に正典化して吸収）                                      | ⛔ 中止                       |
 
 > `onboarding-experience` は上表「オンボーディング改善」の cc-sdd 実装本体。フロント UI・テストまで完了し ✅ に更新済み。
 

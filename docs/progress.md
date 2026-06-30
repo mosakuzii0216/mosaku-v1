@@ -32,6 +32,40 @@
 
 ---
 
+## 2026-07-01（Phase 1 ドッグフーディング中 / 招待特典・森の世界没入を完走、全 spec を完了状態に）
+
+### 今週やったこと
+
+- **`invitation-perks`（招待特典）を実装完走 → `completed`**（6/24 Task1 着手 → 6/26 クローズ）
+  - 課金ウォレット非依存の独立部のみを実装：perk 属性の直付け / 人数キャンペーン発行 / 招待登録 UX の刷新（特典バッジ表示）
+  - 登録フローには COMP 適用の seam と `PerkGate` の DI を置くに留め、`COMP_PERK_ENABLED`（既定 OFF）で既存挙動を不変に保つ縮退設計。COMP 適用本体は後続 spec へ
+  - backend API 統合テスト・frontend 登録 UX の E2E を追加
+
+- **`theme-immersive-world`（森の"入る世界"化）を起票 → Task 1〜7 完走 → `implementation-validated`**（6/25 brainstorm → 6/27 design/tasks 承認 → 6/29 実装完了 → 7/1 検証 GO）
+  - テーマを「メモ本文だけの色替え」から「アプリを開いた瞬間に玄関ごと切り替わる世界」へ再定義。フラッグシップ森の垂直スライス
+  - 過去ロールバック（ヘッダー文字消失）を構造的に回避するため、生の色直当てを廃し**セマンティックトークン契約＋質感プリミティブの 3 層 CSS 分割**で再構築。FOUC ゼロと非森バンドル不増を両立
+  - 玄関 6 面（ヘッダー / レイアウト / メモ一覧 / カード / ホーム）を全面トークン駆動化し生 Tailwind を排除。コントラスト AA を白床 worst-case 合成で機械検証
+  - 検証結果: frontend 1151 テスト全緑・リグレッションゼロで GO
+
+- **ESLint 警告を全件 0 に地ならし**（6/30）
+  - backend テスト群の `no-unsafe-*` を型キャスト／eslint-disable で解消、不要 async・未使用 import を一掃（200 件超）。`InvitationStateService` を `OAuthStateService` へ統合
+
+### 来週の予定
+
+- 7 月計画（PWA + content JSONB 移行着手月 / テーマ 20 目標）に沿って次 spec を起票
+- 候補: content の JSONB 移行 or 和テーマの没入横展開（海・夜・朝＝森で作った基盤への相乗り）
+
+### ブロッカー・懸念
+
+- なし（前週の `config.service.spec.ts` 未コミット差分は解消済み、main クリーン）
+
+### メモ
+
+- **spec 35 本が全て完了状態に到達（進行中ゼロ）**。内訳: completed 12 / implementation-validated 21 / implementation-complete 1 / implemented 1
+- frontend ユニット/統合テスト 1151 passed（120 ファイル）
+- 和の 4 テーマ（mori/umi/yoru/asa）に集約済み、mori は玄関〜本文まで完全没入化を達成。残り 3 テーマはトークン差し替えで相乗りできる土台が完成
+- 開発プロセス: 1 Todo = 1 Commit 維持。ESLint 警告 0 を達成しコード品質を地ならし
+
 ## 2026-06-24（Phase 1 ドッグフーディング中 / X OAuth ステートレス統一を完走・招待特典 spec を承認）
 
 ### 今週やったこと
