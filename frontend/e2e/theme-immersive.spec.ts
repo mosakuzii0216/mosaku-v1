@@ -25,7 +25,6 @@
 
 import { test, expect } from '@playwright/test';
 
-const MORI_STORAGE = JSON.stringify({ id: 'theme-mori', slug: 'mori' });
 const MORI_BASE_BG = '#062616';
 const MORI_SURFACE = 'rgba(6, 38, 22, 0.74)';
 const MORI_ON_SURFACE = '#e8f6ee';
