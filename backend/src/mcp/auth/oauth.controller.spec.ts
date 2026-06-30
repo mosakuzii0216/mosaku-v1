@@ -5,6 +5,7 @@ import { McpOAuthService } from './mcp-oauth.service';
 import { ConfigService } from '../../config/config.service';
 import { McpFeatureFlagGuard } from '../mcp-feature-flag.guard';
 import type { McpSessionRequest } from './oauth.controller';
+import type { Response as ExpressResponse } from 'express';
 
 const BACKEND_URL = 'https://api.example.com';
 const MCP_URL = `${BACKEND_URL}/mcp`;
@@ -104,7 +105,7 @@ describe('OAuthController', () => {
 
 			expect(mockOAuthService.registerClient).toHaveBeenCalledWith(
 				expect.objectContaining({
-					grantTypes: expect.arrayContaining(['authorization_code', 'refresh_token']),
+					grantTypes: expect.arrayContaining<string>(['authorization_code', 'refresh_token']),
 				}),
 			);
 		});
@@ -126,10 +127,10 @@ describe('OAuthController', () => {
 			const req = makeMockReq({});
 			const res = makeMockRes();
 
-			controller.authorize(validQuery, req, res as any);
+			controller.authorize(validQuery, req, res as unknown as ExpressResponse);
 
 			expect(res.send).toHaveBeenCalled();
-			const sentHtml: string = res.send.mock.calls[0][0] as string;
+			const sentHtml: string = (res.send.mock.calls as string[][])[0][0];
 			expect(sentHtml).toContain('login-start');
 		});
 
@@ -137,10 +138,10 @@ describe('OAuthController', () => {
 			const req = makeMockReq({ mcpUserId: 'user-1' });
 			const res = makeMockRes();
 
-			controller.authorize(validQuery, req, res as any);
+			controller.authorize(validQuery, req, res as unknown as ExpressResponse);
 
 			expect(res.send).toHaveBeenCalled();
-			const sentHtml: string = res.send.mock.calls[0][0] as string;
+			const sentHtml: string = (res.send.mock.calls as string[][])[0][0];
 			expect(sentHtml).toContain('/oauth/authorize/consent');
 		});
 
@@ -148,7 +149,7 @@ describe('OAuthController', () => {
 			const req = makeMockReq({});
 			const res = makeMockRes();
 
-			controller.authorize(validQuery, req, res as any);
+			controller.authorize(validQuery, req, res as unknown as ExpressResponse);
 
 			const session = req.session as unknown as Record<string, unknown>;
 			expect(session.mcpAuthorizeParams).toBeDefined();
@@ -159,7 +160,7 @@ describe('OAuthController', () => {
 			const req = makeMockReq({});
 			const res = makeMockRes();
 
-			controller.authorize({ client_id: 'x' }, req, res as any);
+			controller.authorize({ client_id: 'x' }, req, res as unknown as ExpressResponse);
 
 			expect(res.status).toHaveBeenCalledWith(400);
 		});
@@ -172,7 +173,7 @@ describe('OAuthController', () => {
 			const req = makeMockReq({});
 			const res = makeMockRes();
 
-			controller.loginStart('google', req, res as any);
+			controller.loginStart('google', req, res as unknown as ExpressResponse);
 
 			const session = req.session as unknown as Record<string, unknown>;
 			expect(session.mcpAuthorizeReturn).toBeTruthy();
@@ -183,7 +184,7 @@ describe('OAuthController', () => {
 			const req = makeMockReq({});
 			const res = makeMockRes();
 
-			controller.loginStart('evil-provider', req, res as any);
+			controller.loginStart('evil-provider', req, res as unknown as ExpressResponse);
 
 			expect(res.status).toHaveBeenCalledWith(400);
 		});
@@ -192,7 +193,7 @@ describe('OAuthController', () => {
 			['github', 'line'].forEach((provider) => {
 				const req = makeMockReq({});
 				const res = makeMockRes();
-				controller.loginStart(provider, req, res as any);
+				controller.loginStart(provider, req, res as unknown as ExpressResponse);
 				expect(res.redirect).toHaveBeenCalledWith(`/auth/${provider}`);
 			});
 		});
@@ -219,7 +220,7 @@ describe('OAuthController', () => {
 
 			mockOAuthService.issueAuthCode.mockResolvedValue({ code: 'auth-code', state: 'state-xyz' });
 
-			await controller.consent({ action: 'approve' }, req, res as any);
+			await controller.consent({ action: 'approve' }, req, res as unknown as ExpressResponse);
 
 			expect(mockOAuthService.issueAuthCode).toHaveBeenCalledWith(
 				expect.objectContaining({ clientId: 'client-1', userId: 'user-1' }),
@@ -234,7 +235,7 @@ describe('OAuthController', () => {
 			});
 			const res = makeMockRes();
 
-			await controller.consent({ action: 'deny' }, req, res as any);
+			await controller.consent({ action: 'deny' }, req, res as unknown as ExpressResponse);
 
 			expect(mockOAuthService.issueAuthCode).not.toHaveBeenCalled();
 			expect(res.redirect).toHaveBeenCalledWith(expect.stringContaining('error=access_denied'));
@@ -249,7 +250,7 @@ describe('OAuthController', () => {
 
 			mockOAuthService.issueAuthCode.mockResolvedValue({ code: 'code-1', state: 'state-xyz' });
 
-			await controller.consent({ action: 'approve' }, req, res as any);
+			await controller.consent({ action: 'approve' }, req, res as unknown as ExpressResponse);
 
 			expect(res.redirect).toHaveBeenCalledWith(expect.stringContaining('state=state-xyz'));
 		});
@@ -258,7 +259,7 @@ describe('OAuthController', () => {
 			const req = makeMockReq({});
 			const res = makeMockRes();
 
-			await controller.consent({ action: 'approve' }, req, res as any);
+			await controller.consent({ action: 'approve' }, req, res as unknown as ExpressResponse);
 
 			expect(res.status).toHaveBeenCalledWith(400);
 		});
@@ -272,7 +273,7 @@ describe('OAuthController', () => {
 
 			mockOAuthService.issueAuthCode.mockResolvedValue({ code: 'code', state: undefined });
 
-			await controller.consent({ action: 'approve' }, req, res as any);
+			await controller.consent({ action: 'approve' }, req, res as unknown as ExpressResponse);
 
 			const session = req.session as unknown as Record<string, unknown>;
 			expect(session.mcpUserId).toBeUndefined();

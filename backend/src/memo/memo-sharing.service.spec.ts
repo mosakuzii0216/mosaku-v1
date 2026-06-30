@@ -57,14 +57,16 @@ describe('MemoSharingService', () => {
 		it('生成されるトークンは URL セーフな base64url 文字列で十分なエントロピーを持つ', async () => {
 			mockPrismaService.memo.findFirst.mockResolvedValue(mockMemo());
 			let savedToken = '';
-			mockPrismaService.memo.update.mockImplementation(({ data }) => {
-				savedToken = data.publicToken as string;
-				return {
-					id: 'memo-1',
-					publicToken: savedToken,
-					publishedAt: new Date(),
-				};
-			});
+			mockPrismaService.memo.update.mockImplementation(
+				({ data }: { data: { publicToken?: string | null } }) => {
+					savedToken = data.publicToken as string;
+					return {
+						id: 'memo-1',
+						publicToken: savedToken,
+						publishedAt: new Date(),
+					};
+				},
+			);
 
 			await service.publishMemo('memo-1', 'user-1');
 
@@ -78,14 +80,16 @@ describe('MemoSharingService', () => {
 				mockMemo({ id: 'memo-secret-id', userId: 'user-secret-id' }),
 			);
 			let savedToken = '';
-			mockPrismaService.memo.update.mockImplementation(({ data }) => {
-				savedToken = data.publicToken as string;
-				return {
-					id: 'memo-secret-id',
-					publicToken: savedToken,
-					publishedAt: new Date(),
-				};
-			});
+			mockPrismaService.memo.update.mockImplementation(
+				({ data }: { data: { publicToken?: string | null } }) => {
+					savedToken = data.publicToken as string;
+					return {
+						id: 'memo-secret-id',
+						publicToken: savedToken,
+						publishedAt: new Date(),
+					};
+				},
+			);
 
 			await service.publishMemo('memo-secret-id', 'user-secret-id');
 
@@ -102,17 +106,19 @@ describe('MemoSharingService', () => {
 			});
 
 			let calls = 0;
-			mockPrismaService.memo.update.mockImplementation(({ data }) => {
-				calls++;
-				if (calls < 3) {
-					throw p2002;
-				}
-				return {
-					id: 'memo-1',
-					publicToken: data.publicToken,
-					publishedAt: new Date(),
-				};
-			});
+			mockPrismaService.memo.update.mockImplementation(
+				({ data }: { data: { publicToken?: string | null } }) => {
+					calls++;
+					if (calls < 3) {
+						throw p2002;
+					}
+					return {
+						id: 'memo-1',
+						publicToken: data.publicToken,
+						publishedAt: new Date(),
+					};
+				},
+			);
 
 			const result = await service.publishMemo('memo-1', 'user-1');
 
@@ -134,6 +140,7 @@ describe('MemoSharingService', () => {
 			expect(captureExceptionMock).toHaveBeenCalledWith(
 				expect.any(Error),
 				expect.objectContaining({
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					tags: expect.objectContaining({ feature_area: 'memo' }),
 				}),
 			);
@@ -155,19 +162,24 @@ describe('MemoSharingService', () => {
 		it('所有者が公開操作するとトークンと publishedAt が保存される', async () => {
 			mockPrismaService.memo.findFirst.mockResolvedValue(mockMemo());
 			const publishedAt = new Date('2026-05-30T10:00:00.000Z');
-			mockPrismaService.memo.update.mockImplementation(({ data }) => ({
-				id: 'memo-1',
-				publicToken: data.publicToken,
-				publishedAt,
-			}));
+			mockPrismaService.memo.update.mockImplementation(
+				({ data }: { data: { publicToken?: string | null } }) => ({
+					id: 'memo-1',
+					publicToken: data.publicToken,
+					publishedAt,
+				}),
+			);
 
 			const result = await service.publishMemo('memo-1', 'user-1');
 
 			expect(mockPrismaService.memo.update).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: { id: 'memo-1' },
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					data: expect.objectContaining({
+						// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 						publicToken: expect.any(String),
+						// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 						publishedAt: expect.any(Date),
 					}),
 				}),
@@ -263,7 +275,9 @@ describe('MemoSharingService', () => {
 				'memo_public_unpublished',
 				expect.objectContaining({
 					level: 'info',
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					tags: expect.objectContaining({ feature_area: 'memo' }),
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					extra: expect.objectContaining({ memoId: 'memo-1', reason: 'cascade-trash' }),
 				}),
 			);
@@ -299,11 +313,13 @@ describe('MemoSharingService', () => {
 				}),
 			);
 			const newPublishedAt = new Date('2026-05-30T11:00:00.000Z');
-			mockPrismaService.memo.update.mockImplementation(({ data }) => ({
-				id: 'memo-1',
-				publicToken: data.publicToken,
-				publishedAt: newPublishedAt,
-			}));
+			mockPrismaService.memo.update.mockImplementation(
+				({ data }: { data: { publicToken?: string | null } }) => ({
+					id: 'memo-1',
+					publicToken: data.publicToken,
+					publishedAt: newPublishedAt,
+				}),
+			);
 
 			const result = await service.regenerateToken('memo-1', 'user-1');
 
@@ -368,6 +384,7 @@ describe('MemoSharingService', () => {
 
 			expect(mockPrismaService.memo.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					where: expect.objectContaining({
 						userId: 'user-1',
 						trashedAt: null,
@@ -584,7 +601,9 @@ describe('MemoSharingService', () => {
 				'memo_public_published',
 				expect.objectContaining({
 					level: 'info',
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					tags: expect.objectContaining({ feature_area: 'memo' }),
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					extra: expect.objectContaining({ memoId: 'memo-1' }),
 				}),
 			);
@@ -600,7 +619,9 @@ describe('MemoSharingService', () => {
 				'memo_public_unpublished',
 				expect.objectContaining({
 					level: 'info',
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					tags: expect.objectContaining({ feature_area: 'memo' }),
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					extra: expect.objectContaining({ memoId: 'memo-1', reason: 'manual' }),
 				}),
 			);
@@ -622,7 +643,9 @@ describe('MemoSharingService', () => {
 				'memo_public_token_regenerated',
 				expect.objectContaining({
 					level: 'info',
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					tags: expect.objectContaining({ feature_area: 'memo' }),
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					extra: expect.objectContaining({ memoId: 'memo-1' }),
 				}),
 			);
