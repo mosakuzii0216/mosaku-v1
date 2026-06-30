@@ -55,11 +55,11 @@ describe('XOAuthService', () => {
 			fetchSpy
 				.mockResolvedValueOnce({
 					ok: true,
-					json: async () => ({ access_token: 'access-tok-123' }),
+					json: () => ({ access_token: 'access-tok-123' }),
 				})
 				.mockResolvedValueOnce({
 					ok: true,
-					json: async () => ({
+					json: () => ({
 						data: {
 							id: 'x-id-001',
 							name: 'Test User',
@@ -87,11 +87,11 @@ describe('XOAuthService', () => {
 			fetchSpy
 				.mockResolvedValueOnce({
 					ok: true,
-					json: async () => ({ access_token: 'tok' }),
+					json: () => ({ access_token: 'tok' }),
 				})
 				.mockResolvedValueOnce({
 					ok: true,
-					json: async () => ({ data: { id: 'x-id-002', username: 'user2' } }),
+					json: () => ({ data: { id: 'x-id-002', username: 'user2' } }),
 				});
 
 			const result = await svc.exchangeCodeForUser({ code: 'c', verifier: 'v' });
@@ -114,7 +114,7 @@ describe('XOAuthService', () => {
 			fetchSpy
 				.mockResolvedValueOnce({
 					ok: true,
-					json: async () => ({ access_token: 'tok' }),
+					json: () => ({ access_token: 'tok' }),
 				})
 				.mockResolvedValueOnce({
 					ok: false,
@@ -130,11 +130,11 @@ describe('XOAuthService', () => {
 			fetchSpy
 				.mockResolvedValueOnce({
 					ok: true,
-					json: async () => ({ access_token: 'tok' }),
+					json: () => ({ access_token: 'tok' }),
 				})
 				.mockResolvedValueOnce({
 					ok: true,
-					json: async () => ({ data: { name: 'No ID User' } }),
+					json: () => ({ data: { name: 'No ID User' } }),
 				});
 
 			await expect(svc.exchangeCodeForUser({ code: 'c', verifier: 'v' })).rejects.toThrow();

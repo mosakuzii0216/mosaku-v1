@@ -91,11 +91,11 @@ export class OAuthController {
 	@Throttle({
 		default: { limit: THROTTLE_CONFIG.MCP_OAUTH.LIMIT, ttl: THROTTLE_CONFIG.MCP_OAUTH.TTL },
 	})
-	async authorize(
+	authorize(
 		@Query() query: Record<string, string>,
 		@Req() req: McpSessionRequest,
 		@Res() res: ExpressResponse,
-	): Promise<void> {
+	): void {
 		const { client_id, redirect_uri, code_challenge, scope, state, resource } = query;
 
 		if (!client_id || !redirect_uri || !code_challenge) {

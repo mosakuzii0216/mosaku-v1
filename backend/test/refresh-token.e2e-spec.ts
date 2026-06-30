@@ -105,7 +105,7 @@ describe('POST /auth/refresh, /auth/logout (e2e)', () => {
 				user: {
 					findUnique: userFindUnique,
 				},
-				$transaction: async (cb: (tx: unknown) => unknown) =>
+				$transaction: (cb: (tx: unknown) => unknown) =>
 					cb({
 						refreshToken: {
 							findUnique: refreshTokenFindUnique,

@@ -57,7 +57,7 @@ describe('MemoSharingService', () => {
 		it('生成されるトークンは URL セーフな base64url 文字列で十分なエントロピーを持つ', async () => {
 			mockPrismaService.memo.findFirst.mockResolvedValue(mockMemo());
 			let savedToken = '';
-			mockPrismaService.memo.update.mockImplementation(async ({ data }) => {
+			mockPrismaService.memo.update.mockImplementation(({ data }) => {
 				savedToken = data.publicToken as string;
 				return {
 					id: 'memo-1',
@@ -78,7 +78,7 @@ describe('MemoSharingService', () => {
 				mockMemo({ id: 'memo-secret-id', userId: 'user-secret-id' }),
 			);
 			let savedToken = '';
-			mockPrismaService.memo.update.mockImplementation(async ({ data }) => {
+			mockPrismaService.memo.update.mockImplementation(({ data }) => {
 				savedToken = data.publicToken as string;
 				return {
 					id: 'memo-secret-id',
@@ -102,7 +102,7 @@ describe('MemoSharingService', () => {
 			});
 
 			let calls = 0;
-			mockPrismaService.memo.update.mockImplementation(async ({ data }) => {
+			mockPrismaService.memo.update.mockImplementation(({ data }) => {
 				calls++;
 				if (calls < 3) {
 					throw p2002;
@@ -155,7 +155,7 @@ describe('MemoSharingService', () => {
 		it('所有者が公開操作するとトークンと publishedAt が保存される', async () => {
 			mockPrismaService.memo.findFirst.mockResolvedValue(mockMemo());
 			const publishedAt = new Date('2026-05-30T10:00:00.000Z');
-			mockPrismaService.memo.update.mockImplementation(async ({ data }) => ({
+			mockPrismaService.memo.update.mockImplementation(({ data }) => ({
 				id: 'memo-1',
 				publicToken: data.publicToken,
 				publishedAt,

@@ -31,7 +31,7 @@ describe('RefreshTokenService', () => {
 	};
 
 	const prisma = {
-		$transaction: jest.fn(async (cb: (tx: unknown) => unknown) => cb('tx-client')),
+		$transaction: jest.fn((cb: (tx: unknown) => unknown) => cb('tx-client')),
 	};
 
 	const config = {
@@ -63,7 +63,7 @@ describe('RefreshTokenService', () => {
 
 		service = module.get<RefreshTokenService>(RefreshTokenService);
 		jest.clearAllMocks();
-		prisma.$transaction.mockImplementation(async (cb: (tx: unknown) => unknown) => cb('tx-client'));
+		prisma.$transaction.mockImplementation((cb: (tx: unknown) => unknown) => cb('tx-client'));
 	});
 
 	describe('issue', () => {

@@ -126,7 +126,7 @@ describe('OAuthController', () => {
 			const req = makeMockReq({});
 			const res = makeMockRes();
 
-			await controller.authorize(validQuery, req, res as any);
+			controller.authorize(validQuery, req, res as any);
 
 			expect(res.send).toHaveBeenCalled();
 			const sentHtml: string = res.send.mock.calls[0][0] as string;
@@ -137,7 +137,7 @@ describe('OAuthController', () => {
 			const req = makeMockReq({ mcpUserId: 'user-1' });
 			const res = makeMockRes();
 
-			await controller.authorize(validQuery, req, res as any);
+			controller.authorize(validQuery, req, res as any);
 
 			expect(res.send).toHaveBeenCalled();
 			const sentHtml: string = res.send.mock.calls[0][0] as string;
@@ -148,7 +148,7 @@ describe('OAuthController', () => {
 			const req = makeMockReq({});
 			const res = makeMockRes();
 
-			await controller.authorize(validQuery, req, res as any);
+			controller.authorize(validQuery, req, res as any);
 
 			const session = req.session as unknown as Record<string, unknown>;
 			expect(session.mcpAuthorizeParams).toBeDefined();
@@ -159,7 +159,7 @@ describe('OAuthController', () => {
 			const req = makeMockReq({});
 			const res = makeMockRes();
 
-			await controller.authorize({ client_id: 'x' }, req, res as any);
+			controller.authorize({ client_id: 'x' }, req, res as any);
 
 			expect(res.status).toHaveBeenCalledWith(400);
 		});

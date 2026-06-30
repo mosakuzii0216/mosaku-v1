@@ -649,7 +649,7 @@ export class AuthController {
 	 */
 	@Public()
 	@Get('x')
-	async xAuth(@Response() res: ExpressResponse): Promise<void> {
+	xAuth(@Response() res: ExpressResponse): void {
 		if (!this.xOAuthService.isConfigured()) {
 			res.status(503).json({ message: 'X OAuth provider is not configured' });
 			return;
