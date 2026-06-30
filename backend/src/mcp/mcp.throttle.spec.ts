@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ThrottlerModule, ThrottlerGuard, ThrottlerException } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerException } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import request from 'supertest';
 import { McpModule } from './mcp.module';

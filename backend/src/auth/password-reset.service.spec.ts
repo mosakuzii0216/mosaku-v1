@@ -7,8 +7,6 @@ import { RefreshTokenService } from './refresh-token.service';
 import { ERROR_CODES } from '../common/exceptions';
 import * as crypto from 'crypto';
 
-const CONTEXT = 'PasswordResetService';
-
 // MailService の型定義（モジュールが未作成のため inline mock で代用）
 interface MailServiceLike {
 	sendPasswordResetEmail: jest.MockedFunction<(to: string, url: string) => Promise<boolean>>;

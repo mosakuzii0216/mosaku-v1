@@ -34,7 +34,6 @@ import {
 
 const AUTH_FAILED_URL = 'http://localhost:5173?error=auth_failed';
 const SUCCESS_URL = 'http://localhost:5173?token=jwt-token';
-const MCP_RETURN_URL = 'http://localhost:3000/mcp/auth/callback?session=mcp123';
 
 const oauthResult = {
 	accessToken: 'jwt-token',

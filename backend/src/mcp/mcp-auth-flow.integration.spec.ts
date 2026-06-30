@@ -417,7 +417,7 @@ describe('MCP OAuth Flow Integration (Task 7.1)', () => {
 
 	describe('6. 401 → WWW-Authenticate による discovery 誘導', () => {
 		it('/mcp への無認証アクセスは 401 を返し WWW-Authenticate に resource_metadata を含めること', async () => {
-			const res = await request(app.getHttpServer())
+			await request(app.getHttpServer())
 				.post('/mcp')
 				.set('Accept', 'application/json, text/event-stream')
 				.set('Content-Type', 'application/json')
