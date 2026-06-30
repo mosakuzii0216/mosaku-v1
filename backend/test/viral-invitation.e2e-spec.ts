@@ -48,7 +48,7 @@ delete process.env.REFRESH_COOKIE_DOMAIN;
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { JwtTokenService } from '../src/auth/jwt.service';
-import { InvitationStateService } from '../src/auth/invitation-state.service';
+import { OAuthStateService } from '../src/auth/oauth-state.service';
 
 interface UserRecord {
 	id: string;
@@ -71,7 +71,7 @@ interface InvitationRecord {
 describe('viral-invitation (e2e)', () => {
 	let app: INestApplication<App>;
 	let jwtTokenService: JwtTokenService;
-	let invitationStateService: InvitationStateService;
+	let invitationStateService: OAuthStateService;
 	let throttlerStorage: ThrottlerStorage;
 
 	const users = new Map<string, UserRecord>();
@@ -132,7 +132,7 @@ describe('viral-invitation (e2e)', () => {
 		await app.init();
 
 		jwtTokenService = moduleFixture.get(JwtTokenService);
-		invitationStateService = moduleFixture.get(InvitationStateService);
+		invitationStateService = moduleFixture.get<OAuthStateService>(OAuthStateService);
 		throttlerStorage = moduleFixture.get<ThrottlerStorage>(ThrottlerStorage);
 	});
 
@@ -431,7 +431,10 @@ describe('viral-invitation (e2e)', () => {
 	describe('GET /auth/google/callback with tampered state', () => {
 		it('改ざん state は /invite/:code?error=invalid_state にリダイレクトし Sentry に記録すること', async () => {
 			// 正当な state からペイロード部のみ書き換え（signature は不一致）
-			const validState = invitationStateService.issueState('REALCODE01', 'google');
+			const validState = invitationStateService.issueState({
+				provider: 'google',
+				code: 'REALCODE01',
+			});
 			const [payload, signature] = validState.split('.');
 			void payload;
 			const tamperedPayload = Buffer.from(
