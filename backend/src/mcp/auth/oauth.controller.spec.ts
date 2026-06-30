@@ -122,7 +122,7 @@ describe('OAuthController', () => {
 			resource: MCP_URL,
 		};
 
-		it('should render login page when mcpUserId is not in session', async () => {
+		it('should render login page when mcpUserId is not in session', () => {
 			const req = makeMockReq({});
 			const res = makeMockRes();
 
@@ -133,7 +133,7 @@ describe('OAuthController', () => {
 			expect(sentHtml).toContain('login-start');
 		});
 
-		it('should render consent page when mcpUserId is set in session', async () => {
+		it('should render consent page when mcpUserId is set in session', () => {
 			const req = makeMockReq({ mcpUserId: 'user-1' });
 			const res = makeMockRes();
 
@@ -144,7 +144,7 @@ describe('OAuthController', () => {
 			expect(sentHtml).toContain('/oauth/authorize/consent');
 		});
 
-		it('should store authorize params in session', async () => {
+		it('should store authorize params in session', () => {
 			const req = makeMockReq({});
 			const res = makeMockRes();
 
@@ -155,7 +155,7 @@ describe('OAuthController', () => {
 			expect((session.mcpAuthorizeParams as Record<string, string>).clientId).toBe('client-1');
 		});
 
-		it('should return 400 when required params are missing', async () => {
+		it('should return 400 when required params are missing', () => {
 			const req = makeMockReq({});
 			const res = makeMockRes();
 
