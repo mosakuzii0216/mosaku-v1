@@ -222,7 +222,7 @@ export class ThemeService {
 				description: createThemeDto.description,
 				isSystem: false, // ユーザー作成テーマ
 				isPublic: createThemeDto.isPublic || false,
-				styles: (createThemeDto.styles as any) || null,
+				styles: (createThemeDto.styles as unknown as Prisma.InputJsonValue) || null,
 				cssFilePath: createThemeDto.cssFilePath || null,
 				metadata: (createThemeDto.metadata as Prisma.InputJsonValue) || {},
 				createdById: userId,

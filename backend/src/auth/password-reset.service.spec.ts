@@ -14,6 +14,13 @@ interface MailServiceLike {
 
 const makeSha256 = (plain: string) => crypto.createHash('sha256').update(plain).digest('hex');
 
+type PrismaUpdateArg = {
+	data: {
+		resetPasswordToken?: string | null;
+		resetPasswordExpires?: Date | null;
+		password?: string | null;
+	};
+};
 describe('PasswordResetService', () => {
 	let service: PasswordResetService;
 	let prisma: jest.Mocked<PrismaService>;
@@ -78,7 +85,9 @@ describe('PasswordResetService', () => {
 
 			// eslint-disable-next-line @typescript-eslint/unbound-method
 			expect(prisma.user.update as jest.Mock).toHaveBeenCalledTimes(1);
-			const updateCall = (prisma.user.update as jest.Mock).mock.calls[0][0];
+			const updateCall = (
+				(prisma.user.update as jest.Mock).mock.calls as Array<[PrismaUpdateArg]>
+			)[0][0];
 			const { resetPasswordToken, resetPasswordExpires } = updateCall.data;
 
 			expect(typeof resetPasswordToken).toBe('string');
@@ -114,7 +123,9 @@ describe('PasswordResetService', () => {
 
 			await service.requestReset('test@example.com');
 
-			const updateCall = (prisma.user.update as jest.Mock).mock.calls[0][0];
+			const updateCall = (
+				(prisma.user.update as jest.Mock).mock.calls as Array<[PrismaUpdateArg]>
+			)[0][0];
 			expect(updateCall.data.resetPasswordToken).not.toBe('old-hash');
 			expect(updateCall.data.resetPasswordToken).toHaveLength(64);
 		});
@@ -165,7 +176,9 @@ describe('PasswordResetService', () => {
 
 			await service.confirmReset(plainToken, 'NewPass1');
 
-			const updateCall = (prisma.user.update as jest.Mock).mock.calls[0][0];
+			const updateCall = (
+				(prisma.user.update as jest.Mock).mock.calls as Array<[PrismaUpdateArg]>
+			)[0][0];
 			expect(typeof updateCall.data.password).toBe('string'); // bcrypt hash
 			expect(updateCall.data.resetPasswordToken).toBeNull();
 			expect(updateCall.data.resetPasswordExpires).toBeNull();

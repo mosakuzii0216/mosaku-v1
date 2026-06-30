@@ -1,4 +1,5 @@
 import './instrument';
+import type { Express } from 'express';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
@@ -75,7 +76,7 @@ async function bootstrap() {
 	app.useGlobalFilters(new ThrottlerExceptionFilter());
 
 	// リバースプロキシ（GCLB / Cloud Run）配下で正しい接続元 IP を解決する
-	app.getHttpAdapter().getInstance().set('trust proxy', 1);
+	(app.getHttpAdapter().getInstance() as Express).set('trust proxy', 1);
 
 	await app.listen(configService.port);
 }

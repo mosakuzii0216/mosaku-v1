@@ -198,7 +198,9 @@ describe('FeedbackService', () => {
 
 			await service.submit({ ...dto, category: FeedbackCategory.Improvement }, context);
 
-			const body = JSON.parse(mockFetch.mock.calls[0][1].body as string) as {
+			const body = JSON.parse(
+				(mockFetch.mock.calls as Array<[unknown, { body: string }]>)[0][1].body,
+			) as {
 				text: string;
 				attachments: Array<{ color: string }>;
 			};
@@ -212,7 +214,9 @@ describe('FeedbackService', () => {
 
 			await service.submit({ ...dto, category: FeedbackCategory.Other }, context);
 
-			const body = JSON.parse(mockFetch.mock.calls[0][1].body as string) as {
+			const body = JSON.parse(
+				(mockFetch.mock.calls as Array<[unknown, { body: string }]>)[0][1].body,
+			) as {
 				text: string;
 				attachments: Array<{ color: string }>;
 			};

@@ -43,6 +43,7 @@ describe('AuthCodeStore', () => {
 			expect(result.code).toBe('auth-code-abc');
 			expect(result.codeChallengeMethod).toBe('S256');
 			expect(mockPrisma.mcpAuthCode.create).toHaveBeenCalledWith({
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 				data: expect.objectContaining({ code: 'auth-code-abc', clientId: 'client-id-123' }),
 			});
 		});

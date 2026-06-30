@@ -47,6 +47,7 @@ describe('McpRefreshTokenStore', () => {
 			expect(result.tokenHash).toBe('hashed-token-abc');
 			expect(result.revokedAt).toBeNull();
 			expect(mockPrisma.mcpRefreshToken.create).toHaveBeenCalledWith({
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 				data: expect.objectContaining({ tokenHash: 'hashed-token-abc', userId: 'user-id-456' }),
 			});
 		});
@@ -128,9 +129,11 @@ describe('McpRefreshTokenStore', () => {
 			expect(result.tokenHash).toBe('new-hash');
 			expect(updateMock).toHaveBeenCalledWith({
 				where: { id: 'rt-old' },
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 				data: { rotatedAt: expect.any(Date) },
 			});
 			expect(createMock).toHaveBeenCalledWith({
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 				data: expect.objectContaining({ tokenHash: 'new-hash', userId: 'user-id' }),
 			});
 		});
@@ -155,6 +158,7 @@ describe('McpRefreshTokenStore', () => {
 
 			expect(mockPrisma.mcpRefreshToken.update).toHaveBeenCalledWith({
 				where: { id: 'rt-id-1' },
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 				data: { revokedAt: expect.any(Date) },
 			});
 		});

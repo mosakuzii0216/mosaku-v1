@@ -127,6 +127,7 @@ describe('RefreshTokenService', () => {
 				'refresh_token_issued',
 				expect.objectContaining({
 					level: 'info',
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					tags: expect.objectContaining({ feature_area: 'auth' }),
 				}),
 			);
@@ -143,6 +144,7 @@ describe('RefreshTokenService', () => {
 				'refresh_token_issue_failed',
 				expect.objectContaining({
 					level: 'error',
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					tags: expect.objectContaining({ feature_area: 'auth' }),
 				}),
 			);
@@ -229,6 +231,7 @@ describe('RefreshTokenService', () => {
 				'refresh_token_reuse_detected',
 				expect.objectContaining({
 					level: 'warning',
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					tags: expect.objectContaining({ feature_area: 'auth' }),
 				}),
 			);
@@ -257,6 +260,7 @@ describe('RefreshTokenService', () => {
 				'refresh_token_rotated',
 				expect.objectContaining({
 					level: 'info',
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					tags: expect.objectContaining({ feature_area: 'auth' }),
 				}),
 			);
@@ -290,6 +294,7 @@ describe('RefreshTokenService', () => {
 				'refresh_token_revoked',
 				expect.objectContaining({
 					level: 'info',
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					tags: expect.objectContaining({ feature_area: 'auth', reason: 'logout' }),
 				}),
 			);
@@ -322,10 +327,12 @@ describe('RefreshTokenService', () => {
 				'refresh_token_revoked',
 				expect.objectContaining({
 					level: 'info',
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					tags: expect.objectContaining({
 						feature_area: 'auth',
 						reason: 'password_change',
 					}),
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					extra: expect.objectContaining({ count: 2 }),
 				}),
 			);
@@ -338,6 +345,7 @@ describe('RefreshTokenService', () => {
 			expect(Sentry.captureMessage).toHaveBeenLastCalledWith(
 				'refresh_token_revoked',
 				expect.objectContaining({
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					tags: expect.objectContaining({ reason: 'admin' }),
 				}),
 			);

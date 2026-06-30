@@ -75,6 +75,7 @@ describe('DashboardService', () => {
 			// Next Monday 2024-01-22 00:00 JST = 2024-01-21T15:00:00Z
 			expect(mockPrismaService.memo.count).toHaveBeenCalledWith(
 				expect.objectContaining({
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					where: expect.objectContaining({
 						userId: 'user-1',
 						trashedAt: null,
@@ -174,6 +175,7 @@ describe('DashboardService', () => {
 
 			expect(mockPrismaService.memo.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					where: expect.objectContaining({
 						userId: 'user-1',
 						trashedAt: null,
@@ -194,6 +196,7 @@ describe('DashboardService', () => {
 			expect(mockPrismaService.notebook.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: { userId: 'user-1' },
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					select: expect.objectContaining({
 						_count: {
 							select: {

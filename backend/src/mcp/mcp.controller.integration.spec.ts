@@ -133,6 +133,7 @@ describe('McpController (integration)', () => {
 		// content を必須プロパティに持つ入力スキーマが公開される
 		expect(createTool.inputSchema).toMatchObject({
 			type: 'object',
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 			required: expect.arrayContaining<string>(['content']),
 		});
 	});

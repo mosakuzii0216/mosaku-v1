@@ -122,10 +122,13 @@ describe('InvitationService', () => {
 			});
 			expect(prisma.user.findUnique).toHaveBeenCalledWith({
 				where: { id: 'user-cuid-abcdefghi' },
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 				select: expect.objectContaining({ id: true, name: true }),
 			});
 			// PII (email) を select に含めない
-			const selectArg = prisma.user.findUnique.mock.calls[0][0].select;
+			const selectArg = (
+				prisma.user.findUnique.mock.calls as Array<[{ select: Record<string, unknown> }]>
+			)[0][0].select;
 			expect(selectArg.email).toBeUndefined();
 		});
 
@@ -290,6 +293,7 @@ describe('InvitationService', () => {
 			await service.createForUser({ id: 'user-cuid-abcdefghi', role: 'USER' }, { maxUses: 5 });
 
 			expect(txMock.invitationCode.create).toHaveBeenCalledWith({
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 				data: expect.objectContaining({ maxUses: 5, perkType: 'NONE' }),
 			});
 		});
@@ -449,6 +453,7 @@ describe('InvitationService', () => {
 
 			expect(prisma.invitationCode.create).toHaveBeenCalledWith(
 				expect.objectContaining({
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					data: expect.objectContaining({ perkType: 'COMP', perkCompMonths: 3 }),
 				}),
 			);
@@ -461,6 +466,7 @@ describe('InvitationService', () => {
 
 			expect(prisma.invitationCode.create).toHaveBeenCalledWith(
 				expect.objectContaining({
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					data: expect.objectContaining({ perkType: 'NONE', perkCompMonths: null }),
 				}),
 			);
@@ -473,28 +479,29 @@ describe('InvitationService', () => {
 
 			expect(prisma.invitationCode.create).toHaveBeenCalledWith(
 				expect.objectContaining({
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					data: expect.objectContaining({ perkType: 'NONE', perkCompMonths: null }),
 				}),
 			);
 		});
 
 		it('perkType=COMP + perkCompMonths 未指定 → INVALID_INPUT を throw', async () => {
-			await expect(
-				service.createInvitation({ perkType: 'COMP' as any }, 'admin-1'),
-			).rejects.toMatchObject({ code: 'VAL001' });
+			await expect(service.createInvitation({ perkType: 'COMP' }, 'admin-1')).rejects.toMatchObject(
+				{ code: 'VAL001' },
+			);
 			expect(prisma.invitationCode.create).not.toHaveBeenCalled();
 		});
 
 		it('perkType=COMP + perkCompMonths=4 → INVALID_INPUT を throw', async () => {
 			await expect(
-				service.createInvitation({ perkType: 'COMP' as any, perkCompMonths: 4 }, 'admin-1'),
+				service.createInvitation({ perkType: 'COMP', perkCompMonths: 4 }, 'admin-1'),
 			).rejects.toMatchObject({ code: 'VAL001' });
 			expect(prisma.invitationCode.create).not.toHaveBeenCalled();
 		});
 
 		it('perkType=NONE + perkCompMonths=2 → INVALID_INPUT を throw', async () => {
 			await expect(
-				service.createInvitation({ perkType: 'NONE' as any, perkCompMonths: 2 }, 'admin-1'),
+				service.createInvitation({ perkType: 'NONE', perkCompMonths: 2 }, 'admin-1'),
 			).rejects.toMatchObject({ code: 'VAL001' });
 			expect(prisma.invitationCode.create).not.toHaveBeenCalled();
 		});

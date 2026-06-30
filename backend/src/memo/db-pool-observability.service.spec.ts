@@ -22,7 +22,7 @@ describe('DbPoolObservabilityService', () => {
 
 	const lastPayload = (): EmittedPayload => {
 		const calls = logSpy.mock.calls;
-		const raw = calls[calls.length - 1][0] as string;
+		const raw = (calls as string[][])[calls.length - 1][0];
 		return JSON.parse(raw) as EmittedPayload;
 	};
 

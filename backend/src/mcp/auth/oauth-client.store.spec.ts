@@ -46,6 +46,7 @@ describe('OAuthClientStore', () => {
 			expect(result.clientName).toBe('Test Client');
 			expect(result.tokenEndpointAuthMethod).toBe('none');
 			expect(mockPrisma.mcpOAuthClient.create).toHaveBeenCalledWith({
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 				data: expect.objectContaining({
 					clientName: 'Test Client',
 					redirectUris: input.redirectUris,

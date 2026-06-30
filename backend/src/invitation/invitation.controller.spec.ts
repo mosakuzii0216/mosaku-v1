@@ -229,11 +229,11 @@ describe('InvitationController', () => {
 				new AppException(ERROR_CODES.INVITATION.QUOTA_EXHAUSTED, 400),
 			);
 
-			await expect(
-				controller.createMyInvitation({} as any, buildAuthReq('user-1')),
-			).rejects.toMatchObject({
-				code: ERROR_CODES.INVITATION.QUOTA_EXHAUSTED,
-			});
+			await expect(controller.createMyInvitation({}, buildAuthReq('user-1'))).rejects.toMatchObject(
+				{
+					code: ERROR_CODES.INVITATION.QUOTA_EXHAUSTED,
+				},
+			);
 		});
 
 		it('INVALID_INPUT（同時有効数超過）は Service の throw をそのまま伝播', async () => {
@@ -242,7 +242,7 @@ describe('InvitationController', () => {
 			);
 
 			await expect(
-				controller.createMyInvitation({ maxUses: 3 } as any, buildAuthReq('user-1')),
+				controller.createMyInvitation({ maxUses: 3 }, buildAuthReq('user-1')),
 			).rejects.toMatchObject({
 				code: ERROR_CODES.VALIDATION.INVALID_INPUT,
 			});

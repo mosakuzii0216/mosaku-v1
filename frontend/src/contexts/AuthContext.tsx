@@ -56,11 +56,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		setUser(userProfile);
 	}, []);
 
+	const { handleCallback: oauthHandleCallback } = oauth;
+
 	useEffect(() => {
 		const initialize = async () => {
 			try {
 				// 1. OAuthコールバックをチェック
-				const oauthHandled = oauth.handleCallback((token, userProfile) =>
+				const oauthHandled = oauthHandleCallback((token, userProfile) =>
 					handleAuthSuccess(token, userProfile),
 				);
 
@@ -89,7 +91,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		};
 
 		initialize();
-	}, [oauth.handleCallback, handleAuthSuccess]);
+	}, [oauthHandleCallback, handleAuthSuccess]);
 
 	const login = useCallback(
 		async (email: string, password: string): Promise<void> => {
@@ -169,6 +171,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextType => {
 	const context = useContext(AuthContext);
 	if (context === undefined) {
@@ -177,5 +180,7 @@ export const useAuth = (): AuthContextType => {
 	return context;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { useOAuth, type OAuthProvider } from '../hooks/useOAuth';
+// eslint-disable-next-line react-refresh/only-export-components
 export { useEmailAuth } from '../hooks/useEmailAuth';

@@ -105,6 +105,7 @@ describe('OAuthController', () => {
 
 			expect(mockOAuthService.registerClient).toHaveBeenCalledWith(
 				expect.objectContaining({
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					grantTypes: expect.arrayContaining<string>(['authorization_code', 'refresh_token']),
 				}),
 			);

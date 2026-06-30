@@ -141,7 +141,7 @@ export class AuthController {
 	}
 
 	private readRefreshCookie(req: ExpressRequest): string | null {
-		const cookies = (req as ExpressRequest & { cookies?: Record<string, string> }).cookies;
+		const cookies = (req as unknown as { cookies?: Record<string, string> }).cookies;
 		const value = cookies?.[REFRESH_COOKIE_NAME];
 		return typeof value === 'string' && value.length > 0 ? value : null;
 	}

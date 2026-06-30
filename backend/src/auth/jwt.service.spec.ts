@@ -67,6 +67,7 @@ describe('JwtTokenService', () => {
 					scope: 'memo:read',
 					token_use: 'mcp',
 				}),
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 				expect.objectContaining({ expiresIn: expect.any(String) }),
 			);
 		});

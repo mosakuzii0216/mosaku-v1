@@ -442,7 +442,8 @@ describe('OAuthService', () => {
 			// 課金カラムへの書き込みが発生しないこと（カラム未実装）
 			expect(mockPrismaService.user.create).toHaveBeenCalledWith(
 				expect.objectContaining({
-					data: expect.not.objectContaining({ subscriptionStatus: expect.anything() }) as unknown,
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+					data: expect.not.objectContaining({ subscriptionStatus: expect.anything() }),
 				}),
 			);
 		});

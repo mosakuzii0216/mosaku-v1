@@ -140,7 +140,7 @@ describe('CreateMemoTool', () => {
 
 			await tool.execute({ content: longLine }, USER_WRITE);
 
-			const callArg = mockMemoService.create.mock.calls[0][0] as { title: string };
+			const callArg = (mockMemoService.create.mock.calls as Array<[{ title: string }]>)[0][0];
 			expect(Array.from(callArg.title).length).toBeLessThanOrEqual(80);
 		});
 
@@ -153,7 +153,7 @@ describe('CreateMemoTool', () => {
 
 			await tool.execute({ content: '\n詳細内容' }, USER_WRITE);
 
-			const callArg = mockMemoService.create.mock.calls[0][0] as { title: string };
+			const callArg = (mockMemoService.create.mock.calls as Array<[{ title: string }]>)[0][0];
 			expect(callArg.title).toMatch(/^MCP メモ \d{4}-\d{2}-\d{2}$/);
 		});
 
@@ -166,7 +166,7 @@ describe('CreateMemoTool', () => {
 
 			await tool.execute({ content: '  タイトル  \n本文' }, USER_WRITE);
 
-			const callArg = mockMemoService.create.mock.calls[0][0] as { title: string };
+			const callArg = (mockMemoService.create.mock.calls as Array<[{ title: string }]>)[0][0];
 			expect(callArg.title).toBe('タイトル');
 		});
 	});
