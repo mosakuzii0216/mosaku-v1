@@ -9,6 +9,7 @@
  * 4.2 他 4 プロバイダの回帰テスト（runOAuthCallbackWithStateSupport 経路不変）
  *   - Google / GitHub / LINE / Apple のコールバックが state 検証経路を経由し続けること
  */
+import type { Server } from 'http';
 import { INestApplication, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -202,7 +203,7 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 		it('state + code → verifyState → exchangeCodeForUser → xLogin → success redirect', async () => {
 			oauthStateSvc.verifyState.mockReturnValue(VALID_X_PAYLOAD);
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get('/auth/x/callback?state=valid.signed.state&code=auth-code')
 				.expect(302);
 
@@ -220,7 +221,7 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 			oauthStateSvc.verifyState.mockReturnValue(VALID_X_PAYLOAD);
 			oauthSvc.xLogin.mockRejectedValue(new Error('login error'));
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get('/auth/x/callback?state=valid.state&code=code')
 				.expect(302);
 
@@ -235,7 +236,7 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 				code: 'INV-CODE-123',
 			});
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get('/auth/x/callback?state=invite.signed.state&code=auth-code')
 				.expect(302);
 
@@ -253,7 +254,7 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 			});
 			oauthSvc.xRegisterWithStateInvitation.mockRejectedValue(new Error('register error'));
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get('/auth/x/callback?state=invite.signed.state&code=code')
 				.expect(302);
 
@@ -263,14 +264,16 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 
 	describe('4.1 X コールバックのエラー経路', () => {
 		it('state クエリなし → auth_failed', async () => {
-			const res = await request(app.getHttpServer()).get('/auth/x/callback?code=code').expect(302);
+			const res = await request(app.getHttpServer() as Server)
+				.get('/auth/x/callback?code=code')
+				.expect(302);
 
 			expect(oauthStateSvc.verifyState).not.toHaveBeenCalled();
 			expect(res.headers.location).toBe(FAIL_REDIRECT);
 		});
 
 		it('code クエリなし → auth_failed', async () => {
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get('/auth/x/callback?state=valid.state')
 				.expect(302);
 
@@ -283,7 +286,7 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 			});
 			oauthStateSvc.tryExtractInvitationCode.mockReturnValue('INVITE-CODE');
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get('/auth/x/callback?state=tampered.state&code=code')
 				.expect(302);
 
@@ -300,7 +303,7 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 			});
 			oauthStateSvc.tryExtractInvitationCode.mockReturnValue(null);
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get('/auth/x/callback?state=bad.state&code=code')
 				.expect(302);
 
@@ -311,7 +314,7 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 			oauthStateSvc.verifyState.mockReturnValue(VALID_X_PAYLOAD);
 			xOAuthSvc.exchangeCodeForUser.mockRejectedValue(new Error('X API error'));
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get('/auth/x/callback?state=valid.state&code=code')
 				.expect(302);
 
@@ -333,7 +336,7 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 				iat: Date.now(),
 			});
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get('/auth/google/callback?state=google.signed.state')
 				.expect(302);
 
@@ -346,7 +349,9 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 		});
 
 		it('state なし → verifyState を呼ばず googleLogin に到達', async () => {
-			const res = await request(app.getHttpServer()).get('/auth/google/callback').expect(302);
+			const res = await request(app.getHttpServer() as Server)
+				.get('/auth/google/callback')
+				.expect(302);
 
 			expect(oauthStateSvc.verifyState).not.toHaveBeenCalled();
 			expect(oauthSvc.googleLogin).toHaveBeenCalled();
@@ -365,7 +370,7 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 				iat: Date.now(),
 			});
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get('/auth/github/callback?state=gh.signed.state')
 				.expect(302);
 
@@ -375,7 +380,9 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 		});
 
 		it('state なし → githubLogin に到達', async () => {
-			const res = await request(app.getHttpServer()).get('/auth/github/callback').expect(302);
+			const res = await request(app.getHttpServer() as Server)
+				.get('/auth/github/callback')
+				.expect(302);
 
 			expect(oauthStateSvc.verifyState).not.toHaveBeenCalled();
 			expect(oauthSvc.githubLogin).toHaveBeenCalled();
@@ -393,7 +400,7 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 				iat: Date.now(),
 			});
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get('/auth/line/callback?state=line.signed.state')
 				.expect(302);
 
@@ -403,7 +410,9 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 		});
 
 		it('state なし → lineLogin に到達', async () => {
-			const res = await request(app.getHttpServer()).get('/auth/line/callback').expect(302);
+			const res = await request(app.getHttpServer() as Server)
+				.get('/auth/line/callback')
+				.expect(302);
 
 			expect(oauthStateSvc.verifyState).not.toHaveBeenCalled();
 			expect(oauthSvc.lineLogin).toHaveBeenCalled();
@@ -421,7 +430,7 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 				iat: Date.now(),
 			});
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.post('/auth/apple/callback')
 				.send({ state: 'apple.signed.state' })
 				.expect(302);
@@ -433,7 +442,7 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 		});
 
 		it('body.state なし → appleLogin に到達', async () => {
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.post('/auth/apple/callback')
 				.send({})
 				.expect(302);

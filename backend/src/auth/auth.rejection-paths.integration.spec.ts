@@ -11,6 +11,7 @@
  *   - AEAD 復号失敗（ev フィールド破損、HMAC は再署名で正常）→ auth_failed
  *   - 正常 X state → auth 成立（サニティチェック）
  */
+import type { Server } from 'http';
 import { createHmac } from 'crypto';
 import { INestApplication, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -215,7 +216,7 @@ describe('Task 4.2: 拒否経路統合テスト（実 OAuthStateService + OAuthS
 			});
 			const tampered = tamperHmac(validState);
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get(`/auth/x/callback?state=${encodeURIComponent(tampered)}&code=auth-code`)
 				.expect(302);
 
@@ -228,7 +229,7 @@ describe('Task 4.2: 拒否経路統合テスト（実 OAuthStateService + OAuthS
 				verifier: 'v'.repeat(43),
 			});
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get(`/auth/x/callback?state=${encodeURIComponent(wrongProviderState)}&code=auth-code`)
 				.expect(302);
 
@@ -242,7 +243,7 @@ describe('Task 4.2: 拒否経路統合テスト（実 OAuthStateService + OAuthS
 			});
 			const expired = expireState(validState);
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get(`/auth/x/callback?state=${encodeURIComponent(expired)}&code=auth-code`)
 				.expect(302);
 
@@ -256,7 +257,7 @@ describe('Task 4.2: 拒否経路統合テスト（実 OAuthStateService + OAuthS
 			});
 			const corrupted = corruptEvAndResign(validState);
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get(`/auth/x/callback?state=${encodeURIComponent(corrupted)}&code=auth-code`)
 				.expect(302);
 
@@ -271,7 +272,7 @@ describe('Task 4.2: 拒否経路統合テスト（実 OAuthStateService + OAuthS
 			});
 			const tampered = tamperHmac(validState);
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get(`/auth/x/callback?state=${encodeURIComponent(tampered)}&code=auth-code`)
 				.expect(302);
 
@@ -285,7 +286,7 @@ describe('Task 4.2: 拒否経路統合テスト（実 OAuthStateService + OAuthS
 				verifier: 'v'.repeat(43),
 			});
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get(`/auth/x/callback?state=${encodeURIComponent(validState)}&code=auth-code`)
 				.expect(302);
 
@@ -306,7 +307,7 @@ describe('Task 4.2: 拒否経路統合テスト（実 OAuthStateService + OAuthS
 			const validState = oauthStateService.issueState({ provider: 'google' });
 			const tampered = tamperHmac(validState);
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get(`/auth/google/callback?state=${encodeURIComponent(tampered)}`)
 				.expect(302);
 
@@ -317,7 +318,7 @@ describe('Task 4.2: 拒否経路統合テスト（実 OAuthStateService + OAuthS
 		it('provider 不一致（state は x、コールバックは google）→ invite ページへ（googleLogin 未呼び出し）', async () => {
 			const wrongProviderState = oauthStateService.issueState({ provider: 'x' });
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get(`/auth/google/callback?state=${encodeURIComponent(wrongProviderState)}`)
 				.expect(302);
 
@@ -329,7 +330,7 @@ describe('Task 4.2: 拒否経路統合テスト（実 OAuthStateService + OAuthS
 			const validState = oauthStateService.issueState({ provider: 'google' });
 			const expired = expireState(validState);
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get(`/auth/google/callback?state=${encodeURIComponent(expired)}`)
 				.expect(302);
 
@@ -344,7 +345,7 @@ describe('Task 4.2: 拒否経路統合テスト（実 OAuthStateService + OAuthS
 			});
 			const tampered = tamperHmac(validState);
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get(`/auth/google/callback?state=${encodeURIComponent(tampered)}`)
 				.expect(302);
 
@@ -358,7 +359,7 @@ describe('Task 4.2: 拒否経路統合テスト（実 OAuthStateService + OAuthS
 				code: 'SANITY-INVITE-CODE',
 			});
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get(`/auth/google/callback?state=${encodeURIComponent(validState)}`)
 				.expect(302);
 

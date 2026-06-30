@@ -1,3 +1,4 @@
+import type { Server } from 'http';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtModule, JwtService } from '@nestjs/jwt';
@@ -16,6 +17,20 @@ import { AuthCodeStore } from './auth/auth-code.store';
 import { McpRefreshTokenStore } from './auth/refresh-token.store';
 import { ConfigService } from '../config/config.service';
 import * as features from '../config/features.config';
+
+type ProtectedResourceMeta = {
+	resource: string;
+	authorization_servers: string[];
+	scopes_supported: string[];
+};
+type AuthServerMeta = {
+	code_challenge_methods_supported: string[];
+	authorization_endpoint: string;
+	token_endpoint: string;
+	registration_endpoint: string;
+};
+type ClientRegistrationBody = { client_id: string; redirect_uris: string[] };
+type TokenBody = { access_token: string; refresh_token: string; token_type: string; scope: string };
 
 /**
  * Task 7.1: OAuth 認可フロー〜MCP tool 実行の統合テスト。
@@ -105,26 +120,28 @@ describe('MCP OAuth Flow Integration (Task 7.1)', () => {
 
 	describe('1. well-known メタデータ（自動接続の起点）', () => {
 		it('GET /.well-known/oauth-protected-resource が resource / authorization_servers / scopes_supported を返すこと', async () => {
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get('/.well-known/oauth-protected-resource')
 				.expect(200);
 
-			expect(res.body.resource).toBe(MCP_URL);
-			expect(Array.isArray(res.body.authorization_servers)).toBe(true);
-			expect(res.body.scopes_supported).toEqual(
-				expect.arrayContaining(['memo:read', 'memo:write']),
+			const prm = res.body as ProtectedResourceMeta;
+			expect(prm.resource).toBe(MCP_URL);
+			expect(Array.isArray(prm.authorization_servers)).toBe(true);
+			expect(prm.scopes_supported).toEqual(
+				expect.arrayContaining<string>(['memo:read', 'memo:write']),
 			);
 		});
 
 		it('GET /.well-known/oauth-authorization-server が S256 を code_challenge_methods_supported に含めること', async () => {
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get('/.well-known/oauth-authorization-server')
 				.expect(200);
 
-			expect(res.body.code_challenge_methods_supported).toContain('S256');
-			expect(res.body.authorization_endpoint).toContain('/oauth/authorize');
-			expect(res.body.token_endpoint).toContain('/oauth/token');
-			expect(res.body.registration_endpoint).toContain('/oauth/register');
+			const asm = res.body as AuthServerMeta;
+			expect(asm.code_challenge_methods_supported).toContain('S256');
+			expect(asm.authorization_endpoint).toContain('/oauth/authorize');
+			expect(asm.token_endpoint).toContain('/oauth/token');
+			expect(asm.registration_endpoint).toContain('/oauth/register');
 		});
 	});
 
@@ -143,17 +160,18 @@ describe('MCP OAuth Flow Integration (Task 7.1)', () => {
 				updatedAt: new Date(),
 			});
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.post('/oauth/register')
 				.send({ client_name: 'Test Client', redirect_uris: ['http://localhost:9000/cb'] })
 				.expect(201);
 
-			expect(res.body.client_id).toBe('client-abc');
-			expect(res.body.redirect_uris).toContain('http://localhost:9000/cb');
+			const reg = res.body as ClientRegistrationBody;
+			expect(reg.client_id).toBe('client-abc');
+			expect(reg.redirect_uris).toContain('http://localhost:9000/cb');
 		});
 
 		it('POST /oauth/register に http: 非 localhost redirect_uri を送ると 400 を返すこと', async () => {
-			await request(app.getHttpServer())
+			await request(app.getHttpServer() as Server)
 				.post('/oauth/register')
 				.send({ client_name: 'Bad', redirect_uris: ['http://evil.com/callback'] })
 				.expect(400);
@@ -197,7 +215,7 @@ describe('MCP OAuth Flow Integration (Task 7.1)', () => {
 				createdAt: new Date(),
 			});
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.post('/oauth/token')
 				.send({
 					grant_type: 'authorization_code',
@@ -209,17 +227,18 @@ describe('MCP OAuth Flow Integration (Task 7.1)', () => {
 				})
 				.expect(200);
 
-			expect(res.body.access_token).toBeTruthy();
-			expect(res.body.refresh_token).toBeTruthy();
-			expect(res.body.token_type).toBe('Bearer');
-			expect(res.body.scope).toContain('memo:read');
+			const tok = res.body as TokenBody;
+			expect(tok.access_token).toBeTruthy();
+			expect(tok.refresh_token).toBeTruthy();
+			expect(tok.token_type).toBe('Bearer');
+			expect(tok.scope).toContain('memo:read');
 		});
 
 		it('PKCE: code_verifier が不一致のとき 400 を返すこと（S256 照合失敗）', async () => {
 			const correctVerifier = randomBytes(32).toString('base64url');
 			codeStore.findAndConsume.mockResolvedValue(makeAuthCodeRecord(correctVerifier));
 
-			await request(app.getHttpServer())
+			await request(app.getHttpServer() as Server)
 				.post('/oauth/token')
 				.send({
 					grant_type: 'authorization_code',
@@ -234,7 +253,7 @@ describe('MCP OAuth Flow Integration (Task 7.1)', () => {
 		it('認可コードが存在しない / 期限切れの場合 400 を返すこと', async () => {
 			codeStore.findAndConsume.mockResolvedValue(null);
 
-			await request(app.getHttpServer())
+			await request(app.getHttpServer() as Server)
 				.post('/oauth/token')
 				.send({
 					grant_type: 'authorization_code',
@@ -263,7 +282,7 @@ describe('MCP OAuth Flow Integration (Task 7.1)', () => {
 				rotatedAt: null,
 				createdAt: new Date(),
 			});
-			await request(app.getHttpServer())
+			await request(app.getHttpServer() as Server)
 				.post('/oauth/token')
 				.send({
 					grant_type: 'authorization_code',
@@ -277,7 +296,7 @@ describe('MCP OAuth Flow Integration (Task 7.1)', () => {
 
 			// 2回目: findAndConsume が null を返す（消費済み）
 			codeStore.findAndConsume.mockResolvedValueOnce(null);
-			await request(app.getHttpServer())
+			await request(app.getHttpServer() as Server)
 				.post('/oauth/token')
 				.send({
 					grant_type: 'authorization_code',
@@ -315,7 +334,7 @@ describe('MCP OAuth Flow Integration (Task 7.1)', () => {
 			refreshStore.findByHash.mockResolvedValue(validRefreshRecord);
 			refreshStore.rotate.mockResolvedValue({ ...validRefreshRecord, id: 'rt-2' });
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.post('/oauth/token')
 				.send({
 					grant_type: 'refresh_token',
@@ -324,17 +343,18 @@ describe('MCP OAuth Flow Integration (Task 7.1)', () => {
 				})
 				.expect(200);
 
-			expect(res.body.access_token).toBeTruthy();
-			expect(res.body.refresh_token).toBeTruthy();
+			const rotated = res.body as Pick<TokenBody, 'access_token' | 'refresh_token'>;
+			expect(rotated.access_token).toBeTruthy();
+			expect(rotated.refresh_token).toBeTruthy();
 			// 旧トークンとは異なる新トークンが発行される（回転）
-			expect(res.body.refresh_token).not.toBe(PLAIN_TOKEN);
+			expect(rotated.refresh_token).not.toBe(PLAIN_TOKEN);
 			expect(refreshStore.rotate).toHaveBeenCalled();
 		});
 
 		it('失効済みリフレッシュトークンは 401 を返すこと', async () => {
 			refreshStore.findByHash.mockResolvedValue({ ...validRefreshRecord, revokedAt: new Date() });
 
-			await request(app.getHttpServer())
+			await request(app.getHttpServer() as Server)
 				.post('/oauth/token')
 				.send({
 					grant_type: 'refresh_token',
@@ -350,7 +370,7 @@ describe('MCP OAuth Flow Integration (Task 7.1)', () => {
 				expiresAt: new Date(Date.now() - 1000),
 			});
 
-			await request(app.getHttpServer())
+			await request(app.getHttpServer() as Server)
 				.post('/oauth/token')
 				.send({
 					grant_type: 'refresh_token',
@@ -394,7 +414,7 @@ describe('MCP OAuth Flow Integration (Task 7.1)', () => {
 				createdAt: new Date(),
 			});
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.post('/oauth/token')
 				.send({
 					grant_type: 'authorization_code',
@@ -407,7 +427,7 @@ describe('MCP OAuth Flow Integration (Task 7.1)', () => {
 				.expect(200);
 
 			// 発行されたトークンに admin:delete が含まれないことを JWT クレームで確認
-			const payload = jwtService.decode(res.body.access_token as string);
+			const payload = jwtService.decode<{ scope: string }>((res.body as TokenBody).access_token);
 			expect(payload.scope).toContain('memo:read');
 			expect(payload.scope).not.toContain('admin:delete');
 		});
@@ -417,7 +437,7 @@ describe('MCP OAuth Flow Integration (Task 7.1)', () => {
 
 	describe('6. 401 → WWW-Authenticate による discovery 誘導', () => {
 		it('/mcp への無認証アクセスは 401 を返し WWW-Authenticate に resource_metadata を含めること', async () => {
-			await request(app.getHttpServer())
+			await request(app.getHttpServer() as Server)
 				.post('/mcp')
 				.set('Accept', 'application/json, text/event-stream')
 				.set('Content-Type', 'application/json')
@@ -426,11 +446,11 @@ describe('MCP OAuth Flow Integration (Task 7.1)', () => {
 			// McpController は McpAuthModule と別のモジュールなので /mcp は存在しない（404）
 			// この統合テストでは 401 動作は McpController integration spec でカバー済み
 			// ここでは discovery の URL が well-known に含まれることを確認する
-			const wellKnown = await request(app.getHttpServer())
+			const wellKnown = await request(app.getHttpServer() as Server)
 				.get('/.well-known/oauth-protected-resource')
 				.expect(200);
 
-			expect(wellKnown.body.authorization_servers[0]).toContain(
+			expect((wellKnown.body as ProtectedResourceMeta).authorization_servers[0]).toContain(
 				'/.well-known/oauth-authorization-server',
 			);
 		});

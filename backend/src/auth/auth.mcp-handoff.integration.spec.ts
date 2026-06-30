@@ -9,6 +9,7 @@
  *   - session 書き込み失敗（session が undefined）でも認証成立（→ 通常の SUCCESS リダイレクト）
  *   - X / Google 両経路で MCP ハンドオフが機能すること
  */
+import type { Server } from 'http';
 import cookieSession from 'cookie-session';
 import { INestApplication, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -200,7 +201,7 @@ describe('Task 4.3: MCP ハンドオフ不変テスト', () => {
 
 	describe('Google コールバック MCP ハンドオフ', () => {
 		it('session に mcpAuthorizeReturn あり → mcpAuthorizeReturn へリダイレクト', async () => {
-			const agent = request.agent(app.getHttpServer());
+			const agent = request.agent(app.getHttpServer() as Server);
 
 			// session に mcpAuthorizeReturn を仕込む（cookie-session 経由）
 			// 実際の MCP フローでは /mcp/auth/authorize で session に書き込まれる
@@ -216,7 +217,9 @@ describe('Task 4.3: MCP ハンドオフ不変テスト', () => {
 		});
 
 		it('session に mcpAuthorizeReturn なし → 通常の SUCCESS リダイレクト', async () => {
-			const res = await request(app.getHttpServer()).get('/auth/google/callback').expect(302);
+			const res = await request(app.getHttpServer() as Server)
+				.get('/auth/google/callback')
+				.expect(302);
 
 			expect(res.headers.location).toBe(SUCCESS_URL);
 			expect(oauthSvc.googleLogin).toHaveBeenCalledTimes(1);
@@ -237,7 +240,7 @@ describe('Task 4.3: MCP ハンドオフ不変テスト', () => {
 				verifier: 'v'.repeat(43),
 			});
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get('/auth/x/callback?state=valid.state&code=auth-code')
 				.expect(302);
 
@@ -255,7 +258,7 @@ describe('Task 4.3: MCP ハンドオフ不変テスト', () => {
 			});
 
 			// session なし（cookie なし）の通常リクエスト
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get('/auth/x/callback?state=valid.state&code=auth-code')
 				.expect(302);
 
@@ -279,7 +282,7 @@ describe('Task 4.3: MCP ハンドオフ不変テスト', () => {
 				iat: Date.now(),
 			});
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get('/auth/google/callback?state=valid.signed.state')
 				.expect(302);
 
@@ -291,7 +294,9 @@ describe('Task 4.3: MCP ハンドオフ不変テスト', () => {
 		});
 
 		it('Google: state なし → googleLogin', async () => {
-			const res = await request(app.getHttpServer()).get('/auth/google/callback').expect(302);
+			const res = await request(app.getHttpServer() as Server)
+				.get('/auth/google/callback')
+				.expect(302);
 
 			expect(oauthStateSvc.verifyState).not.toHaveBeenCalled();
 			expect(oauthSvc.googleLogin).toHaveBeenCalledTimes(1);

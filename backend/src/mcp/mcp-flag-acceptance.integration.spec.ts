@@ -1,3 +1,4 @@
+import type { Server } from 'http';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtModule } from '@nestjs/jwt';
@@ -105,7 +106,7 @@ describe('MCP Feature Flag Acceptance (Task 7.3)', () => {
 		});
 
 		it('POST /mcp が 404 を返すこと', async () => {
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.post('/mcp')
 				.set('Content-Type', 'application/json')
 				.set('Accept', 'application/json, text/event-stream')
@@ -115,19 +116,23 @@ describe('MCP Feature Flag Acceptance (Task 7.3)', () => {
 		});
 
 		it('GET /.well-known/oauth-protected-resource が 404 を返すこと', async () => {
-			const res = await request(app.getHttpServer()).get('/.well-known/oauth-protected-resource');
+			const res = await request(app.getHttpServer() as Server).get(
+				'/.well-known/oauth-protected-resource',
+			);
 
 			expect(res.status).toBe(404);
 		});
 
 		it('GET /.well-known/oauth-authorization-server が 404 を返すこと', async () => {
-			const res = await request(app.getHttpServer()).get('/.well-known/oauth-authorization-server');
+			const res = await request(app.getHttpServer() as Server).get(
+				'/.well-known/oauth-authorization-server',
+			);
 
 			expect(res.status).toBe(404);
 		});
 
 		it('POST /oauth/register が 404 を返すこと', async () => {
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.post('/oauth/register')
 				.send({ client_name: 'test', redirect_uris: ['http://localhost:9000/cb'] });
 
@@ -139,22 +144,26 @@ describe('MCP Feature Flag Acceptance (Task 7.3)', () => {
 
 	describe('feature flag ON: discovery エンドポイントが正常応答', () => {
 		it('GET /.well-known/oauth-protected-resource が resource / scopes_supported を返すこと', async () => {
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get('/.well-known/oauth-protected-resource')
 				.expect(200);
 
-			expect(res.body.resource).toBe(MCP_URL);
-			expect(res.body.scopes_supported).toEqual(
-				expect.arrayContaining(['memo:read', 'memo:write']),
+			const prmBody = res.body as { resource: string; scopes_supported: string[] };
+			expect(prmBody.resource).toBe(MCP_URL);
+			expect(prmBody.scopes_supported).toEqual(
+				expect.arrayContaining<string>(['memo:read', 'memo:write']),
 			);
 		});
 
 		it('GET /.well-known/oauth-authorization-server が S256 を広告すること', async () => {
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.get('/.well-known/oauth-authorization-server')
 				.expect(200);
 
-			expect(res.body.code_challenge_methods_supported).toContain('S256');
+			expect(
+				(res.body as { code_challenge_methods_supported: string[] })
+					.code_challenge_methods_supported,
+			).toContain('S256');
 		});
 	});
 });

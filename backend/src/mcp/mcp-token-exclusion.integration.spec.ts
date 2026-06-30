@@ -1,3 +1,4 @@
+import type { Server } from 'http';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtModule, JwtService } from '@nestjs/jwt';
@@ -107,7 +108,7 @@ describe('MCP Token Mutual Exclusion (Task 7.2)', () => {
 			// REST 用トークン: token_use, aud, scope を持たない
 			const restToken = jwtService.sign({ sub: 'user-1', email: 'u@example.com', role: 'USER' });
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.post('/mcp')
 				.set('Authorization', `Bearer ${restToken}`)
 				.set('Accept', 'application/json, text/event-stream')
@@ -127,7 +128,7 @@ describe('MCP Token Mutual Exclusion (Task 7.2)', () => {
 				token_use: 'mcp',
 			});
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.post('/mcp')
 				.set('Authorization', `Bearer ${mcpToken}`)
 				.set('Accept', 'application/json, text/event-stream')
@@ -154,7 +155,7 @@ describe('MCP Token Mutual Exclusion (Task 7.2)', () => {
 		it('feature flag OFF のとき /mcp は 404 を返し既存機能に影響しないこと', async () => {
 			flagSpy.mockReturnValue(false);
 
-			const res = await request(app.getHttpServer())
+			const res = await request(app.getHttpServer() as Server)
 				.post('/mcp')
 				.set('Accept', 'application/json, text/event-stream')
 				.set('Content-Type', 'application/json')

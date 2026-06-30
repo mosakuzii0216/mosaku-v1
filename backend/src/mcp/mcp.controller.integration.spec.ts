@@ -1,3 +1,4 @@
+import type { Server } from 'http';
 import { CanActivate, ExecutionContext, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
@@ -6,6 +7,11 @@ import * as features from '../config/features.config';
 import { MCP_TOOL_NAMES } from './mcp.constants';
 import { McpBearerGuard } from './auth/mcp-bearer.guard';
 import { PrismaService } from '../prisma/prisma.service';
+
+type McpRpcBody<R = Record<string, unknown>> = {
+	result?: R;
+	error?: { code: number; message: string };
+};
 
 // 本物の ConfigService.jwtSecret は JWT_SECRET 未設定だと throw する。
 // CI のユニットテストジョブには JWT_SECRET が無いため、e2e spec と同じく hermetic に設定する。
@@ -67,7 +73,10 @@ describe('McpController (integration)', () => {
 	});
 
 	function post(body: object) {
-		return request(app.getHttpServer()).post('/mcp').set(MCP_HEADERS).send(body);
+		return request(app.getHttpServer() as Server)
+			.post('/mcp')
+			.set(MCP_HEADERS)
+			.send(body);
 	}
 
 	it('feature flag OFF のとき入口を無効化（404）し tool を実行しない', async () => {
@@ -97,16 +106,24 @@ describe('McpController (integration)', () => {
 			},
 		});
 		expect(res.status).toBe(200);
-		expect(res.body.result.serverInfo).toMatchObject({ name: 'mosaku-mcp' });
-		expect(res.body.result.capabilities).toHaveProperty('tools');
-		expect(res.body.result.protocolVersion).toBe('2025-11-25');
+		const rpc = res.body as McpRpcBody<{
+			serverInfo: object;
+			capabilities: object;
+			protocolVersion: string;
+		}>;
+		expect(rpc.result!.serverInfo).toMatchObject({ name: 'mosaku-mcp' });
+		expect(rpc.result!.capabilities).toHaveProperty('tools');
+		expect(rpc.result!.protocolVersion).toBe('2025-11-25');
 	});
 
 	it('tools/list で create_memo / search_memos の name・説明・入力スキーマを返す', async () => {
 		const res = await post({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} });
 		expect(res.status).toBe(200);
-		const tools: Array<{ name: string; description?: string; inputSchema?: unknown }> =
-			res.body.result.tools;
+		const tools = (
+			res.body as McpRpcBody<{
+				tools: Array<{ name: string; description?: string; inputSchema?: unknown }>;
+			}>
+		).result!.tools;
 		const names = tools.map((t) => t.name);
 		expect(names).toEqual(
 			expect.arrayContaining([MCP_TOOL_NAMES.CREATE_MEMO, MCP_TOOL_NAMES.SEARCH_MEMOS]),
@@ -116,7 +133,7 @@ describe('McpController (integration)', () => {
 		// content を必須プロパティに持つ入力スキーマが公開される
 		expect(createTool.inputSchema).toMatchObject({
 			type: 'object',
-			required: expect.arrayContaining(['content']),
+			required: expect.arrayContaining<string>(['content']),
 		});
 	});
 
@@ -128,9 +145,10 @@ describe('McpController (integration)', () => {
 			params: {},
 		});
 		expect(res.status).toBe(200);
-		expect(res.body.error).toBeDefined();
+		const errBody = res.body as McpRpcBody;
+		expect(errBody.error).toBeDefined();
 		// JSON-RPC: Method not found = -32601
-		expect(res.body.error.code).toBe(-32601);
+		expect(errBody.error!.code).toBe(-32601);
 	});
 
 	it('未知 tool の tools/call には MCP 準拠エラーを返す', async () => {
@@ -142,13 +160,14 @@ describe('McpController (integration)', () => {
 		});
 		expect(res.status).toBe(200);
 		// 未知 tool はエラー（JSON-RPC error もしくは isError 結果のいずれか）
-		const isJsonRpcError = res.body.error !== undefined;
-		const isToolError = res.body.result?.isError === true;
+		const mixedBody = res.body as McpRpcBody<{ isError?: boolean }>;
+		const isJsonRpcError = mixedBody.error !== undefined;
+		const isToolError = mixedBody.result?.isError === true;
 		expect(isJsonRpcError || isToolError).toBe(true);
 	});
 
 	it('不正な Host ヘッダ（DNS rebinding）を 403 で拒否する', async () => {
-		const res = await request(app.getHttpServer())
+		const res = await request(app.getHttpServer() as Server)
 			.post('/mcp')
 			.set({ ...MCP_HEADERS, Host: 'evil.example.com' })
 			.send({ jsonrpc: '2.0', id: 5, method: 'tools/list', params: {} });

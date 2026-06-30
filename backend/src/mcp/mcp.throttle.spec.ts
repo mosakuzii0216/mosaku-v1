@@ -1,3 +1,4 @@
+import type { Server } from 'http';
 import { CanActivate, ExecutionContext, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ThrottlerModule, ThrottlerException } from '@nestjs/throttler';
@@ -121,11 +122,17 @@ describe('MCP Throttle (Task 6.1)', () => {
 			};
 
 			// 1回目: 通過
-			const first = await request(app.getHttpServer()).post('/mcp').set(headers).send(body);
+			const first = await request(app.getHttpServer() as Server)
+				.post('/mcp')
+				.set(headers)
+				.send(body);
 			expect(first.status).toBe(200);
 
 			// 2回目: OneShotThrottlerGuard が ThrottlerException を投げる → 429
-			const second = await request(app.getHttpServer()).post('/mcp').set(headers).send(body);
+			const second = await request(app.getHttpServer() as Server)
+				.post('/mcp')
+				.set(headers)
+				.send(body);
 			expect(second.status).toBe(429);
 		});
 	});
