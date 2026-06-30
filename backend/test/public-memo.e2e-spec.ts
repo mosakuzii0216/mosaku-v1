@@ -162,6 +162,7 @@ describe('GET /memos/public/:token (e2e)', () => {
 
 			expect(findFirstMock).toHaveBeenCalledWith(
 				expect.objectContaining({
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					where: expect.objectContaining({
 						publicToken: VALID_TOKEN,
 						trashedAt: null,

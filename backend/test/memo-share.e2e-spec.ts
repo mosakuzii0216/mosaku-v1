@@ -314,6 +314,7 @@ describe('所有者向け公開系 API (e2e)', () => {
 
 			expect(findManyMock).toHaveBeenCalledWith(
 				expect.objectContaining({
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					where: expect.objectContaining({
 						userId: ownerUser.id,
 						trashedAt: null,
