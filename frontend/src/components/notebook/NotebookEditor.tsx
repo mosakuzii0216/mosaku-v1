@@ -287,7 +287,7 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 				</div>
 			</div>
 			{/* エディター */}
-			<div className="flex-1 flex flex-col p-4 bg-white">
+			<div className="flex-1 flex flex-col p-4">
 				<div
 					className={`max-w-4xl mx-auto w-full flex-1 flex flex-col ${selectedTheme ? 'theme-root' : ''}`}
 					data-theme-id={selectedTheme?.id}

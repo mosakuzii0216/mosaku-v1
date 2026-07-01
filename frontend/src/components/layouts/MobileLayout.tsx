@@ -121,9 +121,12 @@ export const MobileLayout = () => {
 			data-theme={getEffectKey(activeTheme)}
 			data-theme-id={activeTheme?.id}
 		>
-			<Header onMemoCreateClick={goToMemoCreate} onNotebookCreateClick={goToNotebookCreate} />
 			<ThemeEffectHost theme={activeTheme} />
-			<main className="flex-1 overflow-hidden">{renderContent()}</main>
+			{/* 生きた背景（MoriEffectLayer / fixed z-0）より前面にコンテンツを重ねる */}
+			<div className="relative z-10 flex-shrink-0">
+				<Header onMemoCreateClick={goToMemoCreate} onNotebookCreateClick={goToNotebookCreate} />
+			</div>
+			<main className="relative z-10 flex-1 overflow-hidden">{renderContent()}</main>
 
 			{/* メモパレット */}
 			<MemoPalette isOpen={paletteOpen} onClose={closeMemoPalette} initialMode={paletteMode} />
