@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthorizationService } from '../common/services/authorization.service';
 import { ERROR_CODES, throwBadRequest, throwForbidden, throwNotFound } from '../common/exceptions';
-import type { Prisma, Theme } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import type { Theme } from '@prisma/client';
 import { CreateThemeDto } from './dto/create-theme.dto';
 import { UpdateThemeDto } from './dto/update-theme.dto';
 import { SearchThemeDto } from './dto/search-theme.dto';
@@ -222,7 +223,7 @@ export class ThemeService {
 				description: createThemeDto.description,
 				isSystem: false, // ユーザー作成テーマ
 				isPublic: createThemeDto.isPublic || false,
-				styles: (createThemeDto.styles as unknown as Prisma.InputJsonValue) || null,
+				styles: (createThemeDto.styles as unknown as Prisma.InputJsonValue) ?? Prisma.JsonNull,
 				cssFilePath: createThemeDto.cssFilePath || null,
 				metadata: (createThemeDto.metadata as Prisma.InputJsonValue) || {},
 				createdById: userId,
