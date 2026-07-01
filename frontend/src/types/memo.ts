@@ -14,7 +14,7 @@ export interface Memo {
 	notebookId?: string | null;
 	notebook?:
 		| (Pick<Notebook, 'id' | 'name'> & {
-				theme?: Pick<Theme, 'id' | 'name' | 'styles' | 'cssFilePath'> | null;
+				theme?: Pick<Theme, 'id' | 'name' | 'styles' | 'cssFilePath' | 'metadata'> | null;
 		  })
 		| null;
 	// 公開共有関連
