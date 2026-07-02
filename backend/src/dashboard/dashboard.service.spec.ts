@@ -39,10 +39,10 @@ describe('DashboardService', () => {
 			);
 		});
 
-		it('should truncate content to 100 chars as contentPreview', async () => {
-			const longContent = 'a'.repeat(200);
+		it('should truncate contentText to 100 chars as contentPreview', async () => {
+			const longText = 'a'.repeat(200);
 			mockPrismaService.memo.findMany.mockResolvedValue([
-				{ id: '1', title: 'Test', content: longContent, updatedAt: new Date('2024-01-01') },
+				{ id: '1', title: 'Test', contentText: longText, updatedAt: new Date('2024-01-01') },
 			]);
 
 			const result = await service.getRecentMemos('user-1', 5);
@@ -51,10 +51,20 @@ describe('DashboardService', () => {
 			expect(result[0].contentPreview).toBe('a'.repeat(100));
 		});
 
+		it('contentText が null/undefined のとき contentPreview は空文字になる', async () => {
+			mockPrismaService.memo.findMany.mockResolvedValue([
+				{ id: '1', title: 'Test', contentText: null, updatedAt: new Date('2024-01-01') },
+			]);
+
+			const result = await service.getRecentMemos('user-1', 5);
+
+			expect(result[0].contentPreview).toBe('');
+		});
+
 		it('should return updatedAt as ISO string', async () => {
 			const updatedAt = new Date('2024-01-15T10:00:00Z');
 			mockPrismaService.memo.findMany.mockResolvedValue([
-				{ id: '1', title: 'T', content: 'c', updatedAt },
+				{ id: '1', title: 'T', contentText: 'hello', updatedAt },
 			]);
 
 			const result = await service.getRecentMemos('user-1', 5);

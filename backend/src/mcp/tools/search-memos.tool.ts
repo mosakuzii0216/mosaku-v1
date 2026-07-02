@@ -43,9 +43,7 @@ export class SearchMemosTool {
 		const memos = result.data.map((memo) => ({
 			memoId: memo.id,
 			title: memo.title,
-			excerpt: Array.from(memo.content ?? '')
-				.slice(0, EXCERPT_MAX_CHARS)
-				.join(''),
+			excerpt: (memo.contentText ?? '').slice(0, EXCERPT_MAX_CHARS),
 			notebookId: memo.notebookId ?? null,
 			updatedAt: memo.updatedAt.toISOString(),
 		}));

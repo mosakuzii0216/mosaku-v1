@@ -13,10 +13,11 @@ const USER_WRITE_ONLY: AuthenticatedMcpUser = {
 	scopes: ['memo:write'],
 };
 
-const makeMemo = (id: string, content = 'memo content', notebookId: string | null = null) => ({
+const makeMemo = (id: string, contentText = 'memo content', notebookId: string | null = null) => ({
 	id,
 	title: `title-${id}`,
-	content,
+	content: { type: 'doc', content: [{ type: 'paragraph' }] },
+	contentText,
 	notebookId,
 	updatedAt: new Date('2026-06-17T00:00:00Z'),
 	trashedAt: null,
@@ -109,10 +110,10 @@ describe('SearchMemosTool', () => {
 	});
 
 	describe('excerpt', () => {
-		it('should truncate excerpt to 300 chars', async () => {
-			const longContent = 'a'.repeat(500);
+		it('should truncate excerpt to 300 chars (contentText ベース)', async () => {
+			const longContentText = 'a'.repeat(500);
 			mockMemoService.searchPaginated.mockResolvedValue(
-				makePaginatedResult([makeMemo('m1', longContent)]),
+				makePaginatedResult([makeMemo('m1', longContentText)]),
 			);
 
 			const result = await tool.execute({ query: 'a' }, USER_READ);

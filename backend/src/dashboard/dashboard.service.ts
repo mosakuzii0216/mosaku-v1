@@ -40,13 +40,13 @@ export class DashboardService {
 			where: { userId, trashedAt: null },
 			orderBy: { updatedAt: 'desc' },
 			take: limit,
-			select: { id: true, title: true, content: true, updatedAt: true },
+			select: { id: true, title: true, contentText: true, updatedAt: true },
 		});
 
 		return memos.map((m) => ({
 			id: m.id,
 			title: m.title,
-			contentPreview: m.content.slice(0, 100),
+			contentPreview: (m.contentText ?? '').slice(0, 100),
 			updatedAt: m.updatedAt.toISOString(),
 		}));
 	}

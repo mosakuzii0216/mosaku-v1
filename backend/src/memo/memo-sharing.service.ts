@@ -25,7 +25,7 @@ export interface PublicMemoListItem {
 
 export interface PublicMemoView {
 	title: string;
-	content: string;
+	content: import('@prisma/client').Prisma.JsonValue;
 	updatedAt: Date;
 }
 

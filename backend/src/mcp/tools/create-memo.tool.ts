@@ -4,6 +4,7 @@ import { MemoService } from '../../memo/memo.service';
 import { NotebookService } from '../../notebook/notebook.service';
 import { MCP_SCOPES } from '../mcp.constants';
 import type { AuthenticatedMcpUser } from '../auth/mcp-token.verifier';
+import type { ProseMirrorDoc } from '../../common/utils/prosemirror-types';
 
 export interface CreateMemoInput {
 	content: string;
@@ -11,6 +12,15 @@ export interface CreateMemoInput {
 }
 
 const TITLE_MAX_CHARS = 80;
+
+function textToDoc(text: string): ProseMirrorDoc {
+	const lines = text.split('\n');
+	const paragraphs = lines.map((line) => ({
+		type: 'paragraph' as const,
+		...(line ? { content: [{ type: 'text' as const, text: line }] } : {}),
+	}));
+	return { type: 'doc', content: paragraphs };
+}
 
 /**
  * create_memo MCP tool ハンドラ。
@@ -49,9 +59,10 @@ export class CreateMemoTool {
 		}
 
 		const title = this.generateTitle(content);
+		const contentDoc = textToDoc(content);
 		let memo: { id: string; title: string; notebookId: string | null };
 		try {
-			memo = await this.memoService.create({ title, content, notebookId }, user.userId);
+			memo = await this.memoService.create({ title, content: contentDoc, notebookId }, user.userId);
 		} catch {
 			return this.errorResult('メモの作成中に内部エラーが発生しました。');
 		}
