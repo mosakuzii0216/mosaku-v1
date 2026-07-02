@@ -4,11 +4,19 @@ import { MemoService } from './memo.service';
 import { MemoSharingService } from './memo-sharing.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthorizationService } from '../common/services/authorization.service';
+import type { ProseMirrorDoc } from '../common/utils/prosemirror-types';
 
-const mockMemo = (overrides = {}) => ({
+const emptyDoc: ProseMirrorDoc = { type: 'doc', content: [{ type: 'paragraph' }] };
+const textDoc: ProseMirrorDoc = {
+	type: 'doc',
+	content: [{ type: 'paragraph', content: [{ type: 'text', text: 'hello world' }] }],
+};
+
+const mockMemo = (overrides: Record<string, unknown> = {}) => ({
 	id: 'memo-1',
 	title: 'Test Memo',
-	content: 'Content',
+	content: emptyDoc as unknown,
+	contentText: '',
 	createdAt: new Date(),
 	updatedAt: new Date(),
 	trashedAt: null,
@@ -256,14 +264,14 @@ describe('MemoService', () => {
 		it('clientUpdatedAt と updatedAt が同一インスタント（タイムゾーン違い）でも更新する', async () => {
 			// JST 19:00 == UTC 10:00 — 同じインスタント
 			const memo = mockMemo({ updatedAt: new Date('2026-05-10T10:00:00.000Z') });
-			const updated = mockMemo({ content: 'tz-test' });
+			const updated = mockMemo({ content: textDoc });
 			mockPrismaService.memo.findFirst.mockResolvedValue(memo);
 			mockPrismaService.memo.update.mockResolvedValue(updated);
 
 			await expect(
 				service.update(
 					'memo-1',
-					{ content: 'tz-test', clientUpdatedAt: '2026-05-10T19:00:00.000+09:00' },
+					{ content: textDoc, clientUpdatedAt: '2026-05-10T19:00:00.000+09:00' },
 					'user-1',
 				),
 			).resolves.toEqual(updated);
@@ -277,7 +285,7 @@ describe('MemoService', () => {
 			try {
 				await service.update(
 					'memo-1',
-					{ content: 'stale', clientUpdatedAt: '2026-05-10T10:00:00.000Z' },
+					{ content: textDoc, clientUpdatedAt: '2026-05-10T10:00:00.000Z' },
 					'user-1',
 				);
 			} catch (e) {
@@ -319,6 +327,110 @@ describe('MemoService', () => {
 				),
 			).rejects.toMatchObject({ statusCode: HttpStatus.NOT_FOUND });
 			expect(mockPrismaService.memo.update).not.toHaveBeenCalled();
+		});
+	});
+
+	// ─── create() — contentText 永続化 ─────────────────────────────────────────
+
+	describe('create() — contentText 永続化', () => {
+		it('content と contentText を同時に Prisma へ渡す', async () => {
+			mockPrismaService.memo.create.mockResolvedValue(
+				mockMemo({ content: textDoc, contentText: 'hello world' }),
+			);
+
+			await service.create({ title: 'Test', content: textDoc }, 'user-1');
+
+			expect(mockPrismaService.memo.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					data: expect.objectContaining({
+						content: textDoc,
+						contentText: 'hello world',
+					}),
+				}),
+			);
+		});
+
+		it('空 doc の contentText は空文字になる', async () => {
+			mockPrismaService.memo.create.mockResolvedValue(
+				mockMemo({ content: emptyDoc, contentText: '' }),
+			);
+
+			await service.create({ title: 'Test', content: emptyDoc }, 'user-1');
+
+			expect(mockPrismaService.memo.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					data: expect.objectContaining({
+						contentText: '',
+					}),
+				}),
+			);
+		});
+	});
+
+	// ─── update() — contentText 永続化 ─────────────────────────────────────────
+
+	describe('update() — contentText 永続化', () => {
+		it('content 更新時に contentText も同時に更新する', async () => {
+			const existingMemo = mockMemo();
+			mockPrismaService.memo.findFirst.mockResolvedValue(existingMemo);
+			mockPrismaService.memo.update.mockResolvedValue(
+				mockMemo({ content: textDoc, contentText: 'hello world' }),
+			);
+
+			await service.update('memo-1', { content: textDoc }, 'user-1');
+
+			expect(mockPrismaService.memo.update).toHaveBeenCalledWith(
+				expect.objectContaining({
+					data: expect.objectContaining({
+						content: textDoc,
+						contentText: 'hello world',
+					}),
+				}),
+			);
+		});
+
+		it('content なし更新では contentText を data に含めない', async () => {
+			const existingMemo = mockMemo();
+			mockPrismaService.memo.findFirst.mockResolvedValue(existingMemo);
+			mockPrismaService.memo.update.mockResolvedValue(mockMemo({ title: 'new title' }));
+
+			await service.update('memo-1', { title: 'new title' }, 'user-1');
+
+			const updateCall = mockPrismaService.memo.update.mock.calls[0][0] as {
+				data: Record<string, unknown>;
+			};
+			expect(updateCall.data).not.toHaveProperty('contentText');
+		});
+	});
+
+	// ─── search() — contentText 検索 ───────────────────────────────────────────
+
+	describe('search() — contentText で本文検索', () => {
+		it('本文検索は contentText を対象にする（content ではない）', async () => {
+			mockPrismaService.memo.findMany.mockResolvedValue([]);
+
+			await service.search('hello', 'user-1');
+
+			const [[callArgs]] = mockPrismaService.memo.findMany.mock.calls as Array<
+				[{ where: { OR?: Array<Record<string, unknown>> } }]
+			>;
+			const orClauses = callArgs.where.OR ?? [];
+			expect(orClauses.some((c) => 'contentText' in c)).toBe(true);
+			expect(orClauses.every((c) => !('content' in c))).toBe(true);
+		});
+
+		it('searchPaginated も contentText を対象にする', async () => {
+			mockPrismaService.memo.findMany.mockResolvedValue([]);
+			mockPrismaService.memo.count.mockResolvedValue(0);
+
+			await service.searchPaginated('hello', 'user-1', { page: 1, limit: 20 });
+
+			const [[callArgs]] = mockPrismaService.memo.findMany.mock.calls as Array<
+				[{ where: { OR?: Array<Record<string, unknown>> } }]
+			>;
+			const orClauses = callArgs.where.OR ?? [];
+			expect(orClauses.some((c) => 'contentText' in c)).toBe(true);
+			expect(orClauses.every((c) => !('content' in c))).toBe(true);
 		});
 	});
 });

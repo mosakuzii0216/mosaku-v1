@@ -14,6 +14,7 @@ import { UpdateMemoDto } from './dto/update-memo.dto';
 import type { Memo, Prisma } from '@prisma/client';
 import { NOTEBOOK_WITH_THEME_SELECT } from '../common/constants/prisma-selects';
 import { ERROR_CODES, throwConflict } from '../common/exceptions';
+import { extractPlainText } from '../common/utils/prosemirror-text';
 
 // Memoエンティティ型（リレーション込み）
 type MemoWithRelations = Memo & { userId: string };
@@ -125,9 +126,11 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 	}
 
 	async create(createMemoDto: CreateMemoDto, userId: string) {
+		const contentText = extractPlainText(createMemoDto.content);
 		const createData: Prisma.MemoUncheckedCreateInput = {
 			title: createMemoDto.title,
-			content: createMemoDto.content,
+			content: createMemoDto.content as unknown as Prisma.InputJsonValue,
+			contentText,
 			userId,
 		};
 
@@ -153,7 +156,13 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 	 *   比較は UTC ミリ秒（`getTime()`）に正規化し、タイムゾーン差異を吸収する。
 	 */
 	async update(id: string, updateMemoDto: UpdateMemoDto, userId: string) {
-		const { clientUpdatedAt, ...patch } = updateMemoDto;
+		const { clientUpdatedAt, content, ...otherFields } = updateMemoDto;
+
+		const patch: Record<string, unknown> = { ...otherFields };
+		if (content !== undefined) {
+			patch.content = content;
+			patch.contentText = extractPlainText(content);
+		}
 
 		if (clientUpdatedAt === undefined) {
 			return this.updateBase(id, patch, userId);
@@ -194,7 +203,7 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 					},
 				},
 				{
-					content: {
+					contentText: {
 						contains: query,
 						mode: 'insensitive',
 					},
@@ -244,7 +253,7 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 					},
 				},
 				{
-					content: {
+					contentText: {
 						contains: query,
 						mode: 'insensitive',
 					},
