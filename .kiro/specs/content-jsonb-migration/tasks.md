@@ -4,15 +4,15 @@
 >
 > **並列実行の全体像**: Task 1（共有基盤）と Task 2（スキーマ）は別サブシステムのため並行可。両者完了後、Task 3（backend）/ Task 4（frontend）/ Task 5（移行パイプライン）は別境界のため 3 ストリーム並行可。Task 6（統合・非回帰）は 3・4・5 完了後。各メジャー内サブタスクは同一ファイルを触り得るため記載順に実施する。
 
-- [ ] 1. 共有 ProseMirror 基盤（型・検証・テキスト抽出）
-- [ ] 1.1 ProseMirror 型・述語・DTO 検証デコレータ（backend 共通）
+- [x] 1. 共有 ProseMirror 基盤（型・検証・テキスト抽出）
+- [x] 1.1 ProseMirror 型・述語・DTO 検証デコレータ（backend 共通）
   - `ProseMirrorDoc` / ノード / マーク型を `any` 不使用で定義し、全層で共有できる型安全表現にする
   - `type: 'doc'` とノードの浅い shape（各要素が `type: string` を持つ）を検証する純粋述語を実装する（TipTap の完全 schema 検証は要求しない）
   - 空 doc 判定・空 doc 生成（`{ type:'doc', content:[{ type:'paragraph' }] }`）のヘルパを実装する
   - `class-validator` カスタムデコレータを実装し、非オブジェクト・`type!=='doc'` を無効、空 doc を許可、Notebook 向けに `null` 許容の分岐を持たせる
   - _Requirements: 1.5, 3.5, 4.1, 4.4_
 
-- [ ] 1.2 extractPlainText 純関数（frontend/backend 同一仕様）とゴールデンベクタ
+- [x] 1.2 extractPlainText 純関数（frontend/backend 同一仕様）とゴールデンベクタ
   - JSON を再帰走査し text ノード値のみ連結、ブロック境界に単一空白を挿入し語の融合を防ぐ純関数を実装する
   - 構造キー名・ノードタイプ名・attrs を出力に一切含めず、`null`/空 doc は空文字、同一入力で決定的な出力にする
   - DOM/TipTap 非依存で backend 共通ユーティリティと frontend ユーティリティに各配置する（共有パッケージは新設しない）
@@ -20,14 +20,14 @@
   - 見出し/リスト/チェック/コード/引用/リンク/装飾を混在させた共通ゴールデンベクタで front/back 出力の一致をテストする
   - _Requirements: 6.2, 6.3, 8.1_
 
-- [ ] 2. (P) Prisma スキーマと段階マイグレーション（expand-migrate-contract） — Task 1 と並行可（Prisma/SQL の別サブシステム）
-- [ ] 2.1 expand マイグレーション（additive な staging / 退避列の追加）
+- [x] 2. (P) Prisma スキーマと段階マイグレーション（expand-migrate-contract） — Task 1 と並行可（Prisma/SQL の別サブシステム）
+- [x] 2.1 expand マイグレーション（additive な staging / 退避列の追加）
   - `memos` / `notebooks` に staging 列 `contentJson`(JSONB NULL) と派生列 `contentText`(TEXT NULL)、退避列 `contentHtml`(TEXT NULL) を追加する
   - 既存 `content`(String) は無改変・additive のみとし、既存データを破壊しない
   - down は追加列の DROP のみとし、原状復帰可能にする
   - _Requirements: 1.3, 7.3_
 
-- [ ] 2.2 cutover マイグレーション（in-place 型変換と down 経路）
+- [x] 2.2 cutover マイグレーション（in-place 型変換と down 経路）
   - 単一トランザクションで `content` を `contentHtml` へ退避コピー → `ALTER COLUMN content TYPE jsonb USING contentJson` → Memo に `SET NOT NULL` → staging `contentJson` を DROP する
   - `content` は drop→add せず in-place 型変換のみで JSONB 化する
   - Notebook の `content` は NULL 許容を維持する
@@ -35,34 +35,34 @@
   - 前提: `contentJson` が全行充填済み（Task 5 の移行パイプライン適用後）。ローカルは空 DB reset 前提で適用する
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 7.2, 7.3_
 
-- [ ] 2.3 contract マイグレーションと Prisma スキーマ最終化
+- [x] 2.3 contract マイグレーションと Prisma スキーマ最終化
   - rollback ウィンドウ後に退避列 `contentHtml` を撤去する contract マイグレーションを追加する
   - `schema.prisma` を最終形（`Memo.content Json` NOT NULL / `Notebook.content Json?` / 両者 `contentText String?`）へ更新し、Prisma Client を再生成する
   - 再生成後に `content` を `Json` 型として `any` を介さず型安全参照できることを確認する
   - _Requirements: 1.1, 1.2, 1.4, 1.5_
 
-- [ ] 3. (P) バックエンド API・DTO・サービスの JSON 対応 — Task 4・5 と並行可（backend 境界 / 前提: Task 1・2）
-- [ ] 3.1 (P) メモ・ノートブック DTO を ProseMirrorDoc 検証へ切替
+- [x] 3. (P) バックエンド API・DTO・サービスの JSON 対応 — Task 4・5 と並行可（backend 境界 / 前提: Task 1・2）
+- [x] 3.1 (P) メモ・ノートブック DTO を ProseMirrorDoc 検証へ切替
   - メモの作成/更新 DTO の `content` を文字列前提の検証から ProseMirrorDoc shape 検証へ置換する
   - ノートブックの作成/更新 DTO の `content` を JSON または `null` として受理する
   - 有効な JSON オブジェクト（doc 形）でない入力を 400 で拒否し保存しない
   - _Requirements: 4.1, 4.2, 4.4_
 
-- [ ] 3.2 書込経路で content(JSONB) と contentText を原子的に永続化
+- [x] 3.2 書込経路で content(JSONB) と contentText を原子的に永続化
   - create/update で `extractPlainText` を単一経路として `contentText` を生成し、`content`(JSONB) と同一書込で永続化する
   - Prisma へ JSON 入力値として書込み、取得 API は `content` を JSON 値のまま返す（文字列へ直列化しない）
   - `clientUpdatedAt` の last-write-wins 比較ロジックと 409 応答を変更せず維持する
   - 前提: 3.1（DTO 検証通過を前提とする書込）
   - _Requirements: 4.3, 4.5, 4.6, 6.1_
 
-- [ ] 3.3 本文検索を contentText へ切替
+- [x] 3.3 本文検索を contentText へ切替
   - 本文検索の部分一致対象を `content` から `contentText` へ向け、タイトル OR 本文テキストの検索を維持する
   - JSON 構造のキー名・ノードタイプ名（`type` / `paragraph` 等）に検索語が誤ヒットしない方式にする
   - 検索エンドポイント（`/memos/search`・`/memos/search/paginated`）の入出力契約（`q`・タグ絞り込み・ページネーション）を維持する
   - 前提: `contentText` 列（Task 2.1）
   - _Requirements: 6.2, 6.3, 6.4_
 
-- [ ] 3.4 (P) 公開共有・プレビュー・MCP excerpt を JSON / contentText 由来へ
+- [x] 3.4 (P) 公開共有・プレビュー・MCP excerpt を JSON / contentText 由来へ
   - 公開メモ取得サービスが `content` を JSON 値で返すよう応答型を変更する
   - ダッシュボードの最近のメモのプレビューを `contentText` の slice に切替え、プレビュー文字数契約を不変に保つ
   - MCP 検索ツールの excerpt を `contentText` の slice に切替え、最大文字数とスコープ検査を不変に保つ（TipTap を backend に追加しない）
