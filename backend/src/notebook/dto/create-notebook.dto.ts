@@ -1,4 +1,5 @@
 import { IsString, MaxLength, IsOptional } from 'class-validator';
+import { IsProseMirrorDoc, type ProseMirrorDoc } from '../../common/utils/prosemirror-types';
 
 export class CreateNotebookDto {
 	@IsString()
@@ -10,7 +11,7 @@ export class CreateNotebookDto {
 	@IsOptional()
 	themeId?: string | null;
 
-	@IsString()
+	@IsProseMirrorDoc({ nullable: true })
 	@IsOptional()
-	content?: string | null;
+	content?: ProseMirrorDoc | null;
 }

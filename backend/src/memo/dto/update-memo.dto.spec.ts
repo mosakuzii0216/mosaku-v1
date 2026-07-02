@@ -2,7 +2,33 @@ import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import { UpdateMemoDto } from './update-memo.dto';
 
+const validDoc = { type: 'doc', content: [{ type: 'paragraph' }] };
+
 describe('UpdateMemoDto', () => {
+	describe('content - ProseMirrorDoc 検証', () => {
+		it('有効な ProseMirrorDoc は通過する', async () => {
+			const dto = plainToInstance(UpdateMemoDto, { content: validDoc });
+			expect((await validate(dto)).filter((e) => e.property === 'content')).toHaveLength(0);
+		});
+
+		it('content 未指定（undefined）は通過する', async () => {
+			const dto = plainToInstance(UpdateMemoDto, { title: 'updated' });
+			expect((await validate(dto)).filter((e) => e.property === 'content')).toHaveLength(0);
+		});
+
+		it('文字列 content はエラーになる', async () => {
+			const dto = plainToInstance(UpdateMemoDto, { content: '<p>html</p>' });
+			const errors = await validate(dto);
+			expect(errors.some((e) => e.property === 'content')).toBe(true);
+		});
+
+		it('type が "doc" 以外はエラーになる', async () => {
+			const dto = plainToInstance(UpdateMemoDto, { content: { type: 'paragraph' } });
+			const errors = await validate(dto);
+			expect(errors.some((e) => e.property === 'content')).toBe(true);
+		});
+	});
+
 	describe('clientUpdatedAt', () => {
 		it('未指定時はバリデーションを通過する', async () => {
 			const dto = plainToInstance(UpdateMemoDto, { title: 'updated' });
