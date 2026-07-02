@@ -89,7 +89,7 @@ describe('isEmptyDoc', () => {
 	});
 
 	it('doc with no content key is empty', () => {
-		expect(isEmptyDoc({ type: 'doc' } as ProseMirrorDoc)).toBe(true);
+		expect(isEmptyDoc({ type: 'doc' })).toBe(true);
 	});
 
 	it('doc with empty content array is empty', () => {
