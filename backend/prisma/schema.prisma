@@ -53,7 +53,7 @@ model MemoTag {
 model Memo {
   id          String    @id @default(cuid())
   title       String    @db.VarChar(100)
-  content     String
+  content     Json
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   trashedAt   DateTime? @map("trashed_at")
@@ -61,6 +61,7 @@ model Memo {
   notebookId  String?   @map("notebook_id")
   publicToken String?   @unique @map("public_token") @db.VarChar(64)
   publishedAt DateTime? @map("published_at")
+  contentText String?   @map("content_text")
   memoTags    MemoTag[]
   notebook    Notebook? @relation(fields: [notebookId], references: [id])
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -89,7 +90,8 @@ model Notebook {
   updatedAt    DateTime      @updatedAt
   userId       String        @map("user_id")
   themeId      String?       @map("theme_id")
-  content      String?
+  content      Json?
+  contentText  String?       @map("content_text")
   memos        Memo[]
   notebookTags NotebookTag[]
   theme        Theme?        @relation(fields: [themeId], references: [id])
