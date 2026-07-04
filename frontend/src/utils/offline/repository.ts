@@ -1,12 +1,13 @@
+import type { JSONContent } from '@tiptap/react';
 import type { CachedMemoRecord, OfflineDB, PendingOperationRecord, SyncOperationKind } from './db';
 import { isValidIso8601 } from './iso8601';
 import type { QuotaManager, QuotaSnapshot } from './quota';
-import { stripHtml } from './strip-html';
+import { extractPlainText } from '../editor/prosemirrorText';
 
 export interface ServerMemoSnapshot {
 	id: string;
 	title: string;
-	content: string;
+	content: JSONContent;
 	tagIds: string[];
 	notebookId: string | null;
 	createdAt: string;
@@ -122,7 +123,7 @@ export class OfflineMemoRepository {
 				userId,
 				title: snapshot.title,
 				content: snapshot.content,
-				searchableText: stripHtml(snapshot.content),
+				searchableText: extractPlainText(snapshot.content),
 				tagIds: [...snapshot.tagIds],
 				notebookId: snapshot.notebookId,
 				createdAt: snapshot.createdAt,
@@ -222,7 +223,7 @@ export class OfflineMemoRepository {
 			userId,
 			title: snapshot.title,
 			content: snapshot.content,
-			searchableText: stripHtml(snapshot.content),
+			searchableText: extractPlainText(snapshot.content),
 			tagIds: [...snapshot.tagIds],
 			notebookId: snapshot.notebookId,
 			createdAt: snapshot.createdAt,

@@ -1,7 +1,8 @@
 import { deleteDB, openDB, type DBSchema, type IDBPDatabase } from 'idb';
+import type { JSONContent } from '@tiptap/react';
 
 export const OFFLINE_DB_NAME = 'mosaku-offline';
-export const OFFLINE_DB_VERSION = 1;
+export const OFFLINE_DB_VERSION = 2;
 
 export type SyncStatus = 'synced' | 'offline-saved';
 
@@ -11,7 +12,7 @@ export interface CachedMemoRecord {
 	id: string;
 	userId: string;
 	title: string;
-	content: string;
+	content: JSONContent;
 	searchableText: string;
 	tagIds: string[];
 	notebookId: string | null;
@@ -23,7 +24,7 @@ export interface CachedMemoRecord {
 
 export interface PendingOperationPatch {
 	title?: string;
-	content?: string;
+	content?: JSONContent;
 	notebookId?: string | null;
 }
 
@@ -74,22 +75,30 @@ export interface OpenOfflineDbResult {
 
 const REQUIRED_STORES = ['memos', 'pending_operations', 'meta'] as const;
 
+function createMemosStore(db: IDBPDatabase<OfflineDBSchema>) {
+	const memos = db.createObjectStore('memos', { keyPath: 'id' });
+	memos.createIndex('byUser', 'userId');
+	memos.createIndex('byUpdatedAt', 'updatedAt');
+	memos.createIndex('byNotebook', 'notebookId');
+}
+
 async function openWithSchema(): Promise<OfflineDB> {
 	return openDB<OfflineDBSchema>(OFFLINE_DB_NAME, OFFLINE_DB_VERSION, {
-		upgrade(db) {
-			if (!db.objectStoreNames.contains('memos')) {
-				const memos = db.createObjectStore('memos', { keyPath: 'id' });
-				memos.createIndex('byUser', 'userId');
-				memos.createIndex('byUpdatedAt', 'updatedAt');
-				memos.createIndex('byNotebook', 'notebookId');
-			}
-			if (!db.objectStoreNames.contains('pending_operations')) {
+		upgrade(db, oldVersion) {
+			if (oldVersion === 0) {
+				// 新規インストール: 全ストアを作成
+				createMemosStore(db);
 				const pending = db.createObjectStore('pending_operations', { autoIncrement: true });
 				pending.createIndex('byMemoId', 'memoId');
 				pending.createIndex('byEnqueuedAt', 'enqueuedAt');
-			}
-			if (!db.objectStoreNames.contains('meta')) {
 				db.createObjectStore('meta', { keyPath: 'key' });
+			} else if (oldVersion === 1) {
+				// v1 → v2: content が HTML 文字列から JSONContent に変わるため
+				// memos ストアをクリアして再構築（server から再取得で補完）
+				if (db.objectStoreNames.contains('memos')) {
+					db.deleteObjectStore('memos');
+				}
+				createMemosStore(db);
 			}
 		},
 	});

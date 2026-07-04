@@ -5,6 +5,7 @@ import { OFFLINE_SAVED_SIGNAL } from '../../hooks/useAutoSave';
 import type { CachedMemoRecord, PendingOperationRecord } from '../offline/db';
 import type { OfflineMemoRepository, ServerMemoSnapshot } from '../offline/repository';
 import type { ApiClientLike } from './types';
+import { extractPlainText, createEmptyDoc } from '../editor/prosemirrorText';
 
 function memoToSnapshot(memo: Memo): ServerMemoSnapshot {
 	return {
@@ -128,7 +129,7 @@ export class MemoBridge {
 			userId: existing?.userId ?? this.requireUserIdFromRecord(existing),
 			title: data.title ?? existing?.title ?? '',
 			content: data.content ?? existing?.content ?? '',
-			searchableText: stripTagsForSearch(data.content ?? existing?.content ?? ''),
+			searchableText: extractPlainText(data.content ?? existing?.content ?? createEmptyDoc()),
 			tagIds: existing?.tagIds ?? [],
 			notebookId: data.notebookId !== undefined ? data.notebookId : (existing?.notebookId ?? null),
 			createdAt: existing?.createdAt ?? clientUpdatedAt,
@@ -202,7 +203,7 @@ export class MemoBridge {
 			id,
 			userId: existing?.userId ?? this.requireUserIdFromRecord(existing),
 			title: existing?.title ?? '',
-			content: existing?.content ?? '',
+			content: existing?.content ?? createEmptyDoc(),
 			searchableText: existing?.searchableText ?? '',
 			tagIds: existing?.tagIds ?? [],
 			notebookId: existing?.notebookId ?? null,
@@ -344,8 +345,4 @@ function paginateLocal<T>(items: T[], pagination: PaginationParams): PaginatedRe
 			hasPrevPage: page > 1,
 		},
 	};
-}
-
-function stripTagsForSearch(html: string): string {
-	return html.replace(/<[^>]*>/g, '').trim();
 }

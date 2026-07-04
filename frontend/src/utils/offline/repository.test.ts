@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { deleteDB } from 'idb';
+import type { JSONContent } from '@tiptap/react';
 
 import {
 	OFFLINE_DB_NAME,
@@ -20,11 +21,17 @@ import {
 const USER_ID = 'user-1';
 const OTHER_USER_ID = 'user-2';
 
+const EMPTY_DOC: JSONContent = { type: 'doc', content: [{ type: 'paragraph' }] };
+const HELLO_DOC: JSONContent = {
+	type: 'doc',
+	content: [{ type: 'paragraph', content: [{ type: 'text', text: 'hello world' }] }],
+};
+
 function createSnapshot(overrides: Partial<ServerMemoSnapshot> = {}): ServerMemoSnapshot {
 	return {
 		id: 'memo-1',
 		title: 'Memo 1',
-		content: '<p>hello world</p>',
+		content: EMPTY_DOC,
 		tagIds: [],
 		notebookId: null,
 		createdAt: '2026-05-01T00:00:00.000Z',
@@ -74,12 +81,10 @@ describe('OfflineMemoRepository — read API', () => {
 		await deleteDB(OFFLINE_DB_NAME);
 	});
 
-	it('upsertFromServer derives searchableText from stripped HTML content', async () => {
+	it('upsertFromServer derives searchableText from JSONContent', async () => {
 		const { repo, db } = await makeRepo();
 		try {
-			await repo.upsertFromServer([
-				createSnapshot({ id: 'm1', content: '<p>hello <strong>world</strong></p>' }),
-			]);
+			await repo.upsertFromServer([createSnapshot({ id: 'm1', content: HELLO_DOC })]);
 			const stored = await db.get('memos', 'm1');
 			expect(stored?.searchableText).toBe('hello world');
 			expect(stored?.userId).toBe(USER_ID);
@@ -103,7 +108,7 @@ describe('OfflineMemoRepository — read API', () => {
 				id: 'mx',
 				userId: OTHER_USER_ID,
 				title: 'foreign',
-				content: '<p>foreign</p>',
+				content: EMPTY_DOC,
 				searchableText: 'foreign',
 				tagIds: [],
 				notebookId: null,
@@ -175,7 +180,7 @@ describe('OfflineMemoRepository — read API', () => {
 				id: 'mx',
 				userId: OTHER_USER_ID,
 				title: 'foreign',
-				content: '',
+				content: EMPTY_DOC,
 				searchableText: '',
 				tagIds: [],
 				notebookId: null,
@@ -201,7 +206,7 @@ describe('OfflineMemoRepository — read API', () => {
 				id: 'm1',
 				userId: USER_ID,
 				title: 'local edit',
-				content: '<p>local</p>',
+				content: EMPTY_DOC,
 				searchableText: 'local',
 				tagIds: [],
 				notebookId: null,
@@ -217,7 +222,6 @@ describe('OfflineMemoRepository — read API', () => {
 				createSnapshot({
 					id: 'm1',
 					title: 'server version',
-					content: '<p>server</p>',
 					updatedAt: '2026-05-01T10:00:00.000Z',
 				}),
 			]);
@@ -258,7 +262,7 @@ function createMemoRecord(overrides: Partial<CachedMemoRecord> = {}): CachedMemo
 		id: 'memo-1',
 		userId: USER_ID,
 		title: 'local title',
-		content: '<p>local body</p>',
+		content: EMPTY_DOC,
 		searchableText: 'local body',
 		tagIds: [],
 		notebookId: null,
@@ -276,7 +280,7 @@ function createPendingOperation(
 	return {
 		memoId: 'memo-1',
 		kind: 'update',
-		patch: { title: 'local title', content: '<p>local body</p>' },
+		patch: { title: 'local title', content: EMPTY_DOC },
 		clientUpdatedAt: '2026-05-09T12:00:00.000Z',
 		enqueuedAt: '2026-05-09T12:00:00.500Z',
 		retryCount: 0,
@@ -499,19 +503,16 @@ describe('OfflineMemoRepository — search', () => {
 				createSnapshot({
 					id: 'm1',
 					title: 'React Notes',
-					content: '<p>react hooks</p>',
 					updatedAt: '2026-05-01T00:00:00.000Z',
 				}),
 				createSnapshot({
 					id: 'm2',
 					title: 'Reactivity',
-					content: '<p>nothing</p>',
 					updatedAt: '2026-05-03T00:00:00.000Z',
 				}),
 				createSnapshot({
 					id: 'm3',
 					title: 'Unrelated',
-					content: '<p>nothing</p>',
 					updatedAt: '2026-05-04T00:00:00.000Z',
 				}),
 			]);
@@ -523,15 +524,27 @@ describe('OfflineMemoRepository — search', () => {
 		}
 	});
 
-	it('matches the searchable body text (HTML stripped) and returns a snippet around the match', async () => {
+	it('matches the searchable body text (JSON extracted) and returns a snippet around the match', async () => {
 		const { repo, db } = await makeRepo();
 		try {
 			await repo.upsertFromServer([
 				createSnapshot({
 					id: 'm1',
 					title: 'plain title',
-					content:
-						'<p>This is a long paragraph that mentions Workbox somewhere in the middle of the body text for testing snippet extraction.</p>',
+					content: {
+						type: 'doc',
+						content: [
+							{
+								type: 'paragraph',
+								content: [
+									{
+										type: 'text',
+										text: 'This is a long paragraph that mentions Workbox somewhere in the middle of the body text for testing snippet extraction.',
+									},
+								],
+							},
+						],
+					},
 				}),
 			]);
 			const result = await repo.search('workbox');
@@ -554,7 +567,7 @@ describe('OfflineMemoRepository — search', () => {
 				id: 'mx',
 				userId: OTHER_USER_ID,
 				title: 'shared keyword',
-				content: '<p>foreign</p>',
+				content: EMPTY_DOC,
 				searchableText: 'foreign shared keyword',
 				tagIds: [],
 				notebookId: null,
@@ -576,11 +589,19 @@ describe('OfflineMemoRepository — search', () => {
 		const { repo, db } = await makeRepo();
 		try {
 			await repo.upsertFromServer([
-				createSnapshot({ id: 'm1', title: 'keep me', content: '<p>visible</p>' }),
+				createSnapshot({
+					id: 'm1',
+					title: 'keep me',
+					content: {
+						type: 'doc',
+						content: [
+							{ type: 'paragraph', content: [{ type: 'text', text: 'visible content here' }] },
+						],
+					},
+				}),
 				createSnapshot({
 					id: 'm2',
 					title: 'visible too',
-					content: '<p>but trashed</p>',
 					trashedAt: '2026-05-05T00:00:00.000Z',
 				}),
 			]);
@@ -594,9 +615,7 @@ describe('OfflineMemoRepository — search', () => {
 	it('returns outOfCacheRange=true when query is non-empty and no local match is found', async () => {
 		const { repo, db } = await makeRepo();
 		try {
-			await repo.upsertFromServer([
-				createSnapshot({ id: 'm1', title: 'apple', content: '<p>fruit</p>' }),
-			]);
+			await repo.upsertFromServer([createSnapshot({ id: 'm1', title: 'apple' })]);
 			const result = await repo.search('banana');
 			expect(result.hits).toEqual([]);
 			expect(result.outOfCacheRange).toBe(true);
@@ -624,9 +643,20 @@ describe('OfflineMemoRepository — search', () => {
 				createSnapshot({
 					id: `m${i.toString().padStart(3, '0')}`,
 					title: `Memo ${i}`,
-					content: `<p>${'lorem ipsum dolor sit amet '.repeat(20)}${
-						i === 137 ? 'PerformanceTargetToken ' : ''
-					}consectetur adipiscing elit.</p>`,
+					content: {
+						type: 'doc',
+						content: [
+							{
+								type: 'paragraph',
+								content: [
+									{
+										type: 'text',
+										text: `${'lorem ipsum dolor sit amet '.repeat(20)}${i === 137 ? 'PerformanceTargetToken ' : ''}consectetur adipiscing elit.`,
+									},
+								],
+							},
+						],
+					},
 					updatedAt: new Date(2026, 0, 1, 0, 0, i).toISOString(),
 				}),
 			);
@@ -662,7 +692,7 @@ describe('OfflineMemoRepository — owner scoping & purge', () => {
 			id: params.id,
 			userId: params.userId,
 			title: `memo of ${params.userId}`,
-			content: `<p>${params.id}</p>`,
+			content: EMPTY_DOC,
 			searchableText: params.id,
 			tagIds: [],
 			notebookId: null,
@@ -789,7 +819,7 @@ describe('OfflineMemoRepository — markSynced / evictById', () => {
 				id: 'memo-1',
 				userId: USER_ID,
 				title: 'old-local',
-				content: '<p>old</p>',
+				content: EMPTY_DOC,
 				searchableText: 'old',
 				tagIds: [],
 				notebookId: null,
@@ -800,10 +830,14 @@ describe('OfflineMemoRepository — markSynced / evictById', () => {
 			};
 			await repo.saveLocal(initial);
 
+			const freshDoc: JSONContent = {
+				type: 'doc',
+				content: [{ type: 'paragraph', content: [{ type: 'text', text: 'fresh' }] }],
+			};
 			const updated = await repo.markSynced({
 				id: 'memo-1',
 				title: 'server-version',
-				content: '<p>fresh</p>',
+				content: freshDoc,
 				tagIds: ['tag-a'],
 				notebookId: null,
 				createdAt: '2026-05-01T00:00:00.000Z',
@@ -830,7 +864,7 @@ describe('OfflineMemoRepository — markSynced / evictById', () => {
 				id: 'mine',
 				userId: USER_ID,
 				title: 'mine',
-				content: '',
+				content: EMPTY_DOC,
 				searchableText: '',
 				tagIds: [],
 				notebookId: null,
@@ -843,7 +877,7 @@ describe('OfflineMemoRepository — markSynced / evictById', () => {
 				id: 'others',
 				userId: OTHER_USER_ID,
 				title: 'others',
-				content: '',
+				content: EMPTY_DOC,
 				searchableText: '',
 				tagIds: [],
 				notebookId: null,
@@ -894,7 +928,7 @@ describe('OfflineMemoRepository — statsForDebug', () => {
 				id: 'foreign',
 				userId: OTHER_USER_ID,
 				title: 'other user',
-				content: '',
+				content: EMPTY_DOC,
 				searchableText: '',
 				tagIds: [],
 				notebookId: null,
