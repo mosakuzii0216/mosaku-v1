@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, cleanup, fireEvent, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { JSONContent } from '@tiptap/react';
 import { RichTextEditor } from './RichTextEditor';
 import { useEditorFocusStore } from '../../stores/useEditorFocusStore';
+import { createEmptyDoc } from '../../utils/editor/prosemirrorText';
 
 vi.mock('../../hooks/useNotebookQueries', () => ({
 	useNotebooks: () => ({ data: [], isLoading: false }),
@@ -24,9 +26,12 @@ describe('RichTextEditor - EditorFocusStore 連携', () => {
 	});
 
 	it('エディタにフォーカスすると isEditorFocused が true になる', async () => {
-		const { container } = render(<RichTextEditor content="" onChange={() => {}} />, {
-			wrapper: createWrapper(),
-		});
+		const { container } = render(
+			<RichTextEditor content={createEmptyDoc()} onChange={() => {}} />,
+			{
+				wrapper: createWrapper(),
+			},
+		);
 
 		const prosemirror = container.querySelector('.ProseMirror');
 		expect(prosemirror).not.toBeNull();
@@ -37,9 +42,12 @@ describe('RichTextEditor - EditorFocusStore 連携', () => {
 	});
 
 	it('エディタからブラーすると isEditorFocused が false になる', async () => {
-		const { container } = render(<RichTextEditor content="" onChange={() => {}} />, {
-			wrapper: createWrapper(),
-		});
+		const { container } = render(
+			<RichTextEditor content={createEmptyDoc()} onChange={() => {}} />,
+			{
+				wrapper: createWrapper(),
+			},
+		);
 
 		const prosemirror = container.querySelector('.ProseMirror');
 
@@ -51,7 +59,7 @@ describe('RichTextEditor - EditorFocusStore 連携', () => {
 	});
 
 	it('アンマウント時に isEditorFocused が false にリセットされる', () => {
-		const { unmount } = render(<RichTextEditor content="" onChange={() => {}} />, {
+		const { unmount } = render(<RichTextEditor content={createEmptyDoc()} onChange={() => {}} />, {
 			wrapper: createWrapper(),
 		});
 
@@ -70,19 +78,24 @@ describe('RichTextEditor - prose クラス保持（タイポグラフィ回帰�
 		cleanup();
 	});
 
-	// prose クラスが外れると @tailwindcss/typography のブロック要素スタイルが失われる（Req 1.2, 6.2）
 	it('.ProseMirror 要素が prose クラスを持つ', () => {
-		const { container } = render(<RichTextEditor content="" onChange={() => {}} />, {
-			wrapper: createWrapper(),
-		});
+		const { container } = render(
+			<RichTextEditor content={createEmptyDoc()} onChange={() => {}} />,
+			{
+				wrapper: createWrapper(),
+			},
+		);
 		const prosemirror = container.querySelector('.ProseMirror');
 		expect(prosemirror?.className).toContain('prose');
 	});
 
 	it('.ProseMirror 要素がレスポンシブ prose クラスを持つ（prose-sm / prose-base / prose-lg / prose-xl）', () => {
-		const { container } = render(<RichTextEditor content="" onChange={() => {}} />, {
-			wrapper: createWrapper(),
-		});
+		const { container } = render(
+			<RichTextEditor content={createEmptyDoc()} onChange={() => {}} />,
+			{
+				wrapper: createWrapper(),
+			},
+		);
 		const cls = container.querySelector('.ProseMirror')?.className ?? '';
 		expect(cls).toContain('prose-sm');
 		expect(cls).toContain('sm:prose-base');
@@ -97,11 +110,14 @@ describe('RichTextEditor - ツールバー非回帰（共有ファクトリ移�
 		cleanup();
 	});
 
-	// 共有ファクトリ（createEditorExtensions）移行で既存ツールバーが欠落していないことを担保する（Req9.1）
 	const TOOLBAR_LABELS = ['太字', '斜体', '取消線', 'H1', 'H2', '・リスト', '1.リスト', '引用'];
 
 	it('従来のツールバーボタンがすべて存在する', () => {
-		render(<RichTextEditor content="<p>本文</p>" onChange={() => {}} />, {
+		const initialContent: JSONContent = {
+			type: 'doc',
+			content: [{ type: 'paragraph', content: [{ type: 'text', text: '本文' }] }],
+		};
+		render(<RichTextEditor content={initialContent} onChange={() => {}} />, {
 			wrapper: createWrapper(),
 		});
 
@@ -110,39 +126,59 @@ describe('RichTextEditor - ツールバー非回帰（共有ファクトリ移�
 		}
 	});
 
-	it('H1 ボタンで見出し（h1）へ変換され onChange に反映される', () => {
+	it('H1 ボタンで見出し（h1）へ変換され onChange に JSONContent を通知する', () => {
 		const onChange = vi.fn();
-		render(<RichTextEditor content="<p>本文</p>" onChange={onChange} />, {
+		const initialContent: JSONContent = {
+			type: 'doc',
+			content: [{ type: 'paragraph', content: [{ type: 'text', text: '本文' }] }],
+		};
+		render(<RichTextEditor content={initialContent} onChange={onChange} />, {
 			wrapper: createWrapper(),
 		});
 
 		fireEvent.click(screen.getByRole('button', { name: 'H1' }));
 
-		const lastHtml = onChange.mock.calls.at(-1)?.[0] as string | undefined;
-		expect(lastHtml).toContain('<h1>');
+		const lastJson = onChange.mock.calls.at(-1)?.[0] as JSONContent | undefined;
+		// JSON 形式で通知されており、type='doc' であること
+		expect(lastJson?.type).toBe('doc');
+		// 見出しノードが含まれること
+		const hasHeading = lastJson?.content?.some((n) => n.type === 'heading');
+		expect(hasHeading).toBe(true);
 	});
 
-	it('箇条書きボタンで bullet list（ul）へ変換され onChange に反映される', () => {
+	it('箇条書きボタンで bulletList へ変換され onChange に JSONContent を通知する', () => {
 		const onChange = vi.fn();
-		render(<RichTextEditor content="<p>本文</p>" onChange={onChange} />, {
+		const initialContent: JSONContent = {
+			type: 'doc',
+			content: [{ type: 'paragraph', content: [{ type: 'text', text: '本文' }] }],
+		};
+		render(<RichTextEditor content={initialContent} onChange={onChange} />, {
 			wrapper: createWrapper(),
 		});
 
 		fireEvent.click(screen.getByRole('button', { name: '・リスト' }));
 
-		const lastHtml = onChange.mock.calls.at(-1)?.[0] as string | undefined;
-		expect(lastHtml).toContain('<ul>');
+		const lastJson = onChange.mock.calls.at(-1)?.[0] as JSONContent | undefined;
+		expect(lastJson?.type).toBe('doc');
+		const hasBulletList = lastJson?.content?.some((n) => n.type === 'bulletList');
+		expect(hasBulletList).toBe(true);
 	});
 
-	it('引用ボタンで blockquote へ変換され onChange に反映される', () => {
+	it('引用ボタンで blockquote へ変換され onChange に JSONContent を通知する', () => {
 		const onChange = vi.fn();
-		render(<RichTextEditor content="<p>本文</p>" onChange={onChange} />, {
+		const initialContent: JSONContent = {
+			type: 'doc',
+			content: [{ type: 'paragraph', content: [{ type: 'text', text: '本文' }] }],
+		};
+		render(<RichTextEditor content={initialContent} onChange={onChange} />, {
 			wrapper: createWrapper(),
 		});
 
 		fireEvent.click(screen.getByRole('button', { name: '引用' }));
 
-		const lastHtml = onChange.mock.calls.at(-1)?.[0] as string | undefined;
-		expect(lastHtml).toContain('<blockquote>');
+		const lastJson = onChange.mock.calls.at(-1)?.[0] as JSONContent | undefined;
+		expect(lastJson?.type).toBe('doc');
+		const hasBlockquote = lastJson?.content?.some((n) => n.type === 'blockquote');
+		expect(hasBlockquote).toBe(true);
 	});
 });

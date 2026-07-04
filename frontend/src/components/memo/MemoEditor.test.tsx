@@ -23,21 +23,9 @@ import { MemoEditor } from './MemoEditor';
 import { useViewStore } from '../../stores/useViewStore';
 import type { Memo } from '../../types/memo';
 
-// RichTextEditor は tiptap 依存が重いので、content/onChange だけを持つ textarea スタブに置き換える
+// RichTextEditor は tiptap 依存が重いので、スタブに置き換える
 vi.mock('../editor/RichTextEditor', () => ({
-	RichTextEditor: ({
-		content,
-		onChange,
-	}: {
-		content: string;
-		onChange: (value: string) => void;
-	}) => (
-		<textarea
-			data-testid="memo-content-textarea"
-			value={content}
-			onChange={(e) => onChange(e.target.value)}
-		/>
-	),
+	RichTextEditor: () => <div data-testid="memo-content-editor" />,
 }));
 
 vi.mock('../../hooks/useNotebookQueries', () => ({
@@ -81,7 +69,10 @@ function buildMemo(overrides: Partial<Memo> = {}): Memo {
 	return {
 		id: 'memo-1',
 		title: 'Hello',
-		content: '<p>Hello</p>',
+		content: {
+			type: 'doc',
+			content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hello' }] }],
+		},
 		notebookId: null,
 		memoTags: [],
 		createdAt: new Date('2026-01-01').toISOString(),
@@ -101,7 +92,7 @@ describe('MemoEditor - 自動保存中の入力保持', () => {
 
 	it('保存後に同じ id の memo prop が新しい参照で渡し直されても、直近の入力が消えない', () => {
 		const Wrapper = createWrapper();
-		const initialMemo = buildMemo({ title: 'Hello', content: '<p>Hello</p>' });
+		const initialMemo = buildMemo({ title: 'Hello' });
 
 		const { rerender } = render(<MemoEditor memo={initialMemo} />, { wrapper: Wrapper });
 
@@ -117,7 +108,7 @@ describe('MemoEditor - 自動保存中の入力保持', () => {
 		// 保存完了→ React Query の invalidateQueries により、親で list が refetch され、
 		// 同じ id・同じ中身の memo が「新オブジェクト」として props 経由で再渡しされるケースを模す。
 		// （サーバーが返した値はユーザーが叩いた "World" を含まない、保存前の "Hello" のまま）
-		const refreshedMemo = buildMemo({ title: 'Hello', content: '<p>Hello</p>' });
+		const refreshedMemo = buildMemo({ title: 'Hello' });
 		expect(refreshedMemo).not.toBe(initialMemo); // 参照は別
 
 		rerender(<MemoEditor memo={refreshedMemo} />);
@@ -134,7 +125,7 @@ describe('MemoEditor - 自動保存中の入力保持', () => {
 		// create のレスポンスは "te" まで（往復中にユーザーは "test" まで打ち進める）
 		createMutate.mockImplementation(
 			(_payload: unknown, opts: { onSuccess: (memo: Memo) => void }) => {
-				opts.onSuccess(buildMemo({ id: createdId, title: 'te', content: '' }));
+				opts.onSuccess(buildMemo({ id: createdId, title: 'te' }));
 			},
 		);
 
@@ -157,7 +148,7 @@ describe('MemoEditor - 自動保存中の入力保持', () => {
 		expect(titleInput.value).toBe('test');
 
 		// 親が create 結果（stale な "te"）を memo prop として渡し、edit モードへ昇格
-		rerender(<MemoEditor memo={buildMemo({ id: createdId, title: 'te', content: '' })} />);
+		rerender(<MemoEditor memo={buildMemo({ id: createdId, title: 'te' })} />);
 
 		// バグ: 昇格時の state 再同期で setTitle("te") が走り "test" が "te" に巻き戻る。
 		// 期待: 自分が作ったメモへの昇格中はローカル入力を維持する。
@@ -166,14 +157,14 @@ describe('MemoEditor - 自動保存中の入力保持', () => {
 
 	it('別の id の memo に切り替わった場合は、新しい memo の内容で state が更新される', () => {
 		const Wrapper = createWrapper();
-		const memoA = buildMemo({ id: 'memo-a', title: 'A title', content: '<p>A</p>' });
+		const memoA = buildMemo({ id: 'memo-a', title: 'A title' });
 
 		const { rerender } = render(<MemoEditor memo={memoA} />, { wrapper: Wrapper });
 
 		const titleInput = screen.getByPlaceholderText('タイトル') as HTMLInputElement;
 		expect(titleInput.value).toBe('A title');
 
-		const memoB = buildMemo({ id: 'memo-b', title: 'B title', content: '<p>B</p>' });
+		const memoB = buildMemo({ id: 'memo-b', title: 'B title' });
 		rerender(<MemoEditor memo={memoB} />);
 
 		expect(titleInput.value).toBe('B title');

@@ -1,3 +1,4 @@
+import type { JSONContent } from '@tiptap/react';
 import type { MemoTag } from './tag';
 import type { Theme } from './theme';
 import type { Notebook } from './notebook';
@@ -5,7 +6,7 @@ import type { Notebook } from './notebook';
 export interface Memo {
 	id: string;
 	title: string;
-	content: string;
+	content: JSONContent;
 	createdAt: string;
 	updatedAt: string;
 	trashedAt: string | null;
@@ -24,13 +25,13 @@ export interface Memo {
 
 export interface CreateMemoDto {
 	title: string;
-	content: string;
+	content: JSONContent;
 	notebookId?: string | null;
 }
 
 export interface UpdateMemoDto {
 	title?: string;
-	content?: string;
+	content?: JSONContent;
 	notebookId?: string | null;
 }
 
@@ -54,6 +55,6 @@ export interface PublicMemoListItemDto {
 
 export interface PublicMemoResponseDto {
 	title: string;
-	content: string;
+	content: JSONContent;
 	updatedAt: string;
 }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import type { JSONContent } from '@tiptap/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { TagDropdownIcon } from '../tag/TagDropdownIcon';
 import { RichTextEditor } from '../editor/RichTextEditor';
@@ -18,6 +19,8 @@ import {
 	formatRelativeTime,
 	SAVE_STATUS_TONE_CLASSES,
 } from '../../utils/editor/save-status-presentation';
+import { createEmptyDoc, isEmptyDoc } from '../../utils/editor/prosemirrorText';
+import { isJsonContentEqual } from '../editor/contentSync';
 
 const CREATE_SENTINEL = '__create__';
 
@@ -29,7 +32,7 @@ interface NotebookEditorProps {
 export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) => {
 	const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 	const [originalTagIds, setOriginalTagIds] = useState<string[]>([]);
-	const [content, setContent] = useState<string>('');
+	const [content, setContent] = useState<JSONContent>(createEmptyDoc());
 	const [name, setName] = useState<string>('');
 	const [themeId, setThemeId] = useState<string>('default');
 	const [hasChanges, setHasChanges] = useState<boolean>(false);
@@ -50,7 +53,7 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 	const { data: editingNotebook, isLoading: isLoadingNotebook } = useNotebook(notebookId);
 
 	const isSaving = createNotebook.isPending || updateNotebook.isPending;
-	const canSave = hasChanges && !!(name.trim() || content.trim());
+	const canSave = hasChanges && !!(name.trim() || !isEmptyDoc(content));
 
 	const reflectTags = useCallback(
 		async (id: string) => {
@@ -69,12 +72,12 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 
 	const handleSave = useCallback(async (): Promise<void> => {
 		const trimmedName = name.trim();
-		const trimmedContent = content.trim();
-		if (!trimmedName && !trimmedContent) return;
+		const contentEmpty = isEmptyDoc(content);
+		if (!trimmedName && contentEmpty) return;
 
 		const payload = {
 			name: trimmedName ? name : null,
-			content: trimmedContent ? content : null,
+			content: !contentEmpty ? content : null,
 			themeId: themeId !== 'default' ? themeId : null,
 		};
 
@@ -87,8 +90,6 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 		const nb = await createNotebook.mutateAsync(payload);
 		queryClient.setQueryData(queryKeys.notebooks.detail(nb.id), nb);
 		await reflectTags(nb.id);
-		// 昇格先（create→edit）の再同期で、サーバーが返した値がタイピング中の
-		// ローカル入力を上書きしないよう、同期済みマーカーを先に立てる。
 		syncedNotebookIdRef.current = nb.id;
 		setSelectedNotebookId(nb.id);
 		setCurrentView('edit');
@@ -112,27 +113,24 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 		onSave: handleSave,
 	});
 
-	// saved に到達したら最終保存時刻を更新
 	useEffect(() => {
 		if (saveStatus === 'saved') {
 			setLastSavedAt(new Date());
 		}
 	}, [saveStatus]);
 
-	// 30 秒ごとに相対時刻表示を更新
 	useEffect(() => {
 		if (!lastSavedAt) return;
 		const id = setInterval(() => setTick((n) => n + 1), 30 * 1000);
 		return () => clearInterval(id);
 	}, [lastSavedAt]);
 
-	// 編集対象切替の再同期（id ベースの ref ガード）
 	useEffect(() => {
 		if (isCreate) {
 			if (syncedNotebookIdRef.current !== CREATE_SENTINEL) {
 				cancelDebounce();
 				setName('');
-				setContent('');
+				setContent(createEmptyDoc());
 				setThemeId('default');
 				setSelectedTagIds([]);
 				setOriginalTagIds([]);
@@ -144,17 +142,17 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 		}
 		if (!notebookId || !editingNotebook) return;
 		if (syncedNotebookIdRef.current === notebookId) {
-			// 同一 id の再フェッチ、または create→edit 昇格直後。
-			// ローカル入力を真実として維持し、サーバー値では上書きしない。
-			// ただしローカルがサーバーより先行していれば、その差分を保存し直す。
-			if ((editingNotebook.name ?? '') !== name || (editingNotebook.content ?? '') !== content) {
+			if (
+				(editingNotebook.name ?? '') !== name ||
+				!isJsonContentEqual(content, editingNotebook.content ?? createEmptyDoc())
+			) {
 				scheduleAutoSave();
 			}
 			return;
 		}
 		cancelDebounce();
 		setName(editingNotebook.name ?? '');
-		setContent(editingNotebook.content ?? '');
+		setContent(editingNotebook.content ?? createEmptyDoc());
 		setThemeId(editingNotebook.themeId ?? editingNotebook.theme?.id ?? 'default');
 		setLastSavedAt(editingNotebook.updatedAt ? new Date(editingNotebook.updatedAt) : null);
 		setHasChanges(false);
@@ -167,35 +165,30 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 				setOriginalTagIds(ids);
 			})
 			.catch((e) => logger.error('failed to load notebook tags', e));
-		// name/content/scheduleAutoSave は意図的に依存から除外する。
-		// これらを deps に含めるとキー入力のたびに再同期ロジックが走ってしまう。
-		// 末尾差分の flush は最新値を closure 経由で参照すれば十分。
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [notebookId, isCreate, editingNotebook, cancelDebounce]);
 
-	// 変更検知（タグ差分を含む）
 	useEffect(() => {
 		if (isCreate) {
-			setHasChanges(name.trim().length > 0 || content.trim().length > 0);
+			setHasChanges(name.trim().length > 0 || !isEmptyDoc(content));
 			return;
 		}
 		if (!editingNotebook) return;
 
 		const originalName = editingNotebook.name ?? '';
-		const originalContent = editingNotebook.content ?? '';
+		const originalContent = editingNotebook.content ?? createEmptyDoc();
 		const originalThemeId = editingNotebook.themeId ?? editingNotebook.theme?.id ?? 'default';
 		const tagsDiffer =
 			JSON.stringify([...selectedTagIds].sort()) !== JSON.stringify([...originalTagIds].sort());
 
 		setHasChanges(
 			name !== originalName ||
-				content !== originalContent ||
+				!isJsonContentEqual(content, originalContent) ||
 				themeId !== originalThemeId ||
 				tagsDiffer,
 		);
 	}, [name, content, themeId, selectedTagIds, originalTagIds, editingNotebook, isCreate]);
 
-	// キーボードショートカット（Ctrl+S / Cmd+S で即時保存）
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if ((event.ctrlKey || event.metaKey) && event.key === 's') {
@@ -210,7 +203,6 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 		return () => document.removeEventListener('keydown', handleKeyDown);
 	}, [canSave, handleSave, cancelDebounce]);
 
-	// DBからテーマ取得（システム + 公開）
 	const { data: systemThemes = [], isLoading: isLoadingSystem } = useSystemThemes();
 	const { data: publicThemes = [], isLoading: isLoadingPublic } = usePublicThemes();
 	const allThemes = useMemo(() => {
@@ -243,9 +235,7 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 							scheduleAutoSave();
 						}}
 					/>
-					{/* 保存状態インジケーター */}
 					{(() => {
-						// 新規作成中でまだ保存対象が確定していない場合は表示しない
 						if (isCreate && saveStatus === 'idle') return null;
 						const displayStatus: SaveStatus =
 							!isCreate && editingNotebook && saveStatus === 'idle' ? 'saved' : saveStatus;
@@ -305,7 +295,6 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 						/>
 					</div>
 
-					{/* テーマ選択 */}
 					<div className="mb-4">
 						<label className="block text-sm font-medium mb-2">テーマ</label>
 						<select
@@ -328,7 +317,6 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 						</select>
 					</div>
 
-					{/* 選択中タグ */}
 					{selectedTagIds.length > 0 && (
 						<div className="mb-4 flex flex-wrap gap-1 text-xs text-gray-600">
 							{selectedTagIds
@@ -350,7 +338,6 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 						</div>
 					)}
 
-					{/* コンテンツ入力エリア */}
 					<div className="memo-content relative flex-1 flex flex-col">
 						<RichTextEditor
 							content={content}

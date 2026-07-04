@@ -48,3 +48,7 @@ export function extractPlainText(content: JSONContent | null | undefined): strin
 export function createEmptyDoc(): JSONContent {
 	return { type: 'doc', content: [{ type: 'paragraph' }] };
 }
+
+export function isEmptyDoc(doc: JSONContent | null | undefined): boolean {
+	return extractPlainText(doc) === '';
+}

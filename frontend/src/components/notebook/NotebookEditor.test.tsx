@@ -24,19 +24,7 @@ import { useMemoDataStore } from '../../stores/useMemoDataStore';
 import type { Notebook } from '../../types/notebook';
 
 vi.mock('../editor/RichTextEditor', () => ({
-	RichTextEditor: ({
-		content,
-		onChange,
-	}: {
-		content: string;
-		onChange: (value: string) => void;
-	}) => (
-		<textarea
-			data-testid="notebook-content-textarea"
-			value={content}
-			onChange={(e) => onChange(e.target.value)}
-		/>
-	),
+	RichTextEditor: () => <div data-testid="notebook-content-editor" />,
 }));
 
 const createMutateAsync = vi.fn();
@@ -90,7 +78,7 @@ function buildNotebook(overrides: Partial<Notebook> = {}): Notebook {
 	return {
 		id: 'nb-1',
 		name: 'My Notebook',
-		content: '<p>Hello</p>',
+		content: { type: 'doc', content: [{ type: 'paragraph' }] },
 		createdAt: new Date('2026-01-01').toISOString(),
 		updatedAt: new Date('2026-01-01').toISOString(),
 		themeId: null,
@@ -353,7 +341,7 @@ describe('NotebookEditor - 新規作成の自動保存と編集モード内部�
 
 	it('新規作成→編集モード昇格（isCreate→notebookId 遷移）で、保存往復中に打った文字が巻き戻らない', async () => {
 		// create のレスポンスは "te" まで（往復中にユーザーは "test" まで打ち進める）
-		const createdNb = buildNotebook({ id: 'nb-promote', name: 'te', content: '' });
+		const createdNb = buildNotebook({ id: 'nb-promote', name: 'te' });
 		createMutateAsync.mockResolvedValue(createdNb);
 		// 昇格後に useNotebook(id) が返す stale な値（サーバーは "te" のまま）
 		mockNotebookMap['nb-promote'] = createdNb;

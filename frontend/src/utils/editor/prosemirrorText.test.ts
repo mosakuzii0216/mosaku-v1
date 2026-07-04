@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createEmptyDoc, extractPlainText } from './prosemirrorText';
+import { createEmptyDoc, extractPlainText, isEmptyDoc } from './prosemirrorText';
 import type { JSONContent } from '@tiptap/react';
 
 // ゴールデンベクタ: backend/src/common/utils/prosemirror-text.spec.ts と同一構造・同一期待値
@@ -230,6 +230,36 @@ describe('extractPlainText (frontend)', () => {
 		it('matches expected output identical to backend golden vector', () => {
 			expect(extractPlainText(GOLDEN_DOC)).toBe(GOLDEN_EXPECTED);
 		});
+	});
+});
+
+describe('isEmptyDoc (frontend)', () => {
+	it('null → true', () => {
+		expect(isEmptyDoc(null)).toBe(true);
+	});
+
+	it('undefined → true', () => {
+		expect(isEmptyDoc(undefined)).toBe(true);
+	});
+
+	it('空 doc（{ type: doc, content: [{ type: paragraph }] }）→ true', () => {
+		expect(isEmptyDoc({ type: 'doc', content: [{ type: 'paragraph' }] })).toBe(true);
+	});
+
+	it('doc with no content key → true', () => {
+		expect(isEmptyDoc({ type: 'doc' })).toBe(true);
+	});
+
+	it('テキストを持つ doc → false', () => {
+		const doc: JSONContent = {
+			type: 'doc',
+			content: [{ type: 'paragraph', content: [{ type: 'text', text: 'hello' }] }],
+		};
+		expect(isEmptyDoc(doc)).toBe(false);
+	});
+
+	it('createEmptyDoc() の出力 → true', () => {
+		expect(isEmptyDoc(createEmptyDoc())).toBe(true);
 	});
 });
 

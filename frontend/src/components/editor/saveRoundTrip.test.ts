@@ -1,141 +1,244 @@
 import { describe, it, expect } from 'vitest';
 import { Editor } from '@tiptap/core';
+import type { JSONContent } from '@tiptap/react';
 import { createEditorExtensions } from './createEditorExtensions';
+import { isJsonContentEqual } from './contentSync';
 
 /**
- * 保存 HTML 往復の結合テスト（markdown-wysiwyg-editor タスク 5.1）
+ * 保存 JSON 往復の結合テスト（content-jsonb-migration Task 6.3）
  *
- * 編集（RichTextEditor 相当・editable:true）で生成した HTML が「保存される値」であり、
+ * 編集（RichTextEditor 相当・editable:true）で `getJSON()` して得た JSON が「保存される値」であり、
  * それを再読込（編集の再オープン）および公開表示（PublicMemoRenderer 相当・editable:false）へ
- * 流したとき、新規ノード（タスクリストの data-checked / コードブロックの言語 class /
- * 区切り線 / リンク）と、見出し・リスト・装飾・ノートブック参照 `[[name]]` のノード構造が
- * 崩れずに往復することを、共有ファクトリ createEditorExtensions 経由で構造的に担保する。
+ * 流したとき、タスクリスト / コードブロック言語 / 区切り線 / リンク / 見出し / 装飾 / 引用の
+ * ノード構造が崩れずに往復することを、共有ファクトリ createEditorExtensions 経由で担保する。
  *
- * Requirements 対応: 4.5, 5.4, 8.3, 9.4
+ * Requirements 対応: 3.6, 5.2, 5.5, 8.5
  */
 
 const dummySlash = { render: () => ({}) };
 
-/** 与えた content を指定モードのエディタへ流し、保存される HTML（getHTML）を返す */
-function renderHtml(editable: boolean, content: string): string {
+function getJson(editable: boolean, content: JSONContent): JSONContent {
 	const editor = new Editor({
 		extensions: createEditorExtensions(
 			editable ? { editable: true, placeholder: 'x', slash: dummySlash } : { editable: false },
 		),
 		content,
 	});
-	const html = editor.getHTML();
+	const json = editor.getJSON() as JSONContent;
 	editor.destroy();
-	return html;
+	return json;
 }
 
-describe('保存 HTML 往復（結合）', () => {
-	describe('タスクリストの data-checked が再読込・公開で保持される（Req5.4）', () => {
-		const html = [
-			'<ul data-type="taskList">',
-			'<li data-type="taskItem" data-checked="true">完了タスク</li>',
-			'<li data-type="taskItem" data-checked="false">未完了タスク</li>',
-			'</ul>',
-		].join('');
+const COMPLEX_DOC: JSONContent = {
+	type: 'doc',
+	content: [
+		{ type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'タイトル' }] },
+		{ type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '節' }] },
+		{ type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: '項' }] },
+		{
+			type: 'paragraph',
+			content: [
+				{ type: 'text', text: '本文に' },
+				{ type: 'text', marks: [{ type: 'bold' }], text: '太字' },
+				{ type: 'text', text: 'と' },
+				{ type: 'text', marks: [{ type: 'italic' }], text: '斜体' },
+				{ type: 'text', text: 'と' },
+				{ type: 'text', marks: [{ type: 'strike' }], text: '取消線' },
+				{ type: 'text', text: '。' },
+			],
+		},
+		{
+			type: 'bulletList',
+			content: [
+				{
+					type: 'listItem',
+					content: [{ type: 'paragraph', content: [{ type: 'text', text: '箇条書き' }] }],
+				},
+			],
+		},
+		{
+			type: 'orderedList',
+			content: [
+				{
+					type: 'listItem',
+					content: [{ type: 'paragraph', content: [{ type: 'text', text: '番号付き' }] }],
+				},
+			],
+		},
+		{
+			type: 'blockquote',
+			content: [{ type: 'paragraph', content: [{ type: 'text', text: '引用' }] }],
+		},
+		{ type: 'horizontalRule' },
+		{
+			type: 'taskList',
+			content: [
+				{
+					type: 'taskItem',
+					attrs: { checked: true },
+					content: [{ type: 'paragraph', content: [{ type: 'text', text: '完了' }] }],
+				},
+			],
+		},
+		{
+			type: 'codeBlock',
+			attrs: { language: 'typescript' },
+			content: [{ type: 'text', text: 'const x = 1;' }],
+		},
+		{
+			type: 'paragraph',
+			content: [
+				{
+					type: 'text',
+					marks: [{ type: 'link', attrs: { href: 'https://example.com', target: '_blank' } }],
+					text: 'link',
+				},
+			],
+		},
+		{ type: 'paragraph', content: [{ type: 'text', text: '[[マイノートブック]] への参照' }] },
+	],
+};
 
-		it('編集で保存 → 編集で再読込しても data-checked が保持される', () => {
-			const saved = renderHtml(true, html);
-			const reloaded = renderHtml(true, saved);
-
-			expect(saved).toContain('data-checked="true"');
-			expect(saved).toContain('data-checked="false"');
-			// 再読込（メモ再オープン）でチェック状態が往復する
-			expect(reloaded).toEqual(saved);
+describe('保存 JSON 往復（結合）', () => {
+	describe('getJSON ラウンドトリップ（Req3.6）', () => {
+		it('編集側で setContent した JSON を getJSON しても構造が一致する', () => {
+			const saved = getJson(true, COMPLEX_DOC);
+			const reloaded = getJson(true, saved);
+			expect(isJsonContentEqual(saved, reloaded)).toBe(true);
 		});
 
-		it('編集で保存 → 公開表示でも data-checked が保持される', () => {
-			const saved = renderHtml(true, html);
-			const published = renderHtml(false, saved);
+		it('編集→公開でも JSON 構造が一致する（Req5.2）', () => {
+			const saved = getJson(true, COMPLEX_DOC);
+			const published = getJson(false, saved);
+			expect(isJsonContentEqual(saved, published)).toBe(true);
+		});
 
-			expect(published).toContain('data-checked="true"');
-			expect(published).toContain('data-checked="false"');
-			expect(published).toEqual(saved);
+		it('空 doc の往復一致', () => {
+			const emptyDoc: JSONContent = { type: 'doc', content: [{ type: 'paragraph' }] };
+			const saved = getJson(true, emptyDoc);
+			const reloaded = getJson(true, saved);
+			expect(isJsonContentEqual(saved, reloaded)).toBe(true);
 		});
 	});
 
-	describe('コードブロックの言語 class が再読込・公開で保持される（Req4.5）', () => {
-		const html =
-			'<pre><code class="language-typescript">const greet = (n: string) =&gt; `hi ${n}`;</code></pre>';
+	describe('タスクリストの checked が往復で保持される（Req5.4）', () => {
+		const taskDoc: JSONContent = {
+			type: 'doc',
+			content: [
+				{
+					type: 'taskList',
+					content: [
+						{
+							type: 'taskItem',
+							attrs: { checked: true },
+							content: [{ type: 'paragraph', content: [{ type: 'text', text: '完了タスク' }] }],
+						},
+						{
+							type: 'taskItem',
+							attrs: { checked: false },
+							content: [{ type: 'paragraph', content: [{ type: 'text', text: '未完了タスク' }] }],
+						},
+					],
+				},
+			],
+		};
 
-		it('編集で保存 → 編集で再読込しても言語 class が保持される', () => {
-			const saved = renderHtml(true, html);
-			const reloaded = renderHtml(true, saved);
-
-			expect(saved).toContain('language-typescript');
-			expect(reloaded).toContain('language-typescript');
-			expect(reloaded).toEqual(saved);
+		it('編集で保存 → 編集で再読込しても checked が保持される', () => {
+			const saved = getJson(true, taskDoc);
+			const reloaded = getJson(true, saved);
+			expect(isJsonContentEqual(saved, reloaded)).toBe(true);
+			const taskItems = saved.content?.[0]?.content ?? [];
+			expect(taskItems[0]?.attrs?.checked).toBe(true);
+			expect(taskItems[1]?.attrs?.checked).toBe(false);
 		});
 
-		it('編集で保存 → 公開表示でも言語 class が保持される', () => {
-			const saved = renderHtml(true, html);
-			const published = renderHtml(false, saved);
-
-			expect(published).toContain('language-typescript');
-			expect(published).toEqual(saved);
+		it('編集で保存 → 公開表示でも checked が保持される', () => {
+			const saved = getJson(true, taskDoc);
+			const published = getJson(false, saved);
+			expect(isJsonContentEqual(saved, published)).toBe(true);
 		});
 	});
 
-	describe('見出し・リスト・装飾・区切り線・リンク・ノートブック参照を含む複合ドキュメント（Req8.3/9.4）', () => {
-		const html = [
-			'<h1>タイトル</h1>',
-			'<h2>節</h2>',
-			'<h3>項</h3>',
-			'<p>本文に<strong>太字</strong>と<em>斜体</em>と<s>取消線</s>。</p>',
-			'<ul><li>箇条書き</li></ul>',
-			'<ol><li>番号付き</li></ol>',
-			'<blockquote><p>引用</p></blockquote>',
-			'<hr>',
-			'<ul data-type="taskList"><li data-type="taskItem" data-checked="true">完了</li></ul>',
-			'<pre><code class="language-json">{"a":1}</code></pre>',
-			'<p><a href="https://example.com">link</a></p>',
-			'<p>[[マイノートブック]] への参照</p>',
-		].join('');
+	describe('コードブロックの言語属性が往復で保持される（Req4.5）', () => {
+		const codeDoc: JSONContent = {
+			type: 'doc',
+			content: [
+				{
+					type: 'codeBlock',
+					attrs: { language: 'typescript' },
+					content: [{ type: 'text', text: 'const greet = (n: string) => `hi ${n}`;' }],
+				},
+			],
+		};
 
-		it('編集→保存→公開でノード構造が完全一致する', () => {
-			// 編集側で一度正規化した HTML が「保存される値」。それを公開側へ流し往復一致を確認。
-			const saved = renderHtml(true, html);
-			const published = renderHtml(false, saved);
-
-			expect(saved).toEqual(published);
-			expect(saved).toMatchSnapshot();
+		it('編集で保存 → 編集で再読込しても言語属性が保持される', () => {
+			const saved = getJson(true, codeDoc);
+			const reloaded = getJson(true, saved);
+			expect(isJsonContentEqual(saved, reloaded)).toBe(true);
+			expect(saved.content?.[0]?.attrs?.language).toBe('typescript');
 		});
 
-		it('編集→保存→編集再読込でも同一 HTML へ復元される（保存ループの土台が往復で安定）', () => {
-			const saved = renderHtml(true, html);
-			const reloaded = renderHtml(true, saved);
+		it('編集で保存 → 公開表示でも言語属性が保持される', () => {
+			const saved = getJson(true, codeDoc);
+			const published = getJson(false, saved);
+			expect(isJsonContentEqual(saved, published)).toBe(true);
+			expect(published.content?.[0]?.attrs?.language).toBe('typescript');
+		});
+	});
 
-			expect(reloaded).toEqual(saved);
+	describe('見出し・リスト・装飾・区切り線・リンクを含む複合ドキュメント（Req8.5）', () => {
+		it('編集→公開で構造的等価（Req5.2）', () => {
+			const saved = getJson(true, COMPLEX_DOC);
+			const published = getJson(false, saved);
+			expect(isJsonContentEqual(saved, published)).toBe(true);
+		});
+
+		it('編集→再読込でも同一 JSON に復元される（保存ループの土台が往復で安定）', () => {
+			const saved = getJson(true, COMPLEX_DOC);
+			const reloaded = getJson(true, saved);
+			expect(isJsonContentEqual(saved, reloaded)).toBe(true);
 		});
 
 		it('ノートブック参照 [[name]] はプレーンテキストとして往復で保持される（Req9.2 非回帰）', () => {
-			const saved = renderHtml(true, html);
-			const published = renderHtml(false, saved);
-
-			// 自動リンク化されず、リンクノードにもならないプレーンテキストのまま
-			expect(saved).toContain('[[マイノートブック]]');
-			expect(published).toContain('[[マイノートブック]]');
-			expect(saved).not.toContain('<a href="[[');
+			const saved = getJson(true, COMPLEX_DOC);
+			const published = getJson(false, saved);
+			// paragraph ノードの text に [[マイノートブック]] が含まれる
+			const hasRef = (doc: JSONContent): boolean =>
+				(doc.content ?? []).some(
+					(n) =>
+						n.type === 'paragraph' &&
+						(n.content ?? []).some(
+							(c) => c.type === 'text' && (c.text ?? '').includes('[[マイノートブック]]'),
+						),
+				);
+			expect(hasRef(saved)).toBe(true);
+			expect(hasRef(published)).toBe(true);
 		});
 
-		it('リンクは保存・公開で rel 属性（タブナビング対策）を保持する（Req7）', () => {
-			const saved = renderHtml(true, html);
-			const published = renderHtml(false, saved);
-
-			expect(saved).toContain('rel="noopener noreferrer nofollow"');
-			expect(published).toContain('rel="noopener noreferrer nofollow"');
+		it('リンクは保存・公開で href 構造を保持する（Req5.5）', () => {
+			const saved = getJson(true, COMPLEX_DOC);
+			const published = getJson(false, saved);
+			const findLink = (doc: JSONContent): string | undefined => {
+				for (const node of doc.content ?? []) {
+					for (const inline of node.content ?? []) {
+						for (const mark of inline.marks ?? []) {
+							if (mark.type === 'link') return (mark.attrs?.href as string) ?? undefined;
+						}
+					}
+				}
+				return undefined;
+			};
+			expect(findLink(saved)).toBe('https://example.com');
+			expect(findLink(published)).toBe('https://example.com');
 		});
 
-		it('区切り線 <hr> が保存・公開で保持される（Req6）', () => {
-			const saved = renderHtml(true, html);
-			const published = renderHtml(false, saved);
-
-			expect(saved).toContain('<hr>');
-			expect(published).toContain('<hr>');
+		it('区切り線 horizontalRule が保存・公開で保持される（Req6）', () => {
+			const saved = getJson(true, COMPLEX_DOC);
+			const published = getJson(false, saved);
+			const hasHr = (doc: JSONContent) =>
+				(doc.content ?? []).some((n) => n.type === 'horizontalRule');
+			expect(hasHr(saved)).toBe(true);
+			expect(hasHr(published)).toBe(true);
 		});
 	});
 });

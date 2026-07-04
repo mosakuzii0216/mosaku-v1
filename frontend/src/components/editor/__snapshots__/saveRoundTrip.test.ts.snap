@@ -1,3 +1,0 @@
-// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
-
-exports[`保存 HTML 往復（結合） > 見出し・リスト・装飾・区切り線・リンク・ノートブック参照を含む複合ドキュメント（Req8.3/9.4） > 編集→保存→公開でノード構造が完全一致する 1`] = `"<h1>タイトル</h1><h2>節</h2><h3>項</h3><p>本文に<strong>太字</strong>と<em>斜体</em>と<s>取消線</s>。</p><ul><li><p>箇条書き</p></li></ul><ol><li><p>番号付き</p></li></ol><blockquote><p>引用</p></blockquote><hr><ul data-type="taskList"><li data-checked="true" data-type="taskItem"><label><input type="checkbox" checked="checked"><span></span></label><div><p>完了</p></div></li></ul><pre><code class="language-json">{"a":1}</code></pre><p><a target="_blank" rel="noopener noreferrer nofollow" href="https://example.com">link</a></p><p>[[マイノートブック]] への参照</p>"`;

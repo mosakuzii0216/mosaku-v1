@@ -4,8 +4,7 @@ import { MemoryRouter } from 'react-router';
 import React from 'react';
 
 vi.mock('./PublicMemoRenderer', () => ({
-	PublicMemoRenderer: ({ content }: { content: string }) =>
-		React.createElement('div', { 'data-testid': 'public-memo-renderer' }, content),
+	PublicMemoRenderer: () => React.createElement('div', { 'data-testid': 'public-memo-renderer' }),
 }));
 
 import { PublicMemoView } from './PublicMemoView';
@@ -13,7 +12,10 @@ import type { PublicMemoResponseDto } from '../../types/memo';
 
 const mockMemo: PublicMemoResponseDto = {
 	title: 'テストメモタイトル',
-	content: '<p>テスト本文</p>',
+	content: {
+		type: 'doc',
+		content: [{ type: 'paragraph', content: [{ type: 'text', text: 'テスト本文' }] }],
+	},
 	updatedAt: '2026-05-30T10:00:00Z',
 };
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import type { JSONContent } from '@tiptap/react';
 import { useCreateMemo, useUpdateMemo, useDeleteMemo } from '../../hooks/useMemoQueries';
 import { useNotebooks } from '../../hooks/useNotebookQueries';
 import { useTagQueries } from '../../hooks/useTagQueries';
@@ -21,6 +22,8 @@ import {
 } from '../../utils/editor/save-status-presentation';
 import { logger } from '../../utils/logger';
 import { getPendingMemoTitle, clearPendingMemoTitle } from '../../hooks/useNavigation';
+import { createEmptyDoc, isEmptyDoc } from '../../utils/editor/prosemirrorText';
+import { isJsonContentEqual } from '../editor/contentSync';
 
 interface MemoEditorProps {
 	memo?: Memo;
@@ -40,7 +43,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	const { status: networkStatus } = useNetworkStatus();
 
 	const [title, setTitle] = useState(memo?.title || '');
-	const [content, setContent] = useState(memo?.content || '');
+	const [content, setContent] = useState<JSONContent>(memo?.content || createEmptyDoc());
 	const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
 		memo?.memoTags?.map((mt) => mt.tag.id) || [],
 	);
@@ -48,26 +51,18 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 
 	const [hasChanges, setHasChanges] = useState(false);
 
-	// create 成功で自分が作ったメモへ昇格（create→edit）する際、その ID を覚えておく。
-	// 昇格時の state 再同期で、サーバーが返した古いタイトル/本文がタイピング中の
-	// ローカル入力を上書きして消すのを防ぐためのマーカー。
 	const pendingCreatedIdRef = useRef<string | null>(null);
 
-	// 最終保存時刻。初期値は既存メモの updatedAt、自動/手動保存成功時に現在時刻へ更新。
 	const [lastSavedAt, setLastSavedAt] = useState<Date | null>(
 		memo?.updatedAt ? new Date(memo.updatedAt) : null,
 	);
-	// 相対時刻ラベルを進めるための tick（30秒ごとに再描画）。
-	// 秒単位の精度は不要（「今しがた」「N秒前」「N分前」…の表示なので 30秒間隔で十分）。
 	const [, setTick] = useState(0);
 
-	// useAutoSave に渡す派生値（レンダリング中に同期計算）
 	const isSaving = createMemo.isPending || updateMemo.isPending;
-	const canSave = hasChanges && (!!title.trim() || !!content.trim());
+	const canSave = hasChanges && (!!title.trim() || !isEmptyDoc(content));
 
-	// 保存処理本体（エラーは呼び出し元に伝播させる）
 	const handleSave = useCallback(async (): Promise<void | OfflineSavedSignal> => {
-		if (!title.trim() && !content.trim()) {
+		if (!title.trim() && isEmptyDoc(content)) {
 			return;
 		}
 
@@ -76,7 +71,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 				createMemo.mutate(
 					{
 						title: title.trim() || '無題',
-						content: content.trim(),
+						content,
 						notebookId: selectedNotebookId || null,
 					},
 					{
@@ -86,15 +81,12 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 				);
 			});
 
-			// 昇格先の memo を再同期 effect が上書きしないようマーカーを立てる
 			pendingCreatedIdRef.current = result.id;
 
-			// 新規作成後にタグを割り当て
 			if (selectedTagIds.length > 0) {
 				assignTags({ memoId: result.id, data: { tagIds: selectedTagIds } });
 			}
 
-			// task 2.2: create 成功後に edit モードへ遷移（重複作成防止）
 			setSelectedMemoId(result.id);
 			setCurrentView('edit');
 			return;
@@ -107,7 +99,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 						id: memo.id,
 						data: {
 							title: title.trim() || '無題',
-							content: content.trim(),
+							content,
 							notebookId: selectedNotebookId || null,
 						},
 					},
@@ -118,7 +110,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 				);
 			});
 
-			// オンライン同期成功時のみタグを更新（オフライン時は対応キューを別途用意するまで未対応）
 			if (outcome.kind === 'synced') {
 				const originalTagIds = memo.memoTags?.map((mt) => mt.tag.id) || [];
 				const tagsChanged =
@@ -152,23 +143,18 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 		onSave: handleSave,
 	});
 
-	// saved に到達したら最終保存時刻を現在時刻に更新
 	useEffect(() => {
 		if (saveStatus === 'saved') {
 			setLastSavedAt(new Date());
 		}
 	}, [saveStatus]);
 
-	// 「N秒前」「N分前」の相対表示を進めるための再描画 tick
 	useEffect(() => {
 		if (!lastSavedAt) return;
 		const id = setInterval(() => setTick((n) => n + 1), 30 * 1000);
 		return () => clearInterval(id);
 	}, [lastSavedAt]);
 
-	// 編集対象 memo が切り替わったときだけ state を再同期する。
-	// memo オブジェクト全体を依存にすると、保存完了後の React Query invalidate で
-	// 参照だけが変わった memo が渡し直され、直近の入力が上書きされて消える（dogfooding で発覚）。
 	const memoId = memo?.id;
 	useEffect(() => {
 		cancelDebounce();
@@ -180,7 +166,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 			} else {
 				setTitle('');
 			}
-			setContent('');
+			setContent(createEmptyDoc());
 			setSelectedTagIds([]);
 			setSelectedNotebookId('');
 			setStoreNotebookId(null);
@@ -188,19 +174,18 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 			setLastSavedAt(null);
 		} else if (memo) {
 			if (pendingCreatedIdRef.current === memo.id) {
-				// 直前にアタシ自身が作成したメモへの昇格（create→edit）。
-				// サーバーが返した値でローカル入力を上書きすると、保存往復中に打った
-				// 文字（"test" が "te" に巻き戻る等）が消える。ローカルを真実として維持する。
 				pendingCreatedIdRef.current = null;
 				setStoreNotebookId(memo.notebookId || null);
 				setLastSavedAt(memo.updatedAt ? new Date(memo.updatedAt) : new Date());
-				// 昇格中にローカルがサーバーより先行していれば、その差分を保存し直す。
-				if ((memo.title || '') !== title || (memo.content || '') !== content) {
+				if (
+					(memo.title || '') !== title ||
+					!isJsonContentEqual(content, memo.content || createEmptyDoc())
+				) {
 					scheduleAutoSave();
 				}
 			} else {
 				setTitle(memo.title || '');
-				setContent(memo.content || '');
+				setContent(memo.content || createEmptyDoc());
 				setSelectedTagIds(memo.memoTags?.map((mt) => mt.tag.id) || []);
 				setSelectedNotebookId(memo.notebookId || '');
 				setStoreNotebookId(memo.notebookId || null);
@@ -208,31 +193,27 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 				setLastSavedAt(memo.updatedAt ? new Date(memo.updatedAt) : null);
 			}
 		}
-		// memo の中身ではなく id の切り替えだけを依存にする。
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [memoId, isCreate, cancelDebounce]);
 
-	// エディタ離脱時にストアのノートブック選択をリセット
 	useEffect(() => {
 		return () => {
 			setStoreNotebookId(null);
 		};
 	}, [setStoreNotebookId]);
 
-	// 変更検知
 	useEffect(() => {
 		const originalTitle = memo?.title || '';
-		const originalContent = memo?.content || '';
+		const originalContent = memo?.content || createEmptyDoc();
 		const originalTagIds = memo?.memoTags?.map((mt) => mt.tag.id) || [];
 		const originalNotebookId = memo?.notebookId || '';
 
 		const tagsChanged =
 			JSON.stringify(selectedTagIds.sort()) !== JSON.stringify(originalTagIds.sort());
 		const notebookChanged = selectedNotebookId !== originalNotebookId;
+		const contentChanged = !isJsonContentEqual(content, originalContent);
 
-		setHasChanges(
-			title !== originalTitle || content !== originalContent || tagsChanged || notebookChanged,
-		);
+		setHasChanges(title !== originalTitle || contentChanged || tagsChanged || notebookChanged);
 	}, [title, content, selectedTagIds, selectedNotebookId, memo]);
 
 	const handleDelete = useCallback(async () => {
@@ -254,12 +235,11 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 		}
 	}, [memo, deleteMemo, networkStatus]);
 
-	// キーボードショートカット（Ctrl+S / Cmd+S で保存）
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if ((event.ctrlKey || event.metaKey) && event.key === 's') {
 				event.preventDefault();
-				if (hasChanges && (title.trim() || content.trim())) {
+				if (hasChanges && (title.trim() || !isEmptyDoc(content))) {
 					cancelDebounce();
 					handleSave().catch((error) => logger.error('保存に失敗しました:', error));
 				}
@@ -286,11 +266,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 							scheduleAutoSave();
 						}}
 					/>
-					{/* 保存状態インジケーター（exhaustive switch via describeSaveStatus）
-					    既存メモを編集中で saveStatus が 'idle' のとき（＝初期表示 or 直近の編集が
-					    全て巻き戻された無変更状態）は 'saved' とみなして「保存済み」を出す。
-					    新規作成中は何も表示しない（保存対象がまだ存在しないため）。
-					    'saved' のときは最終保存時刻からの相対表示も併記して安心感を出す。*/}
 					{(() => {
 						const displayStatus: SaveStatus =
 							!isCreate && memo && saveStatus === 'idle' ? 'saved' : saveStatus;
@@ -328,7 +303,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 								logger.error('手動保存に失敗しました:', error);
 							}
 						}}
-						disabled={!hasChanges || (!title.trim() && !content.trim()) || isSaving}
+						disabled={!hasChanges || (isEmptyDoc(content) && !title.trim()) || isSaving}
 						className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						{isSaving ? '保存中...' : '保存'}
@@ -351,7 +326,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 					id={`memo-editor-${memo?.id || 'new'}`}
 					className="max-w-4xl mx-auto w-full flex-1 flex flex-col"
 				>
-					{/* タイトル入力エリア */}
 					<div className="mb-4">
 						<input
 							type="text"
@@ -365,7 +339,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 						/>
 					</div>
 
-					{/* ノートブック選択 */}
 					<div className="mb-4">
 						<label className="block text-sm font-medium mb-2">ノートブック</label>
 						<NotebookSelect
@@ -378,7 +351,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 						/>
 					</div>
 
-					{/* 選択中タグの表示（小さめチップ） */}
 					{selectedTagIds.length > 0 && (
 						<div className="mb-3 flex flex-wrap gap-1 text-xs text-gray-600">
 							{selectedTagIds
@@ -400,7 +372,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 						</div>
 					)}
 
-					{/* コンテンツ入力エリア */}
 					<div className="memo-content relative flex-1 flex flex-col">
 						<RichTextEditor
 							content={content}
