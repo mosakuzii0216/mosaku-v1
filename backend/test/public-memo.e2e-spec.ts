@@ -87,11 +87,16 @@ describe('GET /memos/public/:token (e2e)', () => {
 
 	// ─── 成功ケース ────────────────────────────────────────────────────
 
+	const jsonContent = {
+		type: 'doc',
+		content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hello World' }] }],
+	};
+
 	describe('成功ケース', () => {
 		it('未認証リクエストで公開メモを 200 で返す (Req 3.1, 3.4)', async () => {
 			const memo = {
 				title: 'Test Memo',
-				content: '<p>Hello World</p>',
+				content: jsonContent,
 				updatedAt: new Date('2026-05-30T10:00:00.000Z'),
 			};
 			findFirstMock.mockResolvedValue(memo);
@@ -99,17 +104,20 @@ describe('GET /memos/public/:token (e2e)', () => {
 			const res = await request(app.getHttpServer()).get(`/memos/public/${VALID_TOKEN}`);
 
 			expect(res.status).toBe(HttpStatus.OK);
-			expect(res.body).toEqual({
+			expect(res.body).toMatchObject({
 				title: 'Test Memo',
-				content: '<p>Hello World</p>',
 				updatedAt: '2026-05-30T10:00:00.000Z',
 			});
+			// content は JSON オブジェクトとして返ること（Task 6.3）
+			const body = res.body as Record<string, unknown>;
+			expect(typeof body.content).toBe('object');
+			expect((body.content as Record<string, unknown>)?.type).toBe('doc');
 		});
 
 		it('Cache-Control: private, max-age=30, must-revalidate ヘッダーが付与される (Req 6.3)', async () => {
 			findFirstMock.mockResolvedValue({
 				title: 'Test Memo',
-				content: '<p>Content</p>',
+				content: jsonContent,
 				updatedAt: new Date('2026-05-30T10:00:00.000Z'),
 			});
 
@@ -122,7 +130,7 @@ describe('GET /memos/public/:token (e2e)', () => {
 		it('Vary: Accept ヘッダーが付与される (Req 6.3 スモーク確認)', async () => {
 			findFirstMock.mockResolvedValue({
 				title: 'Test Memo',
-				content: '<p>Content</p>',
+				content: jsonContent,
 				updatedAt: new Date('2026-05-30T10:00:00.000Z'),
 			});
 
@@ -135,7 +143,7 @@ describe('GET /memos/public/:token (e2e)', () => {
 		it('レスポンスは title / content / updatedAt のみで個人情報を含まない (Req 3.2)', async () => {
 			findFirstMock.mockResolvedValue({
 				title: 'Test Memo',
-				content: '<p>Content</p>',
+				content: jsonContent,
 				updatedAt: new Date('2026-05-30T10:00:00.000Z'),
 			});
 
@@ -154,7 +162,7 @@ describe('GET /memos/public/:token (e2e)', () => {
 		it('findByToken が正しいトークンと trashedAt: null 条件でクエリを呼ぶ', async () => {
 			findFirstMock.mockResolvedValue({
 				title: 'Test',
-				content: '',
+				content: jsonContent,
 				updatedAt: new Date(),
 			});
 

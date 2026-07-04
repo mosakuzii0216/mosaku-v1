@@ -36,10 +36,16 @@ import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { JwtTokenService } from '../src/auth/jwt.service';
 
+const jsonDoc = {
+	type: 'doc',
+	content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hello' }] }],
+};
+
 const memoFixture = {
 	id: 'memo-1',
 	title: 'Existing',
-	content: 'Hello',
+	content: jsonDoc,
+	contentText: 'Hello',
 	createdAt: new Date('2026-05-09T00:00:00.000Z'),
 	updatedAt: new Date('2026-05-10T10:00:00.000Z'),
 	trashedAt: null,
@@ -49,7 +55,7 @@ const memoFixture = {
 	notebook: null,
 };
 
-type MemoResponseBody = { title: string };
+type MemoResponseBody = { title: string; content?: unknown };
 type ConflictResponseBody = {
 	code: string;
 	statusCode: number;
@@ -207,5 +213,26 @@ describe('PATCH /memos/:id (e2e) — last-write-wins', () => {
 
 		expect(res.status).toBe(HttpStatus.NOT_FOUND);
 		expect(updateMock).not.toHaveBeenCalled();
+	});
+
+	it('(f) JSON content を含む PATCH が成功し、レスポンス content が JSON オブジェクト（Task6.1）', async () => {
+		const updatedDoc = {
+			type: 'doc',
+			content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Updated content' }] }],
+		};
+		const updated = { ...memoFixture, content: updatedDoc, contentText: 'Updated content' };
+		findFirstMock.mockResolvedValue(memoFixture);
+		updateMock.mockResolvedValue(updated);
+
+		const res = await request(app.getHttpServer())
+			.patch('/memos/memo-1')
+			.set('Authorization', authedHeader)
+			.send({ content: updatedDoc });
+
+		expect(res.status).toBe(HttpStatus.OK);
+		const body = res.body as MemoResponseBody;
+		// content は JSON オブジェクトとして返ること（文字列でないこと）
+		expect(typeof body.content).toBe('object');
+		expect((body.content as Record<string, unknown>)?.type).toBe('doc');
 	});
 });
