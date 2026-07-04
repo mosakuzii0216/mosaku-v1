@@ -13,6 +13,7 @@ import { createRequire } from 'module';
 import { readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
+import type { RawRecord } from '../src/utils/migration/htmlToJson.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -36,7 +37,7 @@ global.Node = domWindow.Node;
 global.HTMLElement = domWindow.HTMLElement;
 
 // jsdom セットアップ後に動的インポート
-const { batchConvert, type RawRecord } = await import('../src/utils/migration/htmlToJson.js');
+const { batchConvert } = await import('../src/utils/migration/htmlToJson.js');
 
 const args = process.argv.slice(2);
 const isDryRun = args.includes('--dry-run');
@@ -52,9 +53,9 @@ if (!isDryRun) console.log(`出力: ${outputFile}`);
 
 const rawContent = readFileSync(inputFile, 'utf8');
 const records: RawRecord[] = rawContent
-  .split('\n')
-  .filter((line) => line.trim())
-  .map((line) => JSON.parse(line) as RawRecord);
+	.split('\n')
+	.filter((line) => line.trim())
+	.map((line) => JSON.parse(line) as RawRecord);
 
 console.log(`${records.length} 件を変換します...`);
 
@@ -68,16 +69,16 @@ console.log(`フォールバック: ${stats.fallbackCount} 件`);
 console.log(`NULL維持:     ${stats.nullKeptCount} 件`);
 
 if (stats.errorIds.length > 0) {
-  console.log('\n⚠️  フォールバック発生ID（要確認）:');
-  for (const id of stats.errorIds) {
-    const r = results.find((x) => x.id === id);
-    console.log(`  ${id}: ${r?.error ?? 'unknown error'}`);
-  }
+	console.log('\n⚠️  フォールバック発生ID（要確認）:');
+	for (const id of stats.errorIds) {
+		const r = results.find((x) => x.id === id);
+		console.log(`  ${id}: ${r?.error ?? 'unknown error'}`);
+	}
 }
 
 if (isDryRun) {
-  console.log('\n[dry-run] 書込をスキップしました。');
-  process.exit(0);
+	console.log('\n[dry-run] 書込をスキップしました。');
+	process.exit(0);
 }
 
 const lines = results.map((r) => JSON.stringify(r));
