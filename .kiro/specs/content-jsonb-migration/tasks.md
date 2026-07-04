@@ -68,14 +68,14 @@
   - MCP 検索ツールの excerpt を `contentText` の slice に切替え、最大文字数とスコープ検査を不変に保つ（TipTap を backend に追加しない）
   - _Requirements: 5.1, 8.1_
 
-- [ ] 4. (P) フロントエンド エディタ・公開ビュー・オフラインの JSON 化 — Task 3・5 と並行可（frontend 境界 / 前提: Task 1）
-- [ ] 4.1 (P) contentSync を JSON 構造的等価へ切替
+- [x] 4. (P) フロントエンド エディタ・公開ビュー・オフラインの JSON 化 — Task 3・5 と並行可（frontend 境界 / 前提: Task 1）
+- [x] 4.1 (P) contentSync を JSON 構造的等価へ切替
   - 親 content・直近 emit した JSON・現在の editor JSON を比較し `skip-echo` / `skip-equal` / `apply` を判定するロジックを実装する
   - キー順非依存の deep-equal（`JSON.stringify` 比較を用いず、配列順は保持・オブジェクトはキー集合比較）を自前実装する
   - 自己エコー（直近 emit 参照）を外部変更より優先し、input rule の巻き戻しを起こさない不変条件を維持する
   - _Requirements: 3.3, 3.4_
 
-- [ ] 4.2 RichTextEditor を getJSON 入出力へ切替
+- [x] 4.2 RichTextEditor を getJSON 入出力へ切替
   - 更新時に `editor.getJSON()` を `onChange` で通知し、HTML 文字列を通知しないようにする
   - 直近 emit 参照を JSON 化し、外部変更時のみ `setContent` に JSON を渡して `emitUpdate` を抑止する
   - 新規メモは空 doc を初期値として扱い、`getJSON()`→保存→`setContent` の往復で内容が一致する
@@ -83,41 +83,41 @@
   - 前提: 4.1（contentSync 判定）
   - _Requirements: 3.1, 3.2, 3.5, 3.6_
 
-- [ ] 4.3 エディタホスト（MemoEditor / NotebookEditor）の content state を JSON 化
+- [x] 4.3 エディタホスト（MemoEditor / NotebookEditor）の content state を JSON 化
   - 本文 state を文字列から JSON へ変更し、空判定を文字列トリムから空 doc 判定へ置換する
   - onChange→setState→自動保存の流れと、自動保存の 5 状態インジケーター・編集停止 2 秒保存を不変に保つ
   - 前提: 4.2（JSON 入出力エディタ）
   - _Requirements: 3.2, 8.2_
 
-- [ ] 4.4 (P) 公開ビュー（PublicMemoRenderer）の JSON 描画
+- [x] 4.4 (P) 公開ビュー（PublicMemoRenderer）の JSON 描画
   - 公開ビューの `content` を JSON として受け取り、編集側と同一の拡張ファクトリ（`editable:false`）へ渡して描画する
   - 生 HTML 直挿入（`dangerouslySetInnerHTML` 等）を用いず描画する現状を維持する
   - 本文面テーマスタイル（`.memo-content` / `prose`）とリンクのセキュリティ属性（`rel` / 危険スキーム排除）をファクトリ継承で不変に保つ
   - 公開ビューの content 型を JSON へ変更する
   - _Requirements: 5.2, 5.3, 5.4, 5.5, 8.4_
 
-- [ ] 4.5 (P) オフライン層 v2（IndexedDB スキーマと検索テキスト）
+- [x] 4.5 (P) オフライン層 v2（IndexedDB スキーマと検索テキスト）
   - オフライン DB バージョンを 1→2 に上げ、キャッシュ本文と保留操作パッチの `content` を JSON 化する
   - 検索テキストを `extractPlainText` 由来で再生成し、HTML strip 実装を置換する
   - キャッシュは server 再取得で再構築（本文ロスなし）、旧 HTML 形式の未送信保留はデプロイ前 drain・残存破棄を運用手順化する
   - _Requirements: 8.1, 8.3_
 
-- [ ] 5. (P) HTML→JSON 移行パイプライン（一度きり） — Task 3・4 と並行可（移行ツール境界 / 前提: Task 1・2）
-- [ ] 5.1 (P) 変換環境と Stage2 変換コア（frontend jsdom + generateJSON）
+- [x] 5. (P) HTML→JSON 移行パイプライン（一度きり） — Task 3・4 と並行可（移行ツール境界 / 前提: Task 1・2）
+- [x] 5.1 (P) 変換環境と Stage2 変換コア（frontend jsdom + generateJSON）
   - HTML→JSON 変換専用の devDependency を追加し、実行時バンドルへ新規外部ライブラリを増やさない
   - 共有拡張ファクトリと同一のノード定義で HTML を ProseMirror JSON へロスレス変換する
   - 空相当 HTML は空 doc へ変換、解釈不能行はエラー記録し握り潰さず継続、Memo は空 doc フォールバック（原本 HTML は退避対象）にする
   - 変換と同時に `extractPlainText` で `contentText` を生成し、id キーで冪等（再実行しても結果不変）にする
   - _Requirements: 2.1, 2.2, 2.4, 2.6, 2.7_
 
-- [ ] 5.2 (P) Stage1 / Stage3（export / import）と冪等書戻し
+- [x] 5.2 (P) Stage1 / Stage3（export / import）と冪等書戻し
   - Stage1 でメモ・ノートブックの id と本文を中間形式へエクスポートし、Notebook の NULL 本文を保持する
   - Stage3 で変換結果（`contentJson` / `contentText`）を staging 列へ id 突合で書戻し、原本 `content` は無改変に保つ
   - Notebook の解釈不能・NULL 行は変換せず NULL のまま維持する
   - 前提: staging 列（Task 2.1）
   - _Requirements: 2.5, 7.3_
 
-- [ ] 5.3 検証・dry-run・件数突合レポート
+- [x] 5.3 検証・dry-run・件数突合レポート
   - Stage2 単独で書込ゼロの dry-run（変換のみ検証）を提供する
   - 移行前後の件数突合、サンプル往復忠実度（変換→描画相当で代表構造の情報欠落ゼロ確認）、空 doc フォールバック件数を集約レポートする
   - 不整合・件数不一致・フォールバック閾値超過を検出した場合に cutover を実行せず中断できる状態（失敗 id 集約）にする
@@ -125,19 +125,19 @@
   - 前提: 5.1（変換コア）・5.2（export/import）
   - _Requirements: 2.3, 7.1, 7.2, 7.5_
 
-- [ ] 6. 統合・非回帰の検証（前提: Task 3・4・5）
-- [ ] 6.1 (P) バックエンド統合テスト（write-path・検索・last-write-wins）
+- [x] 6. 統合・非回帰の検証（前提: Task 3・4・5）
+- [x] 6.1 (P) バックエンド統合テスト（write-path・検索・last-write-wins）
   - create/update で `content`(JSONB) と `contentText` が同時永続化され、取得が JSON 値を返すことを検証する
   - `contentText` 部分一致で本文がヒットし、構造キー名で誤ヒットせず、検索エンドポイント契約が維持されることを検証する
   - `clientUpdatedAt` 比較の 409 が JSON 化後も不変であることを検証する
   - _Requirements: 4.3, 4.5, 4.6, 6.1, 6.2, 6.3, 6.4_
 
-- [ ] 6.2 (P) 移行 E2E（dry-run + import + verify + 冪等再実行）
+- [x] 6.2 (P) 移行 E2E（dry-run + import + verify + 冪等再実行）
   - dry-run→import→verify の一連を実 DB 相当で通し、件数突合と往復忠実度を検証する
   - 同一データへの再実行で結果が変わらない冪等性を検証する
   - _Requirements: 2.3, 2.7, 7.1, 7.5_
 
-- [ ] 6.3 (P) 公開ビュー・自動保存・ラウンドトリップの E2E / 非回帰
+- [x] 6.3 (P) 公開ビュー・自動保存・ラウンドトリップの E2E / 非回帰
   - 公開ビューが JSON から描画され、生 HTML 不使用・`.memo-content`/`prose`・テーマ・`rel` 属性が不変であることを検証する
   - 自動保存の 5 状態と編集停止 2 秒保存が JSON 入出力で不変であることを検証する
   - 編集→保存→再取得→描画のラウンドトリップで内容が一致することを検証する
