@@ -25,15 +25,15 @@ const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
 const domWindow = dom.window;
 // @ts-expect-error - global DOM setup for @tiptap/html browser version
 global.window = domWindow;
-// @ts-expect-error
+// @ts-expect-error - jsdom document polyfill
 global.document = domWindow.document;
-// @ts-expect-error
+// @ts-expect-error - jsdom DOMParser polyfill
 global.DOMParser = domWindow.DOMParser;
-// @ts-expect-error
+// @ts-expect-error - jsdom Element polyfill
 global.Element = domWindow.Element;
-// @ts-expect-error
+// @ts-expect-error - jsdom Node polyfill
 global.Node = domWindow.Node;
-// @ts-expect-error
+// @ts-expect-error - jsdom HTMLElement polyfill
 global.HTMLElement = domWindow.HTMLElement;
 
 // jsdom セットアップ後に動的インポート
