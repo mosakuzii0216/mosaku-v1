@@ -345,7 +345,7 @@ describe('MemoService', () => {
 					data: expect.objectContaining({
 						content: textDoc,
 						contentText: 'hello world',
-					}),
+					}) as unknown,
 				}),
 			);
 		});
@@ -361,7 +361,7 @@ describe('MemoService', () => {
 				expect.objectContaining({
 					data: expect.objectContaining({
 						contentText: '',
-					}),
+					}) as unknown,
 				}),
 			);
 		});
@@ -384,7 +384,7 @@ describe('MemoService', () => {
 					data: expect.objectContaining({
 						content: textDoc,
 						contentText: 'hello world',
-					}),
+					}) as unknown,
 				}),
 			);
 		});
@@ -396,9 +396,9 @@ describe('MemoService', () => {
 
 			await service.update('memo-1', { title: 'new title' }, 'user-1');
 
-			const updateCall = mockPrismaService.memo.update.mock.calls[0][0] as {
-				data: Record<string, unknown>;
-			};
+			const updateCall = (
+				mockPrismaService.memo.update.mock.calls as Array<[{ data: Record<string, unknown> }]>
+			)[0][0];
 			expect(updateCall.data).not.toHaveProperty('contentText');
 		});
 	});

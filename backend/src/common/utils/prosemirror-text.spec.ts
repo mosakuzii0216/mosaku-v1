@@ -1,5 +1,5 @@
 import { extractPlainText } from './prosemirror-text';
-import type { ProseMirrorDoc, ProseMirrorNode } from './prosemirror-types';
+import type { ProseMirrorDoc } from './prosemirror-types';
 
 // ゴールデンベクタ: 見出し/リスト/チェック/コード/引用/リンク/装飾の混在
 // frontend/src/utils/editor/prosemirrorText.test.ts と同一構造・同一期待値で front/back 一致を保証する

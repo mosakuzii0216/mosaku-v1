@@ -6,7 +6,10 @@
  * AppModule の Controller → Guard → Service → Repository まで通して検証する。
  */
 
-const sentryCaptureMessageMock = jest.fn();
+// captureMessage の実シグネチャ相当で型付けし、mock.calls への unsafe アクセスを防ぐ
+const sentryCaptureMessageMock = jest.fn(
+	(_message: string, _context?: Record<string, unknown>): void => undefined,
+);
 const setUserMock = jest.fn();
 const setTagMock = jest.fn();
 
@@ -226,14 +229,14 @@ describe('POST /auth/refresh, /auth/logout (e2e)', () => {
 			expect(JSON.stringify(body)).not.toMatch(/refresh_token/i);
 
 			// Sentry に refresh_token_rotated 発火
-			const events = sentryCaptureMessageMock.mock.calls.map((c) => c[0] as string);
+			const events = sentryCaptureMessageMock.mock.calls.map((c) => c[0]);
 			expect(events).toContain('refresh_token_rotated');
 
 			// markRotated (status=active → rotated) のための updateMany 呼び出しを確認
 			expect(refreshTokenUpdateMany).toHaveBeenCalledWith(
 				expect.objectContaining({
-					where: expect.objectContaining({ status: 'active' }),
-					data: expect.objectContaining({ status: 'rotated' }),
+					where: expect.objectContaining({ status: 'active' }) as unknown,
+					data: expect.objectContaining({ status: 'rotated' }) as unknown,
 				}),
 			);
 		});
@@ -296,7 +299,7 @@ describe('POST /auth/refresh, /auth/logout (e2e)', () => {
 			const child = refreshTokenStore.get(hash('child-rt'));
 			expect(child?.status).toBe('revoked');
 
-			const events = sentryCaptureMessageMock.mock.calls.map((c) => c[0] as string);
+			const events = sentryCaptureMessageMock.mock.calls.map((c) => c[0]);
 			expect(events).toContain('refresh_token_reuse_detected');
 			const reuseCall = sentryCaptureMessageMock.mock.calls.find(
 				(c) => c[0] === 'refresh_token_reuse_detected',
@@ -360,7 +363,7 @@ describe('POST /auth/refresh, /auth/logout (e2e)', () => {
 			expect(cookieHeader).toMatch(/refresh_token=;/);
 			expect(cookieHeader).toMatch(/Path=\/auth/);
 
-			const events = sentryCaptureMessageMock.mock.calls.map((c) => c[0] as string);
+			const events = sentryCaptureMessageMock.mock.calls.map((c) => c[0]);
 			expect(events).toContain('refresh_token_revoked');
 		});
 
