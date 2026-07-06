@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
+import {
+	Controller,
+	Get,
+	Post,
+	Delete,
+	Body,
+	DefaultValuePipe,
+	Param,
+	UseGuards,
+	Request,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { InvitationCode } from '@prisma/client';
 import { ConfigService } from '../config/config.service';
@@ -106,7 +116,9 @@ export class InvitationController {
 	 */
 	@Post('me')
 	async createMyInvitation(
-		@Body() dto: CreateMyInvitationDto,
+		// Content-Type なしの空 body POST では Express 5 が req.body を undefined にするため、
+		// param-level pipe（グローバル ValidationPipe の後段）で既定値の DTO に置き換える
+		@Body(new DefaultValuePipe(new CreateMyInvitationDto())) dto: CreateMyInvitationDto,
 		@Request() req: AuthenticatedRequest,
 	): Promise<InvitationWithShareUrlResponse> {
 		const actor = { id: req.user.id, role: req.user.role };
