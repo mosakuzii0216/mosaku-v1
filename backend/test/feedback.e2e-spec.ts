@@ -54,6 +54,7 @@ describe('POST /feedback (e2e)', () => {
 	let app: INestApplication<App>;
 	let userAuth: string;
 	const userFindUniqueMock = jest.fn();
+	const feedbackCreateMock = jest.fn();
 
 	beforeAll(async () => {
 		mockFetch.mockResolvedValue({ ok: true, status: 200 });
@@ -75,6 +76,9 @@ describe('POST /feedback (e2e)', () => {
 			.useValue({
 				user: {
 					findUnique: userFindUniqueMock,
+				},
+				feedback: {
+					create: feedbackCreateMock,
 				},
 				memo: {
 					findFirst: jest.fn(),
@@ -117,6 +121,7 @@ describe('POST /feedback (e2e)', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		mockFetch.mockResolvedValue({ ok: true, status: 200 });
+		feedbackCreateMock.mockResolvedValue({ id: 'feedback-1' });
 		userFindUniqueMock.mockImplementation(({ where }: { where: { id: string } }) => {
 			if (where.id === testUser.id) return Promise.resolve(testUser);
 			return Promise.resolve(null);
