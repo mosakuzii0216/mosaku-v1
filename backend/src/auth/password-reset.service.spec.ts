@@ -92,6 +92,9 @@ describe('PasswordResetService', () => {
 
 			expect(typeof resetPasswordToken).toBe('string');
 			expect(resetPasswordToken).toHaveLength(64); // sha256 hex = 64 chars
+			if (!(resetPasswordExpires instanceof Date)) {
+				throw new Error('resetPasswordExpires は Date で保存される必要がある');
+			}
 			expect(resetPasswordExpires.getTime()).toBeGreaterThanOrEqual(before + 3_600_000 - 50);
 			expect(resetPasswordExpires.getTime()).toBeLessThanOrEqual(after + 3_600_000 + 50);
 		});
