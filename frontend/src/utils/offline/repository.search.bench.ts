@@ -9,6 +9,7 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { deleteDB } from 'idb';
+import type { JSONContent } from '@tiptap/react';
 
 import { OFFLINE_DB_NAME, openOfflineDb, type OfflineDB } from './db';
 import { OfflineMemoRepository, type ServerMemoSnapshot } from './repository';
@@ -19,6 +20,10 @@ const ITERATIONS = 10;
 const TARGET_MS = 300;
 const HARD_LIMIT_MS = 500;
 
+function docFromText(text: string): JSONContent {
+	return { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] };
+}
+
 function buildSnapshots(): ServerMemoSnapshot[] {
 	const snapshots: ServerMemoSnapshot[] = [];
 	for (let i = 0; i < MEMO_COUNT; i++) {
@@ -27,7 +32,7 @@ function buildSnapshots(): ServerMemoSnapshot[] {
 		snapshots.push({
 			id: `memo-${i.toString().padStart(4, '0')}`,
 			title: `Bench Memo ${i}`,
-			content: `<p>${filler} keyword-bench-${i % 7}</p>`,
+			content: docFromText(`${filler} keyword-bench-${i % 7}`),
 			tagIds: [],
 			notebookId: null,
 			createdAt: new Date(2026, 0, 1 + (i % 28)).toISOString(),

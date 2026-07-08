@@ -1,3 +1,5 @@
+import type { JSONContent } from '@tiptap/react';
+
 import type { ServerMemoSnapshot } from '../offline/repository';
 
 export type SkippedByLwwEntry = { memoId: string; title: string };
@@ -22,7 +24,7 @@ export type SyncEvent =
 
 export interface MemoSyncUpdatePayload {
 	title?: string;
-	content?: string;
+	content?: JSONContent;
 	notebookId?: string | null;
 	clientUpdatedAt: string;
 }

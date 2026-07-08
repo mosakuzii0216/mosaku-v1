@@ -128,7 +128,7 @@ export class MemoBridge {
 			id,
 			userId: existing?.userId ?? this.requireUserIdFromRecord(existing),
 			title: data.title ?? existing?.title ?? '',
-			content: data.content ?? existing?.content ?? '',
+			content: data.content ?? existing?.content ?? createEmptyDoc(),
 			searchableText: extractPlainText(data.content ?? existing?.content ?? createEmptyDoc()),
 			tagIds: existing?.tagIds ?? [],
 			notebookId: data.notebookId !== undefined ? data.notebookId : (existing?.notebookId ?? null),

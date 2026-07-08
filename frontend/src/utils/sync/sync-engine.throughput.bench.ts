@@ -8,9 +8,11 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { deleteDB } from 'idb';
+import type { JSONContent } from '@tiptap/react';
 
 import { OFFLINE_DB_NAME, openOfflineDb, type OfflineDB } from '../offline/db';
 import { OfflineMemoRepository, type ServerMemoSnapshot } from '../offline/repository';
+import { createEmptyDoc } from '../editor/prosemirrorText';
 
 import { createSyncEngine } from './sync-engine';
 import type { LeaderElection } from './leader-election';
@@ -22,13 +24,17 @@ const PENDING_COUNT = 50;
 const TARGET_MS = 30_000;
 const HARD_LIMIT_MS = 60_000;
 
+function docFromText(text: string): JSONContent {
+	return { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] };
+}
+
 function buildCachedSnapshots(): ServerMemoSnapshot[] {
 	const snapshots: ServerMemoSnapshot[] = [];
 	for (let i = 0; i < CACHED_COUNT; i++) {
 		snapshots.push({
 			id: `memo-${i.toString().padStart(4, '0')}`,
 			title: `Bench Memo ${i}`,
-			content: `<p>content ${i}</p>`,
+			content: docFromText(`content ${i}`),
 			tagIds: [],
 			notebookId: null,
 			createdAt: '2026-04-01T00:00:00.000Z',
@@ -65,7 +71,7 @@ function makeApiSpy(): { api: MemoSyncApi; calls: number } & { close: () => void
 			return {
 				id,
 				title: data.title ?? '',
-				content: data.content ?? '',
+				content: data.content ?? createEmptyDoc(),
 				tagIds: [],
 				notebookId: data.notebookId ?? null,
 				createdAt: '2026-04-01T00:00:00.000Z',
@@ -78,7 +84,7 @@ function makeApiSpy(): { api: MemoSyncApi; calls: number } & { close: () => void
 			return {
 				id,
 				title: '',
-				content: '',
+				content: createEmptyDoc(),
 				tagIds: [],
 				notebookId: null,
 				createdAt: '2026-04-01T00:00:00.000Z',
@@ -91,7 +97,7 @@ function makeApiSpy(): { api: MemoSyncApi; calls: number } & { close: () => void
 			return {
 				id,
 				title: '',
-				content: '',
+				content: createEmptyDoc(),
 				tagIds: [],
 				notebookId: null,
 				createdAt: '2026-04-01T00:00:00.000Z',
@@ -139,7 +145,7 @@ describe('SyncEngine drain throughput (Requirement 6.4)', () => {
 			await repo.enqueueOperation({
 				memoId: `memo-${i.toString().padStart(4, '0')}`,
 				kind: 'update',
-				patch: { title: `Bench Memo ${i} (updated)`, content: `<p>updated ${i}</p>` },
+				patch: { title: `Bench Memo ${i} (updated)`, content: docFromText(`updated ${i}`) },
 				clientUpdatedAt: new Date().toISOString(),
 				enqueuedAt: new Date().toISOString(),
 				retryCount: 0,
