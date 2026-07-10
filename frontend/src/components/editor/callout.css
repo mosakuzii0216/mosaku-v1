@@ -1,0 +1,68 @@
+/*
+ * コールアウト（枠付き強調ブロック）の CSS。
+ *
+ * アイコン/配色は `[data-callout]`（デフォルト＝ポイント）と `[data-variant]`（種別上書き）の
+ * 属性セレクタで解決する。未知 variant は data-variant の値に一致するルールが無いため、
+ * 既定ルール（ポイント配色・💡アイコン）へ自然にフォールバックする（前方互換・Req1.2）。
+ * セレクタは既存 codeHighlight.css と同様にエディタ（.rich-text-editor）と
+ * 公開表示（.public-memo-renderer）のスコープに限定し、グローバルへは漏らさない。
+ *
+ * Tailwind Typography（prose）は `:where()` で本文要素の文字色を上書きするため、本文の
+ * color を明示的に継承させ AA コントラスト（Req1.7）を担保する。
+ */
+
+.rich-text-editor [data-callout],
+.public-memo-renderer [data-callout] {
+	position: relative;
+	margin: 1rem 0;
+	padding: 0.75rem 1rem 0.75rem 2.75rem;
+	border-radius: 0.5rem;
+	background: var(--editor-callout-point-bg);
+	color: var(--editor-callout-point-on);
+}
+
+.rich-text-editor [data-callout]::before,
+.public-memo-renderer [data-callout]::before {
+	content: '💡';
+	position: absolute;
+	left: 0.75rem;
+	top: 0.75rem;
+	font-size: 1.1em;
+	line-height: 1.5;
+}
+
+.rich-text-editor [data-callout][data-variant='warning'],
+.public-memo-renderer [data-callout][data-variant='warning'] {
+	background: var(--editor-callout-warning-bg);
+	color: var(--editor-callout-warning-on);
+}
+
+.rich-text-editor [data-callout][data-variant='warning']::before,
+.public-memo-renderer [data-callout][data-variant='warning']::before {
+	content: '⚠️';
+}
+
+.rich-text-editor [data-callout] .callout-node__content,
+.rich-text-editor [data-callout] .callout-node__content *,
+.public-memo-renderer [data-callout] .callout-node__content,
+.public-memo-renderer [data-callout] .callout-node__content * {
+	color: inherit;
+}
+
+.rich-text-editor [data-callout] .callout-node__content > :first-child,
+.public-memo-renderer [data-callout] .callout-node__content > :first-child {
+	margin-top: 0;
+}
+
+.rich-text-editor [data-callout] .callout-node__content > :last-child,
+.public-memo-renderer [data-callout] .callout-node__content > :last-child {
+	margin-bottom: 0;
+}
+
+.rich-text-editor [data-callout] .callout-node__toolbar {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin-bottom: 0.5rem;
+	font-size: 0.8125rem;
+}

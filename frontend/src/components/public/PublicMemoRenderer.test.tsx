@@ -58,14 +58,23 @@ describe('PublicMemoRenderer', () => {
 		expect(lastCall.extensions).toEqual(['ext']);
 	});
 
-	it('既存の表示属性（pointer-events-none select-text）を維持する', () => {
+	it('pointer-events-none を持たない（トグル開閉・リンク遷移を可能にするため。編集拒否は editable:false に一本化。Req4.4/4.5/6.4）', () => {
 		render(React.createElement(PublicMemoRenderer, { content: TEXT_DOC }));
 
 		const lastCall = mockUseEditor.mock.calls[mockUseEditor.mock.calls.length - 1][0] as {
 			editorProps: { attributes: { class: string } };
 		};
 		const className = lastCall.editorProps.attributes.class;
-		expect(className).toContain('pointer-events-none');
+		expect(className).not.toContain('pointer-events-none');
+	});
+
+	it('テキスト選択（select-text）は維持する', () => {
+		render(React.createElement(PublicMemoRenderer, { content: TEXT_DOC }));
+
+		const lastCall = mockUseEditor.mock.calls[mockUseEditor.mock.calls.length - 1][0] as {
+			editorProps: { attributes: { class: string } };
+		};
+		const className = lastCall.editorProps.attributes.class;
 		expect(className).toContain('select-text');
 	});
 

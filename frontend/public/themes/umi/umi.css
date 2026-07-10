@@ -33,6 +33,14 @@
 	overflow: hidden;
 	/* 潮の満ち引き：グラデーションがゆっくり上下に流れる */
 	animation: tide-drift 16s ease-in-out infinite;
+
+	/* editor セマンティックパレット（rich-editor-blocks Task 2.3）: テキスト色のみ本文グラデ
+	   （--theme-bg）の両端 #001e3c に対して AA(4.5:1) を満たす実値へ上書きする。マーカー/
+	   コールアウトは不透明な自己完結ペアのため tokens.css :root の既定値をそのまま継承する。 */
+	--editor-text-wakaba: #39c651;
+	--editor-text-sora: #2890d9;
+	--editor-text-kohaku: #df8f20;
+	--editor-text-sumire: #b26dd5;
 }
 
 /* 2. 大気レイヤー（mori の霧 → 海版）

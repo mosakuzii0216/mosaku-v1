@@ -18,5 +18,9 @@
 		"test": "npm run -w backend test && npm run -w backend test:e2e && npm run -w backend test:cov && npm run -w frontend --if-present test",
 		"dev": "npm run -w backend start:dev & npm run -w frontend dev",
 		"setup-hooks": "cp scripts/pre-commit.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit && cp scripts/pre-push.sh .git/hooks/pre-push && chmod +x .git/hooks/pre-push"
+	},
+	"overrides": {
+		"@tiptap/core": "3.23.4",
+		"@tiptap/pm": "3.23.4"
 	}
 }

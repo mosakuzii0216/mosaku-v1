@@ -82,6 +82,31 @@
 	--shell-text-xl: 1.75rem;
 	--shell-line-height: 1.6;
 	--shell-letter-spacing: 0;
+
+	/* --- editor セマンティックパレット（rich-editor-blocks Task 2.3）中立既定値。
+	       公開ビュー（data-theme 非適用）の主経路と、Req2.9 のフォールバックを兼ねる。
+	       各 public/themes/{mori,umi,yoru,asa}/*.css の .theme-root がテキスト色のみ
+	       テーマ本文グラデ背景に合わせて上書きする（マーカー/コールアウトは不透明な
+	       自己完結ペアのためテーマ非依存＝ここでの既定値がそのまま継承される）。
+	       値は editorPalette.contrast.test.ts が全テーマ×白地で AA(4.5:1) を機械検証する。 --- */
+	--editor-text-wakaba: #258034; /* 若葉 */
+	--editor-text-sora: #1f75b2; /* 空 */
+	--editor-text-kohaku: #9c6416; /* 琥珀 */
+	--editor-text-sumire: #9739c6; /* 菫 */
+
+	--editor-marker-kiiro: #f9e994; /* 黄 */
+	--editor-marker-on-kiiro: #524714;
+	--editor-marker-midori: #90df9d; /* 緑 */
+	--editor-marker-on-midori: #174f20;
+	--editor-marker-momo: #f4afc6; /* 桃 */
+	--editor-marker-on-momo: #521429;
+	--editor-marker-mizu: #a2d9eb; /* 水 */
+	--editor-marker-on-mizu: #144252;
+
+	--editor-callout-point-bg: #2a526f; /* 💡ポイント */
+	--editor-callout-point-on: #f0f3f5;
+	--editor-callout-warning-bg: #6f4e20; /* ⚠️注意 */
+	--editor-callout-warning-on: #f5f3f0;
 }
 
 /*

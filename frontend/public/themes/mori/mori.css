@@ -28,6 +28,14 @@
 	font-family: var(--theme-font-family);
 	font-size: var(--theme-font-size);
 	line-height: var(--theme-line-height);
+
+	/* editor セマンティックパレット（rich-editor-blocks Task 2.3）: テキスト色のみ本文グラデ
+	   （--theme-bg）の両端 #00552e に対して AA(4.5:1) を満たす実値へ上書きする。マーカー/
+	   コールアウトは不透明な自己完結ペアのため tokens.css :root の既定値をそのまま継承する。 */
+	--editor-text-wakaba: #63d275;
+	--editor-text-sora: #8ac2ea;
+	--editor-text-kohaku: #e9b163;
+	--editor-text-sumire: #d4aee7;
 }
 
 /* 3. メモタイトル

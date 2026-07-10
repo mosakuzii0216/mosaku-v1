@@ -10,10 +10,14 @@ function extensionNames(options: Parameters<typeof createEditorExtensions>[0]): 
 	return names;
 }
 
-/** Placeholder / SlashCommand を除いた「ノード定義集合」を返す（往復一致の検証用） */
+/**
+ * Placeholder / SlashCommand / TrailingNode を除いた「ノード定義集合」を返す（往復一致の検証用）。
+ * 3つとも editable による意図的な出し分け対象の UX 専用拡張（ノード/マークではなく HTML 往復に
+ * 現れない）であり、公開ビューでは TrailingNode を無効化する（Task 1.2: Req6.4 対応）。
+ */
 function nodeDefinitionNames(options: Parameters<typeof createEditorExtensions>[0]): string[] {
 	return extensionNames(options)
-		.filter((name) => name !== 'placeholder' && name !== 'slashCommand')
+		.filter((name) => name !== 'placeholder' && name !== 'slashCommand' && name !== 'trailingNode')
 		.sort();
 }
 
@@ -43,6 +47,65 @@ describe('createEditorExtensions', () => {
 				expect(names).toContain('link');
 				expect(names).toContain('horizontalRule');
 			}
+		});
+
+		it('編集・公開ともにトグル（details/detailsSummary/detailsContent）を editable 非依存で含む（Task 1.2 spike の仮登録）', () => {
+			for (const editable of [true, false]) {
+				const names = extensionNames({ editable, placeholder: 'x', slash: dummySlash });
+				expect(names).toContain('details');
+				expect(names).toContain('detailsSummary');
+				expect(names).toContain('detailsContent');
+			}
+		});
+
+		it('編集・公開ともにテキスト色・マーカー（textStyle/highlight）を editable 非依存で含む（Task 3.1/3.2）', () => {
+			for (const editable of [true, false]) {
+				const names = extensionNames({ editable, placeholder: 'x', slash: dummySlash });
+				expect(names).toContain('textStyle');
+				expect(names).toContain('highlight');
+			}
+		});
+
+		it('編集・公開ともにコールアウト（callout）を editable 非依存で含む（Task 4.1）', () => {
+			for (const editable of [true, false]) {
+				const names = extensionNames({ editable, placeholder: 'x', slash: dummySlash });
+				expect(names).toContain('callout');
+			}
+		});
+
+		it('編集・公開ともに表（table/tableRow/tableHeader/tableCell）を editable 非依存で含む（Task 5）', () => {
+			for (const editable of [true, false]) {
+				const names = extensionNames({ editable, placeholder: 'x', slash: dummySlash });
+				expect(names).toContain('table');
+				expect(names).toContain('tableRow');
+				expect(names).toContain('tableHeader');
+				expect(names).toContain('tableCell');
+			}
+		});
+
+		it('table は resizable:false・renderWrapper:true で登録されている（Req3.6 の横スクロール前提）', () => {
+			const editor = new Editor({
+				extensions: createEditorExtensions({ editable: true, placeholder: 'x' }),
+			});
+			const table = editor.extensionManager.extensions.find((e) => e.name === 'table');
+			editor.destroy();
+			expect(table?.options.resizable).toBe(false);
+			expect(table?.options.renderWrapper).toBe(true);
+		});
+
+		it('公式 Color/BackgroundColor サブ拡張は登録しない（Req2.5: hex 非保存を構造的に担保）', () => {
+			const names = extensionNames({ editable: true, placeholder: 'x', slash: dummySlash });
+			expect(names).not.toContain('color');
+			expect(names).not.toContain('backgroundColor');
+		});
+
+		it('Details は persist:false（既定）で登録されている（公開ビュー開閉の前提）', () => {
+			const editor = new Editor({
+				extensions: createEditorExtensions({ editable: true, placeholder: 'x' }),
+			});
+			const details = editor.extensionManager.extensions.find((e) => e.name === 'details');
+			editor.destroy();
+			expect(details?.options.persist).toBe(false);
 		});
 
 		it('codeBlock は Lowlight 版（lowlight インスタンス保持）へ差し替わっている', () => {

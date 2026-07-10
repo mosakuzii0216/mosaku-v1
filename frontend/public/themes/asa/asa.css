@@ -33,6 +33,15 @@
 	overflow: hidden;
 	/* 朝の光がゆっくり満ちていく */
 	animation: dawn-glow 20s ease-in-out infinite;
+
+	/* editor セマンティックパレット（rich-editor-blocks Task 2.3）: テキスト色のみ本文グラデ
+	   （--theme-bg）の両端 #fff5ec に対して AA(4.5:1) を満たす実値へ上書きする（唯一の明テーマ
+	   のため他3テーマと逆に暗色）。マーカー/コールアウトは不透明な自己完結ペアのため
+	   tokens.css :root の既定値をそのまま継承する。 */
+	--editor-text-wakaba: #237931;
+	--editor-text-sora: #1e6fa9;
+	--editor-text-kohaku: #935f15;
+	--editor-text-sumire: #9739c6;
 }
 
 /* 2. 大気＝朝日（mori の霧 / umi の光線 / yoru の星 → 朝版）

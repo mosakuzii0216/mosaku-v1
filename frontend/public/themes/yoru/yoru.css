@@ -33,6 +33,14 @@
 	overflow: hidden;
 	/* 夜がゆっくり巡る（静寂なのでごく緩やかに） */
 	animation: night-drift 30s ease-in-out infinite;
+
+	/* editor セマンティックパレット（rich-editor-blocks Task 2.3）: テキスト色のみ本文グラデ
+	   （--theme-bg）の両端 #05080f に対して AA(4.5:1) を満たす実値へ上書きする。マーカー/
+	   コールアウトは不透明な自己完結ペアのため tokens.css :root の既定値をそのまま継承する。 */
+	--editor-text-wakaba: #39c651;
+	--editor-text-sora: #268ed9;
+	--editor-text-kohaku: #df8f20;
+	--editor-text-sumire: #aa5dd0;
 }
 
 /* 2. 大気＝星（mori の霧 / umi の光線 → 夜版）

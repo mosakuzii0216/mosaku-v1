@@ -1,0 +1,20 @@
+/*
+ * 表（TableKit）の CSS。
+ *
+ * `renderWrapper:true` により renderHTML が editable に依らず常に `.tableWrapper` で
+ * 表を包む（resizable:false のため列リサイズ用 NodeView は使用しない＝編集・公開の
+ * renderHTML 経路が一致する）。表の幅が表示領域を超えても `.tableWrapper` の横スクロール
+ * のみでページ全体のレイアウトを崩さず全列へアクセスできるようにする（Req3.6）。
+ * セレクタは既存 codeHighlight.css / callout.css と同様にエディタ（.rich-text-editor）と
+ * 公開表示（.public-memo-renderer）のスコープに限定し、グローバルへは漏らさない。
+ */
+
+.rich-text-editor .tableWrapper,
+.public-memo-renderer .tableWrapper {
+	overflow-x: auto;
+}
+
+.rich-text-editor .tableWrapper table,
+.public-memo-renderer .tableWrapper table {
+	width: 100%;
+}

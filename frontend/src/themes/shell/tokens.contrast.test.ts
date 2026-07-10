@@ -1,6 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it, expect } from 'vitest';
+import {
+	type RGBA,
+	stripComments,
+	findBlock,
+	extractVar,
+	parseColor,
+	compositeOver,
+	contrastRatio,
+} from '../contrast';
 
 /*
  * tokens.contrast.test.ts — 森トークンのコントラスト AA 機械検証（正しさの定義 / RED→GREEN）
@@ -27,102 +36,6 @@ const css = readFileSync(CSS_PATH, 'utf-8');
 
 const BODY_AA = 4.5; // WCAG 1.4.3 本文
 const NON_TEXT_AA = 3.0; // WCAG 1.4.11 非テキスト（フォーカスリング等）
-
-// ---- CSS パースユーティリティ -------------------------------------------------
-
-function stripComments(input: string): string {
-	return input.replace(/\/\*[\s\S]*?\*\//g, '');
-}
-
-/** ブレースの深さを数えて、ヘッダーにマッチするトップレベルブロックを丸ごと取り出す */
-function findBlock(input: string, headerPattern: RegExp): string | null {
-	const match = input.match(headerPattern);
-	if (!match || match.index === undefined) return null;
-	const braceStart = input.indexOf('{', match.index);
-	if (braceStart === -1) return null;
-	let depth = 0;
-	for (let i = braceStart; i < input.length; i++) {
-		if (input[i] === '{') depth += 1;
-		else if (input[i] === '}') {
-			depth -= 1;
-			if (depth === 0) return input.slice(braceStart + 1, i);
-		}
-	}
-	return null;
-}
-
-function extractVar(block: string, name: string): string | null {
-	const m = block.match(new RegExp(`${name}\\s*:\\s*([^;]+);`));
-	return m ? m[1].trim() : null;
-}
-
-// ---- 色・コントラスト計算（WCAG 2.1） ----------------------------------------
-
-interface RGBA {
-	r: number;
-	g: number;
-	b: number;
-	a: number;
-}
-
-function parseColor(input: string): RGBA {
-	const s = input.trim();
-
-	const hex = s.match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
-	if (hex) {
-		let h = hex[1];
-		if (h.length === 3)
-			h = h
-				.split('')
-				.map((c) => c + c)
-				.join('');
-		return {
-			r: parseInt(h.slice(0, 2), 16),
-			g: parseInt(h.slice(2, 4), 16),
-			b: parseInt(h.slice(4, 6), 16),
-			a: 1,
-		};
-	}
-
-	// rgb() / rgba()。カンマ区切り・スペース/スラッシュ区切りの両方を許容
-	const rgb = s.match(/^rgba?\(([^)]+)\)$/);
-	if (rgb) {
-		const parts = rgb[1]
-			.split(/[,/\s]+/)
-			.map((p) => p.trim())
-			.filter(Boolean);
-		const [r, g, b, a] = parts;
-		return { r: Number(r), g: Number(g), b: Number(b), a: a === undefined ? 1 : Number(a) };
-	}
-
-	throw new Error(`parseColor: 認識できない色 "${input}"`);
-}
-
-/** 半透明 fg を不透明な床 bg の上に合成して不透明色にする */
-function compositeOver(fg: RGBA, bg: RGBA): RGBA {
-	const a = fg.a;
-	return {
-		r: a * fg.r + (1 - a) * bg.r,
-		g: a * fg.g + (1 - a) * bg.g,
-		b: a * fg.b + (1 - a) * bg.b,
-		a: 1,
-	};
-}
-
-function relativeLuminance({ r, g, b }: RGBA): number {
-	const lin = (c: number): number => {
-		const v = c / 255;
-		return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-	};
-	return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-}
-
-function contrastRatio(c1: RGBA, c2: RGBA): number {
-	const l1 = relativeLuminance(c1);
-	const l2 = relativeLuminance(c2);
-	const [hi, lo] = l1 >= l2 ? [l1, l2] : [l2, l1];
-	return (hi + 0.05) / (lo + 0.05);
-}
 
 // ---- 森トークンの読み出し（mori 値未実装なら RED） ----------------------------
 
@@ -209,26 +122,4 @@ describe('tokens.contrast — mori surface×on-surface の WCAG AA（両端合�
 	});
 });
 
-// ---- 計算ユーティリティ自体のセルフテスト（既知値で固定し、テストの正しさを担保） ----
-
-describe('コントラスト計算ユーティリティの自己検証（既知値）', () => {
-	it('黒×白は 21:1', () => {
-		const ratio = contrastRatio({ r: 0, g: 0, b: 0, a: 1 }, { r: 255, g: 255, b: 255, a: 1 });
-		expect(ratio).toBeCloseTo(21, 1);
-	});
-
-	it('同色は 1:1', () => {
-		const c: RGBA = { r: 134, g: 239, b: 172, a: 1 };
-		expect(contrastRatio(c, c)).toBeCloseTo(1, 5);
-	});
-
-	it('半透明（alpha=0）合成は床の色そのものになる', () => {
-		const composited = compositeOver({ r: 0, g: 0, b: 0, a: 0 }, { r: 255, g: 255, b: 255, a: 1 });
-		expect(composited).toEqual({ r: 255, g: 255, b: 255, a: 1 });
-	});
-
-	it('#ffffff は #767676（WCAG 既知の境界グレー）に対して約 4.54:1', () => {
-		const ratio = contrastRatio({ r: 255, g: 255, b: 255, a: 1 }, { r: 118, g: 118, b: 118, a: 1 });
-		expect(ratio).toBeCloseTo(4.54, 1);
-	});
-});
+// ---- 計算ユーティリティ自体のセルフテストは ../contrast.test.ts へ抽出済み（Task 2.1・重複排除） ----
