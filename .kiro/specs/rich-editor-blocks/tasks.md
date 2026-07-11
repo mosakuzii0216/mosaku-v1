@@ -86,60 +86,74 @@
   - `table.css` を新規作成し `.rich-text-editor .tableWrapper` / `.public-memo-renderer .tableWrapper` へ `overflow-x:auto` を付与、`createEditorExtensions.ts` から import して単一情報源に閉じた
   - _Requirements: 3.1, 3.2, 3.5, 3.6, 6.1_
 
-- [ ] 6. トグル（Details）の挿入とサマリー/本文の編集
+- [x] 6. トグル（Details）の挿入とサマリー/本文の編集
   - Task 1.2 で確定した persist 方式（既定 persist=false、不成立時は待避契約）で Details を単一情報源へ本登録する
   - スラッシュ確定時に開いた状態でトグルを挿入する
   - サマリー行（inline）のテキスト編集と、本文領域（block+）への複数ブロック（段落・リスト等）の配置を許可する
   - 開閉操作で本文領域の表示/非表示を切り替え、閉じているときはサマリー行のみを表示する（本文ノードは開閉に依らず常に doc content に存在させる）
+  - **実装時判明**: persist:false のため「開いた状態」は doc 属性ではなく NodeView の view-state（`is-open` クラス・`detailsContent` の `hidden` 属性）のみで表現される。公式 `setDetails` コマンドは常に「閉」で挿入するため、`./Details.ts`（`@tiptap/extension-details` の `Details` を extend）に `insertOpenDetails` コマンドを追加し、挿入直後にトグルボタンをプログラム的にクリックして view-state を開状態へ揃えた。挿入は `editor.commands.setDetails()` を即時 dispatch で呼ぶことで view の再描画（NodeView DOM 生成）を同期的に確定させてからボタンを探索・クリックする方式とし、outer トランザクションとの二重 dispatch 衝突（`Applying a mismatched transaction`）は `tr.setMeta('preventDispatch', true)` で回避した。この実装上の制約により `insertOpenDetails` は単体呼び出し専用（より大きな `chain()` に連結すると他コマンド分の変更が揉み消される）
+  - サマリー/本文の編集許可・本文の複数ブロック配置・開閉時の本文常在（Req7.4 の検索抽出前提）は公式スキーマ（`detailsSummary: content 'text*'` / `detailsContent: content 'block+'`）がそのまま満たすため追加実装不要。ユニットテストで固定
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 6.1_
 
-- [ ] 7. スラッシュコマンド統合
-- [ ] 7.1 スラッシュコマンドへの5項目追加
+- [x] 7. スラッシュコマンド統合
+- [x] 7.1 スラッシュコマンドへの5項目追加
   - 「コールアウト」「表」「トグル」を挿入コマンドとして追加する（コールアウト/トグルは開いた状態・表はヘッダー行付き）
   - 「テキスト色」「マーカー」は doc を変更せず palette モードへ遷移するトリガーとして追加する（run は no-op、遷移は render 層）
   - 各項目に日本語名・英語別名・読みの keywords を付与し、確定時に `/` とクエリ文字列を削除する（Undo は ProseMirror history が提供）
   - 既存のブロック挿入9コマンドとノートブック参照の挙動を変更しない
+  - **実装時判明**: `insertOpenDetails`（Task 6・`Details.ts`）は `editor.commands.setDetails()` を即時 dispatch する単体呼び出し専用コマンドのため `editor.chain().deleteRange(range).insertOpenDetails()` のようにチェーン連結すると range 削除が握り潰される。そのため「トグル」項目の `run` は `editor.chain().focus().deleteRange(range).run()` → `editor.commands.insertOpenDetails()` の2回の独立 dispatch に分けた。ProseMirror history の既定グループ化（`newGroupDelay`）により連続する dispatch は1回の Undo にまとまることを実 Editor で検証済み（Req5.5 は維持）
   - _Requirements: 5.1, 5.2, 5.4, 5.5, 5.6_
 
-- [ ] 7.2 色サブメニュー（palette モード）の実装
+- [x] 7.2 色サブメニュー（palette モード）の実装
   - スラッシュのモードに `palette` を追加し、セマンティック色スウォッチを列挙する（既存 notebook サブメニューと同型・doc にモードを持たせない）
   - 確定でクエリ範囲を削除し stored mark を有効化して、以降入力するテキストへ色/マーカーを適用する
   - 「戻る」/ Escape / クエリ空で root モードへ復帰する
   - 前段 Task 3（セマンティックマーク）に依存する
+  - **実装時判明**: `SemanticTextColor`/`SemanticMarker` が内部で使う `@tiptap/core` の `setMark` コマンドは、選択が空（deleteRange 後のカーソルのみ）のとき自動的に `tr.addStoredMark()`（以降入力するテキストへのみ適用される保留マーク）を使う実装のため、palette 確定の `run` は特別な分岐なく `deleteRange(range).setTextColor(name)`/`setMarker(name)` を単一チェーンで呼ぶだけで Req5.3 の「以降の入力テキストへ適用」を満たす。`suggestion.ts` の `ReactRenderer` はスタンドアロン Editor（`EditorContent` 未マウント）では `contentComponent` 不在のため実際には DOM 描画されない制約があり、`EditorContent` 経由でマウントした最小ハーネス＋`editor.commands.insertContent('/')`（実キー入力の jsdom シミュレーションは ProseMirror の contentEditable 処理を再現できないため代替）で `suggestion.test.tsx` として統合テストを追加した
   - _Requirements: 5.3_
 
-- [ ] 8. バブルメニュー（選択範囲への色適用と文脈操作）
+- [x] 8. バブルメニュー（選択範囲への色適用と文脈操作）
   - 既存 `@tiptap/react` のメニュー機構で選択時バブルメニューを実装し、`editable=true` の編集面にのみマウントする（公開ビューには載せない・新規 JS ライブラリを追加しない）
   - テキスト選択時: セマンティック色/マーカーのスウォッチと「デフォルトに戻す」を表示し、選択範囲へ適用/除去を実行する
   - キャレットが表内: 行の追加/削除・列の追加/削除・表全体削除を提示する
   - キャレットがコールアウト内: 種別変更を補助表示する（NodeView 内蔵と併存）
   - `editor.can()` で不能コマンドを無効化し、doc に UI 状態を持たせない（表示は選択/キャレット文脈から純粋導出）
   - 前段 Task 3（マーク）・5（表）・4（コールアウト）に依存する
+  - **実装時判明**: `@tiptap/react/menus` の `BubbleMenu` は `@tiptap/extension-bubble-menu`/`-floating-menu`（`@floating-ui/dom` 経由）を内部依存として使うが、いずれも `@tiptap/react` の既存 peer 経由で node_modules に解決済みのため `package.json` への新規追加は不要だった（設計の「新規 JS ライブラリ追加なし」を維持）
+  - `shouldShow` を「選択が非空、または `editor.isActive('table')`/`editor.isActive('callout')`」の純関数として実装し、doc/フォーカス状態に依存させず選択・キャレット文脈のみから表示可否を導出した
+  - テキスト色/マーカーのスウォッチ一覧（`TEXT_COLOR_SWATCHES`/`MARKER_SWATCHES`）は Task 7.2（`slashCommandItems.ts` の palette モード）と本タスクの二重定義になっていたため `./semanticPalette.ts` へ抽出し、両ファイルが単一情報源を参照するようリファクタした
+  - **実装時判明**: jsdom の `Range` は `getClientRects`/`getBoundingClientRect` を実装しないため、`BubbleMenu` の floating-ui 位置計算（ProseMirror `coordsAtPos` 経由）がテスト実行時に例外を投げる。`RichTextEditor` をマウントする既存テスト（`CalloutView.test.tsx` 等）にも波及するため、個別テストへスタブを書く代わりに `frontend/src/test/setup.ts` を新設し `vitest.config.ts` の `setupFiles` へ登録して一括解消した（本番コードには影響しない）
+  - 「デフォルトに戻す」は `unsetTextColor()`＋`unsetMarker()` を1チェーンで実行し、テキスト色・マーカーの両方を既定へ戻す単一ボタンとした
+  - ユニット/統合テスト（`EditorBubbleMenu.test.tsx`）: 選択なし・表/コールアウト外では非表示、テキスト選択時のスウォッチ表示・選択範囲への適用・「デフォルトに戻す」での除去、表内でのRow/Column/Table操作、コールアウト内での種別変更（本文保持）、`editable:false` では非表示、を固定
   - _Requirements: 2.1, 2.2, 2.4, 3.3, 3.4_
 
-- [ ] 9. 往復一致・検索抽出・オフライン・非回帰の担保テスト
-- [ ] 9.1 (P) 往復一致とマーク共存の統合テスト
+- [x] 9. 往復一致・検索抽出・オフライン・非回帰の担保テスト
+- [x] 9.1 (P) 往復一致とマーク共存の統合テスト
   - `saveRoundTrip` 系を拡張し、4機能を含む複合 doc が 編集↔公開↔再読込 で構造等価に復元されることを固定する
   - テキスト色＋マーカー＋既存装飾（太字）を同一テキストへ同時適用した際の JSON 構造と復元を固定する
   - JSON にセマンティック名のみが現れ hex/rgb が混入しないこと、既存 TaskList・コードブロックの往復が非回帰であることを固定する
   - Task 1〜8 完了を前提とし、各サブタスクは別テストファイルのため相互に並行可
+  - **実装時判明**: `saveRoundTrip.test.ts` へ callout/table/details＋textStyle/highlight/bold 複合の `RICH_DOC` を追加。既存の単一情報源（`createEditorExtensions`）実装のみで往復一致が成立し、プロダクションコード変更は不要だった。トグルは persist:false のため往復後も `details` ノードに `attrs` を持たず、`detailsContent` が常に content に残ることも合わせて固定
   - _Requirements: 2.5, 6.1, 6.2, 6.3_
 
-- [ ] 9.2 (P) 検索テキスト抽出の追随担保（フロントエンド/バックエンド）
+- [x] 9.2 (P) 検索テキスト抽出の追随担保（フロントエンド/バックエンド）
   - フロントエンドとバックエンドのテキスト抽出が、コールアウト本文・表セル・トグルのサマリー/本文のテキストを平文抽出結果に含めることをテストで固定する
   - 閉じた状態で保存されたトグルの本文テキストも抽出対象に含まれることを固定する
   - テキスト色/マーカー適用済みテキストが通常テキストと同様に抽出されることを固定する
   - 表示テキストが必ずノード content に置かれ属性側に表示テキストを持たないこと（抽出漏れ回避）を固定する
+  - **実装時判明**: `prosemirrorText.ts`（FE）/`prosemirror-text.ts`（BE）は既存の content 再帰実装のまま4機能ノードへ自動追随するため、両ファイルへ実装変更は不要でテスト追加のみで GREEN になった。「閉じたトグル」は persist:false のため doc に開閉状態を持たず、`detailsContent` が常に content に存在する doc 自体がその表現であることをテストコメントで明記
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6_
 
-- [ ] 9.3 (P) オフライン層の追随担保
+- [x] 9.3 (P) オフライン層の追随担保
   - オフライン状態で4機能を含むメモを編集した際に本文 JSON が欠損なくローカル保存され、接続回復時に欠損なく同期されることを固定する
   - オフライン検索の対象テキストに4機能のノード内テキストが含まれることを固定する
   - オフライン保存されたメモの再表示で4機能が編集時と同一構造に復元されることを固定する
+  - **実装時判明**: `repository.ts` は content を JSON パススルーで保存し、`searchableText` は呼び出し側が `extractPlainText`（Task 9.2 で4機能への追随を固定済み）で算出して渡す構造のため、リポジトリ実装は無改修。`applyOfflineEdit`/`markSynced`/`saveLocal`/`search` を対象に4機能入り doc でテストを追加した
   - _Requirements: 8.1, 8.2, 8.3, 8.4_
 
-- [ ] 9.4 (P) バックエンド受理・自動保存・既存非回帰の担保
+- [x] 9.4 (P) バックエンド受理・自動保存・既存非回帰の担保
   - 4機能のノード/マークを含む本文 JSON を既存の JSONB カラムと既存バリデーションの枠組みのまま受理・保存できることを固定する（DB スキーマ変更なし）
   - 4機能を含むメモの自動保存が既存メモと同一挙動（編集停止後の自動保存・保存状態インジケーター）で動作することを固定する
   - 4機能を含まない既存メモの表示・編集動作、および既存 Markdown input rules・ツールバー・ノートブック参照・チェックリストの挙動が不変であることを固定する
+  - **実装時判明**: `IsProseMirrorDoc`/`isProseMirrorDoc` はノードタイプのホワイトリストを持たないため4機能ノードを無改修で受理する（回帰テストを `prosemirror-types.spec.ts`・`create-memo.dto.spec.ts`・`update-memo.dto.spec.ts` へ追加）。`memo.service.ts` の `create()`/`update()` も `contentText` を content 再帰で導出するのみで4機能へ自動追随するため無改修（`memo.service.spec.ts` へテスト追加）。フロントエンド `useAutoSave` フックは `onSave: () => Promise<...>` のシグネチャで content を一切引数に取らない構造（呼び出し元がクロージャで content を保持）のため、自動保存の debounce/インジケーター挙動はノード種別と構造的に無関係であり追加テスト不要と判断した。既存メモ・既存9コマンド・Markdown input rules・ツールバー・ノートブック参照・チェックリストの非回帰は、本タスクで新規テストを追加した上でフロントエンド全135スイート1347テスト・バックエンド全80スイート975テストを実行し、既存テストを含め全て green であることを確認して固定した
   - _Requirements: 9.1, 9.2, 9.3, 9.4_
