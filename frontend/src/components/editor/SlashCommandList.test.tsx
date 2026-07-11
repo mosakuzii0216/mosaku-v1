@@ -130,4 +130,36 @@ describe('SlashCommandList', () => {
 			expect(screen.queryByRole('button', { name: /戻る/ })).toBeNull();
 		});
 	});
+
+	describe('palette サブメニュー（Task 7.2・Req5.3）', () => {
+		it('mode=palette では「戻る」操作を提供し onBack を呼ぶ', () => {
+			const onBack = vi.fn();
+			render(
+				<SlashCommandList
+					items={makeItems(['若葉'])}
+					command={vi.fn()}
+					mode="palette"
+					onBack={onBack}
+				/>,
+			);
+			const backButton = screen.getByRole('button', { name: /戻る/ });
+			fireEvent.click(backButton);
+			expect(onBack).toHaveBeenCalled();
+		});
+
+		it('swatchColorVar を持つ項目は色見本（背景色に CSS 変数）を描画する', () => {
+			const items: SlashCommandItem[] = [
+				{
+					title: '若葉',
+					kind: 'palette',
+					swatchColorVar: '--editor-text-wakaba',
+					run: vi.fn(),
+				},
+			];
+			render(<SlashCommandList items={items} command={vi.fn()} mode="palette" onBack={vi.fn()} />);
+			const swatch = document.querySelector('[data-slash-swatch]') as HTMLElement | null;
+			expect(swatch).not.toBeNull();
+			expect(swatch?.style.backgroundColor).toBe('var(--editor-text-wakaba)');
+		});
+	});
 });

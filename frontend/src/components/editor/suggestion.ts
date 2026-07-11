@@ -5,8 +5,10 @@ import type { Editor } from '@tiptap/react';
 import { SlashCommandList, type SlashCommandListRef } from './SlashCommandList';
 import {
 	getSlashCommandItems,
+	getPaletteItems,
 	type SlashCommandItem,
 	type SlashCommandMode,
+	type PaletteTarget,
 } from './slashCommandItems';
 
 // ノートブックデータ注入は slashCommandItems へ集約。RichTextEditor の import 契約を維持するため再エクスポート。
@@ -27,17 +29,30 @@ interface SuggestionProps {
 /**
  * `/` スラッシュコマンドの render。
  *
- * mode（'root' | 'notebook'）を doc に持たせず、この render クロージャが保持する（Req3.5 の最難所）。
+ * mode（'root' | 'notebook' | 'palette'）を doc に持たせず、この render クロージャが保持する
+ * （Req3.5/5.3 の最難所）。
  * - root → notebook: ノートブック参照（kind='notebook'）選択時、doc を変更せず mode を切り替える。
  * - notebook → 確定: 個々のノートブック選択で `[[name]]` を挿入し suggestion を exit する。
  * - notebook → 戻る: 「戻る」操作・Escape・`/` まで消去（query 空）で root へ復帰する（Req3.8）。
+ * - root → palette: テキスト色/マーカー（kind='palette'）選択時、doc を変更せず
+ *   `item.paletteTarget` を見て palette モードへ遷移する（Req5.3）。
+ * - palette → 確定: スウォッチ選択で range 削除＋stored mark 有効化を実行する（Req5.3/5.4）。
+ * - palette → 戻る: 「戻る」操作・Escape・`/` まで消去（query 空）で root へ復帰する（notebook と同じ復帰契約）。
  */
 export const suggestion = {
 	render: () => {
 		let component: ReactRenderer<SlashCommandListRef> | null = null;
 		let popup: TippyInstance[] | null = null;
 		let mode: SlashCommandMode = 'root';
+		let paletteTarget: PaletteTarget | null = null;
 		let latest: SuggestionProps | null = null;
+
+		function currentItems(query: string): SlashCommandItem[] {
+			if (mode === 'palette' && paletteTarget) {
+				return getPaletteItems(query, paletteTarget);
+			}
+			return getSlashCommandItems(query, mode);
+		}
 
 		function renderProps(queryOverride?: string) {
 			if (!component || !latest) {
@@ -45,7 +60,7 @@ export const suggestion = {
 			}
 			const q = queryOverride !== undefined ? queryOverride : latest.query;
 			component.updateProps({
-				items: getSlashCommandItems(q, mode),
+				items: currentItems(q),
 				mode,
 				command: handleSelect,
 				onBack: backToRoot,
@@ -57,7 +72,8 @@ export const suggestion = {
 				return;
 			}
 			mode = 'root';
-			// notebook から戻るとき latest.query はサブメニュー検索文字列のままなので
+			paletteTarget = null;
+			// notebook/palette から戻るとき latest.query はサブメニュー検索文字列のままなので
 			// root では空クエリ（全件）で表示する
 			renderProps('');
 		}
@@ -72,16 +88,24 @@ export const suggestion = {
 				renderProps();
 				return;
 			}
+			// root でテキスト色/マーカーを選ぶと、doc を変更せず palette モードへ遷移（Req5.3）
+			if (mode === 'root' && item.kind === 'palette' && item.paletteTarget) {
+				mode = 'palette';
+				paletteTarget = item.paletteTarget;
+				renderProps();
+				return;
+			}
 			item.run({ editor: latest.editor, range: latest.range });
 		}
 
 		return {
 			onStart: (props: SuggestionProps) => {
 				mode = 'root';
+				paletteTarget = null;
 				latest = props;
 				component = new ReactRenderer(SlashCommandList, {
 					props: {
-						items: getSlashCommandItems(props.query, mode),
+						items: currentItems(props.query),
 						mode,
 						command: handleSelect,
 						onBack: backToRoot,
@@ -106,9 +130,10 @@ export const suggestion = {
 
 			onUpdate(props: SuggestionProps) {
 				latest = props;
-				// notebook モードで `/` まで消えた（query 空）ら root へ戻す（Req3.4/3.8）
-				if (mode === 'notebook' && props.query === '') {
+				// notebook/palette モードで `/` まで消えた（query 空）ら root へ戻す（Req3.4/3.8/5.3）
+				if (mode !== 'root' && props.query === '') {
 					mode = 'root';
+					paletteTarget = null;
 				}
 				renderProps();
 
@@ -125,8 +150,8 @@ export const suggestion = {
 				}
 
 				if (props.event.key === 'Escape') {
-					// notebook では root へ戻し、root ではメニューを閉じる（Req3.8）
-					if (mode === 'notebook') {
+					// notebook/palette では root へ戻し、root ではメニューを閉じる（Req3.8/5.3）
+					if (mode !== 'root') {
 						backToRoot();
 						return true;
 					}
@@ -139,6 +164,7 @@ export const suggestion = {
 
 			onExit() {
 				mode = 'root';
+				paletteTarget = null;
 				latest = null;
 				if (popup) {
 					popup[0].destroy();

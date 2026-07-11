@@ -70,7 +70,7 @@ export const SlashCommandList = forwardRef<SlashCommandListRef, SlashCommandList
 
 		return (
 			<div className="slash-command-list border rounded-lg shadow-lg bg-white overflow-hidden max-h-80 overflow-y-auto">
-				{mode === 'notebook' && (
+				{mode !== 'root' && (
 					<button
 						type="button"
 						onClick={onBack}
@@ -84,15 +84,24 @@ export const SlashCommandList = forwardRef<SlashCommandListRef, SlashCommandList
 						<button
 							key={`${item.kind}-${item.title}`}
 							type="button"
-							className={`block w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors ${
+							className={`flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors ${
 								index === selectedIndex ? 'bg-blue-50' : ''
 							}`}
 							onClick={() => selectItem(index)}
 						>
-							<div className="font-medium text-gray-900">{item.title}</div>
-							{item.description && (
-								<div className="text-xs text-gray-500 mt-0.5">{item.description}</div>
+							{item.swatchColorVar && (
+								<span
+									data-slash-swatch=""
+									className="inline-block w-4 h-4 rounded-full border border-gray-300 shrink-0"
+									style={{ backgroundColor: `var(${item.swatchColorVar})` }}
+								/>
 							)}
+							<div>
+								<div className="font-medium text-gray-900">{item.title}</div>
+								{item.description && (
+									<div className="text-xs text-gray-500 mt-0.5">{item.description}</div>
+								)}
+							</div>
 						</button>
 					))
 				) : (

@@ -3,6 +3,7 @@ import { Editor } from '@tiptap/core';
 import { createEditorExtensions } from './createEditorExtensions';
 import {
 	getSlashCommandItems,
+	getPaletteItems,
 	setNotebooksData,
 	getNotebooksData,
 	type SlashCommandItem,
@@ -11,10 +12,10 @@ import {
 const dummySlash = { render: () => ({}) };
 
 /** 空段落のみのエディタを生成し、行頭にキャレットを置く（slash 起動位置を模倣） */
-function makeEditor() {
+function makeEditor(content: string = '<p></p>') {
 	return new Editor({
 		extensions: createEditorExtensions({ editable: true, placeholder: 'x', slash: dummySlash }),
-		content: '<p></p>',
+		content,
 	});
 }
 
@@ -158,9 +159,169 @@ describe('getSlashCommandItems（コマンド定義とクエリ絞り込み・�
 			const items: SlashCommandItem[] = getSlashCommandItems('', 'root', []);
 			for (const item of items) {
 				expect(typeof item.title).toBe('string');
-				expect(['block', 'notebook']).toContain(item.kind);
+				expect(['block', 'notebook', 'palette']).toContain(item.kind);
 				expect(typeof item.run).toBe('function');
 			}
+		});
+	});
+
+	describe('rich-editor-blocks Task 7.1: 5項目追加（コールアウト/表/トグル/テキスト色/マーカー）', () => {
+		it('root モードにコールアウト・表・トグル・テキスト色・マーカーが含まれる（Req5.1）', () => {
+			const titles = rootTitles();
+			expect(titles).toEqual(
+				expect.arrayContaining(['コールアウト', '表', 'トグル', 'テキスト色', 'マーカー']),
+			);
+		});
+
+		it('日本語・英語別名・読みで各項目に絞り込める（Req5.2）', () => {
+			expect(getSlashCommandItems('callout', 'root', [])).toHaveLength(1);
+			expect(getSlashCommandItems('かこい', 'root', [])).toHaveLength(1);
+			expect(getSlashCommandItems('table', 'root', [])).toHaveLength(1);
+			expect(getSlashCommandItems('ひょう', 'root', [])).toHaveLength(1);
+			expect(getSlashCommandItems('toggle', 'root', [])).toHaveLength(1);
+			expect(getSlashCommandItems('おりたたみ', 'root', [])).toHaveLength(1);
+			expect(getSlashCommandItems('color', 'root', [])).toHaveLength(1);
+			expect(getSlashCommandItems('もじいろ', 'root', [])).toHaveLength(1);
+			expect(getSlashCommandItems('highlight', 'root', [])).toHaveLength(1);
+			expect(getSlashCommandItems('けいこうぺん', 'root', [])).toHaveLength(1);
+		});
+
+		it('コールアウトコマンドは range を削除し既定 variant のコールアウトを挿入する（Req1.1/5.4）', () => {
+			const editor = makeEditor('<p>/コールアウト</p>');
+			const item = getSlashCommandItems('コールアウト', 'root', [])[0];
+			item.run({ editor, range: { from: 1, to: 8 } });
+
+			expect(editor.getText()).not.toContain('/コールアウト');
+			expect(editor.isActive('callout')).toBe(true);
+			editor.destroy();
+		});
+
+		it('表コマンドは range を削除しヘッダー行付きの表を挿入する（Req3.1/5.4）', () => {
+			const editor = makeEditor();
+			const item = getSlashCommandItems('表', 'root', [])[0];
+			item.run({ editor, range: { from: 1, to: 1 } });
+
+			const table = editor.getJSON().content?.find((n) => n.type === 'table');
+			expect(table).toBeDefined();
+			expect(table?.content?.[0]?.content?.every((cell) => cell.type === 'tableHeader')).toBe(true);
+			editor.destroy();
+		});
+
+		it('トグルコマンドは range を削除し開いた状態でトグルを挿入する（Req4.1/5.4）', () => {
+			const editor = makeEditor();
+			const item = getSlashCommandItems('トグル', 'root', [])[0];
+			item.run({ editor, range: { from: 1, to: 1 } });
+
+			const details = editor.getJSON().content?.find((n) => n.type === 'details');
+			expect(details).toBeDefined();
+			const wrapper = editor.view.dom.querySelector('div[data-type="details"]') as HTMLElement;
+			expect(wrapper.classList.contains('is-open')).toBe(true);
+			editor.destroy();
+		});
+
+		it('トグル挿入直後に Undo すると range 削除ごと挿入前の状態へ戻る（Req5.5）', () => {
+			const editor = makeEditor('<p>/トグル</p>');
+			const item = getSlashCommandItems('トグル', 'root', [])[0];
+			item.run({ editor, range: { from: 1, to: 5 } });
+			expect(editor.getJSON().content?.some((n) => n.type === 'details')).toBe(true);
+
+			editor.commands.undo();
+
+			expect(editor.getText()).toBe('/トグル');
+			expect(editor.getJSON().content?.some((n) => n.type === 'details')).toBe(false);
+			editor.destroy();
+		});
+
+		it('テキスト色・マーカーは kind=palette で run が doc を変更しない（no-op トリガー・Req5.3）', () => {
+			const editor = makeEditor();
+			const before = editor.getHTML();
+
+			const textColorItem = getSlashCommandItems('テキスト色', 'root', [])[0];
+			expect(textColorItem.kind).toBe('palette');
+			textColorItem.run({ editor, range: { from: 1, to: 1 } });
+			expect(editor.getHTML()).toBe(before);
+
+			const markerItem = getSlashCommandItems('マーカー', 'root', [])[0];
+			expect(markerItem.kind).toBe('palette');
+			markerItem.run({ editor, range: { from: 1, to: 1 } });
+			expect(editor.getHTML()).toBe(before);
+
+			editor.destroy();
+		});
+
+		it('テキスト色・マーカーの遷移先パレット種別（paletteTarget）を保持する（Task 7.2 が消費）', () => {
+			const textColorItem = getSlashCommandItems('テキスト色', 'root', [])[0];
+			const markerItem = getSlashCommandItems('マーカー', 'root', [])[0];
+			expect(textColorItem.paletteTarget).toBe('textColor');
+			expect(markerItem.paletteTarget).toBe('marker');
+		});
+
+		it('既存のブロック挿入9コマンドとノートブック参照の挙動を変更しない（Req5.6）', () => {
+			const titles = rootTitles();
+			const existingTitles = [
+				'見出し1',
+				'見出し2',
+				'見出し3',
+				'箇条書きリスト',
+				'番号付きリスト',
+				'引用',
+				'コードブロック',
+				'チェックリスト',
+				'区切り線',
+				'ノートブック参照',
+			];
+			expect(titles).toEqual(expect.arrayContaining(existingTitles));
+			expect(getSlashCommandItems('h1', 'root', [])).toHaveLength(1);
+			expect(getSlashCommandItems('区切り', 'root', [])).toHaveLength(1);
+		});
+	});
+
+	describe('rich-editor-blocks Task 7.2: 色サブメニュー（getPaletteItems・Req5.3）', () => {
+		it('textColor 対象で4色以上のセマンティックカラーを列挙する（Req2.3/5.3）', () => {
+			const items = getPaletteItems('', 'textColor');
+			expect(items.length).toBeGreaterThanOrEqual(4);
+			expect(items.every((i) => i.kind === 'palette')).toBe(true);
+		});
+
+		it('marker 対象で4色以上のセマンティックカラーを列挙する（Req2.3/5.3）', () => {
+			const items = getPaletteItems('', 'marker');
+			expect(items.length).toBeGreaterThanOrEqual(4);
+			expect(items.every((i) => i.kind === 'palette')).toBe(true);
+		});
+
+		it('該当なしクエリでは空配列を返す', () => {
+			expect(getPaletteItems('zzzznomatch', 'textColor')).toEqual([]);
+		});
+
+		it('textColor スウォッチの run は range 削除後、選択なし（stored mark）でテキスト色を以降入力へ適用する（Req5.3）', () => {
+			const editor = makeEditor('<p>/テキスト色</p>');
+			const item = getPaletteItems('', 'textColor')[0];
+			item.run({ editor, range: { from: 1, to: 7 } });
+
+			// 適用済みの範囲は無い（削除済み・空選択）ため、通常テキストへの直接適用ではなく
+			// stored mark（以降入力に適用される保留マーク）として保持される
+			expect(editor.getText()).toBe('');
+			expect(editor.state.storedMarks?.some((m) => m.type.name === 'textStyle')).toBe(true);
+
+			editor.commands.insertContent('あとから入力');
+			const json = editor.getJSON();
+			const textNode = json.content?.[0]?.content?.[0];
+			expect(textNode?.marks?.[0]?.type).toBe('textStyle');
+			expect(textNode?.marks?.[0]?.attrs?.textColor).toBeTruthy();
+			editor.destroy();
+		});
+
+		it('marker スウォッチの run は range 削除後、選択なし（stored mark）でマーカーを以降入力へ適用する（Req5.3）', () => {
+			const editor = makeEditor('<p>/マーカー</p>');
+			const item = getPaletteItems('', 'marker')[0];
+			item.run({ editor, range: { from: 1, to: 6 } });
+
+			editor.commands.insertContent('あとから入力');
+			const json = editor.getJSON();
+			const textNode = json.content?.[0]?.content?.[0];
+			expect(textNode?.marks?.[0]?.type).toBe('highlight');
+			expect(textNode?.marks?.[0]?.attrs?.marker).toBeTruthy();
+			editor.destroy();
 		});
 	});
 });
