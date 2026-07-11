@@ -7,6 +7,7 @@ export default defineConfig({
 	test: {
 		environment: 'jsdom',
 		globals: true,
+		setupFiles: ['./src/test/setup.ts'],
 		exclude: [...configDefaults.exclude, 'e2e/**'],
 		alias: {
 			// vite-plugin-pwa の virtual module はテスト環境では解決できないため、

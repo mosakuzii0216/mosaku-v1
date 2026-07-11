@@ -3,6 +3,7 @@ import { useEditor, EditorContent, type JSONContent } from '@tiptap/react';
 import { createEditorExtensions } from './createEditorExtensions';
 import { decideContentSync } from './contentSync';
 import { suggestion, setNotebooksData } from './suggestion';
+import { EditorBubbleMenu } from './EditorBubbleMenu';
 import { useNotebooks } from '../../hooks/useNotebookQueries';
 import { useEditorFocusStore } from '../../stores/useEditorFocusStore';
 import { createEmptyDoc } from '../../utils/editor/prosemirrorText';
@@ -200,6 +201,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 			</div>
 			<div className="flex-1">
 				<EditorContent editor={editor} className="min-h-[200px]" />
+				<EditorBubbleMenu editor={editor} />
 			</div>
 		</div>
 	);
