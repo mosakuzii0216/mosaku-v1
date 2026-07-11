@@ -49,7 +49,7 @@ describe('createEditorExtensions', () => {
 			}
 		});
 
-		it('編集・公開ともにトグル（details/detailsSummary/detailsContent）を editable 非依存で含む（Task 1.2 spike の仮登録）', () => {
+		it('編集・公開ともにトグル（details/detailsSummary/detailsContent）を editable 非依存で含む（Task 6 本登録）', () => {
 			for (const editable of [true, false]) {
 				const names = extensionNames({ editable, placeholder: 'x', slash: dummySlash });
 				expect(names).toContain('details');

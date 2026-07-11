@@ -2,7 +2,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
-import { Details, DetailsSummary, DetailsContent } from '@tiptap/extension-details';
+import { DetailsSummary, DetailsContent } from '@tiptap/extension-details';
 import { TableKit } from '@tiptap/extension-table';
 import type { Extensions } from '@tiptap/react';
 import type { SuggestionOptions } from '@tiptap/suggestion';
@@ -11,6 +11,7 @@ import { SlashCommand } from './slashCommand';
 import { SemanticTextColor } from './semanticTextColor';
 import { SemanticMarker } from './semanticMarker';
 import { Callout } from './Callout';
+import { Details } from './Details';
 import './codeHighlight.css';
 import './callout.css';
 import './table.css';
@@ -78,7 +79,9 @@ export function createEditorExtensions(options: EditorExtensionOptions): Extensi
 		TaskItem.configure({ nested: true }),
 		// トグル（Req4.1〜4.4）。persist:false により開閉は NodeView の view-state のみで
 		// doc トランザクションを発行しない。editable:false（公開ビュー）でも開閉が動く
-		// （research.md「Details の公開ビュー開閉と persist の選択」参照）。
+		// （Task 1.2 spike で確定・research.md「Details の公開ビュー開閉と persist の選択」参照）。
+		// スラッシュ確定時に「開いた状態」で挿入する insertOpenDetails コマンドは
+		// ./Details（BaseDetails.extend）で追加している（Task 6 / Req4.1）。
 		Details.configure({ persist: false }),
 		DetailsSummary,
 		DetailsContent,
