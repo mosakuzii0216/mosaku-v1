@@ -45,4 +45,60 @@ describe('CreateMemoDto - content ProseMirrorDoc 検証', () => {
 		const errors = await validate(dto);
 		expect(errors.some((e) => e.property === 'content')).toBe(true);
 	});
+
+	// rich-editor-blocks Task 9.4: 4機能（コールアウト・テキスト色/マーカー・表・トグル）の
+	// ノード/マークを含む本文 JSON も、既存の JSONB カラム・既存バリデーションの枠組みの
+	// ままで受理されることを固定する（Req9.1・DB スキーマ変更なし）。
+	it('4機能（コールアウト・テキスト色/マーカー・表・トグル）を含む本文 JSON は通過する（Req9.1）', async () => {
+		const richDoc = {
+			type: 'doc',
+			content: [
+				{
+					type: 'callout',
+					attrs: { variant: 'warning' },
+					content: [
+						{
+							type: 'paragraph',
+							content: [
+								{
+									type: 'text',
+									text: '装飾済み',
+									marks: [
+										{ type: 'textStyle', attrs: { textColor: 'sumire' } },
+										{ type: 'highlight', attrs: { marker: 'kiiro' } },
+									],
+								},
+							],
+						},
+					],
+				},
+				{
+					type: 'table',
+					content: [
+						{
+							type: 'tableRow',
+							content: [
+								{
+									type: 'tableCell',
+									content: [{ type: 'paragraph', content: [{ type: 'text', text: 'セル' }] }],
+								},
+							],
+						},
+					],
+				},
+				{
+					type: 'details',
+					content: [
+						{ type: 'detailsSummary', content: [{ type: 'text', text: 'サマリー' }] },
+						{
+							type: 'detailsContent',
+							content: [{ type: 'paragraph', content: [{ type: 'text', text: '本文' }] }],
+						},
+					],
+				},
+			],
+		};
+		const dto = plainToInstance(CreateMemoDto, { title: 'Test', content: richDoc });
+		expect(await validate(dto)).toHaveLength(0);
+	});
 });

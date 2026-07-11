@@ -17,6 +17,7 @@ import {
 	type OfflineRepositoryTelemetry,
 	type ServerMemoSnapshot,
 } from './repository';
+import { extractPlainText } from '../editor/prosemirrorText';
 
 const USER_ID = 'user-1';
 const OTHER_USER_ID = 'user-2';
@@ -984,6 +985,158 @@ describe('OfflineMemoRepository — statsForDebug', () => {
 		try {
 			const stats = await repo.statsForDebug();
 			expect(stats.quotaSnapshot).toBeUndefined();
+		} finally {
+			db.close();
+		}
+	});
+});
+
+/**
+ * rich-editor-blocks Task 9.3: オフライン層（IndexedDB 保存・検索）が4機能（コールアウト・
+ * テキスト色/マーカー・表・トグル）を含む本文 JSON を欠損なく保存・同期・検索できることを
+ * 固定する（Req8.1〜8.4）。content は JSON パススルー、searchableText は extractPlainText
+ * （Task 9.2 で4機能への追随を固定済み）に依存するため、実装変更なしにテストのみを追加する。
+ */
+describe('OfflineMemoRepository — 4機能の追随（Task 9.3 / Req8.1〜8.4）', () => {
+	beforeEach(async () => {
+		await deleteDB(OFFLINE_DB_NAME);
+	});
+
+	afterEach(async () => {
+		await deleteDB(OFFLINE_DB_NAME);
+	});
+
+	const RICH_DOC: JSONContent = {
+		type: 'doc',
+		content: [
+			{
+				type: 'callout',
+				attrs: { variant: 'warning' },
+				content: [{ type: 'paragraph', content: [{ type: 'text', text: 'オフライン注意事項' }] }],
+			},
+			{
+				type: 'table',
+				content: [
+					{
+						type: 'tableRow',
+						content: [
+							{
+								type: 'tableCell',
+								content: [
+									{
+										type: 'paragraph',
+										content: [
+											{
+												type: 'text',
+												text: 'セル本文',
+												marks: [{ type: 'textStyle', attrs: { textColor: 'sumire' } }],
+											},
+										],
+									},
+								],
+							},
+						],
+					},
+				],
+			},
+			{
+				type: 'details',
+				content: [
+					{ type: 'detailsSummary', content: [{ type: 'text', text: 'サマリー' }] },
+					{
+						type: 'detailsContent',
+						content: [{ type: 'paragraph', content: [{ type: 'text', text: '折りたたみ本文' }] }],
+					},
+				],
+			},
+		],
+	};
+
+	it('オフライン編集（applyOfflineEdit）で本文 JSON が欠損なくローカル保存される（Req8.1）', async () => {
+		const { repo, db } = await makeRepo();
+		try {
+			await repo.applyOfflineEdit({
+				memo: createMemoRecord({
+					id: 'm1',
+					content: RICH_DOC,
+					searchableText: extractPlainText(RICH_DOC),
+				}),
+				operation: createPendingOperation({ memoId: 'm1', patch: { content: RICH_DOC } }),
+			});
+
+			const stored = await repo.getMemo('m1');
+			expect(stored?.content).toEqual(RICH_DOC);
+		} finally {
+			db.close();
+		}
+	});
+
+	it('接続回復時の同期（markSynced）でも4機能を含む本文が欠損なく反映される（Req8.2）', async () => {
+		const { repo, db } = await makeRepo();
+		try {
+			await repo.applyOfflineEdit({
+				memo: createMemoRecord({
+					id: 'm1',
+					content: RICH_DOC,
+					searchableText: extractPlainText(RICH_DOC),
+				}),
+				operation: createPendingOperation({ memoId: 'm1', patch: { content: RICH_DOC } }),
+			});
+
+			const synced = await repo.markSynced(createSnapshot({ id: 'm1', content: RICH_DOC }));
+			expect(synced.content).toEqual(RICH_DOC);
+			expect(synced.syncStatus).toBe('synced');
+
+			const stored = await repo.getMemo('m1');
+			expect(stored?.content).toEqual(RICH_DOC);
+			expect(stored?.syncStatus).toBe('synced');
+		} finally {
+			db.close();
+		}
+	});
+
+	it('オフライン検索の対象テキストに4機能のノード内テキストが含まれる（Req8.3）', async () => {
+		const { repo, db } = await makeRepo();
+		try {
+			await repo.saveLocal(
+				createMemoRecord({
+					id: 'm1',
+					title: 'リッチメモ',
+					content: RICH_DOC,
+					searchableText: extractPlainText(RICH_DOC),
+				}),
+			);
+
+			const calloutHit = await repo.search('オフライン注意事項');
+			expect(calloutHit.hits.map((h) => h.memo.id)).toEqual(['m1']);
+
+			const tableHit = await repo.search('セル本文');
+			expect(tableHit.hits.map((h) => h.memo.id)).toEqual(['m1']);
+
+			const detailsSummaryHit = await repo.search('サマリー');
+			expect(detailsSummaryHit.hits.map((h) => h.memo.id)).toEqual(['m1']);
+
+			const detailsContentHit = await repo.search('折りたたみ本文');
+			expect(detailsContentHit.hits.map((h) => h.memo.id)).toEqual(['m1']);
+		} finally {
+			db.close();
+		}
+	});
+
+	it('オフライン保存されたメモの再表示（getMemo）で4機能が編集時と同一構造に復元される（Req8.4）', async () => {
+		const { repo, db } = await makeRepo();
+		try {
+			const saved = await repo.saveLocal(
+				createMemoRecord({
+					id: 'm1',
+					content: RICH_DOC,
+					searchableText: extractPlainText(RICH_DOC),
+				}),
+			);
+
+			const reloaded = await repo.getMemo('m1');
+			expect(reloaded?.content).toEqual(saved.content);
+			expect(reloaded?.content).toEqual(RICH_DOC);
 		} finally {
 			db.close();
 		}

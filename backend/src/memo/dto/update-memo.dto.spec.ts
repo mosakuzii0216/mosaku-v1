@@ -27,6 +27,61 @@ describe('UpdateMemoDto', () => {
 			const errors = await validate(dto);
 			expect(errors.some((e) => e.property === 'content')).toBe(true);
 		});
+
+		// rich-editor-blocks Task 9.4: 自動保存（PATCH）経路でも4機能を含む本文 JSON が
+		// 既存バリデーションの枠組みのまま受理されることを固定する（Req9.1/9.2）。
+		it('4機能（コールアウト・テキスト色/マーカー・表・トグル）を含む本文 JSON は通過する（Req9.1/9.2）', async () => {
+			const richDoc = {
+				type: 'doc',
+				content: [
+					{
+						type: 'callout',
+						attrs: { variant: 'point' },
+						content: [
+							{
+								type: 'paragraph',
+								content: [
+									{
+										type: 'text',
+										text: '装飾済み',
+										marks: [
+											{ type: 'textStyle', attrs: { textColor: 'wakaba' } },
+											{ type: 'highlight', attrs: { marker: 'mizu' } },
+										],
+									},
+								],
+							},
+						],
+					},
+					{
+						type: 'table',
+						content: [
+							{
+								type: 'tableRow',
+								content: [
+									{
+										type: 'tableCell',
+										content: [{ type: 'paragraph', content: [{ type: 'text', text: 'セル' }] }],
+									},
+								],
+							},
+						],
+					},
+					{
+						type: 'details',
+						content: [
+							{ type: 'detailsSummary', content: [{ type: 'text', text: 'サマリー' }] },
+							{
+								type: 'detailsContent',
+								content: [{ type: 'paragraph', content: [{ type: 'text', text: '本文' }] }],
+							},
+						],
+					},
+				],
+			};
+			const dto = plainToInstance(UpdateMemoDto, { content: richDoc });
+			expect((await validate(dto)).filter((e) => e.property === 'content')).toHaveLength(0);
+		});
 	});
 
 	describe('clientUpdatedAt', () => {

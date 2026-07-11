@@ -403,6 +403,85 @@ describe('MemoService', () => {
 		});
 	});
 
+	// rich-editor-blocks Task 9.4: 4機能（コールアウト・テキスト色/マーカー・表・トグル）を
+	// 含むメモでも、自動保存が経由する create()/update() が既存メモと同一の挙動
+	// （content と contentText を同時に既存 JSONB カラムへ渡す）で動作することを固定する
+	// （Req9.1/9.2）。抽出（contentText 導出）は prosemirror-text.ts の content 再帰実装が
+	// 4機能ノードへ自動追随するため、実装変更なしにテストのみを追加する。
+	describe('create()/update() — 4機能を含む本文の追随（Task 9.4 / Req9.1, 9.2）', () => {
+		const richDoc: ProseMirrorDoc = {
+			type: 'doc',
+			content: [
+				{
+					type: 'callout',
+					attrs: { variant: 'warning' },
+					content: [{ type: 'paragraph', content: [{ type: 'text', text: 'コールアウト本文' }] }],
+				},
+				{
+					type: 'table',
+					content: [
+						{
+							type: 'tableRow',
+							content: [
+								{
+									type: 'tableCell',
+									content: [{ type: 'paragraph', content: [{ type: 'text', text: 'セル本文' }] }],
+								},
+							],
+						},
+					],
+				},
+				{
+					type: 'details',
+					content: [
+						{ type: 'detailsSummary', content: [{ type: 'text', text: 'サマリー' }] },
+						{
+							type: 'detailsContent',
+							content: [{ type: 'paragraph', content: [{ type: 'text', text: 'トグル本文' }] }],
+						},
+					],
+				},
+			],
+		};
+		const richExpectedText = 'コールアウト本文 セル本文 サマリー トグル本文';
+
+		it('create() は4機能を含む content からも contentText を導出し同時に保存する', async () => {
+			mockPrismaService.memo.create.mockResolvedValue(
+				mockMemo({ content: richDoc, contentText: richExpectedText }),
+			);
+
+			await service.create({ title: 'Rich', content: richDoc }, 'user-1');
+
+			expect(mockPrismaService.memo.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					data: expect.objectContaining({
+						content: richDoc,
+						contentText: richExpectedText,
+					}) as unknown,
+				}),
+			);
+		});
+
+		it('update() は4機能を含む content 更新時も contentText を同時に更新する（自動保存の既存挙動と同一）', async () => {
+			const existingMemo = mockMemo();
+			mockPrismaService.memo.findFirst.mockResolvedValue(existingMemo);
+			mockPrismaService.memo.update.mockResolvedValue(
+				mockMemo({ content: richDoc, contentText: richExpectedText }),
+			);
+
+			await service.update('memo-1', { content: richDoc }, 'user-1');
+
+			expect(mockPrismaService.memo.update).toHaveBeenCalledWith(
+				expect.objectContaining({
+					data: expect.objectContaining({
+						content: richDoc,
+						contentText: richExpectedText,
+					}) as unknown,
+				}),
+			);
+		});
+	});
+
 	// ─── search() — contentText 検索 ───────────────────────────────────────────
 
 	describe('search() — contentText で本文検索', () => {

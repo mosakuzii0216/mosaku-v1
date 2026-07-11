@@ -81,6 +81,62 @@ describe('isProseMirrorDoc', () => {
 	it('rejects when a content node type is not a string', () => {
 		expect(isProseMirrorDoc({ type: 'doc', content: [{ type: 123 }] })).toBe(false);
 	});
+
+	// rich-editor-blocks Task 9.4: 4機能（コールアウト・テキスト色/マーカー・表・トグル）の
+	// ノード/マークを含む doc も、ノードタイプのホワイトリストを持たない現行実装のまま
+	// 受理されることを固定する（Req9.1・DB スキーマ変更なし）。
+	it('accepts a doc containing callout / table / details / semantic text-color & marker nodes', () => {
+		expect(
+			isProseMirrorDoc({
+				type: 'doc',
+				content: [
+					{
+						type: 'callout',
+						attrs: { variant: 'warning' },
+						content: [
+							{
+								type: 'paragraph',
+								content: [
+									{
+										type: 'text',
+										text: '装飾済み',
+										marks: [
+											{ type: 'textStyle', attrs: { textColor: 'sumire' } },
+											{ type: 'highlight', attrs: { marker: 'kiiro' } },
+										],
+									},
+								],
+							},
+						],
+					},
+					{
+						type: 'table',
+						content: [
+							{
+								type: 'tableRow',
+								content: [
+									{
+										type: 'tableCell',
+										content: [{ type: 'paragraph', content: [{ type: 'text', text: 'セル' }] }],
+									},
+								],
+							},
+						],
+					},
+					{
+						type: 'details',
+						content: [
+							{ type: 'detailsSummary', content: [{ type: 'text', text: 'サマリー' }] },
+							{
+								type: 'detailsContent',
+								content: [{ type: 'paragraph', content: [{ type: 'text', text: '本文' }] }],
+							},
+						],
+					},
+				],
+			}),
+		).toBe(true);
+	});
 });
 
 describe('isEmptyDoc', () => {

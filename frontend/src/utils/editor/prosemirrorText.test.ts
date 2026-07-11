@@ -233,6 +233,182 @@ describe('extractPlainText (frontend)', () => {
 	});
 });
 
+/**
+ * rich-editor-blocks Task 9.2: コールアウト・表・トグルのノード内テキストが平文抽出結果に
+ * 含まれることを固定する（Req7.1〜7.5）。抽出器自体は content 再帰の既存実装のままで
+ * 4機能ノードへ自動で追随するため、実装変更なしにテストのみを追加する（design.md 記載どおり）。
+ */
+describe('extractPlainText — 4機能ノードの追随（Task 9.2 / Req7.1〜7.6）', () => {
+	it('コールアウト本文のテキストが抽出結果に含まれる（Req7.1/7.2）', () => {
+		const doc: JSONContent = {
+			type: 'doc',
+			content: [
+				{
+					type: 'callout',
+					attrs: { variant: 'warning' },
+					content: [{ type: 'paragraph', content: [{ type: 'text', text: '注意事項です' }] }],
+				},
+			],
+		};
+		expect(extractPlainText(doc)).toBe('注意事項です');
+	});
+
+	it('コールアウトの variant 属性が表示テキストとして混入しない（Req7.6）', () => {
+		const doc: JSONContent = {
+			type: 'doc',
+			content: [
+				{
+					type: 'callout',
+					attrs: { variant: 'warning' },
+					content: [{ type: 'paragraph', content: [{ type: 'text', text: '本文' }] }],
+				},
+			],
+		};
+		expect(extractPlainText(doc)).not.toContain('warning');
+	});
+
+	it('表のセルのテキストが抽出結果に含まれる（Req7.1/7.2）', () => {
+		const doc: JSONContent = {
+			type: 'doc',
+			content: [
+				{
+					type: 'table',
+					content: [
+						{
+							type: 'tableRow',
+							content: [
+								{
+									type: 'tableHeader',
+									content: [{ type: 'paragraph', content: [{ type: 'text', text: '見出し' }] }],
+								},
+								{
+									type: 'tableCell',
+									content: [{ type: 'paragraph', content: [{ type: 'text', text: 'セルの値' }] }],
+								},
+							],
+						},
+					],
+				},
+			],
+		};
+		const result = extractPlainText(doc);
+		expect(result).toContain('見出し');
+		expect(result).toContain('セルの値');
+	});
+
+	it('トグルのサマリー/本文のテキストが抽出結果に含まれる（Req7.1/7.2）', () => {
+		const doc: JSONContent = {
+			type: 'doc',
+			content: [
+				{
+					type: 'details',
+					content: [
+						{ type: 'detailsSummary', content: [{ type: 'text', text: 'サマリー行' }] },
+						{
+							type: 'detailsContent',
+							content: [{ type: 'paragraph', content: [{ type: 'text', text: '本文の内容' }] }],
+						},
+					],
+				},
+			],
+		};
+		const result = extractPlainText(doc);
+		expect(result).toContain('サマリー行');
+		expect(result).toContain('本文の内容');
+	});
+
+	it('閉じた状態で保存されたトグルの本文テキストも抽出対象に含まれる（Req7.4）', () => {
+		// persist:false のため「閉じている」は doc に永続化されない view-state だが、
+		// detailsContent は開閉に依らず常に content に存在するため、この doc 自体が
+		// 「閉じた状態で保存された」トグルの表現そのものである（research.md / design.md 参照）。
+		const doc: JSONContent = {
+			type: 'doc',
+			content: [
+				{
+					type: 'details',
+					content: [
+						{ type: 'detailsSummary', content: [{ type: 'text', text: '折りたたみ' }] },
+						{
+							type: 'detailsContent',
+							content: [
+								{
+									type: 'paragraph',
+									content: [{ type: 'text', text: '閉じていても検索できる本文' }],
+								},
+							],
+						},
+					],
+				},
+			],
+		};
+		expect(extractPlainText(doc)).toContain('閉じていても検索できる本文');
+	});
+
+	it('テキスト色/マーカー適用済みテキストが通常テキストと同様に抽出される（Req7.5）', () => {
+		const doc: JSONContent = {
+			type: 'doc',
+			content: [
+				{
+					type: 'paragraph',
+					content: [
+						{
+							type: 'text',
+							text: '装飾済みテキスト',
+							marks: [
+								{ type: 'textStyle', attrs: { textColor: 'sumire' } },
+								{ type: 'highlight', attrs: { marker: 'kiiro' } },
+							],
+						},
+					],
+				},
+			],
+		};
+		expect(extractPlainText(doc)).toBe('装飾済みテキスト');
+	});
+
+	it('コールアウト・表・トグルを含む複合 doc からすべてのテキストが抽出される（Req7.1〜7.5 統合）', () => {
+		const doc: JSONContent = {
+			type: 'doc',
+			content: [
+				{
+					type: 'callout',
+					attrs: { variant: 'point' },
+					content: [{ type: 'paragraph', content: [{ type: 'text', text: 'コールアウト本文' }] }],
+				},
+				{
+					type: 'table',
+					content: [
+						{
+							type: 'tableRow',
+							content: [
+								{
+									type: 'tableCell',
+									content: [{ type: 'paragraph', content: [{ type: 'text', text: 'セル本文' }] }],
+								},
+							],
+						},
+					],
+				},
+				{
+					type: 'details',
+					content: [
+						{ type: 'detailsSummary', content: [{ type: 'text', text: 'サマリー' }] },
+						{
+							type: 'detailsContent',
+							content: [{ type: 'paragraph', content: [{ type: 'text', text: 'トグル本文' }] }],
+						},
+					],
+				},
+			],
+		};
+		const result = extractPlainText(doc);
+		expect(result).toContain('コールアウト本文');
+		expect(result).toContain('セル本文');
+		expect(result).toContain('サマリー');
+		expect(result).toContain('トグル本文');
+	});
+});
+
 describe('isEmptyDoc (frontend)', () => {
 	it('null → true', () => {
 		expect(isEmptyDoc(null)).toBe(true);
