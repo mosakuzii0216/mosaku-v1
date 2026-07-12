@@ -95,6 +95,7 @@ import type { CreateMemoDto } from '../types/memo'; // 型のみのimportは typ
 - **API コール**: フロントエンドでは `apiClient`（`utils/api.ts`）経由で統一。直接 `fetch` は禁止
 - **認証ヘッダー**: `AuthTokenManager.getAccessToken()` で取得したトークンを `Authorization: Bearer` に付与
 - **React Query キー**: `queryKeys` 定数（`constants/queryKeys.ts`）で一元管理
+- **本文コンテンツと検索テキスト**: メモ/ノートブック本文は ProseMirror JSON（`content: Json`）を単一の真実の源泉とし、検索用の `contentText` は保存時に派生させる（BE: `extractPlainText`、FE オフライン: `utils/editor/prosemirrorText.ts`）。新しく本文を持つエンティティを足す場合も「JSON 本体 + 派生 contentText」パターンに従い、`content` を直接検索対象にしない
 
 ---
 

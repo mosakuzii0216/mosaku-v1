@@ -75,6 +75,7 @@ cd backend && npx prisma generate
 ## Key Technical Decisions
 
 - **React Query をサーバー状態の唯一の真実の源泉とする**: Zustand へのデータコピーは行わない。Zustand はUI状態（表示モード・選択状態）専用
+- **メモ/ノートブック本文は ProseMirror(Tiptap) JSON を JSONB に保存**: `content` は `Json` 型（`content-jsonb-migration` で HTML 文字列から移行済み）。本文の唯一の真実の源泉は JSON であり、HTML 文字列としては保存しない。検索・抜粋・プレビュー用途には書き込み時に派生させた plain text を `contentText`（`content_text`）カラムに保存し、全文検索は `contentText` の `contains` で行う。派生は BE 側 `extractPlainText`（`memo.service` の create/update）で一元化し、FE オフライン層（IndexedDB）も同等抽出（`utils/editor/prosemirrorText.ts`）で検索テキストを生成する
 - **グローバル JWT Guard + @Public() opt-out**: 全ルートをデフォルト保護し、公開エンドポイントのみ `@Public()` デコレータで明示的に除外する
 - **Prisma client の生成場所**: `node_modules/@prisma/client`（デフォルト）。スキーマ変更後は `npx prisma generate` 必須
 - **テーマは CSS ファイルで管理**: `frontend/public/themes/{category}/{name}.css`。CSS 変数で色・タイポグラフィを定義し、DBにはメタデータのみ保存
