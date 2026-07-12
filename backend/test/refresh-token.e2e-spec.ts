@@ -306,7 +306,7 @@ describe('POST /auth/refresh, /auth/logout (e2e)', () => {
 			);
 			expect(reuseCall?.[1]).toMatchObject({
 				level: 'warning',
-				tags: expect.objectContaining({ feature_area: 'auth' }),
+				tags: { feature_area: 'auth' },
 			});
 		});
 
