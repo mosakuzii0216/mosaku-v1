@@ -10,6 +10,7 @@ import type { McpScope } from '../../auth/jwt.service';
 
 const AUTH_CODE_TTL_MS = 60_000;
 const MCP_REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const MCP_ACCESS_TOKEN_EXPIRES_IN_SECONDS = 3600;
 const MCP_VALID_SCOPES = new Set<string>(['memo:read', 'memo:write']);
 
 export interface RegisterClientInput {
@@ -141,7 +142,12 @@ export class McpOAuthService {
 			record.scope,
 		);
 
-		return { accessToken, refreshToken, expiresIn: 3600, scope: record.scope };
+		return {
+			accessToken,
+			refreshToken,
+			expiresIn: MCP_ACCESS_TOKEN_EXPIRES_IN_SECONDS,
+			scope: record.scope,
+		};
 	}
 
 	/**
@@ -174,7 +180,12 @@ export class McpOAuthService {
 		const scopes = record.scope.split(' ').filter((s): s is McpScope => MCP_VALID_SCOPES.has(s));
 		const accessToken = this.mintMcpAccessToken(record.userId, scopes, this.config.mcpCanonicalUrl);
 
-		return { accessToken, refreshToken: newPlain, expiresIn: 3600, scope: record.scope };
+		return {
+			accessToken,
+			refreshToken: newPlain,
+			expiresIn: MCP_ACCESS_TOKEN_EXPIRES_IN_SECONDS,
+			scope: record.scope,
+		};
 	}
 
 	/** MCP 専用 JWT を発行する。REST 用トークンとは token_use=mcp と aud で相互排他。 */
