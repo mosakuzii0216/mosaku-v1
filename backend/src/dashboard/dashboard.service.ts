@@ -24,6 +24,7 @@ export interface NotebookWithMemoCountDto {
 	memoCount: number;
 }
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 function toJstDateStr(date: Date): string {
@@ -64,10 +65,10 @@ export class DashboardService {
 		// Monday 00:00 JST → UTC (subtract 9h offset)
 		const weekStart = new Date(mondayJst.getTime() - JST_OFFSET_MS);
 		// Next Monday 00:00 JST → UTC
-		const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+		const weekEnd = new Date(weekStart.getTime() + 7 * MS_PER_DAY);
 
 		const weekStartStr = mondayJst.toISOString().slice(0, 10);
-		const sundayJst = new Date(mondayJst.getTime() + 6 * 24 * 60 * 60 * 1000);
+		const sundayJst = new Date(mondayJst.getTime() + 6 * MS_PER_DAY);
 		const weekEndStr = sundayJst.toISOString().slice(0, 10);
 
 		const count = await this.prisma.memo.count({
