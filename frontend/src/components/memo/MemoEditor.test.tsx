@@ -9,7 +9,6 @@ vi.mock('../../utils/env', () => ({
 	getAppUrl: () => 'http://localhost:5173',
 	getSupabaseConfig: () => ({ supabaseUrl: 'http://localhost:54321', supabaseAnonKey: 'anon' }),
 	getGoogleClientId: () => '',
-	getGithubClientId: () => '',
 	getEnvConfig: () => ({
 		backendUrl: 'http://localhost:3000',
 		appUrl: 'http://localhost:5173',

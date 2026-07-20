@@ -19,6 +19,7 @@ import { McpOAuthService } from './mcp-oauth.service';
 import { McpFeatureFlagGuard } from '../mcp-feature-flag.guard';
 import { ConfigService } from '../../config/config.service';
 import { THROTTLE_CONFIG } from '../../config/auth-constants';
+import { OAUTH_START_PROVIDERS } from '../../auth/dto/oauth-start.dto';
 
 interface McpAuthorizeParams {
 	clientId: string;
@@ -42,7 +43,8 @@ export type McpSessionRequest = ExpressRequest & {
 	session: NonNullable<ExpressRequest['session']> & McpSession;
 };
 
-const ALLOWED_SOCIAL_PROVIDERS = ['google', 'github', 'line'] as const;
+/** 有効プロバイダ集合は BE 単一真実源（`OAUTH_START_PROVIDERS`）に追従する。 */
+const ALLOWED_SOCIAL_PROVIDERS = OAUTH_START_PROVIDERS;
 
 /**
  * OAuth 認可サーバーの DCR / authorize / token エンドポイント（4.2〜4.4）。
@@ -322,7 +324,7 @@ ${links}
 	}
 
 	private providerLabel(provider: string): string {
-		const labels: Record<string, string> = { google: 'Google', github: 'GitHub', line: 'LINE' };
+		const labels: Record<string, string> = { google: 'Google', x: 'X', apple: 'Apple' };
 		return labels[provider] ?? provider;
 	}
 }

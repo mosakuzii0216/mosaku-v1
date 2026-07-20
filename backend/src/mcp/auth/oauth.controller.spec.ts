@@ -190,12 +190,21 @@ describe('OAuthController', () => {
 			expect(res.status).toHaveBeenCalledWith(400);
 		});
 
-		it('should accept github and line as valid providers', () => {
-			['github', 'line'].forEach((provider) => {
+		it('should accept x and apple as valid providers', () => {
+			['x', 'apple'].forEach((provider) => {
 				const req = makeMockReq({});
 				const res = makeMockRes();
 				controller.loginStart(provider, req, res as unknown as ExpressResponse);
 				expect(res.redirect).toHaveBeenCalledWith(`/auth/${provider}`);
+			});
+		});
+
+		it('should reject github and line as廃止プロバイダ (400)', () => {
+			['github', 'line'].forEach((provider) => {
+				const req = makeMockReq({});
+				const res = makeMockRes();
+				controller.loginStart(provider, req, res as unknown as ExpressResponse);
+				expect(res.status).toHaveBeenCalledWith(400);
 			});
 		});
 	});
