@@ -160,7 +160,12 @@ model User {
   password               String?
   resetPasswordExpires   DateTime?           @map("reset_password_expires")
   resetPasswordToken     String?             @map("reset_password_token")
+  // Google と GitHub(廃止済み) が共用する識別子。プロバイダ判別列は存在しないため、
+  // GitHub 由来の値は次回 Google ログイン時に email 起点合流で googleId へ上書きされる
+  // （破壊的削除ではなく列の再利用。Google の識別・ログインには無影響）。
   oauthId                String?             @unique @map("oauth_id")
+  // LINE 廃止後も監査・復旧・将来の再有効化に備えて列とデータを非破壊で保持する
+  // （書き込み経路のみ廃止。マイグレーションでの削除は行わない）。
   lineId                 String?             @unique @map("line_id")
   appleId                String?             @unique @map("apple_id")
   xId                    String?             @unique @map("x_id")
