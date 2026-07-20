@@ -1,25 +1,15 @@
 import { useCallback } from 'react';
 import { AuthTokenManager } from '../utils/auth';
 import type { UserProfile } from '../utils/auth';
-import {
-	GoogleAuthUtils,
-	GitHubAuthUtils,
-	LineAuthUtils,
-	AppleAuthUtils,
-	XAuthUtils,
-} from '../utils/oauthAuth';
+import { GoogleAuthUtils, AppleAuthUtils, XAuthUtils } from '../utils/oauthAuth';
 import { logger } from '../utils/logger';
+import type { OAuthProvider } from '../constants/oauthProviders';
 
-export type OAuthProvider = 'google' | 'github' | 'line' | 'apple' | 'x';
+export type { OAuthProvider };
 
 interface OAuthProviderConfig {
 	name: string;
-	utils:
-		| typeof GoogleAuthUtils
-		| typeof GitHubAuthUtils
-		| typeof LineAuthUtils
-		| typeof AppleAuthUtils
-		| typeof XAuthUtils;
+	utils: typeof GoogleAuthUtils | typeof AppleAuthUtils | typeof XAuthUtils;
 	startAuth: () => void;
 }
 
@@ -30,16 +20,6 @@ export const OAUTH_PROVIDERS: Record<OAuthProvider, OAuthProviderConfig> = {
 		name: 'Google',
 		utils: GoogleAuthUtils,
 		startAuth: GoogleAuthUtils.startGoogleAuth,
-	},
-	github: {
-		name: 'GitHub',
-		utils: GitHubAuthUtils,
-		startAuth: GitHubAuthUtils.startGitHubAuth,
-	},
-	line: {
-		name: 'LINE',
-		utils: LineAuthUtils,
-		startAuth: LineAuthUtils.startLineAuth,
 	},
 	apple: {
 		name: 'Apple',

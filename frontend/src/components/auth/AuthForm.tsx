@@ -17,8 +17,6 @@ interface AuthFormProps {
 
 const PROVIDER_LABELS: Record<InvitationOAuthProvider, string> = {
 	google: 'Google',
-	github: 'GitHub',
-	line: 'LINE',
 	apple: 'Apple',
 	x: 'X',
 };
@@ -26,7 +24,7 @@ const PROVIDER_LABELS: Record<InvitationOAuthProvider, string> = {
 // 主要手段（常に表示）
 const PRIMARY_PROVIDERS: InvitationOAuthProvider[] = ['google'];
 // 展開操作で表示
-const SECONDARY_PROVIDERS: InvitationOAuthProvider[] = ['github', 'line', 'apple', 'x'];
+const SECONDARY_PROVIDERS: InvitationOAuthProvider[] = ['apple', 'x'];
 
 interface InvitationModeFormProps {
 	invitationCode: string;

@@ -622,7 +622,7 @@ describe('ApiClient 招待関連エンドポイント', () => {
 
 		try {
 			await apiClient.startOAuthRegistration({
-				provider: 'github',
+				provider: 'apple',
 				invitationCode: 'expired',
 			});
 			expect.unreachable();

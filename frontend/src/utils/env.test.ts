@@ -48,12 +48,10 @@ describe('envValidator', () => {
 		it('OAuth 用 optional env を取得できること', () => {
 			stubRequiredEnvs();
 			vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'google-client');
-			vi.stubEnv('VITE_GITHUB_CLIENT_ID', 'github-client');
 
 			const config = envValidator.validate();
 
 			expect(config.googleClientId).toBe('google-client');
-			expect(config.githubClientId).toBe('github-client');
 		});
 	});
 

@@ -7,8 +7,6 @@ vi.mock('../../contexts/AuthContext', () => ({
 		login: vi.fn(),
 		register: vi.fn(),
 		googleLogin: vi.fn(),
-		githubLogin: vi.fn(),
-		lineLogin: vi.fn(),
 		appleLogin: vi.fn(),
 		xLogin: vi.fn(),
 	}),

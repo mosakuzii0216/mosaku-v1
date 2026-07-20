@@ -227,9 +227,7 @@ describe('useStartOAuthRegistration', () => {
 		const { result } = renderHook(() => useStartOAuthRegistration(), { wrapper });
 
 		await expect(
-			act(async () =>
-				result.current.mutateAsync({ provider: 'github', invitationCode: 'expired' }),
-			),
+			act(async () => result.current.mutateAsync({ provider: 'apple', invitationCode: 'expired' })),
 		).rejects.toBeInstanceOf(ApiError);
 	});
 });

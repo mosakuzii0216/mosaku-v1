@@ -16,7 +16,6 @@ interface EnvConfig {
 	supabaseAnonKey: string;
 	// OAuth Client ID（オプショナル - 使用する場合のみ設定）
 	googleClientId?: string;
-	githubClientId?: string;
 	xConsumerKey?: string;
 	// Sentry 関連（オプショナル - DSN を起点に有効化される）
 	sentryDsn?: string;
@@ -118,7 +117,6 @@ class EnvironmentValidator {
 				supabaseAnonKey: this.getRequiredEnv('Supabase Anon Key', 'VITE_SUPABASE_ANON_KEY'),
 				// オプショナルな環境変数（OAuth）
 				googleClientId: this.getOptionalEnv('VITE_GOOGLE_CLIENT_ID'),
-				githubClientId: this.getOptionalEnv('VITE_GITHUB_CLIENT_ID'),
 				xConsumerKey: this.getOptionalEnv('VITE_X_CONSUMER_KEY'),
 				// Sentry 関連
 				sentryDsn,
@@ -134,7 +132,6 @@ class EnvironmentValidator {
 					appUrl: this.config.appUrl,
 					supabaseUrl: this.config.supabaseUrl,
 					hasGoogleClientId: !!this.config.googleClientId,
-					hasGithubClientId: !!this.config.githubClientId,
 					hasXConsumerKey: !!this.config.xConsumerKey,
 					hasSentryDsn: !!this.config.sentryDsn,
 					sentryEnvironment: this.config.sentryEnvironment,
@@ -206,12 +203,4 @@ export function getGoogleClientId(): string {
 		throw new Error('Google Client ID is not configured');
 	}
 	return config.googleClientId;
-}
-
-export function getGithubClientId(): string {
-	const config = envValidator.getConfig();
-	if (!config.githubClientId) {
-		throw new Error('GitHub Client ID is not configured');
-	}
-	return config.githubClientId;
 }

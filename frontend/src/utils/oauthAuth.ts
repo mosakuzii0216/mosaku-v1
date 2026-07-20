@@ -1,4 +1,4 @@
-import { getBackendUrl, getGoogleClientId, getGithubClientId } from './env';
+import { getBackendUrl, getGoogleClientId } from './env';
 import { BaseOAuthAuth } from './oauthAuth/BaseOAuthAuth';
 
 class GoogleAuthUtilsClass extends BaseOAuthAuth {
@@ -21,55 +21,14 @@ class GoogleAuthUtilsClass extends BaseOAuthAuth {
 	}
 }
 
-class GitHubAuthUtilsClass extends BaseOAuthAuth {
-	protected getProviderName(): string {
-		return 'GitHub';
-	}
-
-	protected getUserParamName(): string {
-		return 'github_user';
-	}
-
-	startAuth(): void {
-		// 環境変数の検証は getGithubClientId() 内で行われる
-		getGithubClientId(); // 環境変数が設定されているか検証
-		const backendUrl = getBackendUrl();
-
-		// バックエンドのGitHub認証エンドポイントにリダイレクト
-		const githubAuthUrl = `${backendUrl}/auth/github`;
-		window.location.href = githubAuthUrl;
-	}
-}
-
 // 静的メソッドとして公開するためのラッパー
 const googleAuthUtils = new GoogleAuthUtilsClass();
-const githubAuthUtils = new GitHubAuthUtilsClass();
 
 export const GoogleAuthUtils = {
 	startGoogleAuth: () => googleAuthUtils.startAuth(),
 	parseAuthCallback: () => googleAuthUtils.parseAuthCallback(),
 	clearAuthParams: () => googleAuthUtils.clearAuthParams(),
 };
-
-export const GitHubAuthUtils = {
-	startGitHubAuth: () => githubAuthUtils.startAuth(),
-	parseAuthCallback: () => githubAuthUtils.parseAuthCallback(),
-	clearAuthParams: () => githubAuthUtils.clearAuthParams(),
-};
-
-class LineAuthUtilsClass extends BaseOAuthAuth {
-	protected getProviderName(): string {
-		return 'LINE';
-	}
-
-	protected getUserParamName(): string {
-		return 'line_user';
-	}
-
-	startAuth(): void {
-		window.location.href = `${getBackendUrl()}/auth/line`;
-	}
-}
 
 class AppleAuthUtilsClass extends BaseOAuthAuth {
 	protected getProviderName(): string {
@@ -99,15 +58,8 @@ class XAuthUtilsClass extends BaseOAuthAuth {
 	}
 }
 
-const lineAuthUtils = new LineAuthUtilsClass();
 const appleAuthUtils = new AppleAuthUtilsClass();
 const xAuthUtils = new XAuthUtilsClass();
-
-export const LineAuthUtils = {
-	startLineAuth: () => lineAuthUtils.startAuth(),
-	parseAuthCallback: () => lineAuthUtils.parseAuthCallback(),
-	clearAuthParams: () => lineAuthUtils.clearAuthParams(),
-};
 
 export const AppleAuthUtils = {
 	startAppleAuth: () => appleAuthUtils.startAuth(),

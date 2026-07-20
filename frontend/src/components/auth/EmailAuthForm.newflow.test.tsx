@@ -11,8 +11,6 @@ vi.mock('../../contexts/AuthContext', () => ({
 		register: (...args: unknown[]) => register(...args),
 		login: (...args: unknown[]) => login(...args),
 		googleLogin: vi.fn(),
-		githubLogin: vi.fn(),
-		lineLogin: vi.fn(),
 		appleLogin: vi.fn(),
 		xLogin: vi.fn(),
 	}),
@@ -82,6 +80,34 @@ describe('EmailAuthForm - 新フロー対応 (タスク7.2)', () => {
 
 			fireEvent.change(input, { target: { value: 'différent' } });
 			expect(input.value).toBe('différent');
+		});
+	});
+
+	describe('OAuthプロバイダの表示 (oauth-providers-reduction)', () => {
+		it('login モードで Google / Apple / X の3種のみが表示される', () => {
+			render(<EmailAuthForm mode="login" onSwitchMode={vi.fn()} onForgotPassword={vi.fn()} />);
+			expect(screen.getByRole('button', { name: /Googleでログイン/ })).toBeTruthy();
+			expect(screen.getByRole('button', { name: /Appleでログイン/ })).toBeTruthy();
+			expect(screen.getByRole('button', { name: /Xでログイン/ })).toBeTruthy();
+		});
+
+		it('signup モードで Google / Apple / X の3種のみが表示される', () => {
+			render(<EmailAuthForm mode="signup" onSwitchMode={vi.fn()} onForgotPassword={vi.fn()} />);
+			expect(screen.getByRole('button', { name: /Googleで登録/ })).toBeTruthy();
+			expect(screen.getByRole('button', { name: /Appleで登録/ })).toBeTruthy();
+			expect(screen.getByRole('button', { name: /Xで登録/ })).toBeTruthy();
+		});
+
+		it('GitHub / LINE のボタンは表示されない（login/signup 両モード）', () => {
+			const { rerender } = render(
+				<EmailAuthForm mode="login" onSwitchMode={vi.fn()} onForgotPassword={vi.fn()} />,
+			);
+			expect(screen.queryByRole('button', { name: /GitHub/ })).toBeNull();
+			expect(screen.queryByRole('button', { name: /LINE/ })).toBeNull();
+
+			rerender(<EmailAuthForm mode="signup" onSwitchMode={vi.fn()} onForgotPassword={vi.fn()} />);
+			expect(screen.queryByRole('button', { name: /GitHub/ })).toBeNull();
+			expect(screen.queryByRole('button', { name: /LINE/ })).toBeNull();
 		});
 	});
 

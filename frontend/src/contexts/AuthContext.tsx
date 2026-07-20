@@ -25,8 +25,6 @@ export interface AuthActions {
 	resetPassword: (email: string) => Promise<void>;
 	changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 	googleLogin: () => void;
-	githubLogin: () => void;
-	lineLogin: () => void;
 	appleLogin: () => void;
 	xLogin: () => void;
 	logout: () => Promise<void>;
@@ -146,8 +144,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	}, []);
 
 	const googleLogin = useCallback(() => oauth.startLogin('google'), [oauth]);
-	const githubLogin = useCallback(() => oauth.startLogin('github'), [oauth]);
-	const lineLogin = useCallback(() => oauth.startLogin('line'), [oauth]);
 	const appleLogin = useCallback(() => oauth.startLogin('apple'), [oauth]);
 	const xLogin = useCallback(() => oauth.startLogin('x'), [oauth]);
 
@@ -160,8 +156,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		resetPassword,
 		changePassword,
 		googleLogin,
-		githubLogin,
-		lineLogin,
 		appleLogin,
 		xLogin,
 		logout,

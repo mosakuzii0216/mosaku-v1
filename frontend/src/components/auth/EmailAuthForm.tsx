@@ -161,8 +161,6 @@ export function EmailAuthForm({
 
 			<div className="space-y-3">
 				<OAuthLoginButton provider="google" mode={mode} variant="forest" />
-				<OAuthLoginButton provider="github" mode={mode} variant="forest" />
-				<OAuthLoginButton provider="line" mode={mode} variant="forest" />
 				<OAuthLoginButton provider="apple" mode={mode} variant="forest" />
 				<OAuthLoginButton provider="x" mode={mode} variant="forest" />
 			</div>

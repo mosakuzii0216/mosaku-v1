@@ -17,8 +17,6 @@ vi.mock('../../contexts/AuthContext', () => ({
 		login: vi.fn(),
 		register: vi.fn(),
 		googleLogin: vi.fn(),
-		githubLogin: vi.fn(),
-		lineLogin: vi.fn(),
 		appleLogin: vi.fn(),
 		xLogin: vi.fn(),
 		resetPassword: vi.fn(),
@@ -145,6 +143,18 @@ describe('AuthForm - 新フロー (タスク7.2)', () => {
 				withQuery(<AuthForm prefilledInvitationCode="k9x7m2j3pq" inviterContext={baseContext} />),
 			);
 			expect(screen.queryByRole('button', { name: /GitHubで登録/ })).toBeNull();
+		});
+
+		it('「他の方法で登録」展開後は Apple / X のみ表示され GitHub / LINE は現れない', () => {
+			render(
+				withQuery(<AuthForm prefilledInvitationCode="k9x7m2j3pq" inviterContext={baseContext} />),
+			);
+			fireEvent.click(screen.getByRole('button', { name: '他の方法で登録' }));
+
+			expect(screen.getByRole('button', { name: /Appleで登録/ })).toBeTruthy();
+			expect(screen.getByRole('button', { name: /Xで登録/ })).toBeTruthy();
+			expect(screen.queryByRole('button', { name: /GitHubで登録/ })).toBeNull();
+			expect(screen.queryByRole('button', { name: /LINEで登録/ })).toBeNull();
 		});
 
 		it('ログイン導線が表示される', () => {

@@ -5,8 +5,6 @@ import { OAuthLoginButton } from './OAuthLoginButton';
 vi.mock('../../contexts/AuthContext', () => ({
 	useAuth: () => ({
 		googleLogin: vi.fn(),
-		githubLogin: vi.fn(),
-		lineLogin: vi.fn(),
 		appleLogin: vi.fn(),
 		xLogin: vi.fn(),
 	}),
@@ -39,7 +37,7 @@ describe('OAuthLoginButton', () => {
 		});
 
 		it('全プロバイダーで forest variant が適用されること', () => {
-			const providers = ['google', 'github', 'line', 'apple', 'x'] as const;
+			const providers = ['google', 'apple', 'x'] as const;
 			providers.forEach((provider) => {
 				const { container } = render(<OAuthLoginButton provider={provider} variant="forest" />);
 				const button = container.querySelector('button') as HTMLElement;

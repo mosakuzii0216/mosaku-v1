@@ -88,7 +88,7 @@ export interface UserQuotaResponse {
 /**
  * OAuth 開始エンドポイントの対象プロバイダ
  */
-export type InvitationOAuthProvider = 'google' | 'github' | 'line' | 'apple' | 'x';
+export type { OAuthProvider as InvitationOAuthProvider } from '../constants/oauthProviders';
 
 /**
  * OAuth 開始エンドポイントのレスポンス（`POST /auth/oauth/:provider/start`）
