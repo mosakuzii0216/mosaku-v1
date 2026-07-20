@@ -1,6 +1,6 @@
 # OAuth プロバイダー設定ガイド
 
-LINE・Apple・X（Twitter）の OAuth アプリを各プラットフォームで設定する手順をまとめます。
+Apple・X（Twitter）の OAuth アプリを各プラットフォームで設定する手順をまとめます。
 
 > **重要**: 本番環境とステージング環境では、それぞれ別の OAuth アプリを作成してください。同一アプリを共有すると、コールバック URL の競合やセキュリティリスクが生じます。
 
@@ -12,9 +12,6 @@ LINE・Apple・X（Twitter）の OAuth アプリを各プラットフォーム�
 
 | プロバイダー | プラットフォームの呼称   | 環境変数名                                                                     |
 | ------------ | ------------------------ | ------------------------------------------------------------------------------ |
-| LINE         | Channel ID               | `LINE_CLIENT_ID`                                                               |
-| LINE         | Channel Secret           | `LINE_CLIENT_SECRET`                                                           |
-| LINE         | Callback URL             | `LINE_REDIRECT_URI`（省略可: デフォルト `{BACKEND_URL}/auth/line/callback`）   |
 | Apple        | Service ID               | `APPLE_CLIENT_ID`                                                              |
 | Apple        | Team ID                  | `APPLE_TEAM_ID`                                                                |
 | Apple        | Key ID                   | `APPLE_KEY_ID`                                                                 |
@@ -25,44 +22,6 @@ LINE・Apple・X（Twitter）の OAuth アプリを各プラットフォーム�
 | X            | Callback URL             | `X_REDIRECT_URI`（省略可: デフォルト `{BACKEND_URL}/auth/x/callback`）         |
 
 > **補足**: `APPLE_PRIVATE_KEY` の値は `.p8` ファイルの中身をそのまま設定します。改行は `\n` でエスケープするか、環境に応じてリテラル改行を使用してください。
-
----
-
-## LINE
-
-### 1. LINE Developers コンソールにアクセス
-
-[LINE Developers コンソール](https://developers.line.biz/console/) にログインします。
-
-### 2. プロバイダーを作成（未作成の場合）
-
-「プロバイダーを作成」からプロバイダー名を入力して作成します。
-
-### 3. LINEログインチャンネルを作成
-
-1. 作成したプロバイダーを選択
-2. 「チャンネル設定」→「チャンネルを作成」
-3. チャンネルの種類: **LINE ログイン** を選択
-4. チャンネル名・説明を入力して「作成」
-
-### 4. コールバック URL を登録
-
-1. 作成したチャンネルの「LINE ログイン設定」タブを開く
-2. 「コールバック URL」に以下を追加:
-   - 本番: `https://{本番バックエンドURL}/auth/line/callback`
-   - ステージング: `https://{ステージングバックエンドURL}/auth/line/callback`
-   - ローカル: `http://localhost:3000/auth/line/callback`
-
-### 5. クレデンシャルを取得
-
-「チャンネル基本設定」タブから:
-
-- **Channel ID** → `LINE_CLIENT_ID` に設定
-- **Channel Secret** → `LINE_CLIENT_SECRET` に設定
-
-### 6. チャンネルを公開
-
-開発中は「開発中」ステータスでも動作しますが、本番では「公開済み」に変更してください。
 
 ---
 
@@ -151,7 +110,6 @@ LINE・Apple・X（Twitter）の OAuth アプリを各プラットフォーム�
 
 ## ステージング環境の注意事項
 
-- **LINE**: ステージング用に別のチャンネルを作成するか、コールバック URL にステージング URL を追加してください。
 - **Apple**: Service ID は環境ごとに別 Identifier を使用することを推奨します（例: `com.yourapp.signin.staging`）。
 - **X**: 本番・ステージングで別のアプリを作成し、それぞれのコールバック URL を設定してください。
 

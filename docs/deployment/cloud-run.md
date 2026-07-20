@@ -494,9 +494,6 @@ gcloud secrets add-iam-policy-binding supabase-anon-key \
 | `GOOGLE_CLIENT_ID`     | `xxx.apps.googleusercontent.com`             | Google OAuth Client ID |
 | `GOOGLE_CLIENT_SECRET` | Secret Manager: `google-client-secret`       | Google OAuth Secret    |
 | `GOOGLE_REDIRECT_URI`  | `https://[SERVICE-URL]/auth/google/callback` | Google Redirect URI    |
-| `GITHUB_CLIENT_ID`     | `Iv1.xxxxx`                                  | GitHub OAuth Client ID |
-| `GITHUB_CLIENT_SECRET` | Secret Manager: `github-client-secret`       | GitHub OAuth Secret    |
-| `GITHUB_REDIRECT_URI`  | `https://[SERVICE-URL]/auth/github/callback` | GitHub Redirect URI    |
 
 ## デプロイコマンド例
 
@@ -554,10 +551,6 @@ SESSION_SECRET=<Secret Manager: session-secret>
 GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=<Secret Manager: google-client-secret>
 GOOGLE_REDIRECT_URI=https://[SERVICE-URL].a.run.app/auth/google/callback
-
-GITHUB_CLIENT_ID=Iv1.xxxxx
-GITHUB_CLIENT_SECRET=<Secret Manager: github-client-secret>
-GITHUB_REDIRECT_URI=https://[SERVICE-URL].a.run.app/auth/github/callback
 ````
 
 **成果物**:

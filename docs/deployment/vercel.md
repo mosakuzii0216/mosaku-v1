@@ -239,7 +239,6 @@ VITE_APP_URL=https://[YOUR-APP].vercel.app
 
 # OAuth Client IDs (本番環境用)
 VITE_GOOGLE_CLIENT_ID=[YOUR-PRODUCTION-GOOGLE-CLIENT-ID]
-VITE_GITHUB_CLIENT_ID=[YOUR-PRODUCTION-GITHUB-CLIENT-ID]
 VITE_X_CONSUMER_KEY=[YOUR-PRODUCTION-X-CONSUMER-KEY]
 ```
 
@@ -264,7 +263,6 @@ VITE_X_CONSUMER_KEY=[YOUR-PRODUCTION-X-CONSUMER-KEY]
 | 変数名                  | 値                 | 環境       |
 | ----------------------- | ------------------ | ---------- |
 | `VITE_GOOGLE_CLIENT_ID` | 本番用Client ID    | Production |
-| `VITE_GITHUB_CLIENT_ID` | 本番用Client ID    | Production |
 | `VITE_X_CONSUMER_KEY`   | 本番用Consumer Key | Production |
 
 ## 設定方法
@@ -429,10 +427,6 @@ git push origin test/vercel-preview
 
 ```
 変数名: VITE_GOOGLE_CLIENT_ID
-値: [本番用Client ID]
-環境: Production
-
-変数名: VITE_GITHUB_CLIENT_ID
 値: [本番用Client ID]
 環境: Production
 

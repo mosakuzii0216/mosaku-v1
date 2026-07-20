@@ -79,7 +79,7 @@ npm run test:e2e  # Playwright E2E テスト
 完全リストは `.env.example` を参照。要点のみ:
 
 - **DB**: `DATABASE_URL`（6543/プーリング）/ `DIRECT_URL`（5432/マイグレーション用）
-- **Auth**: `JWT_SECRET`, `{GOOGLE,GITHUB,LINE,APPLE,X}_CLIENT_*`
+- **Auth**: `JWT_SECRET`, `{GOOGLE,X,APPLE}_CLIENT_*`
 - **CORS**: `CORS_ORIGINS`（カンマ区切り）
 - **Sentry**: `SENTRY_*` / `VITE_SENTRY_*` — 詳細は [`docs/deployment/sentry.md`](./docs/deployment/sentry.md)
 - **Frontend**: 全て `VITE_` プレフィックス必須
