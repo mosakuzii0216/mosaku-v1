@@ -135,6 +135,44 @@ describe('OAuthService', () => {
 		});
 	});
 
+	describe('Task 1.4: 廃止プロバイダ（LINE / GitHub）のログイン/登録メソッドが削除されていること', () => {
+		it.each([
+			'githubLogin',
+			'lineLogin',
+			'githubRegisterWithStateInvitation',
+			'lineRegisterWithStateInvitation',
+		])('OAuthService.%s は削除されている', (method) => {
+			expect((service as unknown as Record<string, unknown>)[method]).toBeUndefined();
+		});
+	});
+
+	describe('Task 1.4: 旧 GitHub 由来ユーザーの Google への継続アクセス（email 起点合流）', () => {
+		it('旧 github ログインで oauthId を保持していたユーザーが同一メールの google ログインで oauthId を上書きされること', async () => {
+			const legacyGithubUser = { ...mockUser, oauthId: 'github-legacy-id' };
+			mockPrismaService.user.findFirst.mockResolvedValue(legacyGithubUser);
+			mockPrismaService.user.update.mockResolvedValue({
+				...legacyGithubUser,
+				oauthId: 'google-id-789',
+			});
+
+			const googleUser = {
+				googleId: 'google-id-789',
+				email: legacyGithubUser.email,
+				name: 'Now Google User',
+			};
+
+			const result = await service.googleLogin(googleUser);
+
+			expect(mockPrismaService.user.update).toHaveBeenCalledWith(
+				expect.objectContaining({
+					where: { id: legacyGithubUser.id },
+					data: expect.objectContaining({ oauthId: 'google-id-789' }) as unknown,
+				}),
+			);
+			expect(result.accessToken).toBeDefined();
+		});
+	});
+
 	describe('googleLogin', () => {
 		it('should delegate to handleOAuthLogin with googleId as providerId', async () => {
 			const googleUser = {
@@ -158,57 +196,7 @@ describe('OAuthService', () => {
 		});
 	});
 
-	describe('githubLogin', () => {
-		it('should delegate to handleOAuthLogin with githubId as providerId', async () => {
-			const githubUser = {
-				githubId: 'github-id-789',
-				email: 'github@example.com',
-				name: 'GitHub User',
-			};
-			mockPrismaService.user.findFirst.mockResolvedValue(mockUser);
-			mockPrismaService.user.update.mockResolvedValue(mockUser);
-
-			const result = await service.githubLogin(githubUser);
-
-			expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith(
-				expect.objectContaining({
-					where: expect.objectContaining({
-						OR: expect.arrayContaining([{ oauthId: 'github-id-789' }]) as unknown,
-					}) as unknown,
-				}),
-			);
-			expect(result.accessToken).toBeDefined();
-		});
-	});
-
-	// ─── Task 4.1 / 4.2: LINE / Apple / X ───────────────────────────────────
-
-	describe('lineLogin', () => {
-		it('lineId フィールドを使ってユーザーを検索すること', async () => {
-			const lineUser = { lineId: 'U1234567890', name: 'LINE User', email: 'line@example.com' };
-			mockPrismaService.user.findFirst.mockResolvedValue({ ...mockUser, lineId: 'U1234567890' });
-			mockPrismaService.user.update.mockResolvedValue({ ...mockUser, lineId: 'U1234567890' });
-
-			const result = await service.lineLogin(lineUser);
-
-			expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith(
-				expect.objectContaining({
-					where: expect.objectContaining({
-						OR: expect.arrayContaining([{ lineId: 'U1234567890' }]) as unknown,
-					}) as unknown,
-				}),
-			);
-			expect(result.accessToken).toBeDefined();
-		});
-
-		it('新規ユーザーの場合に ADMIN_EMAIL_REQUIRED で弾かれること', async () => {
-			mockPrismaService.user.findFirst.mockResolvedValue(null);
-			mockConfigService.isAdminEmail.mockReturnValue(false);
-			const lineUser = { lineId: 'U9999', name: 'New LINE User' };
-
-			await expect(service.lineLogin(lineUser)).rejects.toMatchObject({ code: 'AUTHZ005' });
-		});
-	});
+	// ─── Task 4.1 / 4.2: Apple / X ───────────────────────────────────────────
 
 	describe('appleLogin', () => {
 		it('appleId フィールドを使ってユーザーを検索すること', async () => {
@@ -315,46 +303,6 @@ describe('OAuthService', () => {
 					data: expect.objectContaining({ role: 'ADMIN' }) as unknown,
 				}),
 			);
-		});
-	});
-
-	describe('githubRegisterWithStateInvitation', () => {
-		it('GitHub OAuth 経由の state 由来登録が成功すること', async () => {
-			mockInvitationService.verifyInvitation.mockResolvedValue({ id: 'invite-1', code: 'CODE' });
-			mockPrismaService.user.findFirst.mockResolvedValue(null);
-			mockPrismaService.user.create.mockResolvedValue({ ...mockUser, oauthId: 'gh-state' });
-			mockConfigService.isAdminEmail.mockReturnValue(false);
-
-			const result = await service.githubRegisterWithStateInvitation({
-				oauthUser: {
-					githubId: 'gh-state',
-					email: 'gh@example.com',
-					name: 'GH',
-				},
-				invitationCode: 'CODE',
-				ctx: { ip: null, userAgent: null },
-			});
-
-			expect(mockInvitationService.useInvitation).toHaveBeenCalledWith('CODE');
-			expect(result.accessToken).toBeDefined();
-		});
-	});
-
-	describe('lineRegisterWithStateInvitation', () => {
-		it('LINE OAuth 経由の state 由来登録が成功すること', async () => {
-			mockInvitationService.verifyInvitation.mockResolvedValue({ id: 'invite-1', code: 'CODE' });
-			mockPrismaService.user.findFirst.mockResolvedValue(null);
-			mockPrismaService.user.create.mockResolvedValue({ ...mockUser, lineId: 'U999' });
-			mockConfigService.isAdminEmail.mockReturnValue(false);
-
-			const result = await service.lineRegisterWithStateInvitation({
-				oauthUser: { lineId: 'U999', email: 'line@example.com', name: 'LINE' },
-				invitationCode: 'CODE',
-				ctx: { ip: null, userAgent: null },
-			});
-
-			expect(mockInvitationService.useInvitation).toHaveBeenCalledWith('CODE');
-			expect(result.accessToken).toBeDefined();
 		});
 	});
 

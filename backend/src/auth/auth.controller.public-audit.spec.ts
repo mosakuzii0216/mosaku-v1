@@ -21,10 +21,6 @@ describe('AuthController @Public() 監査', () => {
 		{ method: 'resetPasswordConfirm', description: 'パスワード再設定確定' },
 		{ method: 'googleAuth', description: 'Google OAuth 開始' },
 		{ method: 'googleAuthRedirect', description: 'Google OAuth コールバック' },
-		{ method: 'githubAuth', description: 'GitHub OAuth 開始' },
-		{ method: 'githubAuthRedirect', description: 'GitHub OAuth コールバック' },
-		{ method: 'lineAuth', description: 'LINE OAuth 開始' },
-		{ method: 'lineAuthCallback', description: 'LINE OAuth コールバック' },
 		{ method: 'appleAuth', description: 'Apple OAuth 開始' },
 		{ method: 'appleAuthCallback', description: 'Apple OAuth コールバック' },
 		{ method: 'xAuth', description: 'X OAuth 開始' },
@@ -55,6 +51,22 @@ describe('AuthController @Public() 監査', () => {
 	// Task 9.1: 旧 OAuth 招待コード登録 5 本は新フロー（state 引き継ぎ）に統合され削除済み。
 	removedHandlers.forEach((method) => {
 		it(`旧 ${method} ハンドラは AuthController から削除されている`, () => {
+			expect(
+				(AuthController.prototype as unknown as Record<string, unknown>)[method],
+			).toBeUndefined();
+		});
+	});
+
+	// Task 1.2: 廃止プロバイダ（LINE / GitHub）のエンドポイントハンドラ自体が削除されている。
+	const removedOAuthHandlers: ReadonlyArray<string> = [
+		'githubAuth',
+		'githubAuthRedirect',
+		'lineAuth',
+		'lineAuthCallback',
+	];
+
+	removedOAuthHandlers.forEach((method) => {
+		it(`廃止プロバイダハンドラ ${method} は AuthController から削除されている`, () => {
 			expect(
 				(AuthController.prototype as unknown as Record<string, unknown>)[method],
 			).toBeUndefined();

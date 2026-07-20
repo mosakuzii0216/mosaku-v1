@@ -26,12 +26,7 @@ import { InvitationService } from '../invitation/invitation.service';
 import { OAuthStateService } from './oauth-state.service';
 import { XOAuthService } from './x-oauth.service';
 import { PasswordResetService } from './password-reset.service';
-import {
-	GoogleAuthGuard,
-	GitHubAuthGuard,
-	LineAuthGuard,
-	AppleAuthGuard,
-} from './oauth-auth.guards';
+import { GoogleAuthGuard, AppleAuthGuard } from './oauth-auth.guards';
 
 const AUTH_FAILED_URL = 'http://localhost:5173?error=auth_failed';
 const SUCCESS_URL = 'http://localhost:5173?token=jwt-token';
@@ -152,10 +147,6 @@ describe('Task 4.3: MCP ハンドオフ不変テスト', () => {
 		})
 			.overrideGuard(GoogleAuthGuard)
 			.useValue(makeUserGuard({ googleId: 'g-1', name: 'G', email: 'g@example.com' }))
-			.overrideGuard(GitHubAuthGuard)
-			.useValue(makeUserGuard({ githubId: 'gh-1', name: 'GH', email: 'gh@example.com' }))
-			.overrideGuard(LineAuthGuard)
-			.useValue(makeUserGuard({ lineId: 'l-1', name: 'L', email: 'l@example.com' }))
 			.overrideGuard(AppleAuthGuard)
 			.useValue(makeUserGuard({ appleId: 'a-1', name: 'A', email: 'a@example.com' }))
 			.compile();

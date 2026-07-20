@@ -1,13 +1,8 @@
 import { IsIn, IsNotEmpty, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import type { OAuthProvider } from '../types/oauth.types';
 
-export const OAUTH_START_PROVIDERS: ReadonlyArray<OAuthProvider> = [
-	'google',
-	'github',
-	'line',
-	'apple',
-	'x',
-];
+/** 有効プロバイダ集合の単一真実源。OAuthProvider 型はこの配列から導出される。 */
+export const OAUTH_START_PROVIDERS = ['google', 'x', 'apple'] as const;
 
 export class OAuthStartParamsDto {
 	@IsString()

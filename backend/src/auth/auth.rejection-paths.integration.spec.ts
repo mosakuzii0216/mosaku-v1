@@ -29,12 +29,7 @@ import { OAuthStateService } from './oauth-state.service';
 import { OAuthStateCrypto } from './oauth-state-crypto.service';
 import { XOAuthService } from './x-oauth.service';
 import { PasswordResetService } from './password-reset.service';
-import {
-	GoogleAuthGuard,
-	GitHubAuthGuard,
-	LineAuthGuard,
-	AppleAuthGuard,
-} from './oauth-auth.guards';
+import { GoogleAuthGuard, AppleAuthGuard } from './oauth-auth.guards';
 
 // ── テスト用固定鍵 ─────────────────────────────────────────────────────────────
 
@@ -186,10 +181,6 @@ describe('Task 4.2: 拒否経路統合テスト（実 OAuthStateService + OAuthS
 		})
 			.overrideGuard(GoogleAuthGuard)
 			.useValue(makeUserGuard({ googleId: 'g-1', name: 'G', email: 'g@example.com' }))
-			.overrideGuard(GitHubAuthGuard)
-			.useValue(makeUserGuard({ githubId: 'gh-1', name: 'GH', email: 'gh@example.com' }))
-			.overrideGuard(LineAuthGuard)
-			.useValue(makeUserGuard({ lineId: 'l-1', name: 'L', email: 'l@example.com' }))
 			.overrideGuard(AppleAuthGuard)
 			.useValue(makeUserGuard({ appleId: 'a-1', name: 'A', email: 'a@example.com' }))
 			.compile();
@@ -299,10 +290,10 @@ describe('Task 4.2: 拒否経路統合テスト（実 OAuthStateService + OAuthS
 	// ──────────────────────────────────────────────────────────────────────────
 
 	/**
-	 * 4 社（Google/GitHub/LINE/Apple）は state 検証失敗時に常に invite ページへリダイレクトする。
+	 * 残 2 社（Google/Apple）は state 検証失敗時に常に invite ページへリダイレクトする。
 	 * これは認証成立へフォールスルーしない保証。
 	 */
-	describe('Google コールバック拒否経路（4 社代表 - 失敗時は invite ページへ）', () => {
+	describe('Google コールバック拒否経路（残 2 社代表 - 失敗時は invite ページへ）', () => {
 		it('HMAC 改ざん状態 → invite ページへ（ログイン成立しない）', async () => {
 			const validState = oauthStateService.issueState({ provider: 'google' });
 			const tampered = tamperHmac(validState);

@@ -6,8 +6,8 @@
  *   - X 招待登録: callback で verifyState（code あり payload）→ exchangeCodeForUser → xRegisterWithStateInvitation
  *   - エラーケース: state 欠落 / verifyState 失敗 / token 交換失敗
  *
- * 4.2 他 4 プロバイダの回帰テスト（runOAuthCallbackWithStateSupport 経路不変）
- *   - Google / GitHub / LINE / Apple のコールバックが state 検証経路を経由し続けること
+ * 4.2 他 2 プロバイダの回帰テスト（runOAuthCallbackWithStateSupport 経路不変）
+ *   - Google / Apple のコールバックが state 検証経路を経由し続けること
  */
 import type { Server } from 'http';
 import { INestApplication, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -26,12 +26,7 @@ import { InvitationService } from '../invitation/invitation.service';
 import { OAuthStateService } from './oauth-state.service';
 import { XOAuthService } from './x-oauth.service';
 import { PasswordResetService } from './password-reset.service';
-import {
-	GoogleAuthGuard,
-	GitHubAuthGuard,
-	LineAuthGuard,
-	AppleAuthGuard,
-} from './oauth-auth.guards';
+import { GoogleAuthGuard, AppleAuthGuard } from './oauth-auth.guards';
 
 jest.mock('@sentry/nestjs', () => ({ captureMessage: jest.fn() }));
 
@@ -84,10 +79,6 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 			xRegisterWithStateInvitation: jest.fn(),
 			googleLogin: jest.fn(),
 			googleRegisterWithStateInvitation: jest.fn(),
-			githubLogin: jest.fn(),
-			githubRegisterWithStateInvitation: jest.fn(),
-			lineLogin: jest.fn(),
-			lineRegisterWithStateInvitation: jest.fn(),
 			appleLogin: jest.fn(),
 			appleRegisterWithStateInvitation: jest.fn(),
 		};
@@ -166,10 +157,6 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 		})
 			.overrideGuard(GoogleAuthGuard)
 			.useValue(makeUserGuard({ googleId: 'g-1', name: 'G', email: 'g@example.com' }))
-			.overrideGuard(GitHubAuthGuard)
-			.useValue(makeUserGuard({ githubId: 'gh-1', name: 'GH', email: 'gh@example.com' }))
-			.overrideGuard(LineAuthGuard)
-			.useValue(makeUserGuard({ lineId: 'l-1', name: 'L', email: 'l@example.com' }))
 			.overrideGuard(AppleAuthGuard)
 			.useValue(makeUserGuard({ appleId: 'a-1', name: 'A', email: 'a@example.com' }))
 			.compile();
@@ -323,7 +310,7 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 	});
 
 	// ──────────────────────────────────────────────────────────────────────────
-	// Task 4.2: 他 4 プロバイダの回帰テスト
+	// Task 4.2: 他 2 プロバイダの回帰テスト
 	// ──────────────────────────────────────────────────────────────────────────
 
 	describe('4.2 Google コールバック（OAuthStateService.verifyState 経路不変）', () => {
@@ -356,66 +343,6 @@ describe('Task 4: 統合・回帰テスト（X ステートレスフロー + 他
 			expect(oauthStateSvc.verifyState).not.toHaveBeenCalled();
 			expect(oauthSvc.googleLogin).toHaveBeenCalled();
 			expect(oauthSvc.googleRegisterWithStateInvitation).not.toHaveBeenCalled();
-			expect(res.headers.location).toBe(SUCCESS_REDIRECT);
-		});
-	});
-
-	describe('4.2 GitHub コールバック', () => {
-		it('state あり → verifyState を呼び githubRegisterWithStateInvitation に到達', async () => {
-			oauthStateSvc.verifyState.mockReturnValue({
-				v: 1,
-				code: 'GH-CODE',
-				provider: 'github',
-				nonce: 'n',
-				iat: Date.now(),
-			});
-
-			const res = await request(app.getHttpServer() as Server)
-				.get('/auth/github/callback?state=gh.signed.state')
-				.expect(302);
-
-			expect(oauthStateSvc.verifyState).toHaveBeenCalledWith('gh.signed.state', 'github');
-			expect(oauthSvc.githubRegisterWithStateInvitation).toHaveBeenCalled();
-			expect(res.headers.location).toBe(SUCCESS_REDIRECT);
-		});
-
-		it('state なし → githubLogin に到達', async () => {
-			const res = await request(app.getHttpServer() as Server)
-				.get('/auth/github/callback')
-				.expect(302);
-
-			expect(oauthStateSvc.verifyState).not.toHaveBeenCalled();
-			expect(oauthSvc.githubLogin).toHaveBeenCalled();
-			expect(res.headers.location).toBe(SUCCESS_REDIRECT);
-		});
-	});
-
-	describe('4.2 LINE コールバック', () => {
-		it('state あり → verifyState を呼び lineRegisterWithStateInvitation に到達', async () => {
-			oauthStateSvc.verifyState.mockReturnValue({
-				v: 1,
-				code: 'LINE-CODE',
-				provider: 'line',
-				nonce: 'n',
-				iat: Date.now(),
-			});
-
-			const res = await request(app.getHttpServer() as Server)
-				.get('/auth/line/callback?state=line.signed.state')
-				.expect(302);
-
-			expect(oauthStateSvc.verifyState).toHaveBeenCalledWith('line.signed.state', 'line');
-			expect(oauthSvc.lineRegisterWithStateInvitation).toHaveBeenCalled();
-			expect(res.headers.location).toBe(SUCCESS_REDIRECT);
-		});
-
-		it('state なし → lineLogin に到達', async () => {
-			const res = await request(app.getHttpServer() as Server)
-				.get('/auth/line/callback')
-				.expect(302);
-
-			expect(oauthStateSvc.verifyState).not.toHaveBeenCalled();
-			expect(oauthSvc.lineLogin).toHaveBeenCalled();
 			expect(res.headers.location).toBe(SUCCESS_REDIRECT);
 		});
 	});

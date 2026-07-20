@@ -1,8 +1,7 @@
 import 'reflect-metadata';
 import { AuthModule } from './auth.module';
-import { LineStrategy } from './line.strategy';
 import { AppleStrategy } from './apple.strategy';
-import { LineAuthGuard, AppleAuthGuard } from './oauth-auth.guards';
+import { AppleAuthGuard } from './oauth-auth.guards';
 import { RefreshTokenRepository } from './refresh-token.repository';
 import { RefreshTokenService } from './refresh-token.service';
 
@@ -10,24 +9,12 @@ describe('AuthModule - プロバイダー登録', () => {
 	const providers = (Reflect.getMetadata('providers', AuthModule) as unknown[]) ?? [];
 	const exports = (Reflect.getMetadata('exports', AuthModule) as unknown[]) ?? [];
 
-	it('LineStrategy が providers に登録されていること', () => {
-		expect(providers).toContain(LineStrategy);
-	});
-
 	it('AppleStrategy が providers に登録されていること', () => {
 		expect(providers).toContain(AppleStrategy);
 	});
 
-	it('LineAuthGuard が providers に登録されていること', () => {
-		expect(providers).toContain(LineAuthGuard);
-	});
-
 	it('AppleAuthGuard が providers に登録されていること', () => {
 		expect(providers).toContain(AppleAuthGuard);
-	});
-
-	it('LineAuthGuard が exports に登録されていること', () => {
-		expect(exports).toContain(LineAuthGuard);
 	});
 
 	it('AppleAuthGuard が exports に登録されていること', () => {
@@ -42,5 +29,23 @@ describe('AuthModule - プロバイダー登録', () => {
 	it('RefreshTokenService が providers / exports に登録されていること', () => {
 		expect(providers).toContain(RefreshTokenService);
 		expect(exports).toContain(RefreshTokenService);
+	});
+});
+
+describe('AuthModule - 廃止プロバイダ（LINE / GitHub）の DI 除去', () => {
+	const providers = (Reflect.getMetadata('providers', AuthModule) as unknown[]) ?? [];
+	const providerNames = providers.map((p) =>
+		typeof p === 'function' ? p.name : JSON.stringify(p),
+	);
+
+	it('LineStrategy / GitHubStrategy / LineAuthGuard / GitHubAuthGuard を含まないこと', () => {
+		expect(providerNames).not.toEqual(
+			expect.arrayContaining([
+				'LineStrategy',
+				'GitHubStrategy',
+				'LineAuthGuard',
+				'GitHubAuthGuard',
+			]),
+		);
 	});
 });

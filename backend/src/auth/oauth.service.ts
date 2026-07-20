@@ -6,9 +6,7 @@ import { JwtTokenService } from './jwt.service';
 import type { AuthTokens } from './jwt.service';
 import type {
 	BaseOAuthUser,
-	GitHubStrategyUser,
 	GoogleStrategyUser,
-	LineStrategyUser,
 	AppleStrategyUser,
 	XStrategyUser,
 } from './types/oauth.types';
@@ -17,7 +15,7 @@ import { ERROR_CODES, throwBadRequest } from '../common/exceptions';
 import { RefreshTokenService, type IssueResult } from './refresh-token.service';
 import type { AuthRequestContext } from './auth.service';
 
-type UserProviderField = 'oauthId' | 'lineId' | 'appleId' | 'xId';
+type UserProviderField = 'oauthId' | 'appleId' | 'xId';
 
 export type OAuthLoginResult = AuthTokens & { user: AuthenticatedUser; refresh: IssueResult };
 
@@ -122,36 +120,6 @@ export class OAuthService {
 		return this.handleOAuthLogin(normalizedUser, googleUser.googleId, 'oauthId', ctx);
 	}
 
-	// ─── GitHub ─────────────────────────────────────────────────────────────
-
-	async githubLogin(
-		githubUser: GitHubStrategyUser,
-		ctx: AuthRequestContext = EMPTY_CONTEXT,
-	): Promise<OAuthLoginResult> {
-		const normalizedUser: BaseOAuthUser = {
-			id: githubUser.githubId,
-			email: githubUser.email,
-			name: githubUser.name,
-			provider: 'github',
-		};
-		return this.handleOAuthLogin(normalizedUser, githubUser.githubId, 'oauthId', ctx);
-	}
-
-	// ─── LINE ────────────────────────────────────────────────────────────────
-
-	async lineLogin(
-		lineUser: LineStrategyUser,
-		ctx: AuthRequestContext = EMPTY_CONTEXT,
-	): Promise<OAuthLoginResult> {
-		const normalizedUser: BaseOAuthUser = {
-			id: lineUser.lineId,
-			email: lineUser.email,
-			name: lineUser.name,
-			provider: 'line',
-		};
-		return this.handleOAuthLogin(normalizedUser, lineUser.lineId, 'lineId', ctx);
-	}
-
 	// ─── Apple ──────────────────────────────────────────────────────────────
 
 	async appleLogin(
@@ -248,44 +216,6 @@ export class OAuthService {
 			normalizedUser,
 			args.oauthUser.googleId,
 			'oauthId',
-			args.invitationCode,
-			undefined,
-			args.ctx,
-		);
-	}
-
-	async githubRegisterWithStateInvitation(
-		args: OAuthRegisterArgs<GitHubStrategyUser>,
-	): Promise<OAuthLoginResult> {
-		const normalizedUser: BaseOAuthUser = {
-			id: args.oauthUser.githubId,
-			email: args.oauthUser.email,
-			name: args.oauthUser.name,
-			provider: 'github',
-		};
-		return this.consumeAndIssue(
-			normalizedUser,
-			args.oauthUser.githubId,
-			'oauthId',
-			args.invitationCode,
-			undefined,
-			args.ctx,
-		);
-	}
-
-	async lineRegisterWithStateInvitation(
-		args: OAuthRegisterArgs<LineStrategyUser>,
-	): Promise<OAuthLoginResult> {
-		const normalizedUser: BaseOAuthUser = {
-			id: args.oauthUser.lineId,
-			email: args.oauthUser.email,
-			name: args.oauthUser.name,
-			provider: 'line',
-		};
-		return this.consumeAndIssue(
-			normalizedUser,
-			args.oauthUser.lineId,
-			'lineId',
 			args.invitationCode,
 			undefined,
 			args.ctx,

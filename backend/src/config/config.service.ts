@@ -245,32 +245,6 @@ export class ConfigService {
 		return process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/auth/google/callback';
 	}
 
-	// OAuth GitHub設定
-	get githubClientId(): string | undefined {
-		return process.env.GITHUB_CLIENT_ID;
-	}
-
-	get githubClientSecret(): string | undefined {
-		return process.env.GITHUB_CLIENT_SECRET;
-	}
-
-	get githubRedirectUri(): string {
-		return process.env.GITHUB_REDIRECT_URI || 'http://localhost:3000/auth/github/callback';
-	}
-
-	// OAuth LINE設定
-	get lineClientId(): string | undefined {
-		return process.env.LINE_CLIENT_ID;
-	}
-
-	get lineClientSecret(): string | undefined {
-		return process.env.LINE_CLIENT_SECRET;
-	}
-
-	get lineRedirectUri(): string {
-		return process.env.LINE_REDIRECT_URI || 'http://localhost:3000/auth/line/callback';
-	}
-
 	// OAuth Apple設定
 	get appleClientId(): string | undefined {
 		return process.env.APPLE_CLIENT_ID;
@@ -380,8 +354,8 @@ export class ConfigService {
 	}
 
 	/**
-	 * 5 社（Google・GitHub・LINE・Apple・X）の認可エンドポイント URL を state 付きで組み立てる。
-	 * X は `codeChallenge`（S256）必須。4 社は `codeChallenge` 不要（渡しても無視）。
+	 * 3 社（Google・Apple・X）の認可エンドポイント URL を state 付きで組み立てる。
+	 * X は `codeChallenge`（S256）必須。他2社は `codeChallenge` 不要（渡しても無視）。
 	 */
 	generateOAuthAuthorizationUrl(provider: string, state: string, codeChallenge?: string): string {
 		switch (provider) {
@@ -391,21 +365,6 @@ export class ConfigService {
 					redirect_uri: this.googleRedirectUri,
 					response_type: 'code',
 					scope: 'email profile',
-					state,
-				});
-			case 'github':
-				return this.buildOAuthAuthorizationUrl('https://github.com/login/oauth/authorize', {
-					client_id: this.githubClientId ?? '',
-					redirect_uri: this.githubRedirectUri,
-					scope: 'user:email',
-					state,
-				});
-			case 'line':
-				return this.buildOAuthAuthorizationUrl('https://access.line.me/oauth2/v2.1/authorize', {
-					response_type: 'code',
-					client_id: this.lineClientId ?? '',
-					redirect_uri: this.lineRedirectUri,
-					scope: 'profile openid',
 					state,
 				});
 			case 'apple':

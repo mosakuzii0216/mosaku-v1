@@ -32,13 +32,7 @@ interface WirePayload {
 
 const STATE_MAX_AGE_MS = 10 * 60 * 1000;
 const NONCE_BYTES = 16;
-const SUPPORTED_PROVIDERS: ReadonlySet<OAuthProvider> = new Set([
-	'google',
-	'github',
-	'line',
-	'apple',
-	'x',
-]);
+const SUPPORTED_PROVIDERS: ReadonlySet<OAuthProvider> = new Set(['google', 'apple', 'x']);
 
 @Injectable()
 export class OAuthStateService {

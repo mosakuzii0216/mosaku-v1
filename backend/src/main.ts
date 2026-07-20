@@ -40,7 +40,7 @@ async function bootstrap() {
 	app.use(cookieParser());
 
 	// MCP 認可フロー専用 session（cookie-session）。
-	// OAuth ログイン（Google/GitHub/LINE/Apple/X）は stateless HMAC 署名 state で完結し、
+	// OAuth ログイン（Google/Apple/X）は stateless HMAC 署名 state で完結し、
 	// session には依存しない。session が必要なのは MCP authorize の mcpUserId 注入のみ。
 	// 適用順序は helmet → cookie-parser → cookie-session → CORS を維持する。
 	const sessionCookie = configService.sessionCookieOptions;

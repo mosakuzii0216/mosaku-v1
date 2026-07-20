@@ -46,10 +46,10 @@ describe('OAuthStateService', () => {
 	});
 
 	it('code なし・verifier なし: issueState → verifyState で payload を復元できること', () => {
-		const state = service.issueState({ provider: 'github' });
-		const payload = service.verifyState(state, 'github');
+		const state = service.issueState({ provider: 'apple' });
+		const payload = service.verifyState(state, 'apple');
 		expect(payload.code).toBeUndefined();
-		expect(payload.provider).toBe('github');
+		expect(payload.provider).toBe('apple');
 	});
 
 	it('code あり・verifier あり: verifyState で verifier が平文で復元されること', () => {
@@ -94,7 +94,27 @@ describe('OAuthStateService', () => {
 
 	it('provider 不一致は拒否されること', () => {
 		const state = service.issueState({ provider: 'google', code: 'CODE1' });
-		expect(() => service.verifyState(state, 'github')).toThrow(AppException);
+		expect(() => service.verifyState(state, 'apple')).toThrow(AppException);
+	});
+
+	it('廃止プロバイダ（github）を名乗る偽造 state は SUPPORTED_PROVIDERS で拒否されること', () => {
+		const secret = Buffer.from(HMAC_SECRET);
+		const forgedPayload = {
+			v: 1,
+			p: 'github',
+			n: 'a'.repeat(32),
+			t: Date.now(),
+		};
+		const encodedPayload = Buffer.from(JSON.stringify(forgedPayload), 'utf8').toString('base64url');
+		const sig = createHmac('sha256', secret).update(encodedPayload).digest('base64url');
+		const forgedState = `${encodedPayload}.${sig}`;
+
+		expect(() =>
+			service.verifyState(
+				forgedState,
+				'github' as unknown as Parameters<typeof service.verifyState>[1],
+			),
+		).toThrow(AppException);
 	});
 
 	// ─── HMAC 改ざん ─────────────────────────────────────────────────────

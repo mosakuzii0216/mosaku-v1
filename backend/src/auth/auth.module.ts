@@ -6,16 +6,9 @@ import { JwtTokenService } from './jwt.service';
 import { OAuthService } from './oauth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { GoogleStrategy } from './google.strategy';
-import { GitHubStrategy } from './github.strategy';
-import { LineStrategy } from './line.strategy';
 import { AppleStrategy } from './apple.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import {
-	GoogleAuthGuard,
-	GitHubAuthGuard,
-	LineAuthGuard,
-	AppleAuthGuard,
-} from './oauth-auth.guards';
+import { GoogleAuthGuard, AppleAuthGuard } from './oauth-auth.guards';
 import { RefreshCookieHelper } from './refresh-cookie.helper';
 import { RefreshCsrfGuard } from './refresh-csrf.guard';
 import { RefreshTokenRepository } from './refresh-token.repository';
@@ -57,13 +50,9 @@ import { MailService } from '../mail/mail.service';
 		OAuthService,
 		JwtStrategy,
 		GoogleStrategy,
-		GitHubStrategy,
-		LineStrategy,
 		AppleStrategy,
 		JwtAuthGuard,
 		GoogleAuthGuard,
-		GitHubAuthGuard,
-		LineAuthGuard,
 		AppleAuthGuard,
 		RefreshCookieHelper,
 		RefreshCsrfGuard,
@@ -87,8 +76,6 @@ import { MailService } from '../mail/mail.service';
 		XOAuthService,
 		JwtAuthGuard,
 		GoogleAuthGuard,
-		GitHubAuthGuard,
-		LineAuthGuard,
 		AppleAuthGuard,
 		RefreshCookieHelper,
 		RefreshCsrfGuard,

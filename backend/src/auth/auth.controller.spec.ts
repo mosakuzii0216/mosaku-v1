@@ -25,18 +25,14 @@ jest.mock('./pkce-codec', () => ({
 	}),
 }));
 
-describe('AuthController - LINE / Apple / X エンドポイント', () => {
+describe('AuthController - Google / Apple / X エンドポイント', () => {
 	let controller: AuthController;
 
 	const mockOAuthService = {
-		lineLogin: jest.fn(),
 		appleLogin: jest.fn(),
 		xLogin: jest.fn(),
 		googleLogin: jest.fn(),
-		githubLogin: jest.fn(),
 		googleRegisterWithStateInvitation: jest.fn(),
-		githubRegisterWithStateInvitation: jest.fn(),
-		lineRegisterWithStateInvitation: jest.fn(),
 		appleRegisterWithStateInvitation: jest.fn(),
 		xRegisterWithStateInvitation: jest.fn(),
 	};
@@ -473,43 +469,6 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 		});
 	});
 
-	describe.each([
-		['github', 'githubAuthRedirect', 'githubRegisterWithStateInvitation', 'githubLogin'],
-		['line', 'lineAuthCallback', 'lineRegisterWithStateInvitation', 'lineLogin'],
-	] as const)('%s callback with state', (provider, handler, stateMethod, loginMethod) => {
-		it('state あり成功時に *RegisterWithStateInvitation を呼び success redirect', async () => {
-			mockOAuthStateService.verifyState.mockReturnValue({
-				v: 1,
-				code: 'CODE12345',
-				provider,
-				nonce: 'nonce',
-				iat: Date.now(),
-			});
-			mockOAuthService[stateMethod].mockResolvedValue(oauthLoginResult);
-
-			const userByProvider: Record<string, Record<string, unknown>> = {
-				github: { githubId: 'gh-1', name: 'GH' },
-				line: { lineId: 'U1', name: 'L', email: 'l@example.com' },
-			};
-
-			const req = {
-				...buildReq(),
-				query: { state: 'signed.state' },
-				user: userByProvider[provider],
-			};
-			const res = buildRes();
-
-			await (controller as unknown as Record<string, (...args: unknown[]) => Promise<void>>)[
-				handler
-			](req, res);
-
-			expect(mockOAuthStateService.verifyState).toHaveBeenCalledWith('signed.state', provider);
-			expect(mockOAuthService[stateMethod]).toHaveBeenCalled();
-			expect(mockOAuthService[loginMethod]).not.toHaveBeenCalled();
-			expect(res.redirect).toHaveBeenCalledWith('http://localhost?token=xxx');
-		});
-	});
-
 	// ─── X コールバック（ステートレスフロー）────────────────────────────────
 
 	describe('xAuthCallback - ステートレスフロー（Phase 2）', () => {
@@ -713,7 +672,7 @@ describe('AuthController - LINE / Apple / X エンドポイント', () => {
 			expect(mockOAuthStateService.issueState).not.toHaveBeenCalled();
 		});
 
-		it.each(['google', 'github', 'line', 'apple'] as const)(
+		it.each(['google', 'apple'] as const)(
 			'%s プロバイダで generateOAuthAuthorizationUrl を呼ぶこと',
 			async (provider) => {
 				mockInvitationService.verifyInvitation.mockResolvedValue({ code: 'ABCD1234' });

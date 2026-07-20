@@ -1,6 +1,5 @@
 import type {
 	OAuthProvider,
-	LineStrategyUser,
 	AppleStrategyUser,
 	XStrategyUser,
 	OAuthStrategyUser,
@@ -11,52 +10,26 @@ import type {
  * TypeScript のコンパイルチェックと、オブジェクト形状の検証を行う
  */
 describe('OAuthProvider 型', () => {
-	it('line・apple・x が OAuthProvider として有効な値であること', () => {
-		const line: OAuthProvider = 'line';
-		const apple: OAuthProvider = 'apple';
-		const x: OAuthProvider = 'x';
-		// 既存プロバイダーも引き続き有効
+	it('google・x・apple が OAuthProvider として有効な値であること', () => {
 		const google: OAuthProvider = 'google';
-		const github: OAuthProvider = 'github';
+		const x: OAuthProvider = 'x';
+		const apple: OAuthProvider = 'apple';
 
-		expect(line).toBe('line');
-		expect(apple).toBe('apple');
-		expect(x).toBe('x');
 		expect(google).toBe('google');
-		expect(github).toBe('github');
+		expect(x).toBe('x');
+		expect(apple).toBe('apple');
 	});
 });
 
-describe('LineStrategyUser 型', () => {
-	it('必須フィールド（lineId・name）を持つオブジェクトが代入できること', () => {
-		const user: LineStrategyUser = {
-			lineId: 'U1234567890',
-			name: 'LINE User',
-		};
-		expect(user.lineId).toBe('U1234567890');
-		expect(user.name).toBe('LINE User');
-	});
+describe('廃止プロバイダの型除去', () => {
+	it('github・line は OAuthProvider として無効であること（型エラーで検出）', () => {
+		// @ts-expect-error github は廃止プロバイダのため OAuthProvider に含まれない
+		const github: OAuthProvider = 'github';
+		// @ts-expect-error line は廃止プロバイダのため OAuthProvider に含まれない
+		const line: OAuthProvider = 'line';
 
-	it('オプショナルフィールドを含むオブジェクトが代入できること', () => {
-		const user: LineStrategyUser = {
-			lineId: 'U1234567890',
-			name: 'LINE User',
-			email: 'line@example.com',
-			picture: 'https://profile.line-scdn.net/picture.jpg',
-			accessToken: 'line-access-token',
-		};
-		expect(user.email).toBe('line@example.com');
-		expect(user.picture).toBeDefined();
-		expect(user.accessToken).toBeDefined();
-	});
-
-	it('email が undefined でも有効であること（ユーザーが許可しない場合）', () => {
-		const user: LineStrategyUser = {
-			lineId: 'U9999999999',
-			name: 'No Email User',
-			email: undefined,
-		};
-		expect(user.email).toBeUndefined();
+		expect(github).toBe('github');
+		expect(line).toBe('line');
 	});
 });
 
@@ -115,14 +88,6 @@ describe('XStrategyUser 型', () => {
 });
 
 describe('OAuthStrategyUser union 型', () => {
-	it('LineStrategyUser が OAuthStrategyUser として扱えること', () => {
-		const user: OAuthStrategyUser = {
-			lineId: 'U1234567890',
-			name: 'LINE User',
-		};
-		expect(user).toBeDefined();
-	});
-
 	it('AppleStrategyUser が OAuthStrategyUser として扱えること', () => {
 		const user: OAuthStrategyUser = {
 			appleId: '000123.abc456def789.0000',

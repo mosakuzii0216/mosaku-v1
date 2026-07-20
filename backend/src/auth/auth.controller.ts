@@ -21,9 +21,7 @@ import { Throttle } from '@nestjs/throttler';
 import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import type { AuthenticatedRequest, OAuthRequest } from './types';
 import type {
-	GitHubStrategyUser,
 	GoogleStrategyUser,
-	LineStrategyUser,
 	AppleStrategyUser,
 	XStrategyUser,
 	OAuthStrategyUser,
@@ -32,12 +30,7 @@ import type {
 import { ConfigService } from '../config/config.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import {
-	GoogleAuthGuard,
-	GitHubAuthGuard,
-	LineAuthGuard,
-	AppleAuthGuard,
-} from './oauth-auth.guards';
+import { GoogleAuthGuard, AppleAuthGuard } from './oauth-auth.guards';
 import { Public } from '../common/decorators/public.decorator';
 import { AuthService, type AuthLoginResult, type AuthRequestContext } from './auth.service';
 import { OAuthService, type OAuthLoginResult } from './oauth.service';
@@ -89,9 +82,9 @@ export class AuthController {
 	}
 
 	/**
-	 * 5 プロバイダ統一の OAuth 開始エンドポイント。
+	 * 有効3プロバイダ（Google/X/Apple）統一の OAuth 開始エンドポイント。
 	 * 招待コードを事前検証し、署名 state を発行してプロバイダへリダイレクトする URL を返す。
-	 * X は PKCE pair を生成して verifier を state に封緘し、4 社は従来どおり code のみ。
+	 * X は PKCE pair を生成して verifier を state に封緘し、他2社は従来どおり code のみ。
 	 */
 	@Public()
 	@Throttle({
@@ -563,56 +556,6 @@ export class AuthController {
 			req,
 			res,
 			'Google',
-		);
-	}
-
-	// GitHub OAuth エンドポイント
-	@Public()
-	@Get('github')
-	@UseGuards(GitHubAuthGuard)
-	githubAuth(@Request() _req: ExpressRequest) {
-		// GitHub認証画面にリダイレクト
-	}
-
-	@Public()
-	@Get('github/callback')
-	@UseGuards(GitHubAuthGuard)
-	async githubAuthRedirect(
-		@Request() req: OAuthRequest<GitHubStrategyUser>,
-		@Response() res: ExpressResponse,
-	) {
-		return this.runOAuthCallbackWithStateSupport<GitHubStrategyUser>(
-			'github',
-			(user, ctx) => this.oauthService.githubLogin(user, ctx),
-			(args) => this.oauthService.githubRegisterWithStateInvitation(args),
-			req,
-			res,
-			'GitHub',
-		);
-	}
-
-	// LINE OAuth エンドポイント
-	@Public()
-	@Get('line')
-	@UseGuards(LineAuthGuard)
-	lineAuth(@Request() _req: ExpressRequest) {
-		// LINE認証画面にリダイレクト
-	}
-
-	@Public()
-	@Get('line/callback')
-	@UseGuards(LineAuthGuard)
-	async lineAuthCallback(
-		@Request() req: OAuthRequest<LineStrategyUser>,
-		@Response() res: ExpressResponse,
-	) {
-		return this.runOAuthCallbackWithStateSupport<LineStrategyUser>(
-			'line',
-			(user, ctx) => this.oauthService.lineLogin(user, ctx),
-			(args) => this.oauthService.lineRegisterWithStateInvitation(args),
-			req,
-			res,
-			'LINE',
 		);
 	}
 
