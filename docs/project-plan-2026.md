@@ -1,7 +1,7 @@
 # Mosaku プロジェクト計画（2026年3月〜12月）
 
 作成日: 2026-03-14
-最終更新: 2026-07-01
+最終更新: 2026-08-02
 
 ---
 
@@ -265,12 +265,19 @@
 | -------------------------------------------------------------- | ---- | ------------ |
 | `pwa-and-offline-cache` 要件→設計→タスク承認                   | 4h   | ✅ 5月前倒し |
 | PWA 基盤実装（vite-plugin-pwa + Dexie + Repository 層）        | 8h   | ✅ 5月前倒し |
-| content JSONB 移行 着手（migration script + Prisma migration） | 3h   | ⬜           |
+| content JSONB 移行 着手（migration script + Prisma migration） | 3h   | ✅ 7/3-4     |
 | テーマ作成（+5テーマ、計20）                                   | 5h   | ⬜           |
 
 > PWA は spec 名を `pwa-offline-support` に確定して 2026-05-12 に `implementation-validated` 完了（実装ライブラリは Dexie ではなく `idb`）。詳細は `docs/progress.md` の 2026-05-12 エントリ参照。
 > ロード時間測定は PWA 化の副産物として吸収（SW プリキャッシュで FCP 改善見込み）。
 > PWA 詳細: 電車30分〜1h のオフライン利用を想定し、IndexedDB に直近アクセス LRU + 直近 30 日のメモをキャッシュ。検索はオンライン時のみ、競合解決は別 spec（`multi-device-conflict-resolution`、Phase 3）。
+
+#### 7月 追加（計画外 / 摩擦駆動 spec・エディタ / 認証系）
+
+| spec / タスク               | 内容                                                                                                    | 状況                          |
+| --------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| `rich-editor-blocks`        | コールアウト / 表 / トグル（Details）/ palette をスラッシュコマンドへ統合し、選択時バブルメニューを実装 | ✅ `implementation-validated` |
+| `oauth-providers-reduction` | OAuth を Google / X / Apple の 3 種へ縮約（LINE / GitHub 廃止）。BE 単一真実源に FE / MCP を追従        | ✅ `implementation-validated` |
 
 ---
 
@@ -284,7 +291,7 @@
 | ------------------------------------------------------------------------- | ---- | ------------ |
 | PWA 読み取り＋書き込みオフライン実装                                      | 8h   | ✅ 5月前倒し |
 | PWA リリース + AuthContext のオフライン起動 `removeTokens()` 落とし穴修正 | 4h   | ✅ 5月前倒し |
-| content JSONB 移行 完了（API 書き換え + テスト）                          | 3h   | ⬜           |
+| content JSONB 移行 完了（API 書き換え + テスト）                          | 3h   | ✅ 7/3-4     |
 | 利用規約・プライバシーポリシー作成（日本語、骨子）                        | 3h   | ⬜           |
 | テーマ作成（+2テーマ、計22）                                              | 2h   | ⬜           |
 
