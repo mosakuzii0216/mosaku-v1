@@ -32,6 +32,45 @@
 
 ---
 
+## 2026-08-02（Phase 1 完走 → Phase 2 着手 / content JSONB 移行・リッチエディタブロック・OAuth 3 社縮約を完走）
+
+> 前回（7/1）から約 1 ヶ月ぶりの追いつきエントリ。7 月は content 永続化の JSON-first 化・エディタのリッチブロック・OAuth プロバイダ縮約という 3 大 spec を完走した。
+
+### 今週やったこと
+
+- **`content-jsonb-migration`（content の JSONB 化）を完走 → `implementation-validated`**（7/3〜7/4）
+  - メモ / ノートブック本文の永続化を HTML 文字列から **ProseMirror JSON（JSONB）＋派生 contentText の二重持ち**へ移行。書込経路で content(JSONB) と contentText を原子的に永続化し、本文検索を contentText へ切替
+  - backend `common` に ProseMirror 型・検証・`extractPlainText` を新設。content DTO を `ProseMirrorDoc` 検証へ切替。公開共有・ダッシュボードプレビュー・MCP excerpt を JSON/contentText 由来へ統一
+  - frontend: エディタ・ホスト・公開ビューの content を HTML→JSON 化、オフライン層 v2（IndexedDB スキーマ刷新・検索テキストの JSON 化）、HTML→JSON 移行パイプライン Stage1〜3 ＋検証スクリプトを整備
+  - **本番反映（7/22）**: CI の deploy-backend が失敗カットオーバー（P3009）で約 3 週間デッドロックし、6/25 の BE 凍結が `400 content must be a string` の真因だった。バックフィル → `migrate resolve` → cutover → rev00102 デプロイで復旧し、本番でも JSON-first 化が完了
+- **`rich-editor-blocks`（リッチブロック）を完走 → `implementation-validated`**（7/11・Task 1〜8）
+  - コールアウト / 表 / トグル（Details）/ palette をスラッシュコマンドへ統合。トグルを単一情報源へ本登録し、選択時バブルメニューを実装
+- **`oauth-providers-reduction`（OAuth 5→3 縮約）を完走 → `implementation-validated`**（7/18 決定 → 7/21 完了）
+  - OAuth プロバイダを **Google / X / Apple の 3 種へ縮約**（LINE / GitHub を廃止）。BE / FE のログイン導線と MCP `oauth.controller` の許可プロバイダを **BE 単一真実源**へ追従。廃止プロバイダの依存パッケージを除去。`lineId` 列は `oauthId` 共用で非破壊保持することをスキーマに文書化
+- **daily-refactor による品質地ならし（継続）**
+  - `MS_PER_DAY` / `expires_in=3600` のマジックナンバー定数化、refresh-token e2e の `no-unsafe-assignment` 解消、backend テストの ESLint 警告 14 件解消
+- **小修正**: 空 body `POST /invitation/me` の 500 を `DefaultValuePipe` で解消。不要な型アサーション削除・`@ts-expect-error` の説明付与・型 import 分離
+
+### 来週の予定
+
+- **Phase 2（8〜9 月）着手**: 利用規約・プライバシーポリシーの骨子作成（日本語、3h）
+- **テーマ作成のリカバリ**: 7 月 +5 / 8 月 +2（計 22 目標）が未着手のまま滞留 → 和テーマ横展開（海・夜・朝＝森トークン基盤への相乗り）を再開
+- content の JSON-first 化が完了したので、本文検索の強化（pg_bigm 等）は需要を見て判断
+
+### ブロッカー・懸念
+
+- **X / Apple の本番 OAuth クレデンシャル未設定**: OAuth 3 社縮約はコード完成済だが、本番導線の最終確認（本番クレデンシャル設定 ＋ ブラウザ手動確認）が残っている
+- **`verify.ts` にバグの記録あり**（要確認・修正）
+- **テーマ作成が 2 ヶ月連続で未着手**（7 月 +5 / 8 月 +2 が滞留）。22 テーマ目標に対しビハインド。8 月は法的着手も重なるため優先度の再調整が要る
+- 7 月は spec 実装に集中しテーマ枠を消化できず。Phase 2 では「運用フロー整備 × テーマ」の時間配分を意識する
+
+### メモ
+
+- この期間のコミットは **53 本**（feat 15 / fix 6 / refactor 4 / test 4 / 残り docs・README・chore 系）
+- spec **38 本、全て終了状態**（進行中ゼロ）。前回 35 本から +3（`content-jsonb-migration` / `rich-editor-blocks` / `oauth-providers-reduction` がいずれも `implementation-validated` に到達）
+- 内訳: completed 12 / implementation-validated 24 / implementation-complete 1 / implemented 1
+- content 永続化が **JSON-first** になり、本文検索・公開共有・ダッシュボード・MCP・オフラインが全て contentText / JSON 由来に統一された
+
 ## 2026-07-01（Phase 1 ドッグフーディング中 / 招待特典・森の世界没入を完走、全 spec を完了状態に）
 
 ### 今週やったこと
