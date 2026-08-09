@@ -1,15 +1,10 @@
 import { Lightbulb } from 'lucide-react';
 import { getDailyPrompt } from '../../constants/dailyPrompts';
 import { useNavigation } from '../../hooks/useNavigation';
-
-const todayJSTString = (): string => {
-	const now = new Date();
-	const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-	return jst.toISOString().split('T')[0];
-};
+import { toJSTDateString } from '../../utils/jstDate';
 
 export const DailyPrompt = () => {
-	const prompt = getDailyPrompt(todayJSTString());
+	const prompt = getDailyPrompt(toJSTDateString(new Date()));
 	const { goToMemoCreateWithTitle } = useNavigation();
 
 	if (!prompt) return null;
