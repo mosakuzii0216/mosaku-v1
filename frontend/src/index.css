@@ -121,3 +121,28 @@ body {
 		transition: none !important;
 	}
 }
+
+/* 表示モード（FocusMemoOverlay）の本文タイポグラフィ。
+   PublicMemoRenderer は `prose prose-sm sm:prose-base lg:prose-lg xl:prose-xl text-gray-900` を
+   ProseMirror 要素へ直接付けるため、オーバーレイ親に置いた --dm-* / テーマ文字色は届かない。
+   ここで詳細度を 1 段上げ、読みやすさスタイル（Req 2.5）とテーマ追随（Req 5.1）を成立させる。 */
+.display-mode-content .ProseMirror {
+	font-size: var(--dm-font-size, 18px);
+	line-height: var(--dm-line-height, 1.8);
+	color: inherit;
+
+	/* 見出し・引用・リンク等の prose 既定色をテーマ文字色へ寄せ、本文と同じコントラスト対を保つ */
+	--tw-prose-body: currentColor;
+	--tw-prose-headings: currentColor;
+	--tw-prose-lead: currentColor;
+	--tw-prose-links: currentColor;
+	--tw-prose-bold: currentColor;
+	--tw-prose-counters: currentColor;
+	--tw-prose-bullets: currentColor;
+	--tw-prose-quotes: currentColor;
+	--tw-prose-captions: currentColor;
+	--tw-prose-hr: color-mix(in srgb, currentColor 30%, transparent);
+	--tw-prose-quote-borders: color-mix(in srgb, currentColor 40%, transparent);
+	--tw-prose-th-borders: color-mix(in srgb, currentColor 40%, transparent);
+	--tw-prose-td-borders: color-mix(in srgb, currentColor 25%, transparent);
+}

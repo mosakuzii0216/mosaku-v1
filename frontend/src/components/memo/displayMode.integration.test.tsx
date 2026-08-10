@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { JSONContent } from '@tiptap/react';
 
 vi.mock('../../utils/env', () => ({
 	getBackendUrl: () => 'http://localhost:3000',
@@ -54,7 +55,16 @@ vi.mock('../../hooks/useMemoQueries', () => ({
 	useUpdateMemo: () => ({ mutate: vi.fn(), isPending: false }),
 	useDeleteMemo: () => ({ mutateAsync: vi.fn(), isPending: false }),
 	useMemo: (id: string) => ({
-		data: id ? { id, title: 'テストメモタイトル', content: '<p>テスト本文</p>' } : undefined,
+		data: id
+			? {
+					id,
+					title: 'テストメモタイトル',
+					content: {
+						type: 'doc',
+						content: [{ type: 'paragraph', content: [{ type: 'text', text: 'テスト本文' }] }],
+					},
+				}
+			: undefined,
 	}),
 }));
 
@@ -65,8 +75,11 @@ vi.mock('../../hooks/useActiveTheme', () => ({
 }));
 
 vi.mock('../public/PublicMemoRenderer', () => ({
-	PublicMemoRenderer: ({ content }: { content: string }) =>
-		React.createElement('div', { 'data-testid': 'public-memo-renderer', 'data-content': content }),
+	PublicMemoRenderer: ({ content }: { content: JSONContent }) =>
+		React.createElement('div', {
+			'data-testid': 'public-memo-renderer',
+			'data-content': JSON.stringify(content),
+		}),
 }));
 
 import { MemoEditor } from './MemoEditor';
@@ -88,7 +101,10 @@ function buildMemo(overrides: Partial<Memo> = {}): Memo {
 	return {
 		id: 'memo-1',
 		title: 'テストメモタイトル',
-		content: '<p>テスト本文</p>',
+		content: {
+			type: 'doc',
+			content: [{ type: 'paragraph', content: [{ type: 'text', text: 'テスト本文' }] }],
+		},
 		notebookId: null,
 		memoTags: [],
 		createdAt: new Date('2026-01-01').toISOString(),

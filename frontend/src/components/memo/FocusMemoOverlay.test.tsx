@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import React from 'react';
+import type { JSONContent } from '@tiptap/react';
+
+// Memo.content は JSONContent（オブジェクト）。文字列モックだと空判定バグを取り逃すため、
+// 実型どおりのドキュメントを組み立てる。
+const doc = (text: string): JSONContent => ({
+	type: 'doc',
+	content: [{ type: 'paragraph', content: [{ type: 'text', text }] }],
+});
+const emptyDoc = (): JSONContent => ({ type: 'doc', content: [{ type: 'paragraph' }] });
 
 const mockCloseDisplayMode = vi.fn();
 const mockIsDisplayMode = vi.fn(() => false);
@@ -31,8 +40,11 @@ vi.mock('../../hooks/useActiveTheme', () => ({
 }));
 
 vi.mock('../public/PublicMemoRenderer', () => ({
-	PublicMemoRenderer: ({ content }: { content: string }) =>
-		React.createElement('div', { 'data-testid': 'public-memo-renderer', 'data-content': content }),
+	PublicMemoRenderer: ({ content }: { content: JSONContent }) =>
+		React.createElement('div', {
+			'data-testid': 'public-memo-renderer',
+			'data-content': JSON.stringify(content),
+		}),
 }));
 
 import { FocusMemoOverlay } from './FocusMemoOverlay';
@@ -61,7 +73,7 @@ describe('FocusMemoOverlay', () => {
 			mockIsDisplayMode.mockReturnValue(true);
 			mockSelectedMemoId.mockReturnValue('memo-1');
 			mockMemoData.mockReturnValue({
-				data: { id: 'memo-1', title: 'テストメモ', content: '<p>本文</p>' },
+				data: { id: 'memo-1', title: 'テストメモ', content: doc('本文') },
 			});
 			render(React.createElement(FocusMemoOverlay));
 			expect(document.querySelector('[data-testid="focus-memo-overlay"]')).toBeTruthy();
@@ -71,7 +83,7 @@ describe('FocusMemoOverlay', () => {
 			mockIsDisplayMode.mockReturnValue(true);
 			mockSelectedMemoId.mockReturnValue('memo-1');
 			mockMemoData.mockReturnValue({
-				data: { id: 'memo-1', title: 'テストメモ', content: '<p>本文</p>' },
+				data: { id: 'memo-1', title: 'テストメモ', content: doc('本文') },
 			});
 			render(React.createElement(FocusMemoOverlay));
 			expect(document.body.style.overflow).toBe('hidden');
@@ -83,7 +95,7 @@ describe('FocusMemoOverlay', () => {
 			mockIsDisplayMode.mockReturnValue(true);
 			mockSelectedMemoId.mockReturnValue('memo-1');
 			mockMemoData.mockReturnValue({
-				data: { id: 'memo-1', title: 'テストタイトル', content: '<p>本文</p>' },
+				data: { id: 'memo-1', title: 'テストタイトル', content: doc('本文') },
 			});
 			render(React.createElement(FocusMemoOverlay));
 			expect(screen.getByText('テストタイトル')).toBeTruthy();
@@ -93,11 +105,11 @@ describe('FocusMemoOverlay', () => {
 			mockIsDisplayMode.mockReturnValue(true);
 			mockSelectedMemoId.mockReturnValue('memo-1');
 			mockMemoData.mockReturnValue({
-				data: { id: 'memo-1', title: 'テストタイトル', content: '<p>本文テキスト</p>' },
+				data: { id: 'memo-1', title: 'テストタイトル', content: doc('本文テキスト') },
 			});
 			render(React.createElement(FocusMemoOverlay));
 			const renderer = document.querySelector('[data-testid="public-memo-renderer"]');
-			expect(renderer?.getAttribute('data-content')).toBe('<p>本文テキスト</p>');
+			expect(renderer?.getAttribute('data-content')).toBe(JSON.stringify(doc('本文テキスト')));
 		});
 	});
 
@@ -119,14 +131,26 @@ describe('FocusMemoOverlay', () => {
 			expect(mockCloseDisplayMode).toHaveBeenCalledTimes(1);
 		});
 
-		it('content が空文字のとき空状態メッセージを表示する', () => {
+		it('content が空ドキュメント（段落のみ）のとき空状態メッセージを表示する', () => {
 			mockIsDisplayMode.mockReturnValue(true);
 			mockSelectedMemoId.mockReturnValue('memo-1');
 			mockMemoData.mockReturnValue({
-				data: { id: 'memo-1', title: 'タイトルのみ', content: '' },
+				data: { id: 'memo-1', title: 'タイトルのみ', content: emptyDoc() },
 			});
 			render(React.createElement(FocusMemoOverlay));
 			expect(document.querySelector('[data-testid="empty-content-message"]')).toBeTruthy();
+			expect(document.querySelector('[data-testid="public-memo-renderer"]')).toBeNull();
+		});
+
+		it('content に本文があるとき空状態メッセージを表示しない', () => {
+			mockIsDisplayMode.mockReturnValue(true);
+			mockSelectedMemoId.mockReturnValue('memo-1');
+			mockMemoData.mockReturnValue({
+				data: { id: 'memo-1', title: 'タイトル', content: doc('本文あり') },
+			});
+			render(React.createElement(FocusMemoOverlay));
+			expect(document.querySelector('[data-testid="empty-content-message"]')).toBeNull();
+			expect(document.querySelector('[data-testid="public-memo-renderer"]')).toBeTruthy();
 		});
 	});
 
@@ -135,7 +159,7 @@ describe('FocusMemoOverlay', () => {
 			mockIsDisplayMode.mockReturnValue(true);
 			mockSelectedMemoId.mockReturnValue('memo-1');
 			mockMemoData.mockReturnValue({
-				data: { id: 'memo-1', title: 'テスト', content: '<p>本文</p>' },
+				data: { id: 'memo-1', title: 'テスト', content: doc('本文') },
 			});
 			mockActiveTheme.mockReturnValue(null);
 			render(React.createElement(FocusMemoOverlay));
@@ -147,7 +171,7 @@ describe('FocusMemoOverlay', () => {
 			mockIsDisplayMode.mockReturnValue(true);
 			mockSelectedMemoId.mockReturnValue('memo-1');
 			mockMemoData.mockReturnValue({
-				data: { id: 'memo-1', title: 'テスト', content: '<p>本文</p>' },
+				data: { id: 'memo-1', title: 'テスト', content: doc('本文') },
 			});
 			mockActiveTheme.mockReturnValue({
 				id: 'theme-forest',
@@ -167,7 +191,7 @@ describe('FocusMemoOverlay', () => {
 			mockIsDisplayMode.mockReturnValue(true);
 			mockSelectedMemoId.mockReturnValue('memo-1');
 			mockMemoData.mockReturnValue({
-				data: { id: 'memo-1', title: 'テスト', content: '<p>本文</p>' },
+				data: { id: 'memo-1', title: 'テスト', content: doc('本文') },
 			});
 			render(React.createElement(FocusMemoOverlay));
 			fireEvent.keyDown(document, { key: 'Escape' });
@@ -178,7 +202,7 @@ describe('FocusMemoOverlay', () => {
 			mockIsDisplayMode.mockReturnValue(true);
 			mockSelectedMemoId.mockReturnValue('memo-1');
 			mockMemoData.mockReturnValue({
-				data: { id: 'memo-1', title: 'テスト', content: '<p>本文</p>' },
+				data: { id: 'memo-1', title: 'テスト', content: doc('本文') },
 			});
 			render(React.createElement(FocusMemoOverlay));
 			const closeBtn = document.querySelector('[data-testid="close-button"]');
@@ -190,7 +214,7 @@ describe('FocusMemoOverlay', () => {
 			mockIsDisplayMode.mockReturnValue(true);
 			mockSelectedMemoId.mockReturnValue('memo-1');
 			mockMemoData.mockReturnValue({
-				data: { id: 'memo-1', title: 'テスト', content: '<p>本文</p>' },
+				data: { id: 'memo-1', title: 'テスト', content: doc('本文') },
 			});
 			render(React.createElement(FocusMemoOverlay));
 			const overlay = document.querySelector('[data-testid="focus-memo-overlay"]');
