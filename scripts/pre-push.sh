@@ -3,6 +3,9 @@
 
 set -e
 
+echo "==> pre-push: lockfile 同期チェック..."
+node scripts/check-lockfile-sync.mjs
+
 echo "==> pre-push: Prisma クライアント生成..."
 (cd backend && npx prisma generate) 2>&1 | tail -1
 
