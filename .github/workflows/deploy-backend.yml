@@ -108,8 +108,9 @@ jobs:
       # Step 6: テスト実行
       # -----------------------------------------------------------------------
       # --passWithNoTests: テストファイルがなくてもエラーにしない
+      # `--` を挟まないと npm 自身のフラグとして食われ Jest まで届かない
       - name: Run tests
-        run: npm run test --passWithNoTests
+        run: npm run test -- --passWithNoTests
 
       # -----------------------------------------------------------------------
       # Step 7: TypeScript ビルド
