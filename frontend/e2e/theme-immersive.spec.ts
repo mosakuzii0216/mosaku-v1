@@ -29,6 +29,24 @@ const MORI_BASE_BG = '#062616';
 const MORI_SURFACE = 'rgba(6, 38, 22, 0.74)';
 const MORI_ON_SURFACE = '#e8f6ee';
 
+const BACKEND = 'http://localhost:3000';
+const USER = { id: 'user-1', name: 'Test User', email: 'test@example.com', role: 'USER' };
+
+// apiClient.getAuthHeaders は AuthTokenManager.isTokenExpired() で JWT の exp をデコードする。
+// 適当な文字列だとパース失敗＝期限切れ扱いで「認証が必要です」を同期 throw するため、
+// 有効期限が未来の“形だけ本物”の JWT を用意する。
+const b64url = (o: object) =>
+	Buffer.from(JSON.stringify(o))
+		.toString('base64')
+		.replace(/=+$/, '')
+		.replace(/\+/g, '-')
+		.replace(/\//g, '_');
+const FAKE_JWT = [
+	b64url({ alg: 'HS256', typ: 'JWT' }),
+	b64url({ sub: 'user-1', exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60 }),
+	'signature',
+].join('.');
+
 /** auth API を 401 でブロック（ログイン画面を表示する最小モック） */
 async function mockAuthUnauthorized(page: import('@playwright/test').Page) {
 	await page.route('**/api/auth/me', (route) => {
@@ -41,6 +59,20 @@ async function mockAuthUnauthorized(page: import('@playwright/test').Page) {
 
 /** auth API を 200 でモック（最小ユーザー＋空データ → シェルが描画される） */
 async function mockAuthSuccess(page: import('@playwright/test').Page) {
+	// 未モックのバックエンド呼び出しが実サーバー（未起動）へ抜けないよう先に catch-all を張る。
+	// Playwright のルートは後勝ちなので、個別ルートはこの後に登録する。
+	await page.route(`${BACKEND}/**`, (route) =>
+		route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) }),
+	);
+	// AuthContext は起動時 POST /auth/refresh の { accessToken, user } でセッションを復元する。
+	// これが無いと（あるいは user が欠けると）ログイン画面のままで .app-shell が描画されない。
+	await page.route(`${BACKEND}/auth/refresh`, (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({ accessToken: FAKE_JWT, user: USER }),
+		}),
+	);
 	await page.route('**/api/auth/me', (route) => {
 		route.fulfill({
 			status: 200,
