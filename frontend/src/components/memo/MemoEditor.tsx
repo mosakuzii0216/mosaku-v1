@@ -42,6 +42,30 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	const openDisplayMode = useViewStore((s) => s.openDisplayMode);
 	const { status: networkStatus } = useNetworkStatus();
 
+	// 表示モードのショートカット（Cmd/Ctrl + Shift + F）。
+	// 起動ボタンと同じ条件（新規作成中は不可）でのみ有効にする。
+	// 修飾キー必須にしているのは、TipTap で文字を打っている最中に誤爆させないため。
+	useEffect(() => {
+		if (isCreate || !memo) return;
+		const handler = (e: KeyboardEvent) => {
+			// e.key ではなく e.code を見てキーボードレイアウト非依存にする
+			// （既存の Cmd+Alt+N と同じ方針。DesktopLayout.tsx 参照）
+			if (!(e.metaKey || e.ctrlKey) || !e.shiftKey || e.code !== 'KeyF') return;
+			e.preventDefault();
+			// 開閉トグル。isDisplayMode を購読すると表示モードの開閉のたびに
+			// MemoEditor（エディタ本体を含む重いツリー）が再描画されるため、
+			// 購読せずハンドラ内で getState() を読む。
+			const state = useViewStore.getState();
+			if (state.isDisplayMode) {
+				state.closeDisplayMode();
+			} else {
+				state.openDisplayMode();
+			}
+		};
+		window.addEventListener('keydown', handler);
+		return () => window.removeEventListener('keydown', handler);
+	}, [isCreate, memo]);
+
 	const [title, setTitle] = useState(memo?.title || '');
 	const [content, setContent] = useState<JSONContent>(memo?.content || createEmptyDoc());
 	const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
@@ -291,7 +315,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 							// 色は .shell-button（トークン駆動）に委ね、寸法だけ隣の保存/削除ボタンへ揃える。
 							// bg-gray-100 直書きだと暗いテーマ（mori/yoru/umi）の面から白く浮く。
 							className="shell-button px-3 py-1 text-sm rounded"
-							title="表示モードで開く"
+							title="表示モードで開く（Cmd/Ctrl + Shift + F）"
 						>
 							表示
 						</button>

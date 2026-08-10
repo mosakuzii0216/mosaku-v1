@@ -164,6 +164,61 @@ describe('表示モード統合テスト', () => {
 		});
 	});
 
+	describe('ショートカット（Cmd/Ctrl + Shift + F）', () => {
+		const fireShortcut = (init: Partial<KeyboardEventInit> = {}) =>
+			act(() => {
+				fireEvent.keyDown(window, {
+					code: 'KeyF',
+					key: 'F',
+					metaKey: true,
+					shiftKey: true,
+					...init,
+				});
+			});
+
+		it('ショートカットで表示モードが開く', () => {
+			renderIntegration(buildMemo());
+			expect(document.querySelector('[data-testid="focus-memo-overlay"]')).toBeNull();
+
+			fireShortcut();
+			expect(document.querySelector('[data-testid="focus-memo-overlay"]')).toBeTruthy();
+		});
+
+		it('開いた状態でもう一度押すと閉じる（トグル）', () => {
+			renderIntegration(buildMemo());
+
+			fireShortcut();
+			expect(document.querySelector('[data-testid="focus-memo-overlay"]')).toBeTruthy();
+
+			fireShortcut();
+			expect(document.querySelector('[data-testid="focus-memo-overlay"]')).toBeNull();
+		});
+
+		it('修飾キーが揃っていなければ発火しない（入力中の誤爆防止）', () => {
+			renderIntegration(buildMemo());
+
+			fireShortcut({ shiftKey: false });
+			fireShortcut({ metaKey: false, ctrlKey: false });
+			fireShortcut({ code: 'KeyG' });
+
+			expect(document.querySelector('[data-testid="focus-memo-overlay"]')).toBeNull();
+		});
+
+		it('新規作成モードでは発火しない', () => {
+			const Wrapper = createWrapper();
+			render(
+				<>
+					<MemoEditor isCreate />
+					<FocusMemoOverlay />
+				</>,
+				{ wrapper: Wrapper },
+			);
+
+			fireShortcut();
+			expect(document.querySelector('[data-testid="focus-memo-overlay"]')).toBeNull();
+		});
+	});
+
 	describe('Task 5.3-2: 終了フロー', () => {
 		it('ESC キー押下で FocusMemoOverlay がアンマウントされる', () => {
 			renderIntegration(buildMemo());
