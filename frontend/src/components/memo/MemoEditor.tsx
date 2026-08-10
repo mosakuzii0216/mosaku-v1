@@ -288,7 +288,9 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 						<button
 							data-testid="display-mode-button"
 							onClick={openDisplayMode}
-							className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+							// 色は .shell-button（トークン駆動）に委ね、寸法だけ隣の保存/削除ボタンへ揃える。
+							// bg-gray-100 直書きだと暗いテーマ（mori/yoru/umi）の面から白く浮く。
+							className="shell-button px-3 py-1 text-sm rounded"
 							title="表示モードで開く"
 						>
 							表示

@@ -147,6 +147,25 @@ test.describe('表示モード: テーマ追随と本文タイポグラフィ', 
 		expect(lineHeight / fontSize).toBeGreaterThan(1.79);
 	});
 
+	test('F-1: 起動ボタンの配色がテーマトークンに追随する（gray 直書きでない）', async ({ page }) => {
+		await openAppWithMori(page);
+		await page.getByRole('button', { name: 'メモ', exact: true }).click();
+		await expect(page.locator('[data-testid="memo-list-view"]')).toBeVisible({ timeout: 15000 });
+		await page.locator('[data-testid="memo-item"]').first().click();
+
+		const btn = page.locator('[data-testid="display-mode-button"]');
+		await expect(btn).toBeVisible({ timeout: 10000 });
+
+		const bg = await computed(page, '[data-testid="display-mode-button"]', 'background-color');
+		const color = await computed(page, '[data-testid="display-mode-button"]', 'color');
+
+		// Tailwind の bg-gray-100 / text-gray-700（回帰したらこの値に戻る）
+		expect(bg).not.toBe('rgb(243, 244, 246)');
+		expect(color).not.toBe('rgb(55, 65, 81)');
+		// mori の --on-surface（#e8f6ee）系＝明るい前景色に解決されている
+		expect(color).toBe('rgb(232, 246, 238)');
+	});
+
 	test('スクリーンショット（目視用）', async ({ page }) => {
 		await openAppWithMori(page);
 		await openDisplayMode(page);
