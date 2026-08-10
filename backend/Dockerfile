@@ -4,8 +4,11 @@
 FROM node:22-alpine AS base
 WORKDIR /usr/src/app
 COPY package*.json ./
-# パッケージの依存関係をインストール
-RUN npm install
+# lockfile 通りに厳密インストールする。
+# npm install は package.json の semver 範囲を再解決してビルドごとに版が変わりうるが、
+# npm ci は package-lock.json に固定されるため、CI がテストした依存ツリーと
+# 本番イメージの依存ツリーが完全に一致する。
+RUN npm ci
 
 # Development Stage
 FROM base AS development
