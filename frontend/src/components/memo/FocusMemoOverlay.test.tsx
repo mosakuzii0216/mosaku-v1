@@ -186,6 +186,56 @@ describe('FocusMemoOverlay', () => {
 		});
 	});
 
+	describe('アクセシビリティ: モーダルの作法', () => {
+		const renderOpen = () => {
+			mockIsDisplayMode.mockReturnValue(true);
+			mockSelectedMemoId.mockReturnValue('memo-1');
+			mockMemoData.mockReturnValue({
+				data: { id: 'memo-1', title: 'テストタイトル', content: doc('本文') },
+			});
+			return render(React.createElement(FocusMemoOverlay));
+		};
+
+		it('role="dialog" / aria-modal / メモタイトル入りの aria-label を持つ', () => {
+			renderOpen();
+			const overlay = document.querySelector('[data-testid="focus-memo-overlay"]');
+			expect(overlay?.getAttribute('role')).toBe('dialog');
+			expect(overlay?.getAttribute('aria-modal')).toBe('true');
+			expect(overlay?.getAttribute('aria-label')).toBe('表示モード: テストタイトル');
+		});
+
+		it('起動中は #root に inert が付き、閉じると外れる', () => {
+			const appRoot = document.createElement('div');
+			appRoot.id = 'root';
+			document.body.appendChild(appRoot);
+
+			const { unmount } = renderOpen();
+			expect(appRoot.hasAttribute('inert')).toBe(true);
+
+			unmount();
+			expect(appRoot.hasAttribute('inert')).toBe(false);
+
+			appRoot.remove();
+		});
+
+		it('起動時にオーバーレイへフォーカスを移し、閉じたら起動元へ戻す', () => {
+			const trigger = document.createElement('button');
+			document.body.appendChild(trigger);
+			trigger.focus();
+			expect(document.activeElement).toBe(trigger);
+
+			const { unmount } = renderOpen();
+			expect(document.activeElement).toBe(
+				document.querySelector('[data-testid="focus-memo-overlay"]'),
+			);
+
+			unmount();
+			expect(document.activeElement).toBe(trigger);
+
+			trigger.remove();
+		});
+	});
+
 	describe('Task 3 (一部): ESC キーと閉じるボタン', () => {
 		it('ESC キー押下で closeDisplayMode を呼ぶ', () => {
 			mockIsDisplayMode.mockReturnValue(true);
@@ -210,7 +260,7 @@ describe('FocusMemoOverlay', () => {
 			expect(mockCloseDisplayMode).toHaveBeenCalledTimes(1);
 		});
 
-		it('背景クリックで closeDisplayMode を呼ぶ', () => {
+		it('背景の押下→クリックで closeDisplayMode を呼ぶ', () => {
 			mockIsDisplayMode.mockReturnValue(true);
 			mockSelectedMemoId.mockReturnValue('memo-1');
 			mockMemoData.mockReturnValue({
@@ -218,8 +268,29 @@ describe('FocusMemoOverlay', () => {
 			});
 			render(React.createElement(FocusMemoOverlay));
 			const overlay = document.querySelector('[data-testid="focus-memo-overlay"]');
-			if (overlay) fireEvent.click(overlay);
+			if (overlay) {
+				fireEvent.mouseDown(overlay);
+				fireEvent.click(overlay);
+			}
 			expect(mockCloseDisplayMode).toHaveBeenCalledTimes(1);
+		});
+
+		it('本文で押下し背景で離した（ドラッグ選択）ときは閉じない', () => {
+			mockIsDisplayMode.mockReturnValue(true);
+			mockSelectedMemoId.mockReturnValue('memo-1');
+			mockMemoData.mockReturnValue({
+				data: { id: 'memo-1', title: 'テスト', content: doc('本文') },
+			});
+			render(React.createElement(FocusMemoOverlay));
+			const overlay = document.querySelector('[data-testid="focus-memo-overlay"]');
+			const title = document.querySelector('[data-testid="memo-title"]');
+			if (overlay && title) {
+				// 押下は本文側 → バブリングでオーバーレイの onMouseDown に届く
+				fireEvent.mouseDown(title);
+				// click は共通祖先（オーバーレイ）で発火する
+				fireEvent.click(overlay);
+			}
+			expect(mockCloseDisplayMode).not.toHaveBeenCalled();
 		});
 	});
 });

@@ -204,7 +204,10 @@ describe('表示モード統合テスト', () => {
 
 			act(() => {
 				const overlay = document.querySelector('[data-testid="focus-memo-overlay"]');
-				if (overlay) fireEvent.click(overlay);
+				if (overlay) {
+					fireEvent.mouseDown(overlay);
+					fireEvent.click(overlay);
+				}
 			});
 			expect(document.querySelector('[data-testid="focus-memo-overlay"]')).toBeNull();
 		});
