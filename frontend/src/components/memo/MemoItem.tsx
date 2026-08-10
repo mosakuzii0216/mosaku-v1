@@ -1,4 +1,5 @@
 import type { Memo } from '../../types/memo';
+import { extractPlainText } from '../../utils/editor/prosemirrorText';
 
 interface MemoItemProps {
 	memo: Memo;
@@ -6,8 +7,9 @@ interface MemoItemProps {
 }
 
 export const MemoItem = ({ memo, onClick }: MemoItemProps) => {
-	// HTMLタグを除去してプレーンテキストに変換
-	const plainContent = memo.content.replace(/<[^>]*>/g, '');
+	// content は JSONContent（ProseMirror doc）。HTML 文字列ではないため文字列メソッドは使えない
+	// （JSONContent の index signature が any を通すので tsc では検出できない）。
+	const plainContent = extractPlainText(memo.content);
 
 	return (
 		<div

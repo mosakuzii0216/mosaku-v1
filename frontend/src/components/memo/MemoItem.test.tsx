@@ -14,16 +14,22 @@ import type { Memo } from '../../types/memo';
 
 import { MemoItem } from './MemoItem';
 
-const mockMemo = {
+// content は JSONContent（ProseMirror doc）。文字列を as unknown as Memo で押し込むと
+// 「一覧が実データで落ちる」種類のバグをテストが素通しするため、実型のまま組み立てる。
+const mockMemo: Memo = {
 	id: '1',
 	title: 'テストメモ',
-	content: '<p>本文プレビュー</p>',
+	content: {
+		type: 'doc',
+		content: [{ type: 'paragraph', content: [{ type: 'text', text: '本文プレビュー' }] }],
+	},
 	notebookId: null,
 	createdAt: '2026-06-28T00:00:00.000Z',
 	updatedAt: '2026-06-28T00:00:00.000Z',
+	trashedAt: null,
 	memoTags: [],
 	notebook: null,
-} as unknown as Memo;
+};
 
 describe('MemoItem — メモカードの奥行き化（4.4）', () => {
 	it('カードは .shell-card（surface＋elevation＋micro-interaction）になる', () => {

@@ -5,6 +5,7 @@ import { usePaletteStore } from '../../stores/usePaletteStore';
 import { useNavigation } from '../../hooks/useNavigation';
 import type { Memo } from '../../types/memo';
 import { logger } from '../../utils/logger';
+import { extractPlainText } from '../../utils/editor/prosemirrorText';
 
 type PaletteMode = 'notebook-select' | 'memo-select';
 
@@ -92,8 +93,10 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 			// 検索クエリフィルタ
 			if (searchQuery) {
 				const query = searchQuery.toLowerCase();
+				// content は JSONContent（ProseMirror doc）。文字列メソッドは使えない
 				return (
-					memo.title.toLowerCase().includes(query) || memo.content.toLowerCase().includes(query)
+					memo.title.toLowerCase().includes(query) ||
+					extractPlainText(memo.content).toLowerCase().includes(query)
 				);
 			}
 
@@ -355,9 +358,9 @@ const MemoList = ({ memos, selectedIndex, onSelect }: MemoListProps) => {
 					}`}
 				>
 					<div className="font-medium text-gray-900">{memo.title || '無題'}</div>
-					{memo.content && (
+					{extractPlainText(memo.content) && (
 						<div className="text-sm text-gray-600 mt-1 line-clamp-2">
-							{memo.content.replace(/<[^>]*>/g, '').substring(0, 100)}
+							{extractPlainText(memo.content).substring(0, 100)}
 						</div>
 					)}
 					<div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
