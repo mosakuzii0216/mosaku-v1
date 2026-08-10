@@ -49,13 +49,13 @@ export const Header = (_props?: HeaderProps) => {
 	};
 
 	return (
-		<header className="shell-surface border-b border-[var(--outline)] px-4 py-3 flex items-center justify-between">
+		<header className="shell-surface border-b border-[var(--outline)] px-4 h-11 flex items-center justify-between">
 			<div className="flex items-center">
 				{currentView !== 'list' && (
 					<button onClick={goToMemoList} className="shell-nav-item mr-3 md:hidden"></button>
 				)}
 				{/* ナビゲーションボタン */}
-				<div className="ml-6 flex items-center space-x-2">
+				<div className="ml-2 flex items-center space-x-2">
 					<button
 						onClick={goToMemoList}
 						className={`shell-nav-item text-sm font-medium inline-flex items-center ${
@@ -112,7 +112,7 @@ export const Header = (_props?: HeaderProps) => {
 					<div className="relative" ref={dropdownRef}>
 						<button
 							onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-							className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-gray-600 text-white font-semibold flex items-center justify-center hover:shadow-lg transition-shadow"
+							className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-gray-600 text-white text-sm font-semibold flex items-center justify-center hover:shadow-lg transition-shadow"
 							title={user.name || user.email || 'User'}
 						>
 							{getUserInitial()}
