@@ -263,3 +263,101 @@ describe('MemoEditor - 表示モード起動ボタン', () => {
 		expect(useViewStore.getState().isDisplayMode).toBe(true);
 	});
 });
+
+describe('MemoEditor - Prose Bridge（本文編集面の色所有権整理・editor-surface-tokenization Task 4）', () => {
+	beforeEach(() => {
+		cleanup();
+	});
+
+	it('.memo-content ラッパーに .shell-prose-host を併記する（4.1）', () => {
+		const Wrapper = createWrapper();
+		const memo = buildMemo();
+
+		const { container } = render(<MemoEditor memo={memo} />, { wrapper: Wrapper });
+
+		const wrapper = container.querySelector('.memo-content');
+		expect(wrapper?.className).toContain('shell-prose-host');
+	});
+});
+
+describe('MemoEditor - 残存直書きの解消（editor-surface-tokenization Task 6.5）', () => {
+	beforeEach(() => {
+		cleanup();
+		updateMutate.mockReset();
+		createMutate.mockReset();
+		deleteMutateAsync.mockReset();
+	});
+
+	it('ヘッダー境界はトークン境界（var(--outline)）を参照し、生 border-gray-200 を持たない', () => {
+		const Wrapper = createWrapper();
+		const memo = buildMemo();
+		const { container } = render(<MemoEditor memo={memo} />, { wrapper: Wrapper });
+
+		const header = container.querySelector('.border-b') as HTMLElement;
+		expect(header.className).toMatch(/var\(--outline\)/);
+		expect(header.className).not.toMatch(/border-gray-200/);
+	});
+
+	it('保存ボタンは .shell-button-primary で塗られ、生 bg-blue-500 を持たない', () => {
+		const Wrapper = createWrapper();
+		const memo = buildMemo();
+		render(<MemoEditor memo={memo} />, { wrapper: Wrapper });
+
+		const saveButton = screen.getByRole('button', { name: /保存/ });
+		expect(saveButton.classList.contains('shell-button-primary')).toBe(true);
+		expect(saveButton.className).not.toMatch(/bg-blue-500|hover:bg-blue-600/);
+	});
+
+	it('削除ボタンは破壊の中核色トークンとその前景を参照し、生 bg-red-500 を持たない', () => {
+		const Wrapper = createWrapper();
+		const memo = buildMemo();
+		render(<MemoEditor memo={memo} />, { wrapper: Wrapper });
+
+		const deleteButton = screen.getByRole('button', { name: /削除/ });
+		expect(deleteButton.className).toMatch(/var\(--danger\)/);
+		expect(deleteButton.className).toMatch(/var\(--on-danger\)/);
+		expect(deleteButton.className).not.toMatch(/bg-red-500|hover:bg-red-600/);
+	});
+
+	it('タグ表示は低強調トークン（.shell-text-muted）を参照し、生 text-gray-600 を持たない', () => {
+		const Wrapper = createWrapper();
+		const memo = buildMemo({
+			memoTags: [
+				{
+					memoId: 'memo-1',
+					tagId: 'tag-1',
+					tag: {
+						id: 'tag-1',
+						name: 'タグA',
+						color: '#123456',
+						createdAt: new Date('2026-01-01').toISOString(),
+						updatedAt: new Date('2026-01-01').toISOString(),
+					},
+				},
+			],
+		});
+		const { container } = render(<MemoEditor memo={memo} />, { wrapper: Wrapper });
+
+		const tagWrapper = container.querySelector('.mb-3.flex.flex-wrap') as HTMLElement;
+		expect(tagWrapper.classList.contains('shell-text-muted')).toBe(true);
+		expect(tagWrapper.className).not.toMatch(/text-gray-600/);
+	});
+
+	it('タイトル入力は入力プリミティブのプレースホルダ契約（var(--on-surface-variant)）へ寄せ、生 placeholder-gray-400 を持たない', () => {
+		const Wrapper = createWrapper();
+		const memo = buildMemo();
+		render(<MemoEditor memo={memo} />, { wrapper: Wrapper });
+
+		const titleInput = screen.getByPlaceholderText('タイトル');
+		expect(titleInput.className).toMatch(/var\(--on-surface-variant\)/);
+		expect(titleInput.className).not.toMatch(/placeholder-gray-400/);
+	});
+
+	it('既にトークン化済みの表示モード切替ボタンは .shell-button のまま変更しない', () => {
+		const Wrapper = createWrapper();
+		const memo = buildMemo();
+		render(<MemoEditor memo={memo} />, { wrapper: Wrapper });
+
+		expect(screen.getByTestId('display-mode-button').classList.contains('shell-button')).toBe(true);
+	});
+});

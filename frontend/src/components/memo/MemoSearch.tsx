@@ -19,11 +19,11 @@ export const MemoSearch = () => {
 	useSearchMemos(searchQuery);
 
 	return (
-		<div className="p-4 border-b border-gray-200">
+		<div className="p-4 border-b border-[var(--outline)]">
 			<div className="relative">
 				<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
 					<svg
-						className="h-5 w-5 text-gray-400"
+						className="h-5 w-5 text-[var(--on-surface-variant)]"
 						fill="none"
 						stroke="currentColor"
 						viewBox="0 0 24 24"
@@ -41,7 +41,7 @@ export const MemoSearch = () => {
 					placeholder="検索"
 					value={localQuery}
 					onChange={(e) => setLocalQuery(e.target.value)}
-					className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+					className="shell-field block w-full pl-10 pr-3"
 				/>
 				{localQuery && (
 					<button
@@ -49,7 +49,7 @@ export const MemoSearch = () => {
 						className="absolute inset-y-0 right-0 pr-3 flex items-center"
 					>
 						<svg
-							className="h-5 w-5 text-gray-400 hover:text-gray-600"
+							className="h-5 w-5 text-[var(--on-surface-variant)] hover:text-[var(--on-surface)]"
 							fill="none"
 							stroke="currentColor"
 							viewBox="0 0 24 24"

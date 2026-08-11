@@ -277,7 +277,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	return (
 		<div className="flex flex-col h-full">
 			{/* ヘッダー */}
-			<div className="border-b border-gray-200 p-4 flex items-center justify-end">
+			<div className="border-b border-[var(--outline)] p-4 flex items-center justify-end">
 				<div className="flex items-center space-x-2">
 					<OfflineBadge variant="detail" className="mr-1" />
 					{!isCreate && memo && <ShareMemoControl memo={memo} />}
@@ -313,7 +313,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 							data-testid="display-mode-button"
 							onClick={openDisplayMode}
 							// 色は .shell-button（トークン駆動）に委ね、寸法だけ隣の保存/削除ボタンへ揃える。
-							// bg-gray-100 直書きだと暗いテーマ（mori/yoru/umi）の面から白く浮く。
+							// 生の淡グレー背景を直書きすると暗いテーマ（mori/yoru/umi）の面から白く浮く。
 							className="shell-button px-3 py-1 text-sm rounded"
 							title="表示モードで開く（Cmd/Ctrl + Shift + F）"
 						>
@@ -330,7 +330,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 							}
 						}}
 						disabled={!hasChanges || (isEmptyDoc(content) && !title.trim()) || isSaving}
-						className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+						className="shell-button-primary px-3 py-1 text-sm"
 					>
 						{isSaving ? '保存中...' : '保存'}
 					</button>
@@ -338,7 +338,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 						<button
 							onClick={handleDelete}
 							disabled={deleteMemo.isPending}
-							className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+							className="px-3 py-1 text-sm rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--danger)] text-[var(--on-danger)] hover:opacity-90"
 						>
 							{deleteMemo.isPending ? '削除中...' : '削除'}
 						</button>
@@ -361,7 +361,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 								setTitle(e.target.value);
 								scheduleAutoSave();
 							}}
-							className="memo-title text-2xl font-bold border-none outline-none placeholder-gray-400 bg-transparent w-full"
+							className="memo-title text-2xl font-bold border-none outline-none placeholder-[var(--on-surface-variant)] bg-transparent w-full"
 						/>
 					</div>
 
@@ -378,7 +378,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 					</div>
 
 					{selectedTagIds.length > 0 && (
-						<div className="mb-3 flex flex-wrap gap-1 text-xs text-gray-600">
+						<div className="shell-text-muted mb-3 flex flex-wrap gap-1">
 							{selectedTagIds
 								.map((id) => tags.find((t) => t.id === id))
 								.filter(Boolean)
@@ -398,7 +398,7 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 						</div>
 					)}
 
-					<div className="memo-content relative flex-1 flex flex-col">
+					<div className="memo-content shell-prose-host relative flex-1 flex flex-col">
 						<RichTextEditor
 							content={content}
 							onChange={(val) => {

@@ -92,13 +92,13 @@ export const ShareMemoControl = ({ memo }: ShareMemoControlProps) => {
 					type="button"
 					onClick={handlePublish}
 					disabled={isTrashed || isPending}
-					className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+					className="shell-button-primary px-3 py-1 text-sm"
 				>
 					{publishMemo.isPending ? '公開中...' : '公開する'}
 				</button>
 			) : (
 				<div className="flex items-center gap-2">
-					<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+					<span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-[var(--success-container)] text-[var(--on-success-container)]">
 						公開中
 					</span>
 					<button
@@ -106,7 +106,7 @@ export const ShareMemoControl = ({ memo }: ShareMemoControlProps) => {
 						aria-label="共有メニューを開く"
 						onClick={() => setMenuOpen((prev) => !prev)}
 						disabled={isTrashed || isPending}
-						className="px-3 py-1 text-sm border border-green-500 text-green-700 rounded hover:bg-green-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+						className="shell-button px-3 py-1 text-sm border-[var(--success)]"
 					>
 						共有
 					</button>
@@ -116,13 +116,13 @@ export const ShareMemoControl = ({ memo }: ShareMemoControlProps) => {
 			{menuOpen && (
 				<div
 					role="menu"
-					className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[160px]"
+					className="shell-popover absolute right-0 top-full mt-1 z-50 py-1 min-w-[160px]"
 				>
 					<button
 						role="menuitem"
 						type="button"
 						onClick={handleCopyUrl}
-						className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+						className="shell-popover-item w-full text-left px-4 py-2 text-sm"
 					>
 						URLをコピー
 					</button>
@@ -130,7 +130,7 @@ export const ShareMemoControl = ({ memo }: ShareMemoControlProps) => {
 						role="menuitem"
 						type="button"
 						onClick={handleRegenerate}
-						className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+						className="shell-popover-item w-full text-left px-4 py-2 text-sm"
 					>
 						トークン再生成
 					</button>
@@ -138,7 +138,7 @@ export const ShareMemoControl = ({ memo }: ShareMemoControlProps) => {
 						role="menuitem"
 						type="button"
 						onClick={handleUnpublish}
-						className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+						className="w-full text-left px-4 py-2 text-sm text-[var(--danger)] hover:bg-[var(--danger-container)]"
 					>
 						公開解除
 					</button>
@@ -148,10 +148,10 @@ export const ShareMemoControl = ({ memo }: ShareMemoControlProps) => {
 			{feedback && (
 				<div
 					role="status"
-					className={`absolute right-0 top-full mt-10 z-50 px-3 py-2 text-sm rounded-lg shadow-md ${
+					className={`absolute right-0 top-full mt-10 z-50 px-3 py-2 text-sm rounded-lg shadow-md border ${
 						feedback.tone === 'success'
-							? 'bg-green-50 border border-green-300 text-green-800'
-							: 'bg-red-50 border border-red-300 text-red-800'
+							? 'bg-[var(--success-container)] border-[var(--success)] text-[var(--on-success-container)]'
+							: 'bg-[var(--danger-container)] border-[var(--danger)] text-[var(--on-danger-container)]'
 					}`}
 				>
 					{feedback.message}

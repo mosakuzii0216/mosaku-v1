@@ -194,6 +194,100 @@ describe('ShareMemoControl - 公開中状態', () => {
 	});
 });
 
+describe('ShareMemoControl - トークン駆動化（editor-surface-tokenization 6.2）', () => {
+	beforeEach(() => {
+		cleanup();
+		vi.clearAllMocks();
+	});
+
+	it('「公開する」は primary ボタン（.shell-button-primary）で、生 bg-green-500 を持たない', () => {
+		const Wrapper = createWrapper();
+		render(<ShareMemoControl memo={buildMemo({ publicToken: null })} />, { wrapper: Wrapper });
+		const button = screen.getByRole('button', { name: /公開する/ });
+		expect(button.classList.contains('shell-button-primary')).toBe(true);
+		expect(button.className).not.toMatch(/bg-green-500|hover:bg-green-600/);
+	});
+
+	it('「公開中」ピルは成功の淡色コンテナトークンを参照し、生 bg-green-100 を持たない', () => {
+		const Wrapper = createWrapper();
+		render(
+			<ShareMemoControl
+				memo={buildMemo({ publicToken: 'test_token_abc', publishedAt: '2026-01-01T00:00:00Z' })}
+			/>,
+			{ wrapper: Wrapper },
+		);
+		const pill = screen.getByText('公開中');
+		expect(pill.className).toMatch(/var\(--success-container\)/);
+		expect(pill.className).toMatch(/var\(--on-success-container\)/);
+		expect(pill.className).not.toMatch(/bg-green-100|text-green-800/);
+	});
+
+	it('「共有」ボタンは境界に成功色トークンを用い、面はボタンプリミティブへ委ねる', () => {
+		const Wrapper = createWrapper();
+		render(
+			<ShareMemoControl
+				memo={buildMemo({ publicToken: 'test_token_abc', publishedAt: '2026-01-01T00:00:00Z' })}
+			/>,
+			{ wrapper: Wrapper },
+		);
+		const button = screen.getByRole('button', { name: /共有/ });
+		expect(button.classList.contains('shell-button')).toBe(true);
+		expect(button.className).toMatch(/var\(--success\)/);
+		expect(button.className).not.toMatch(/border-green-500|text-green-700|hover:bg-green-50/);
+	});
+
+	it('メニュー面は .shell-popover、項目は .shell-popover-item で塗られ、生 bg-white を持たない', () => {
+		const Wrapper = createWrapper();
+		render(
+			<ShareMemoControl
+				memo={buildMemo({ publicToken: 'test_token_abc', publishedAt: '2026-01-01T00:00:00Z' })}
+			/>,
+			{ wrapper: Wrapper },
+		);
+		fireEvent.click(screen.getByRole('button', { name: /共有/ }));
+		const menu = screen.getByRole('menu');
+		expect(menu.classList.contains('shell-popover')).toBe(true);
+		expect(menu.className).not.toMatch(/bg-white|border-gray-200/);
+
+		const copyItem = screen.getByRole('menuitem', { name: /URLをコピー/ });
+		expect(copyItem.classList.contains('shell-popover-item')).toBe(true);
+	});
+
+	it('「公開解除」は破壊の中核色トークンをテキストに、ホバーで破壊の淡色コンテナを用いる', () => {
+		const Wrapper = createWrapper();
+		render(
+			<ShareMemoControl
+				memo={buildMemo({ publicToken: 'test_token_abc', publishedAt: '2026-01-01T00:00:00Z' })}
+			/>,
+			{ wrapper: Wrapper },
+		);
+		fireEvent.click(screen.getByRole('button', { name: /共有/ }));
+		const unpublish = screen.getByRole('menuitem', { name: /公開解除/ });
+		expect(unpublish.className).toMatch(/var\(--danger\)/);
+		expect(unpublish.className).toMatch(/var\(--danger-container\)/);
+		expect(unpublish.className).not.toMatch(/text-red-600|hover:bg-red-50/);
+	});
+
+	it('成功トーストは成功の淡色コンテナ対を、エラートーストは破壊の淡色コンテナ対を用いる', async () => {
+		publishMemoMutate.mockResolvedValue({
+			memoId: 'memo-1',
+			publicToken: 'new_token',
+			publishedAt: '2026-01-01T00:00:00Z',
+		});
+		const Wrapper = createWrapper();
+		render(<ShareMemoControl memo={buildMemo({ publicToken: null })} />, { wrapper: Wrapper });
+
+		await act(async () => {
+			fireEvent.click(screen.getByRole('button', { name: /公開する/ }));
+		});
+
+		const toast = screen.getByRole('status');
+		expect(toast.className).toMatch(/var\(--success-container\)/);
+		expect(toast.className).toMatch(/var\(--on-success-container\)/);
+		expect(toast.className).not.toMatch(/bg-green-50|border-green-300|text-green-800/);
+	});
+});
+
 describe('ShareMemoControl - ゴミ箱内メモ', () => {
 	beforeEach(() => {
 		cleanup();
