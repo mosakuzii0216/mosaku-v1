@@ -8,6 +8,7 @@ import { useAppInit } from '../../hooks/useAppInit';
 import { useReconnectSync } from '../../hooks/useReconnectSync';
 import { useActiveTheme } from '../../hooks/useActiveTheme';
 import { useThemeCSS } from '../../hooks/useThemeCSS';
+import { useDocumentThemeSync } from '../../hooks/useDocumentThemeSync';
 import { ThemeEffectHost } from '../effects/ThemeEffectHost';
 import { Header } from '../ui/Header';
 import { MemoEditor } from '../memo/MemoEditor';
@@ -42,6 +43,7 @@ export const DesktopLayout = () => {
 	const { data: selectedMemo } = useMemoQuery(selectedMemoId ?? '');
 	const activeTheme = useActiveTheme();
 	useThemeCSS(activeTheme);
+	useDocumentThemeSync(activeTheme);
 	useAppInit(); // アプリ初期化（タグロード等）
 	useReconnectSync(); // 再接続時のサーバー状態再取得
 
