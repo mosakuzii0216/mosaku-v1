@@ -51,9 +51,6 @@ export const Header = (_props?: HeaderProps) => {
 	return (
 		<header className="shell-surface border-b border-[var(--outline)] px-4 h-11 flex items-center justify-between">
 			<div className="flex items-center">
-				{currentView !== 'list' && (
-					<button onClick={goToMemoList} className="shell-nav-item mr-3 md:hidden"></button>
-				)}
 				{/* ナビゲーションボタン */}
 				<div className="ml-2 flex items-center space-x-2">
 					<button
