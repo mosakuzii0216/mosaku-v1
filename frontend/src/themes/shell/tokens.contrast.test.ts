@@ -122,4 +122,138 @@ describe('tokens.contrast — mori surface×on-surface の WCAG AA（両端合�
 	});
 });
 
+/*
+ * 意味色 9 役割（破壊・成功・暗幕）のコントラスト AA 機械検証
+ * ===========================================================
+ * editor-surface-tokenization Task 1.1（RED）→ Task 1.2（GREEN）。
+ * 破壊（--danger 系）・成功（--success 系）それぞれの「中核色／その上の前景／
+ * 淡色コンテナ／その上の前景」と、モーダル背後の暗幕（--scrim）を検証する。
+ * 中立既定（:root）と森（[data-theme='mori']）の両方を対象とする。
+ *
+ * 中核色（--danger / --success）は「ソリッド面の地・境界色・面の上のテキスト色」の
+ * 3用途を持つが、テキストとして使えるのは --surface 系の面の上だけという使用条件を
+ * 前提に、面の上のテキストとしての AA を検証する（アプリ床の直上に置く用法は対象外）。
+ *
+ * 淡色コンテナ（--danger-container / --success-container）は半透明のため、
+ * 「アプリ床の直上／面の上」×「通常床／worst-case の白床」の 4 経路すべてで合成し、
+ * いずれの経路でも AA を満たすことを検証する。
+ *
+ * Requirements: 6.1, 6.2, 7.6
+ */
+describe('tokens.contrast — 意味色 9 役割（破壊・成功・暗幕）の WCAG AA', () => {
+	type ThemeLabel = 'neutral' | 'mori';
+
+	const WHITE_FLOOR: RGBA = { r: 255, g: 255, b: 255, a: 1 };
+
+	const rootBlock = findBlock(stripped, /:root\s*\{/);
+
+	function themeBlock(theme: ThemeLabel): string | null {
+		return theme === 'neutral' ? rootBlock : moriBlock;
+	}
+
+	/** 役割値を取得。未定義なら expect で明示的に落とす（RED の意味づけ） */
+	function token(theme: ThemeLabel, name: string): RGBA {
+		const block = themeBlock(theme);
+		expect(block, `[${theme}] ブロックが tokens.css に存在しない`).not.toBeNull();
+		const raw = extractVar(block as string, name);
+		expect(raw, `[${theme}] に ${name} が未定義（Task 1.2 で色トークン値を実装する）`).toBeTruthy();
+		return parseColor(raw as string);
+	}
+
+	function floors(theme: ThemeLabel): ReadonlyArray<[label: string, floor: RGBA]> {
+		return [
+			['通常床（--shell-base-bg）', token(theme, '--shell-base-bg')],
+			['worst-case 床（#ffffff＝生きた背景の最明値の透け）', WHITE_FLOOR],
+		];
+	}
+
+	/** 淡色コンテナの4経路（アプリ床の直上／面の上 × 通常床／worst-case白床）を合成する */
+	function containerPaths(
+		theme: ThemeLabel,
+		containerName: string,
+	): ReadonlyArray<[label: string, composited: RGBA]> {
+		const container = token(theme, containerName);
+		const surface = token(theme, '--surface');
+		const result: Array<[string, RGBA]> = [];
+		for (const [floorLabel, floor] of floors(theme)) {
+			result.push([`アプリ床の直上 × ${floorLabel}`, compositeOver(container, floor)]);
+			const effectiveSurface = compositeOver(surface, floor);
+			result.push([`面の上 × ${floorLabel}`, compositeOver(container, effectiveSurface)]);
+		}
+		return result;
+	}
+
+	const CORE_PAIRS: ReadonlyArray<[core: string, on: string, label: string]> = [
+		['--danger', '--on-danger', '破壊'],
+		['--success', '--on-success', '成功'],
+	];
+
+	const CONTAINER_PAIRS: ReadonlyArray<[container: string, on: string, label: string]> = [
+		['--danger-container', '--on-danger-container', '破壊の淡色コンテナ'],
+		['--success-container', '--on-success-container', '成功の淡色コンテナ'],
+	];
+
+	const SURFACE_ROLES = ['--surface', '--surface-variant'] as const;
+
+	for (const theme of ['neutral', 'mori'] as const) {
+		describe(`[${theme}]`, () => {
+			it('全ての面役割が対応する前景役割をペアで持つ（暗幕を除く参照整合性）', () => {
+				const block = themeBlock(theme);
+				expect(block, `[${theme}] ブロックが存在しない`).not.toBeNull();
+				for (const [core, on] of [...CORE_PAIRS, ...CONTAINER_PAIRS]) {
+					expect(
+						extractVar(block as string, core),
+						`[${theme}] に ${core} が未定義（Task 1.2 で実装）`,
+					).toBeTruthy();
+					expect(
+						extractVar(block as string, on),
+						`[${theme}] に ${on} が未定義（Task 1.2 で実装）`,
+					).toBeTruthy();
+				}
+				// 暗幕（--scrim）は前景を載せない非テキスト面のため、対応する on-scrim は不要。
+				// 存在自体は検証するが、前景ペアの参照整合性チェックからは除外する。
+				expect(
+					extractVar(block as string, '--scrim'),
+					`[${theme}] に --scrim が未定義（Task 1.2 で実装）`,
+				).toBeTruthy();
+			});
+
+			for (const [core, on, label] of CORE_PAIRS) {
+				it(`${label}: ソリッド面の前景（${on}/${core}）は 4.5:1 以上`, () => {
+					const ratio = contrastRatio(token(theme, on), token(theme, core));
+					expect(ratio, `${on}/${core} = ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(BODY_AA);
+				});
+
+				describe(`${label}: 中核色（${core}）を面の上のテキストとして使った場合`, () => {
+					for (const surfaceName of SURFACE_ROLES) {
+						for (const [floorLabel, floor] of floors(theme)) {
+							it(`${surfaceName} 上・${floorLabel} で 4.5:1 以上`, () => {
+								const surface = compositeOver(token(theme, surfaceName), floor);
+								const ratio = contrastRatio(token(theme, core), surface);
+								expect(
+									ratio,
+									`${core}/${surfaceName}（${floorLabel}） = ${ratio.toFixed(2)}:1`,
+								).toBeGreaterThanOrEqual(BODY_AA);
+							});
+						}
+					}
+				});
+			}
+
+			for (const [container, on, label] of CONTAINER_PAIRS) {
+				it(`${label}（${on}/${container}）は4経路すべてで 4.5:1 以上`, () => {
+					const onColor = token(theme, on);
+					for (const [pathLabel, composited] of containerPaths(theme, container)) {
+						const ratio = contrastRatio(onColor, composited);
+						expect(
+							ratio,
+							`${on}/${container} @ ${pathLabel} = ${ratio.toFixed(2)}:1`,
+						).toBeGreaterThanOrEqual(BODY_AA);
+					}
+				});
+			}
+		});
+	}
+});
+
 // ---- 計算ユーティリティ自体のセルフテストは ../contrast.test.ts へ抽出済み（Task 2.1・重複排除） ----

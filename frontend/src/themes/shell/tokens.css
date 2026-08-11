@@ -45,6 +45,20 @@
 	--on-state-selected: #1e40af; /* 選択層上の文字 ＝ Tailwind blue-800 */
 	--focus-ring: #3b82f6; /* フォーカス輪郭 ＝ Tailwind blue-500 */
 
+	/* --- 意味色（破壊・成功・暗幕）editor-surface-tokenization Task 1.2 ---
+	       --danger / --success は「ソリッド面の地・境界色・面の上のテキスト色」の3用途を持つ
+	       中核色。テキスト色として使えるのは --surface / --surface-variant 系の面の上だけで、
+	       アプリ床（--shell-base-bg）へ直置きするとコントラストが不足する（使用条件）。 */
+	--danger: #dc2626; /* 破壊操作の中核色 ＝ Tailwind red-600 */
+	--on-danger: #ffffff; /* --danger をソリッド面にしたときの前景 */
+	--danger-container: #fef2f2; /* 破壊の淡色コンテナ（エラートースト・ホバー層） */
+	--on-danger-container: #991b1b; /* --danger-container 上の前景 */
+	--success: #15803d; /* 成功／公開中の中核色（用途は --danger と同型） */
+	--on-success: #ffffff; /* --success をソリッド面にしたときの前景 */
+	--success-container: #dcfce7; /* 成功の淡色コンテナ（ステータスピル・成功トースト） */
+	--on-success-container: #166534; /* --success-container 上の前景 */
+	--scrim: rgba(0, 0, 0, 0.5); /* モーダル背後の暗幕。前景を持たない非テキスト面 */
+
 	/* --- 起動時 critical 用の地色（<html> 背景／pre-mount フォールバック） --- */
 	--shell-base-bg: #ffffff;
 
@@ -136,6 +150,20 @@
 	--state-selected: rgba(134, 239, 172, 0.18);
 	--on-state-selected: #f0fdf4; /* 選択層は薄い緑オーバーレイ＝暗面が残り明文字が読める */
 	--focus-ring: #86efac; /* フォーカス輪郭＝署名グリーン（surface 上 4.98:1, 3.3） */
+
+	/* --- 意味色（破壊・成功・暗幕）editor-surface-tokenization Task 1.2。
+	       --danger / --success は面の上のテキスト色としても使う中核色（使用条件は :root 側コメント参照）。
+	       淡色コンテナは半透明でアプリ床の直上／面の上の両方に置かれる想定のため、
+	       白床 worst-case 合成でも on-*-container が AA を維持する alpha で固定している。 --- */
+	--danger: #fecaca; /* 破壊の中核色＝薄い赤（暗面上の可読性優先） */
+	--on-danger: #2b0a0a; /* --danger をソリッド面にしたときの前景＝極深赤 */
+	--danger-container: rgba(69, 10, 10, 0.88); /* 破壊の淡色コンテナ＝暗い赤 scrim */
+	--on-danger-container: #fecaca; /* --danger-container 上の前景 */
+	--success: #a7f3d0; /* 成功の中核色＝薄い緑（暗面上の可読性優先） */
+	--on-success: #04230f; /* --success をソリッド面にしたときの前景＝極深緑 */
+	--success-container: rgba(6, 78, 59, 0.88); /* 成功の淡色コンテナ＝暗い緑 scrim */
+	--on-success-container: #a7f3d0; /* --success-container 上の前景 */
+	--scrim: rgba(3, 18, 10, 0.62); /* モーダル背後の暗幕＝森の深緑 scrim */
 
 	/* --- 起動時 critical 用の地色（<html> 背景／pre-mount・reduced-motion フォールバック） --- */
 	--shell-base-bg: #062616; /* 深い森の地＝生きた背景の下の最深床 */
