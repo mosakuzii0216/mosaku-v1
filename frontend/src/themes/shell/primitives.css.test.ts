@@ -242,4 +242,190 @@ describe('primitives.css — Quality Primitives (Layer① / bundle, render-block
 			expect(block, 'font をリセットしている').not.toMatch(/font(-family)?\s*:/);
 		});
 	});
+
+	/*
+	 * editor-surface-tokenization Task 2.1 — 押下・ホバー・無効の状態表現
+	 * ===============================================================================
+	 * Requirements: 2.1, 2.2, 2.4, 2.5, 2.6, 5.1, 5.5, 5.6, 6.4, 7.5
+	 */
+	describe('Task 2.1 押下（ON）・ホバー・無効の状態表現をボタンプリミティブへ追加する', () => {
+		const pressed = (): string =>
+			findBlockBody(stripped, /\.shell-button\[aria-pressed='true'\][^{]*\{/) ?? '';
+		const disabled = (): string => findBlockBody(stripped, /\.shell-button:disabled[^{]*\{/) ?? '';
+
+		it('.shell-button-primary も押下状態セレクタを共有する', () => {
+			expect(stripped).toMatch(/\.shell-button-primary\[aria-pressed='true'\]/);
+		});
+
+		it('押下（ON）状態は地・文字・境界の3軸をトークンで変える', () => {
+			const block = pressed();
+			expect(block, '押下状態の地が var(--state-selected) を読んでいない').toMatch(
+				/background(-color)?\s*:\s*var\(--state-selected\)/,
+			);
+			expect(block, '押下状態の文字が var(--on-state-selected) を読んでいない').toMatch(
+				/color\s*:\s*var\(--on-state-selected\)/,
+			);
+			expect(block, '押下状態の境界が var(--accent) を読んでいない').toMatch(
+				/border(-color)?\s*:[^;]*var\(--accent\)/,
+			);
+		});
+
+		it('押下（ON）状態は字幅の手がかりを併用する（形状の識別可能性・地の差だけでは相互比が識別不能に近いため）', () => {
+			expect(pressed()).toMatch(/font-weight\s*:\s*600/);
+		});
+
+		it('ホバーは非押下時のみ効く（押下中のホバーで ON 表現が壊れない）', () => {
+			expect(stripped).toMatch(/\.shell-button:not\(\[aria-pressed='true'\]\):hover/);
+			expect(stripped).toMatch(/\.shell-button-primary:not\(\[aria-pressed='true'\]\):hover/);
+		});
+
+		it('.shell-button-primary も無効状態セレクタを共有する', () => {
+			expect(stripped).toMatch(/\.shell-button-primary:disabled/);
+		});
+
+		it('無効状態は不透明度を使わず前景色の切替で表現する', () => {
+			const block = disabled();
+			expect(
+				block,
+				'不透明度で無効を表現している（半透明面で実効コントラストが崩壊する）',
+			).not.toMatch(/opacity\s*:/);
+			expect(block, '無効状態の前景が var(--on-surface-variant) を読んでいない').toMatch(
+				/color\s*:\s*var\(--on-surface-variant\)/,
+			);
+		});
+
+		it('無効状態は操作不可のカーソルを与える', () => {
+			expect(disabled()).toMatch(/cursor\s*:\s*not-allowed/);
+		});
+	});
+
+	/*
+	 * editor-surface-tokenization Task 2.2 — 浮遊面・候補行・暗幕のプリミティブ
+	 * ===============================================================================
+	 * Requirements: 1.3, 1.6, 3.1, 3.2, 3.3, 3.4, 5.1, 6.3
+	 */
+	describe('Task 2.2 浮遊面・候補行・暗幕のプリミティブを追加する', () => {
+		const popover = (): string => findBlockBody(stripped, /\.shell-popover\s*\{/) ?? '';
+		const popoverHover = (): string =>
+			findBlockBody(stripped, /\.shell-popover-item:hover\s*\{/) ?? '';
+		const popoverSelected = (): string =>
+			findBlockBody(stripped, /\.shell-popover-item\[aria-selected='true'\]\s*\{/) ?? '';
+		const popoverFocus = (): string =>
+			findBlockBody(stripped, /\.shell-popover-item:focus-visible\s*\{/) ?? '';
+		const scrim = (): string => findBlockBody(stripped, /\.shell-scrim\s*\{/) ?? '';
+
+		it('.shell-popover / .shell-popover-item / .shell-scrim ルールを定義する', () => {
+			expect(stripped, '.shell-popover が未定義').toMatch(/\.shell-popover\s*[,{]/);
+			expect(stripped, '.shell-popover-item が未定義').toMatch(/\.shell-popover-item\s*[,{:]/);
+			expect(stripped, '.shell-scrim が未定義').toMatch(/\.shell-scrim\s*[,{]/);
+		});
+
+		it('.shell-popover は地・文字・境界・奥行きをトークンで解決する', () => {
+			const block = popover();
+			expect(block).toMatch(/background(-color)?\s*:\s*var\(--surface\)/);
+			expect(block).toMatch(/color\s*:\s*var\(--on-surface\)/);
+			expect(block).toMatch(/border[^:]*:[^;]*var\(--outline\)/);
+			expect(block).toMatch(/box-shadow\s*:\s*var\(--elevation-3\)/);
+		});
+
+		it('.shell-popover は半透明 backdrop で生きた背景を透かす', () => {
+			expect(popover()).toMatch(/backdrop-filter\s*:\s*var\(--surface-backdrop\)/);
+		});
+
+		it('.shell-popover は高さ制約・スクロール・寸法を宣言しない（面の質感とレイアウトの分離。構造の異なる4面へ同じクラスが当たるため）', () => {
+			const block = popover();
+			expect(block, 'max-height を宣言している').not.toMatch(/max-height\s*:/);
+			expect(block, 'height を宣言している').not.toMatch(/(?<!max-|line-)height\s*:/);
+			expect(block, 'overflow を宣言している').not.toMatch(/overflow(-[xy])?\s*:/);
+			expect(block, 'width を宣言している').not.toMatch(/(?<!max-|min-)width\s*:/);
+		});
+
+		it('候補行のホバーは var(--state-hover) を読む', () => {
+			expect(popoverHover()).toMatch(/var\(--state-hover\)/);
+		});
+
+		it('候補行の選択状態は var(--state-selected) と var(--on-state-selected) のペアを読む', () => {
+			expect(popoverSelected()).toMatch(/var\(--state-selected\)/);
+			expect(popoverSelected()).toMatch(/var\(--on-state-selected\)/);
+		});
+
+		it('候補行のフォーカスは var(--focus-ring) を読む', () => {
+			expect(popoverFocus()).toMatch(/var\(--focus-ring\)/);
+		});
+
+		it('.shell-scrim は var(--scrim) を読む', () => {
+			expect(scrim()).toMatch(/var\(--scrim\)/);
+		});
+
+		it('浮遊面内の補助テキストは既存の .shell-text-muted で解決できる（面ごとの専用クラスを新設しない）', () => {
+			expect(stripped).toMatch(/\.shell-text-muted\s*\{/);
+		});
+	});
+
+	/*
+	 * editor-surface-tokenization Task 2.3 — 構造契約と reduced-motion 列挙の機械検証
+	 * ===============================================================================
+	 * Requirements: 2.1, 2.6, 3.1, 5.5, 5.6, 6.5, 8.2
+	 */
+	describe('Task 2.3 新クラス・新状態が reduced-motion ブロックに列挙されている', () => {
+		const reducedMotion = (): string =>
+			findBlockBody(stripped, /@media\s*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)/) ?? '';
+
+		it('.shell-popover-item のトランジションは reduced-motion で停止する', () => {
+			expect(reducedMotion()).toMatch(/\.shell-popover-item\b/);
+		});
+	});
+
+	/*
+	 * editor-surface-tokenization Task 4 — Prose Bridge（本文編集面の色所有権整理）
+	 * ===============================================================================
+	 * Requirements: 4.1, 4.2, 4.3, 4.4, 4.6, 5.2, 5.3
+	 */
+	describe('Task 4 Prose Bridge：本文編集面は「親に従う」宣言のみを持つ', () => {
+		const host = (): string => findBlockBody(stripped, /\.shell-prose-host\s*\{/) ?? '';
+		const hostProseMirror = (): string =>
+			findBlockBody(stripped, /\.shell-prose-host\s+\.ProseMirror\s*\{/) ?? '';
+
+		it('.shell-prose-host は中立時の着地先を var(--on-surface) に固定する', () => {
+			expect(host()).toMatch(/color\s*:\s*var\(--on-surface\)/);
+		});
+
+		it('.shell-prose-host .ProseMirror の color は inherit のみ（直書き禁止・Layer③ の本文色所有を守る）', () => {
+			const block = hostProseMirror();
+			expect(block, '.shell-prose-host .ProseMirror が未定義').not.toBe('');
+			const colorDecls = block.match(/(?<!--tw-prose-\S*)\bcolor\s*:\s*[^;]+;/g) ?? [];
+			expect(colorDecls, `color 宣言: ${colorDecls.join(', ')}`).toHaveLength(1);
+			expect(colorDecls[0]).toMatch(/color\s*:\s*inherit\s*;/);
+		});
+
+		it('.shell-prose-host .ProseMirror は prose 組み込みパレットを currentColor へ脱色する', () => {
+			const block = hostProseMirror();
+			for (const key of [
+				'body',
+				'headings',
+				'lead',
+				'links',
+				'bold',
+				'counters',
+				'bullets',
+				'quotes',
+				'captions',
+			]) {
+				expect(block, `--tw-prose-${key} が currentColor でない`).toMatch(
+					new RegExp(`--tw-prose-${key}\\s*:\\s*currentColor`),
+				);
+			}
+		});
+
+		it('.shell-prose-host .ProseMirror は罫線系の prose 変数を currentColor の color-mix で脱色する', () => {
+			const block = hostProseMirror();
+			for (const key of ['hr', 'quote-borders', 'th-borders', 'td-borders']) {
+				expect(block, `--tw-prose-${key} が color-mix(currentColor) でない`).toMatch(
+					new RegExp(
+						`--tw-prose-${key}\\s*:\\s*color-mix\\(in srgb, currentColor \\d+%, transparent\\)`,
+					),
+				);
+			}
+		});
+	});
 });
