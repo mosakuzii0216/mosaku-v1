@@ -441,15 +441,15 @@ test.describe('invitation-perks 登録 UX E2E (Task 6.2)', () => {
 			timeout: 10_000,
 		});
 
-		// 展開前: GitHub は非表示
-		await expect(page.getByRole('button', { name: /GitHubで登録/ })).not.toBeVisible();
+		// 展開前: Apple は非表示
+		await expect(page.getByRole('button', { name: /Appleで登録/ })).not.toBeVisible();
 
 		// 展開操作
 		await page.getByRole('button', { name: '他の方法で登録' }).click();
 
 		// 展開後: 追加プロバイダが表示される
-		await expect(page.getByRole('button', { name: /GitHubで登録/ })).toBeVisible();
-		await expect(page.getByRole('button', { name: /LINEで登録/ })).toBeVisible();
+		await expect(page.getByRole('button', { name: /Appleで登録/ })).toBeVisible();
+		await expect(page.getByRole('button', { name: /Xで登録/ })).toBeVisible();
 	});
 
 	// ─── 4.4: ログイン導線 → login モード遷移 ────────────────────────────────

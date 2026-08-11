@@ -8,6 +8,17 @@
  * `globalSetup` などコンテキスト外の場所からも呼べる構造にしている。
  */
 
+import { generateJSON } from '@tiptap/html';
+import StarterKit from '@tiptap/starter-kit';
+import { TaskList, TaskItem } from '@tiptap/extension-list';
+
+/**
+ * seed 用の最小拡張セット。
+ * アプリ本体の createEditorExtensions は CSS をimport しており Node から読まないため、
+ * ここでは CSS を引かない tiptap パッケージだけで schema を組む。
+ */
+const seedExtensions = [StarterKit, TaskList, TaskItem];
+
 export interface BackendUser {
 	id: string;
 	email: string;
@@ -92,9 +103,12 @@ export class BackendApi {
 		accessToken: string,
 		input: { title: string; content: string; notebookId?: string },
 	): Promise<SeededMemo> {
+		// backend は content-jsonb 移行済みで ProseMirror doc を要求する。
+		// 各 spec は HTML 文字列で seed するため、境界であるここで変換する。
+		const body = { ...input, content: generateJSON(input.content, seedExtensions) };
 		return this.request<SeededMemo>(
 			'/memos',
-			{ method: 'POST', body: JSON.stringify(input) },
+			{ method: 'POST', body: JSON.stringify(body) },
 			accessToken,
 		);
 	}
