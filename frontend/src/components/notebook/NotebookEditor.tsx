@@ -338,7 +338,7 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 						</div>
 					)}
 
-					<div className="memo-content relative flex-1 flex flex-col">
+					<div className="memo-content shell-prose-host relative flex-1 flex flex-col">
 						<RichTextEditor
 							content={content}
 							onChange={(v) => {

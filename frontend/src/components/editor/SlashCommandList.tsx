@@ -69,12 +69,15 @@ export const SlashCommandList = forwardRef<SlashCommandListRef, SlashCommandList
 		}));
 
 		return (
-			<div className="slash-command-list border rounded-lg shadow-lg bg-white overflow-hidden max-h-80 overflow-y-auto">
+			<div
+				className="slash-command-list shell-popover overflow-hidden max-h-80 overflow-y-auto"
+				role="listbox"
+			>
 				{mode !== 'root' && (
 					<button
 						type="button"
 						onClick={onBack}
-						className="block w-full text-left px-4 py-2 text-sm text-gray-500 border-b hover:bg-gray-50 transition-colors"
+						className="shell-popover-item shell-text-muted block w-full text-left px-4 py-2"
 					>
 						← コマンドへ戻る
 					</button>
@@ -84,28 +87,28 @@ export const SlashCommandList = forwardRef<SlashCommandListRef, SlashCommandList
 						<button
 							key={`${item.kind}-${item.title}`}
 							type="button"
-							className={`flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors ${
-								index === selectedIndex ? 'bg-blue-50' : ''
-							}`}
+							role="option"
+							aria-selected={index === selectedIndex}
+							className="shell-popover-item flex items-center gap-2 w-full text-left px-4 py-2"
 							onClick={() => selectItem(index)}
 						>
 							{item.swatchColorVar && (
 								<span
 									data-slash-swatch=""
-									className="inline-block w-4 h-4 rounded-full border border-gray-300 shrink-0"
+									className="inline-block w-4 h-4 rounded-full border border-[var(--outline)] shrink-0"
 									style={{ backgroundColor: `var(${item.swatchColorVar})` }}
 								/>
 							)}
 							<div>
-								<div className="font-medium text-gray-900">{item.title}</div>
+								<div className="font-medium">{item.title}</div>
 								{item.description && (
-									<div className="text-xs text-gray-500 mt-0.5">{item.description}</div>
+									<div className="shell-text-muted mt-0.5">{item.description}</div>
 								)}
 							</div>
 						</button>
 					))
 				) : (
-					<div className="px-4 py-2 text-sm text-gray-500">該当するコマンドがありません</div>
+					<div className="shell-text-muted px-4 py-2">該当するコマンドがありません</div>
 				)}
 			</div>
 		);

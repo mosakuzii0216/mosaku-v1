@@ -238,3 +238,44 @@ describe('EditorBubbleMenu（Task 8・Req2.1/2.2/2.4/3.3/3.4/1.3）', () => {
 		});
 	});
 });
+
+describe('EditorBubbleMenu — トークン駆動化（editor-surface-tokenization 5.3）', () => {
+	afterEach(() => {
+		cleanup();
+	});
+
+	it('スウォッチボタンが .shell-button クラスで解決し生 Tailwind 配色を持たない', async () => {
+		const editor = await mount('<p>本文テキスト</p>');
+		act(() => {
+			editor.commands.setTextSelection({ from: 1, to: 3 });
+		});
+
+		const swatch = await waitFor(() => screen.getByText('若葉').closest('button'));
+		expect(swatch?.classList.contains('shell-button')).toBe(true);
+		expect(swatch?.className).not.toMatch(/bg-white|bg-blue-\d|text-gray-\d|border-gray-\d/);
+	});
+
+	it('フローティング面は .shell-popover で解決し生 Tailwind 配色を持たない', async () => {
+		const editor = await mount('<p>本文テキスト</p>');
+		act(() => {
+			editor.commands.setTextSelection({ from: 1, to: 3 });
+		});
+
+		const group = await waitFor(() => screen.getByRole('group', { name: 'テキスト色/マーカー' }));
+		const popover = group.closest('.shell-popover');
+		expect(popover).not.toBeNull();
+		expect(popover?.className).not.toMatch(/bg-white|shadow-lg|border-gray-\d/);
+	});
+
+	it('コールアウト種別ボタンは押下属性を先例どおり保持する（Req1.3 先例維持）', async () => {
+		const editor = await mount('<p></p>');
+		act(() => {
+			editor.commands.setCallout();
+			editor.commands.setTextSelection(2);
+		});
+
+		const button = await waitFor(() => screen.getByRole('button', { name: /⚠️ 注意/ }));
+		expect(button.classList.contains('shell-button')).toBe(true);
+		expect(button.getAttribute('aria-pressed')).not.toBeNull();
+	});
+});

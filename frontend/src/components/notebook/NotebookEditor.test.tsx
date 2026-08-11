@@ -864,3 +864,24 @@ describe('NotebookEditor - 保存失敗時のエラー提示・入力保持・�
 		expect(updateMutateAsync).toHaveBeenCalledTimes(2);
 	});
 });
+
+describe('NotebookEditor - Prose Bridge（本文編集面の色所有権整理・editor-surface-tokenization Task 4）', () => {
+	beforeEach(() => {
+		cleanup();
+	});
+
+	it('.memo-content ラッパーに .shell-prose-host を併記する（4.1）', () => {
+		const nb = buildNotebook({ id: 'nb-prose-bridge' });
+		mockNotebookMap['nb-prose-bridge'] = nb;
+
+		const Wrapper = createWrapper();
+		const { container } = render(<NotebookEditor notebookId="nb-prose-bridge" />, {
+			wrapper: Wrapper,
+		});
+
+		const wrapper = container.querySelector('.memo-content');
+		expect(wrapper?.className).toContain('shell-prose-host');
+
+		delete mockNotebookMap['nb-prose-bridge'];
+	});
+});

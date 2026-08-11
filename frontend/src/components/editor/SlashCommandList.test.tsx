@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createRef } from 'react';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { SlashCommandList, type SlashCommandListRef } from './SlashCommandList';
 import type { SlashCommandItem } from './slashCommandItems';
 
@@ -160,6 +160,82 @@ describe('SlashCommandList', () => {
 			const swatch = document.querySelector('[data-slash-swatch]') as HTMLElement | null;
 			expect(swatch).not.toBeNull();
 			expect(swatch?.style.backgroundColor).toBe('var(--editor-text-wakaba)');
+		});
+	});
+
+	describe('トークン駆動化と選択状態のロール伝達（editor-surface-tokenization 5.4）', () => {
+		it('ルートは role="listbox" を持つ', () => {
+			render(
+				<SlashCommandList
+					items={makeItems(['見出し1', '箇条書き'])}
+					command={vi.fn()}
+					mode="root"
+					onBack={vi.fn()}
+				/>,
+			);
+			expect(screen.getByRole('listbox')).toBeTruthy();
+		});
+
+		it('候補行は role="option" と aria-selected をセットで持つ', () => {
+			render(
+				<SlashCommandList
+					items={makeItems(['見出し1', '箇条書き'])}
+					command={vi.fn()}
+					mode="root"
+					onBack={vi.fn()}
+				/>,
+			);
+			const options = screen.getAllByRole('option');
+			expect(options).toHaveLength(2);
+			expect(options[0].getAttribute('aria-selected')).toBe('true');
+			expect(options[1].getAttribute('aria-selected')).toBe('false');
+		});
+
+		it('ArrowDown で選択インデックスが移動すると aria-selected が追随する', () => {
+			const ref = createRef<SlashCommandListRef>();
+			render(
+				<SlashCommandList
+					ref={ref}
+					items={makeItems(['見出し1', '箇条書き'])}
+					command={vi.fn()}
+					mode="root"
+					onBack={vi.fn()}
+				/>,
+			);
+			act(() => {
+				ref.current!.onKeyDown(key('ArrowDown'));
+			});
+			const options = screen.getAllByRole('option');
+			expect(options[0].getAttribute('aria-selected')).toBe('false');
+			expect(options[1].getAttribute('aria-selected')).toBe('true');
+		});
+
+		it('「← コマンドへ戻る」ボタンは role="option" も aria-selected も持たない（選択インデックス対象外）', () => {
+			render(
+				<SlashCommandList
+					items={makeItems(['日記'])}
+					command={vi.fn()}
+					mode="notebook"
+					onBack={vi.fn()}
+				/>,
+			);
+			const backButton = screen.getByRole('button', { name: /戻る/ });
+			expect(backButton.getAttribute('role')).toBeNull();
+			expect(backButton.getAttribute('aria-selected')).toBeNull();
+		});
+
+		it('生 Tailwind 配色（bg-white / bg-blue-50 / text-gray-500 / text-gray-900 等）を直当てしない', () => {
+			const { container } = render(
+				<SlashCommandList
+					items={makeItems(['見出し1'])}
+					command={vi.fn()}
+					mode="notebook"
+					onBack={vi.fn()}
+				/>,
+			);
+			expect(container.innerHTML).not.toMatch(
+				/bg-white|bg-blue-\d|text-gray-\d|border-gray-\d|hover:bg-gray-50/,
+			);
 		});
 	});
 });

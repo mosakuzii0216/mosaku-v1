@@ -9,8 +9,7 @@ interface EditorBubbleMenuProps {
 	editor: Editor;
 }
 
-const SWATCH_BUTTON_CLASS =
-	'px-2 py-1 text-sm rounded bg-white text-gray-700 border border-gray-300 hover:bg-blue-500 hover:text-white';
+const SWATCH_BUTTON_CLASS = 'shell-button px-2 py-1 text-sm rounded';
 
 function shouldShow({ editor, state }: { editor: Editor; state: EditorState }): boolean {
 	if (!editor.isEditable) {
@@ -53,7 +52,7 @@ export const EditorBubbleMenu: React.FC<EditorBubbleMenuProps> = ({ editor }) =>
 			editor={editor}
 			shouldShow={shouldShow}
 			updateDelay={0}
-			className="flex gap-1 rounded bg-white p-1 shadow-lg border border-gray-200"
+			className="shell-popover flex gap-1 p-1"
 		>
 			{context.hasSelection && (
 				<div className="flex flex-wrap gap-1" role="group" aria-label="テキスト色/マーカー">
