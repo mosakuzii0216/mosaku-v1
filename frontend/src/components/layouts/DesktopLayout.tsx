@@ -137,8 +137,10 @@ export const DesktopLayout = () => {
 		>
 			<ThemeEffectHost theme={activeTheme} />
 
-			{/* 生きた背景（MoriEffectLayer / fixed z-0）より前面にコンテンツを重ねる（ログイン画面と同じ z-10 の床） */}
-			<div className="relative z-10 flex-shrink-0">
+			{/* 生きた背景（MoriEffectLayer / fixed z-0）より前面にコンテンツを重ねる（ログイン画面と同じ z-10 の床）。
+			    ヘッダー側は main より一段高い z-20：この div が stacking context を作るため、
+			    ドロップダウンの z-50 は内側で頭打ちになり、同値 z-10 かつ後続の <main> に覆われる。 */}
+			<div className="relative z-20 flex-shrink-0">
 				<Header onMemoCreateClick={goToMemoCreate} onNotebookCreateClick={goToNotebookCreate} />
 			</div>
 

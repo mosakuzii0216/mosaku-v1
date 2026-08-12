@@ -210,3 +210,23 @@ describe('MobileLayout テーマルート適用', () => {
 		expect(getByTestId('theme-effect-host')).toBeTruthy();
 	});
 });
+
+/* 重なり順の意図は DesktopLayout.test.tsx の同名 describe を参照（両レイアウトで同じ契約） */
+describe('MobileLayout の重なり順', () => {
+	const zIndexOf = (el: Element | null | undefined): number => {
+		const match = el?.className.match(/(?:^|\s)z-(\d+)(?:\s|$)/);
+		return match ? Number(match[1]) : Number.NaN;
+	};
+
+	it('ヘッダー包み層の z-index が main より大きい（ドロップダウンが本文に覆われない）', () => {
+		vi.mocked(useActiveTheme).mockReturnValue(null);
+		const { container, getByTestId } = render(<MobileLayout />);
+
+		const headerLayer = zIndexOf(getByTestId('header').parentElement);
+		const mainLayer = zIndexOf(container.querySelector('main'));
+
+		expect(Number.isNaN(headerLayer)).toBe(false);
+		expect(Number.isNaN(mainLayer)).toBe(false);
+		expect(headerLayer).toBeGreaterThan(mainLayer);
+	});
+});
