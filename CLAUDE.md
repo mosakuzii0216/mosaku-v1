@@ -109,49 +109,57 @@ Conventional Commits + scope を使用。例: `feat(frontend/memo): メモ一覧
 8. **テーマエフェクトの自動停止**: `prefers-reduced-motion` / エディタフォーカス / タブ非表示 / マウス3秒アイドル で停止する設計。新エフェクト追加時もこの条件を尊重すること
 9. **`npm run dev` は dev サーバーを取り残しうる**: 定義が `backend start:dev & frontend dev` で backend を `&` で裏に回しているため、Ctrl+C は前面の frontend にしか届かず backend が残る。次回起動時に「ポート使用中」で失敗したら `lsof -nP -iTCP:3000 -iTCP:5173 -sTCP:LISTEN` で確認して kill する。**`-sTCP:LISTEN` は必須** — 省略すると当該ポートに接続中のクライアント（ブラウザ等）まで拾ってしまう。バックグラウンドで起動する場合は `npm run dev` を経由せず backend / frontend を個別に投げること
 
-## 仕様駆動開発（cc-sdd）
+## 仕様駆動開発（OpenSpec + Superpowers）
 
-本プロジェクトでは **cc-sdd** による仕様駆動開発を採用しています。
-**全ての機能追加・修正は仕様定義 → 承認 → 実装の順で進めること。承認なしに実装しない。**
+> **2026-08-12 に cc-sdd から移行。** 理由は `docs/development/sdd-framework-migration.md` を参照。
+> 要約: cc-sdd（`gotalab/cc-sdd`）は 3.6k star・2026-05-20 を最後に更新停止。対して OpenSpec は 64k star、Superpowers は 271k star でいずれも活発。加えて cc-sdd には「まだ何を作るか決まっていない」段階の受け皿が無く、全変更に同じ重さの承認フローを強制する硬直性があった。
+
+役割が重ならない 2 つを併用する。
+
+| レイヤー             | ツール            | 担当                                                 |
+| -------------------- | ----------------- | ---------------------------------------------------- |
+| **仕様**             | **OpenSpec**      | 何を作るかの探索・提案・仕様の永続化                 |
+| **実装規律**         | **Superpowers**   | TDD（真の RED/GREEN）・YAGNI・DRY・subagent 駆動実装 |
+| **プロジェクト記憶** | `.kiro/steering/` | 継続。OpenSpec に相当機能が無いため維持する          |
 
 ### ワークフロー
 
 ```
-/kiro:spec-init "機能の説明"
+/opsx:explore          # 何を作るか決まっていない段階の壁打ち（cc-sdd に無かった入口）
   ↓
-/kiro:spec-requirements → 人間が承認
+/opsx:propose "説明"   # proposal.md / specs/ / design.md / tasks.md を生成 → 人間が承認
   ↓
-/kiro:spec-design → 人間が承認
+/opsx:apply            # タスクを順に実装（Superpowers の TDD 規律が乗る）
   ↓
-/kiro:spec-tasks → 人間が承認
-  ↓
-/kiro:spec-impl（タスク番号）→ TDD（RED → GREEN → REFACTOR）
-  ↓
-/kiro:validate-impl で整合性確認
-  ↓
-コミット（1 Todo = 1 Commit）
+/opsx:archive          # 完了した変更を openspec/specs/ へ反映しアーカイブ
 ```
+
+**実装前に人間の承認を挟む原則は維持する。** ただし「全ての変更に同じ重さのフローを課すか」は未決事項（`docs/development/sdd-framework-migration.md` の「未決」節を参照）。
 
 ### ディレクトリ構成
 
 ```
+openspec/
+├── specs/           # 確定した仕様（archive 時に更新される）
+├── changes/         # 進行中の変更提案
+│   └── archive/     # 完了した変更
+└── config.yaml      # schema: spec-driven
+
 .kiro/
-├── steering/        # プロジェクト記憶（product.md / tech.md / structure.md / dogfooding.md / quality.md）
-└── specs/           # 機能ごとの仕様書（spec-init で生成）
-    └── {機能名}/
-        ├── requirements.md
-        ├── design.md
-        ├── tasks.md
-        └── spec.json  # フェーズ進捗管理
+├── steering/        # プロジェクト記憶（product.md / tech.md / structure.md / dogfooding.md / quality.md）※継続利用
+└── specs/           # 【凍結】cc-sdd 時代の仕様 39 本。過去の記録として保持し、新規追加はしない
 ```
 
 ### 進行中の仕様
 
-現在のアクティブな仕様は `.kiro/specs/` 配下を参照。各 `spec.json` の `phase` で進捗確認可。
+- 新規の変更は `openspec/changes/` 配下。`openspec list` / `/opsx:*` で確認する
+- `.kiro/specs/` は**凍結**。ただし移行時点で進行中だった以下のみ、そのまま cc-sdd で完了させる:
+  - `editor-surface-tokenization`（`tasks-generated`・実装が進行中のため中断しない）
 
 ### Steering の更新
 
 コードに大きな変更があった場合は `/kiro:steering` を実行して steering ファイルを同期してください。
+（steering は OpenSpec 移行後も継続利用する）
 
 ## ドッグフーディング（Phase 1）
 
