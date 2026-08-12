@@ -210,3 +210,28 @@ describe('DesktopLayout テーマルート適用', () => {
 		expect(getByTestId('theme-effect-host')).toBeTruthy();
 	});
 });
+
+/*
+ * ヘッダー層 > main 層の重なり順を機械検証する。
+ * ヘッダー包み div は position:relative + z-index を持つため stacking context を作り、
+ * 内側のドロップダウン（z-50）は包み div の値で頭打ちになる。包みと <main> が同値だと
+ * DOM 後続の <main> が上に来てドロップダウンがクリック不能になる（実際に E2E が検出した回帰）。
+ */
+describe('DesktopLayout の重なり順', () => {
+	const zIndexOf = (el: Element | null | undefined): number => {
+		const match = el?.className.match(/(?:^|\s)z-(\d+)(?:\s|$)/);
+		return match ? Number(match[1]) : Number.NaN;
+	};
+
+	it('ヘッダー包み層の z-index が main より大きい（ドロップダウンが本文に覆われない）', () => {
+		vi.mocked(useActiveTheme).mockReturnValue(null);
+		const { container, getByTestId } = render(<DesktopLayout />);
+
+		const headerLayer = zIndexOf(getByTestId('header').parentElement);
+		const mainLayer = zIndexOf(container.querySelector('main'));
+
+		expect(Number.isNaN(headerLayer)).toBe(false);
+		expect(Number.isNaN(mainLayer)).toBe(false);
+		expect(headerLayer).toBeGreaterThan(mainLayer);
+	});
+});

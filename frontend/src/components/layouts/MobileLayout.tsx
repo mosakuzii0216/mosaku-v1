@@ -124,8 +124,9 @@ export const MobileLayout = () => {
 			data-theme-id={activeTheme?.id}
 		>
 			<ThemeEffectHost theme={activeTheme} />
-			{/* 生きた背景（MoriEffectLayer / fixed z-0）より前面にコンテンツを重ねる */}
-			<div className="relative z-10 flex-shrink-0">
+			{/* 生きた背景（MoriEffectLayer / fixed z-0）より前面にコンテンツを重ねる。
+			    ヘッダー側は main より一段高い z-20（内側ドロップダウンが <main> に覆われるのを防ぐ） */}
+			<div className="relative z-20 flex-shrink-0">
 				<Header onMemoCreateClick={goToMemoCreate} onNotebookCreateClick={goToNotebookCreate} />
 			</div>
 			<main className="relative z-10 flex-1 overflow-hidden">{renderContent()}</main>
