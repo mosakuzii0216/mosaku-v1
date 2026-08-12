@@ -107,6 +107,7 @@ Conventional Commits + scope を使用。例: `feat(frontend/memo): メモ一覧
 6. **Supabase 接続**: `DATABASE_URL` はプーリング（6543）、`DIRECT_URL` は直接接続（5432）を使い分けること
 7. **OAuth Strategy 未設定時の挙動**: Client ID/Secret が空の場合は警告ログを出して起動継続。新規プロバイダ追加時も同様に対応すること
 8. **テーマエフェクトの自動停止**: `prefers-reduced-motion` / エディタフォーカス / タブ非表示 / マウス3秒アイドル で停止する設計。新エフェクト追加時もこの条件を尊重すること
+9. **`npm run dev` は dev サーバーを取り残しうる**: 定義が `backend start:dev & frontend dev` で backend を `&` で裏に回しているため、Ctrl+C は前面の frontend にしか届かず backend が残る。次回起動時に「ポート使用中」で失敗したら `lsof -nP -iTCP:3000 -iTCP:5173 -sTCP:LISTEN` で確認して kill する。**`-sTCP:LISTEN` は必須** — 省略すると当該ポートに接続中のクライアント（ブラウザ等）まで拾ってしまう。バックグラウンドで起動する場合は `npm run dev` を経由せず backend / frontend を個別に投げること
 
 ## 仕様駆動開発（cc-sdd）
 

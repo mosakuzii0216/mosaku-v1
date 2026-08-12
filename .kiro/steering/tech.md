@@ -50,12 +50,22 @@ TypeScriptモノレポ。`backend/`（NestJS API）と `frontend/`（React SPA�
 ### Required Tools
 
 - Node.js 22+
-- Docker（ローカル開発用）
+- Docker（ローカル開発用。ランタイムは colima。`docker-compose up` でアプリまで起動しないこと — 下記参照）
+
+### ローカル起動の指針
+
+**DB のみコンテナ、アプリはホストで実行**する。`docker-compose.yml` には backend/frontend も定義されているが、これらは `node_modules` を名前付きボリュームで隔離しているため、ホスト側の依存追加や Prisma スキーマ変更が反映されず壊れる。
+
+```bash
+colima start            # Docker ランタイム（Docker Desktop ではない）
+docker start mosaku-db  # DB のみ
+npm run dev             # backend:3000 + frontend:5173 をホストで
+```
 
 ### Common Commands
 
 ```bash
-# Dev（ルートから）
+# Dev（ルートから）。事前に DB が必要: colima start && docker start mosaku-db
 npm run dev
 
 # Backend only
