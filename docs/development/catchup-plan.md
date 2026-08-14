@@ -3,6 +3,9 @@
 > v1（14,400行の写経計画）は 2 回作って 2 回とも 0 行で終わった。原因は「時間が確保できない」＋「初めの一歩が重い」。
 > よって v2 は**内容より立ち上がりコスト**を設計する。旧版は [\_archive/catchup-plan-v1-shakyo.md](./_archive/catchup-plan-v1-shakyo.md)。
 
+本書は `/catchup` の **T1 トラック**（mosaku というコードベースを理解する）。
+一階層上の「エンジニアとして何を持つべきか」は [engineering-fundamentals-plan.md](./engineering-fundamentals-plan.md)（T2〜T4）を参照。
+
 ## ゴール（唯一の合格判定）
 
 [catchup-assessment.md](./catchup-assessment.md) の 10 問を **0/10 → 10/10**。
