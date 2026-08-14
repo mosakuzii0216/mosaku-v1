@@ -9,6 +9,8 @@ interface FeedbackModalProps {
 	onClose(): void;
 }
 
+const MESSAGE_MAX_LENGTH = 1000;
+
 const CATEGORIES: { value: FeedbackCategory; label: string }[] = [
 	{ value: 'bug', label: '不具合' },
 	{ value: 'improvement', label: '改善要望' },
@@ -53,7 +55,8 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
 		const newErrors: { category?: string; message?: string } = {};
 		if (!category) newErrors.category = 'カテゴリを選択してください';
 		if (!message.trim()) newErrors.message = 'メッセージを入力してください';
-		else if (message.length > 1000) newErrors.message = '1000文字以内で入力してください';
+		else if (message.length > MESSAGE_MAX_LENGTH)
+			newErrors.message = `${MESSAGE_MAX_LENGTH}文字以内で入力してください`;
 		return newErrors;
 	};
 
@@ -168,8 +171,10 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
 					/>
 					<div className="flex justify-between mt-1">
 						{errors.message ? <p className="text-sm text-red-600">{errors.message}</p> : <span />}
-						<span className={`text-xs ${message.length > 1000 ? 'text-red-600' : 'text-gray-400'}`}>
-							{message.length} / 1000
+						<span
+							className={`text-xs ${message.length > MESSAGE_MAX_LENGTH ? 'text-red-600' : 'text-gray-400'}`}
+						>
+							{`${message.length} / ${MESSAGE_MAX_LENGTH}`}
 						</span>
 					</div>
 				</div>
