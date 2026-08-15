@@ -134,20 +134,3 @@ export interface UpdateThemeData {
 	isPublic?: boolean;
 	styles?: ThemeStyles;
 }
-
-/**
- * CSS Variables用の型
- */
-export interface ThemeCSSVariables {
-	'--theme-bg-color': string;
-	'--theme-text-color': string;
-	'--theme-border-color': string;
-	'--theme-accent-color': string;
-	'--theme-font-family': string;
-	'--theme-font-size': string;
-	'--theme-line-height': string;
-	'--theme-border-radius': string;
-	'--theme-padding': string;
-	'--theme-margin': string;
-	[key: string]: string;
-}
