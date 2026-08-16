@@ -1,0 +1,22 @@
+{
+	"feature_name": "in-app-feedback",
+	"created_at": "2026-06-07T11:00:00Z",
+	"updated_at": "2026-06-08T07:55:00Z",
+	"language": "ja",
+	"phase": "implementation-validated",
+	"approvals": {
+		"requirements": {
+			"generated": true,
+			"approved": true
+		},
+		"design": {
+			"generated": true,
+			"approved": true
+		},
+		"tasks": {
+			"generated": true,
+			"approved": true
+		}
+	},
+	"ready_for_implementation": true
+}

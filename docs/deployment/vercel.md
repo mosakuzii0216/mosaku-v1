@@ -33,6 +33,7 @@ Phase V6: カスタムドメイン・CI/CD（オプション、0.5-1日）
    - GitHubアカウントで連携推奨
 
 2. **Vercel CLIインストール**
+
 ```bash
 npm install -g vercel
 
@@ -41,6 +42,7 @@ vercel login
 ```
 
 3. **GitHubリポジトリの確認**
+
 ```bash
 # リポジトリがGitHubにプッシュ済みか確認
 git remote -v
@@ -51,6 +53,7 @@ git push -u origin main
 ```
 
 **成果物**:
+
 - ✅ Vercelアカウント作成済み
 - ✅ Vercel CLIインストール済み
 - ✅ GitHubリポジトリがプッシュ済み
@@ -63,48 +66,50 @@ git push -u origin main
 
 ```json
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "framework": "vite",
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/assets/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/themes/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=604800"
-        }
-      ]
-    }
-  ],
-  "git": {
-    "deploymentEnabled": true
-  }
+	"$schema": "https://openapi.vercel.sh/vercel.json",
+	"buildCommand": "npm run build",
+	"outputDirectory": "dist",
+	"framework": "vite",
+	"rewrites": [
+		{
+			"source": "/(.*)",
+			"destination": "/index.html"
+		}
+	],
+	"headers": [
+		{
+			"source": "/assets/(.*)",
+			"headers": [
+				{
+					"key": "Cache-Control",
+					"value": "public, max-age=31536000, immutable"
+				}
+			]
+		},
+		{
+			"source": "/themes/(.*)",
+			"headers": [
+				{
+					"key": "Cache-Control",
+					"value": "public, max-age=604800"
+				}
+			]
+		}
+	],
+	"git": {
+		"deploymentEnabled": true
+	}
 }
 ```
 
 **説明**:
+
 - `rewrites`: SPAルーティング対応（すべてのパスを`/index.html`に）
 - `headers`: 静的アセットのキャッシュ最適化
 - `git.deploymentEnabled`: GitHubプッシュで自動デプロイ
 
 **成果物**:
+
 - ✅ `frontend/vercel.json`作成済み
 
 ---
@@ -135,6 +140,7 @@ dist
 ```
 
 **成果物**:
+
 - ✅ `frontend/.vercelignore`作成済み
 
 ---
@@ -162,11 +168,13 @@ du -sh dist/
 ```
 
 **確認項目**:
+
 - ✅ ビルドエラーがない
 - ✅ `dist/`ディレクトリが生成される
 - ✅ distサイズが妥当（通常1-5MB程度）
 
 **成果物**:
+
 - ✅ ローカルでプロダクションビルド成功
 
 ---
@@ -183,6 +191,7 @@ npm run preview
 ```
 
 **確認項目**:
+
 - [ ] トップページが表示される
 - [ ] ルーティングが動作する（/login, /memoなど）
 - [ ] 静的アセット（画像、CSS）が読み込まれる
@@ -190,11 +199,13 @@ npm run preview
 - [ ] PWAマニフェストが読み込まれる
 
 **問題がある場合の対処**:
+
 - ビルド設定を確認（vite.config.ts）
 - public/フォルダの構成を確認
 - コンソールエラーを確認
 
 **成果物**:
+
 - ✅ ローカルプレビューで正常動作確認
 
 ---
@@ -228,7 +239,6 @@ VITE_APP_URL=https://[YOUR-APP].vercel.app
 
 # OAuth Client IDs (本番環境用)
 VITE_GOOGLE_CLIENT_ID=[YOUR-PRODUCTION-GOOGLE-CLIENT-ID]
-VITE_GITHUB_CLIENT_ID=[YOUR-PRODUCTION-GITHUB-CLIENT-ID]
 VITE_X_CONSUMER_KEY=[YOUR-PRODUCTION-X-CONSUMER-KEY]
 ```
 
@@ -241,20 +251,19 @@ VITE_X_CONSUMER_KEY=[YOUR-PRODUCTION-X-CONSUMER-KEY]
 
 ## 必須環境変数
 
-| 変数名 | 値 | 環境 |
-|--------|-----|------|
-| `VITE_SUPABASE_URL` | `https://pxrouvdpdffdfoitmoyv.supabase.co` | Production, Preview, Development |
-| `VITE_SUPABASE_ANON_KEY` | `eyJhbGci...` | Production, Preview, Development |
-| `VITE_BACKEND_URL` | 本番: `https://xxx.run.app`<br>開発: `http://localhost:3000` | Production: 本番URL<br>Preview/Dev: localhost |
-| `VITE_APP_URL` | 本番: `https://yourapp.vercel.app`<br>開発: `http://localhost:5173` | Production: Vercel URL<br>Preview/Dev: localhost |
+| 変数名                   | 値                                                                  | 環境                                             |
+| ------------------------ | ------------------------------------------------------------------- | ------------------------------------------------ |
+| `VITE_SUPABASE_URL`      | `https://pxrouvdpdffdfoitmoyv.supabase.co`                          | Production, Preview, Development                 |
+| `VITE_SUPABASE_ANON_KEY` | `eyJhbGci...`                                                       | Production, Preview, Development                 |
+| `VITE_BACKEND_URL`       | 本番: `https://xxx.run.app`<br>開発: `http://localhost:3000`        | Production: 本番URL<br>Preview/Dev: localhost    |
+| `VITE_APP_URL`           | 本番: `https://yourapp.vercel.app`<br>開発: `http://localhost:5173` | Production: Vercel URL<br>Preview/Dev: localhost |
 
 ## OAuth関連（オプション）
 
-| 変数名 | 値 | 環境 |
-|--------|-----|------|
-| `VITE_GOOGLE_CLIENT_ID` | 本番用Client ID | Production |
-| `VITE_GITHUB_CLIENT_ID` | 本番用Client ID | Production |
-| `VITE_X_CONSUMER_KEY` | 本番用Consumer Key | Production |
+| 変数名                  | 値                 | 環境       |
+| ----------------------- | ------------------ | ---------- |
+| `VITE_GOOGLE_CLIENT_ID` | 本番用Client ID    | Production |
+| `VITE_X_CONSUMER_KEY`   | 本番用Consumer Key | Production |
 
 ## 設定方法
 
@@ -264,6 +273,7 @@ VITE_X_CONSUMER_KEY=[YOUR-PRODUCTION-X-CONSUMER-KEY]
 ```
 
 **成果物**:
+
 - ✅ `.env.production.template`作成済み
 - ✅ `VERCEL_ENV_VARS.md`作成済み
 
@@ -282,6 +292,7 @@ VITE_X_CONSUMER_KEY=[YOUR-PRODUCTION-X-CONSUMER-KEY]
    - `mosaku`リポジトリを選択
 
 2. **プロジェクト設定**
+
    ```
    Framework Preset: Vite
    Root Directory: frontend
@@ -295,11 +306,13 @@ VITE_X_CONSUMER_KEY=[YOUR-PRODUCTION-X-CONSUMER-KEY]
 4. **Deploy**をクリック
 
 **初回デプロイの確認**:
+
 - ビルドログを確認（エラーがないか）
 - デプロイURLにアクセス（`https://mosaku-xxx.vercel.app`）
 - 画面が表示されるか確認（API接続なしでも基本表示はされるはず）
 
 **成果物**:
+
 - ✅ Vercelプロジェクト作成済み
 - ✅ 初回デプロイ成功
 - ✅ デプロイURLでアクセス可能
@@ -319,16 +332,18 @@ VITE_X_CONSUMER_KEY=[YOUR-PRODUCTION-X-CONSUMER-KEY]
 **package.jsonのエンジン指定**（推奨）:
 
 `frontend/package.json`に追加:
+
 ```json
 {
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=9.0.0"
-  }
+	"engines": {
+		"node": ">=18.0.0",
+		"npm": ">=9.0.0"
+	}
 }
 ```
 
 **成果物**:
+
 - ✅ ビルド設定が最適化済み
 - ✅ Node.jsバージョンが固定済み
 
@@ -350,16 +365,19 @@ git push origin test/vercel-preview
 ```
 
 **GitHubでPull Request作成**:
+
 1. GitHub > Pull Requests > New Pull Request
 2. `test/vercel-preview` → `main`
 3. Create Pull Request
 
 **Vercelの自動デプロイ確認**:
+
 - PR内にVercelのコメントが自動投稿される
 - Preview URLが生成される（`https://mosaku-xxx-yyy.vercel.app`）
 - Preview URLにアクセスして動作確認
 
 **成果物**:
+
 - ✅ プレビューデプロイが自動実行される
 - ✅ PR単位でプレビューURLが生成される
 
@@ -372,6 +390,7 @@ git push origin test/vercel-preview
 **Vercel Dashboard > Project Settings > Environment Variables**で設定:
 
 **ステップ1: Supabase関連**
+
 ```
 変数名: VITE_SUPABASE_URL
 値: https://pxrouvdpdffdfoitmoyv.supabase.co
@@ -383,6 +402,7 @@ git push origin test/vercel-preview
 ```
 
 **ステップ2: バックエンドURL**
+
 ```
 変数名: VITE_BACKEND_URL
 値（Production）: https://[YOUR-SERVICE].a.run.app  ← Cloud Runデプロイ後
@@ -393,6 +413,7 @@ git push origin test/vercel-preview
 ```
 
 **ステップ3: フロントエンドURL**
+
 ```
 変数名: VITE_APP_URL
 値（Production）: https://[YOUR-APP].vercel.app
@@ -403,12 +424,9 @@ git push origin test/vercel-preview
 ```
 
 **ステップ4: OAuth Client IDs（後で設定可）**
+
 ```
 変数名: VITE_GOOGLE_CLIENT_ID
-値: [本番用Client ID]
-環境: Production
-
-変数名: VITE_GITHUB_CLIENT_ID
 値: [本番用Client ID]
 環境: Production
 
@@ -418,9 +436,11 @@ git push origin test/vercel-preview
 ```
 
 **設定後、再デプロイ**:
+
 - Vercel Dashboard > Deployments > Latest > ⋯ > Redeploy
 
 **成果物**:
+
 - ✅ すべての環境変数が設定済み
 - ✅ 環境別の値が正しく設定済み
 
@@ -444,15 +464,18 @@ git push origin main
 ```
 
 **Vercelの自動デプロイ確認**:
+
 1. Vercel Dashboard > Deployments
 2. 最新のデプロイを確認
 3. ビルドログを確認
 4. Production URLにアクセス
 
 **本番URL**:
+
 - `https://[YOUR-APP].vercel.app`
 
 **成果物**:
+
 - ✅ 本番環境にデプロイ済み
 - ✅ Production URLでアクセス可能
 
@@ -461,12 +484,14 @@ git push origin main
 ### タスクV4.3: バックエンド接続の確認
 
 **現時点での状態**:
+
 - フロントエンドはVercelにデプロイ済み
 - バックエンドはまだローカルまたはCloud Run未デプロイ
 
 **一時的な対処（バックエンドがローカルの場合）**:
 
 **オプション1: ngrokでローカルバックエンドを公開**（テスト用）
+
 ```bash
 # ngrokインストール（まだの場合）
 brew install ngrok  # macOS
@@ -483,16 +508,19 @@ ngrok http 3000
 ```
 
 **Vercelの環境変数を更新**:
+
 ```
 VITE_BACKEND_URL (Preview/Development)
 値: https://xxxx.ngrok.io
 ```
 
 **オプション2: バックエンドもすぐにCloud Runにデプロイ**
+
 - `DEPLOYMENT_GUIDE.md`を参照してCloud Runにデプロイ
 - デプロイ後のURLを`VITE_BACKEND_URL`に設定
 
 **成果物**:
+
 - ✅ フロントエンドがバックエンドに接続可能
 - ✅ 基本的なAPI呼び出しが動作
 
@@ -505,6 +533,7 @@ VITE_BACKEND_URL (Preview/Development)
 **テスト項目**:
 
 **基本動作**:
+
 - [ ] トップページが表示される
 - [ ] ログインページにアクセスできる
 - [ ] ルーティングが正常（/memo, /notebooks, /tags）
@@ -512,6 +541,7 @@ VITE_BACKEND_URL (Preview/Development)
 - [ ] テーマCSSが読み込まれる
 
 **API接続**（バックエンド接続後）:
+
 - [ ] ログインできる
 - [ ] メモ一覧が表示される
 - [ ] メモ作成・編集・削除ができる
@@ -519,16 +549,19 @@ VITE_BACKEND_URL (Preview/Development)
 - [ ] タグ操作ができる
 
 **PWA機能**:
+
 - [ ] Service Workerが登録される
 - [ ] オフライン対応が動作する
 - [ ] ホーム画面に追加できる（モバイル）
 
 **パフォーマンス**:
+
 - [ ] 初回読み込みが3秒以内
 - [ ] ページ遷移がスムーズ
 - [ ] Lighthouse スコアが良好（後述）
 
 **成果物**:
+
 - ✅ すべてのテスト項目がパス
 
 ---
@@ -553,6 +586,7 @@ VITE_BACKEND_URL (Preview/Development)
 **改善が必要な場合**:
 
 **画像最適化**:
+
 ```bash
 # 画像圧縮（必要に応じて）
 npm install -D vite-plugin-imagemin
@@ -573,6 +607,7 @@ plugins: [
 ```
 
 **コード分割の確認**:
+
 ```typescript
 // 既にReact.lazyを使用しているか確認
 // 使用していない場合は追加
@@ -588,6 +623,7 @@ const MemoPage = lazy(() => import('./pages/MemoPage'));
 ```
 
 **ビルドサイズの確認**:
+
 ```bash
 cd frontend
 npm run build
@@ -597,59 +633,41 @@ npx vite-bundle-visualizer
 ```
 
 **成果物**:
+
 - ✅ Lighthouseスコアが目標達成
 - ✅ バンドルサイズが最適化
 
 ---
 
-### タスクV5.3: エラー監視の設定（オプション）
+### タスクV5.3: Sentry エラー監視の設定
 
-**Sentryの統合**（推奨）:
+> Sentry の運用手順（プロジェクト作成 / Alert Rule / smoke test / PII / サンプリング率）は **[docs/deployment/sentry.md](./sentry.md) が single source of truth**。本セクションは Vercel 固有の Env 投入チェックリストのみ残す。
 
-```bash
-cd frontend
-npm install @sentry/react @sentry/vite-plugin
-```
+#### Vercel Project Settings → Environment Variables
 
-**vite.config.ts更新**:
-```typescript
-import { sentryVitePlugin } from '@sentry/vite-plugin';
+| 変数名                           | Environment         | 値                                     |
+| -------------------------------- | ------------------- | -------------------------------------- |
+| `VITE_SENTRY_DSN`                | Production, Preview | Sentry Frontend プロジェクトの DSN     |
+| `VITE_SENTRY_ENVIRONMENT`        | Production, Preview | `production`（Preview も同値で相乗り） |
+| `VITE_SENTRY_TRACES_SAMPLE_RATE` | Production, Preview | `0.1`（任意、未指定時 SDK 既定）       |
 
-export default defineConfig({
-  plugins: [
-    // ...
-    sentryVitePlugin({
-      org: 'your-org',
-      project: 'mosaku-frontend',
-      authToken: process.env.SENTRY_AUTH_TOKEN,
-    }),
-  ],
-  build: {
-    sourcemap: true, // Sentryのスタックトレース用
-  },
-});
-```
+> [!IMPORTANT]
+> `VITE_SENTRY_RELEASE` は **Vercel Env に登録しない**。CI が build 時に `${{ github.sha }}` を export し、`@sentry/vite-plugin` 経由で release 登録 + source map upload を行う。
 
-**main.tsxに初期化コード追加**:
-```typescript
-import * as Sentry from '@sentry/react';
+#### 関連 GitHub Secrets（CI から build に渡す）
 
-Sentry.init({
-  dsn: import.meta.env.VITE_SENTRY_DSN,
-  environment: import.meta.env.MODE,
-  tracesSampleRate: 0.1,
-});
-```
+| Secret                    | 用途                                                      |
+| ------------------------- | --------------------------------------------------------- |
+| `SENTRY_AUTH_TOKEN`       | `@sentry/vite-plugin` の release 登録 + source map upload |
+| `SENTRY_ORG`              | Sentry organization slug                                  |
+| `SENTRY_PROJECT_FRONTEND` | Frontend プロジェクト slug                                |
 
-**Vercel環境変数に追加**:
-```
-変数名: VITE_SENTRY_DSN
-値: https://xxx@xxx.ingest.sentry.io/xxx
-環境: Production, Preview
-```
+実装は `frontend/vite.config.ts`（`@sentry/vite-plugin`）と `frontend/src/utils/sentry/init.ts`（`Sentry.init`）に集約済み。プロジェクト作成・Alert Rule・smoke test 手順は **[sentry.md §1〜§4](./sentry.md)** を参照。
 
 **成果物**:
-- ✅ エラー監視が設定済み（オプション）
+
+- ✅ Vercel Env に Sentry 関連変数が登録済み（Production / Preview 両方）
+- ✅ GitHub Secrets に `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT_FRONTEND` が登録済み
 
 ---
 
@@ -658,6 +676,7 @@ Sentry.init({
 ### タスクV6.1: カスタムドメインの設定（オプション）
 
 **前提条件**:
+
 - カスタムドメインを所有している（例: `mosaku.example.com`）
 
 **作業内容**:
@@ -685,12 +704,14 @@ Sentry.init({
    - SSL証明書が有効か確認
 
 **環境変数の更新**:
+
 ```
 VITE_APP_URL (Production)
 値: https://mosaku.example.com
 ```
 
 **成果物**:
+
 - ✅ カスタムドメインが設定済み
 - ✅ HTTPS接続が有効
 
@@ -701,6 +722,7 @@ VITE_APP_URL (Production)
 **Vercel Dashboard > Project Settings > Git**:
 
 **ブランチ保護の設定**:
+
 ```
 Production Branch: main
 Preview Branches: すべてのブランチ
@@ -710,16 +732,18 @@ Ignored Build Step: なし
 **ビルドコマンドの環境変数による制御**（高度な設定）:
 
 `vercel.json`に追加:
+
 ```json
 {
-  "github": {
-    "silent": true,
-    "autoJobCancelation": true
-  }
+	"github": {
+		"silent": true,
+		"autoJobCancelation": true
+	}
 }
 ```
 
 **成果物**:
+
 - ✅ デプロイフローが最適化済み
 
 ---
@@ -758,6 +782,7 @@ jobs:
 ```
 
 **成果物**:
+
 - ✅ PR作成時に自動E2Eテスト（オプション）
 
 ---
@@ -765,32 +790,38 @@ jobs:
 ## 📊 Phase V完了チェックリスト
 
 ### Phase V1: 準備
+
 - [ ] Vercelアカウント作成済み
 - [ ] Vercel CLIインストール済み
 - [ ] vercel.json作成済み
 - [ ] .vercelignore作成済み
 
 ### Phase V2: ビルド検証
+
 - [ ] ローカルビルド成功
 - [ ] ローカルプレビュー正常動作
 - [ ] 環境変数整理済み
 
 ### Phase V3: 初回デプロイ
+
 - [ ] Vercelプロジェクト作成済み
 - [ ] 初回デプロイ成功
 - [ ] プレビューデプロイ動作確認
 
 ### Phase V4: 環境変数・本番デプロイ
+
 - [ ] 環境変数設定済み
 - [ ] 本番デプロイ成功
 - [ ] バックエンド接続確認
 
 ### Phase V5: 動作確認・最適化
+
 - [ ] E2Eテスト完了
 - [ ] Lighthouseスコア良好
 - [ ] エラー監視設定済み（オプション）
 
 ### Phase V6: カスタムドメイン・CI/CD（オプション）
+
 - [ ] カスタムドメイン設定済み
 - [ ] デプロイフック最適化済み
 - [ ] GitHub Actions統合済み（オプション）
@@ -802,15 +833,18 @@ jobs:
 ### 定期的なタスク
 
 **毎週**:
+
 - [ ] Lighthouseスコア確認
 - [ ] エラー監視ダッシュボード確認
 - [ ] 依存関係の更新確認
 
 **毎月**:
+
 - [ ] Vercel Analytics確認
 - [ ] パフォーマンス最適化
 
 **デプロイ時**:
+
 - [ ] プレビューURLで動作確認
 - [ ] Lighthouse監査実施
 - [ ] 本番環境でスモークテスト
@@ -824,6 +858,7 @@ jobs:
 **問題**: ビルドが失敗する
 
 **解決策**:
+
 ```bash
 # ローカルでビルドを確認
 cd frontend
@@ -839,6 +874,7 @@ npm run build
 **問題**: 環境変数が読み込まれない
 
 **解決策**:
+
 1. Vercel Dashboard > Environment Variablesで正しく設定されているか確認
 2. 環境（Production/Preview/Development）が正しいか確認
 3. 再デプロイを実行（設定変更後は必須）
@@ -849,6 +885,7 @@ npm run build
 **問題**: バックエンドへのAPIリクエストでCORSエラー
 
 **解決策**:
+
 1. バックエンドの`CORS_ORIGINS`にVercel URLを追加
    ```
    CORS_ORIGINS=https://[YOUR-APP].vercel.app,https://[YOUR-APP]-*.vercel.app
@@ -860,6 +897,7 @@ npm run build
 **問題**: SPAルーティングが404エラー
 
 **解決策**:
+
 - `vercel.json`の`rewrites`設定を確認
 - すべてのパスが`/index.html`にリダイレクトされるか確認
 

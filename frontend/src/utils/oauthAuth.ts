@@ -1,4 +1,4 @@
-import { getBackendUrl, getGoogleClientId, getGithubClientId, getXConsumerKey } from './env';
+import { getBackendUrl, getGoogleClientId } from './env';
 import { BaseOAuthAuth } from './oauthAuth/BaseOAuthAuth';
 
 class GoogleAuthUtilsClass extends BaseOAuthAuth {
@@ -21,23 +21,26 @@ class GoogleAuthUtilsClass extends BaseOAuthAuth {
 	}
 }
 
-class GitHubAuthUtilsClass extends BaseOAuthAuth {
+// 静的メソッドとして公開するためのラッパー
+const googleAuthUtils = new GoogleAuthUtilsClass();
+
+export const GoogleAuthUtils = {
+	startGoogleAuth: () => googleAuthUtils.startAuth(),
+	parseAuthCallback: () => googleAuthUtils.parseAuthCallback(),
+	clearAuthParams: () => googleAuthUtils.clearAuthParams(),
+};
+
+class AppleAuthUtilsClass extends BaseOAuthAuth {
 	protected getProviderName(): string {
-		return 'GitHub';
+		return 'Apple';
 	}
 
 	protected getUserParamName(): string {
-		return 'github_user';
+		return 'apple_user';
 	}
 
 	startAuth(): void {
-		// 環境変数の検証は getGithubClientId() 内で行われる
-		getGithubClientId(); // 環境変数が設定されているか検証
-		const backendUrl = getBackendUrl();
-
-		// バックエンドのGitHub認証エンドポイントにリダイレクト
-		const githubAuthUrl = `${backendUrl}/auth/github`;
-		window.location.href = githubAuthUrl;
+		window.location.href = `${getBackendUrl()}/auth/apple`;
 	}
 }
 
@@ -51,31 +54,17 @@ class XAuthUtilsClass extends BaseOAuthAuth {
 	}
 
 	startAuth(): void {
-		// 環境変数の検証は getXConsumerKey() 内で行われる
-		getXConsumerKey(); // 環境変数が設定されているか検証
-		const backendUrl = getBackendUrl();
-
-		// バックエンドのX認証エンドポイントにリダイレクト
-		const xAuthUrl = `${backendUrl}/auth/x`;
-		window.location.href = xAuthUrl;
+		window.location.href = `${getBackendUrl()}/auth/x`;
 	}
 }
 
-// 静的メソッドとして公開するためのラッパー
-const googleAuthUtils = new GoogleAuthUtilsClass();
-const githubAuthUtils = new GitHubAuthUtilsClass();
+const appleAuthUtils = new AppleAuthUtilsClass();
 const xAuthUtils = new XAuthUtilsClass();
 
-export const GoogleAuthUtils = {
-	startGoogleAuth: () => googleAuthUtils.startAuth(),
-	parseAuthCallback: () => googleAuthUtils.parseAuthCallback(),
-	clearAuthParams: () => googleAuthUtils.clearAuthParams(),
-};
-
-export const GitHubAuthUtils = {
-	startGitHubAuth: () => githubAuthUtils.startAuth(),
-	parseAuthCallback: () => githubAuthUtils.parseAuthCallback(),
-	clearAuthParams: () => githubAuthUtils.clearAuthParams(),
+export const AppleAuthUtils = {
+	startAppleAuth: () => appleAuthUtils.startAuth(),
+	parseAuthCallback: () => appleAuthUtils.parseAuthCallback(),
+	clearAuthParams: () => appleAuthUtils.clearAuthParams(),
 };
 
 export const XAuthUtils = {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { PasswordInput } from '../ui/PasswordInput';
 import { validatePasswordStrength } from '../../utils/passwordValidator';

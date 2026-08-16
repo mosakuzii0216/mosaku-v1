@@ -7,4 +7,5 @@ export {
 	throwUnauthorized,
 	throwForbidden,
 	throwNotFound,
+	throwConflict,
 } from './app.exception';

@@ -1,0 +1,318 @@
+# =============================================================================
+# PWA Offline Support — パフォーマンス / E2E ワークフロー（Task 10.3）
+# =============================================================================
+#
+# 概要:
+#   PWA オフライン対応のパフォーマンス指標と統合E2Eを CI で計測 / 検証する。
+#
+#   Job 1 (perf): バックエンド不要のベンチマーク
+#     - precache サイズ計測（既存 check:precache）
+#     - 検索スループット（200件キャッシュで <500ms）
+#     - 同期スループット（50件 pending で <60s）
+#
+#   Job 2 (e2e):  実バックエンド + PostgreSQL を起動し、Playwright で
+#     電車内シナリオ / PWA インストールフローを検証
+#
+# トリガー:
+#   - すべての Pull Request（実行要否は changes ジョブが判定する）
+#   - main への push（リリース確認）
+#
+# `paths:` を使わない理由は scripts/detect-changed-areas.sh のヘッダを参照。
+# 要約: paths: だと workflow ごと発火せず、必須ステータスチェックが永久に
+# pending になりマージ不能になる。job の if: なら skipped として報告される。
+#
+# =============================================================================
+
+name: PWA Offline Perf & E2E
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  # ===========================================================================
+  # Job 0: 変更範囲の判定
+  # ===========================================================================
+  changes:
+    name: 変更範囲の判定（pwa）
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.detect.outputs.backend }}
+      frontend: ${{ steps.detect.outputs.frontend }}
+      workflows: ${{ steps.detect.outputs.workflows }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/detect-changed-areas.sh
+          sparse-checkout-cone-mode: false
+
+      - name: 変更エリアを判定
+        id: detect
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: bash scripts/detect-changed-areas.sh
+
+  # ===========================================================================
+  # Job 1: パフォーマンス計測（バックエンド不要）
+  # ===========================================================================
+  perf:
+    name: PWA performance benches
+    needs: changes
+    if: >-
+      needs.changes.outputs.frontend == 'true' ||
+      needs.changes.outputs.backend == 'true' ||
+      needs.changes.outputs.workflows == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # -----------------------------------------------------------------------
+      # Frontend build → precache サイズ計測
+      # -----------------------------------------------------------------------
+      - name: Build frontend
+        run: npm run build -w frontend
+
+      - name: Precache size guard
+        env:
+          PRECACHE_BASELINE_BYTES: ${{ vars.PRECACHE_BASELINE_BYTES }}
+        run: npm run check:precache -w frontend
+
+      # -----------------------------------------------------------------------
+      # 検索スループット（Requirement 5.2）
+      # -----------------------------------------------------------------------
+      - name: Search throughput bench
+        run: npm run bench:search -w frontend
+
+      # -----------------------------------------------------------------------
+      # 同期スループット（Requirement 6.4）
+      # -----------------------------------------------------------------------
+      - name: Sync drain throughput bench
+        run: npm run bench:sync -w frontend
+
+  # ===========================================================================
+  # Job 2: E2E（実バックエンド + PostgreSQL）
+  # ===========================================================================
+  e2e:
+    name: PWA E2E (train-scenario + pwa-install)
+    needs: changes
+    if: >-
+      needs.changes.outputs.frontend == 'true' ||
+      needs.changes.outputs.backend == 'true' ||
+      needs.changes.outputs.workflows == 'true'
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: mosaku_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://testuser:testpass@localhost:5432/mosaku_test
+      DIRECT_URL: postgresql://testuser:testpass@localhost:5432/mosaku_test
+      JWT_SECRET: test-jwt-secret-for-ci
+      SESSION_SECRET: test-session-secret-for-ci
+      # E2E は多数の spec が beforeAll で register/login を繰り返すため、本番デフォルトの
+      # レート制限（register 5/min・login 15/15min・global 60/min）だと 429 → ensureUser が
+      # re-throw → 連鎖失敗する。CI のみ大幅緩和する（本番の THROTTLE_CONFIG には影響しない）。
+      REGISTER_THROTTLE_LIMIT: '1000'
+      LOGIN_THROTTLE_LIMIT: '1000'
+      REFRESH_THROTTLE_LIMIT: '1000'
+      GLOBAL_THROTTLE_LIMIT: '1000'
+      # ADMIN_EMAIL を E2E_USER_EMAIL と同じ値にして招待コード無しで register できるようにする
+      ADMIN_EMAIL: pwa-e2e-admin@test.example
+      CORS_ORIGINS: http://localhost:5173,http://localhost:4173
+      E2E_USER_EMAIL: pwa-e2e-admin@test.example
+      E2E_USER_PASSWORD: PwaE2eTest123!
+      E2E_BACKEND_URL: http://localhost:3000
+      E2E_FRONTEND_ORIGIN: http://localhost:5173
+      VITE_BACKEND_URL: http://localhost:3000
+      # main.tsx の envValidator.validate() が必須にしている VITE 変数。
+      # frontend/.env.production は gitignore で CI に存在しないため、ここで明示的に供給する。
+      # 認証は NestJS 経由・/auth/me はテストでモックするため Supabase 値はダミーで可
+      # （validate() は非空であれば通過する）。
+      VITE_APP_URL: http://localhost:5173
+      VITE_SUPABASE_URL: https://dummy.supabase.co
+      VITE_SUPABASE_ANON_KEY: dummy-anon-key-for-ci
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+
+      # -----------------------------------------------------------------------
+      # Backend 準備 + 起動
+      # -----------------------------------------------------------------------
+      - name: Generate Prisma Client
+        run: npx prisma generate
+        working-directory: backend
+
+      - name: Apply DB migrations
+        run: npx prisma migrate deploy
+        working-directory: backend
+
+      # register は DTO で invitationCode 必須のため、E2E の管理者ユーザーは register 経由で
+      # 作れない（ensureUser の 400 は握りつぶされ login 401 になる）。テスト用ユーザーを
+      # DB へ直接 seed する。アプリコードには触れない（本番デプロイは起こさない）。
+      - name: Seed E2E test user
+        working-directory: backend
+        run: |
+          node <<'NODE'
+          const { PrismaClient } = require('@prisma/client');
+          const bcrypt = require('bcrypt');
+          (async () => {
+            const prisma = new PrismaClient();
+            const email = process.env.E2E_USER_EMAIL;
+            const name = process.env.E2E_USER_NAME || 'PWA E2E User';
+            const hash = await bcrypt.hash(process.env.E2E_USER_PASSWORD, 12);
+            await prisma.user.upsert({
+              where: { email },
+              update: { password: hash, role: 'ADMIN', name },
+              create: { email, password: hash, role: 'ADMIN', name },
+            });
+            console.log('Seeded E2E user:', email);
+            await prisma.$disconnect();
+          })().catch((e) => { console.error(e); process.exit(1); });
+          NODE
+
+      - name: Build backend
+        run: npm run build
+        working-directory: backend
+
+      - name: Start backend
+        run: |
+          # setsid + disown + </dev/null で background process を完全 detach し step 切り替え時の SIGHUP を確実に避ける
+          nohup setsid node dist/main > backend.log 2>&1 < /dev/null &
+          disown || true
+          echo "Backend started (pid=$!)"
+        working-directory: backend
+
+      - name: Wait for backend
+        run: |
+          for i in {1..30}; do
+            if curl -sf http://localhost:3000/health > /dev/null; then
+              echo "Backend is up"; exit 0
+            fi
+            sleep 2
+          done
+          echo "Backend did not become ready"; tail -n 200 backend/backend.log || true
+          exit 1
+
+      # -----------------------------------------------------------------------
+      # Frontend ビルド + preview 起動（SW 有効化のため production build を使う）
+      # -----------------------------------------------------------------------
+      - name: Build frontend
+        run: npm run build -w frontend
+
+      - name: Start frontend preview
+        run: |
+          nohup npx vite preview --port 5173 --strictPort > preview.log 2>&1 &
+          echo "Preview started (pid=$!)"
+        working-directory: frontend
+
+      - name: Wait for frontend
+        run: |
+          for i in {1..30}; do
+            if curl -sf http://localhost:5173/ > /dev/null; then
+              echo "Frontend is up"; exit 0
+            fi
+            sleep 2
+          done
+          echo "Frontend did not become ready"; tail -n 200 frontend/preview.log || true
+          exit 1
+
+      # -----------------------------------------------------------------------
+      # E2E 実行
+      # -----------------------------------------------------------------------
+      - name: Run Playwright E2E (train-scenario + pwa-install)
+        env:
+          E2E_USE_PREVIEW: '1'
+        run: npx playwright test --reporter=list
+        working-directory: frontend
+
+      - name: Upload backend log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-log
+          path: backend/backend.log
+          retention-days: 7
+
+      - name: Upload frontend preview log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-preview-log
+          path: frontend/preview.log
+          retention-days: 7
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+          retention-days: 7
+
+  # ===========================================================================
+  # Job 3: Slack通知（ソフトゲート）
+  # ===========================================================================
+  # main への push で perf / E2E が失敗したら Slack に通知する。
+  # デプロイ自体はブロックしない（速度優先）が、本番に出た後でも E2E の
+  # 失敗に必ず気づけるようにするための「ソフトゲート」。
+  # PR では通知しない（main push 時のみ＝リリース確認のタイミング）。
+  # ===========================================================================
+  notify:
+    name: Slack Notification (soft gate)
+    needs: [perf, e2e]
+    if: always() && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    steps:
+      # perf / e2e のどちらかが失敗したときだけ Slack に飛ばす
+      - name: Slack通知（失敗時のみ）
+        if: env.SLACK_WEBHOOK_URL != '' && (needs.perf.result != 'success' || needs.e2e.result != 'success')
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: ':warning: PWA perf/E2E が失敗しました（デプロイはブロックされません）。本番動作を確認してください。'
+          fields: repo,message,commit,author,workflow

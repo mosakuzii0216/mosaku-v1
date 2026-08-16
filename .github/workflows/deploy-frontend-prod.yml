@@ -1,0 +1,182 @@
+# =============================================================================
+# フロントエンド 本番デプロイワークフロー
+# =============================================================================
+#
+# 概要:
+#   frontend/ 配下のコードが main ブランチにマージされたとき、
+#   CI チェック通過後に Vercel Production へデプロイする
+#
+# トリガー:
+#   - main ブランチへの push (frontend/ 配下の変更時)
+#   - 手動実行 (GitHub Actions UI から Run workflow)
+#
+# 前提条件:
+#   - GitHub Secrets に以下が登録されていること:
+#     - VERCEL_TOKEN: Vercel APIトークン
+#     - VERCEL_ORG_ID: Vercel組織ID
+#     - VERCEL_PROJECT_ID: VercelプロジェクトID
+#   - GitHub Environment 'production' が設定されていること（承認ゲート）
+#   - Vercel Dashboard で Git 連携の自動デプロイを無効化していること
+#
+# =============================================================================
+
+name: Deploy Frontend to Vercel (Production)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - 'vercel.json'
+      - '.github/workflows/deploy-frontend-prod.yml'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'デプロイするブランチ or コミットSHA（省略時は main HEAD）'
+        required: false
+        default: 'main'
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  # ===========================================================================
+  # Job 1: ビルド確認
+  # ===========================================================================
+  build-check:
+    name: Build Check
+    runs-on: ubuntu-latest
+    env:
+      # @sentry/vite-plugin がリリース登録 + source map upload を行うために必要な 4 点
+      # SENTRY_AUTH_TOKEN 未設定時はプラグインが自動 disable されるため、
+      # build-check 自体は forks / シークレット未配布の環境でも壊れない
+      VITE_SENTRY_RELEASE: ${{ github.sha }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT_FRONTEND }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || 'main' }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lintチェック
+        run: npm run lint -w frontend
+
+      - name: ビルド確認
+        run: npm run build -w frontend
+
+      # vite-plugin の filesToDeleteAfterUpload で .map は削除される想定だが、
+      # plugin disable / 設定ミスで .map が公開物に混入すると内部コードが流出する
+      # ため CI で必ず post-check し、残っていたらジョブを fail させる
+      - name: Verify source maps are removed from dist
+        run: |
+          if find frontend/dist -name "*.map" -type f | grep -q .; then
+            echo "::error::Source map files were not removed from frontend/dist"
+            find frontend/dist -name "*.map" -type f
+            exit 1
+          fi
+
+  # ===========================================================================
+  # Job 2: Vercel へプロダクションデプロイ
+  # ===========================================================================
+  deploy:
+    name: Deploy to Vercel (Production)
+    needs: build-check
+    runs-on: ubuntu-latest
+    environment: production  # GitHub Environment による承認ゲート
+    env:
+      # vercel build → vite build に process.env として継承される
+      # SENTRY_AUTH_TOKEN 未設定時は @sentry/vite-plugin が自動 disable
+      # アップロード失敗は CI の warning に留めデプロイをブロックしない（Req 6.4）
+      VITE_SENTRY_RELEASE: ${{ github.sha }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT_FRONTEND }}
+
+    steps:
+      # -----------------------------------------------------------------------
+      # Step 1: リポジトリのチェックアウト
+      # -----------------------------------------------------------------------
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || 'main' }}
+
+      # -----------------------------------------------------------------------
+      # Step 2: Node.js セットアップ
+      # -----------------------------------------------------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # -----------------------------------------------------------------------
+      # Step 3: Vercel CLI インストール
+      # -----------------------------------------------------------------------
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      # -----------------------------------------------------------------------
+      # Step 4: Vercel 環境取得（production 環境）
+      # -----------------------------------------------------------------------
+      - name: Pull Vercel Environment
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      # -----------------------------------------------------------------------
+      # Step 5: Vercel でビルド（production 用）
+      # -----------------------------------------------------------------------
+      - name: Build with Vercel
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      # -----------------------------------------------------------------------
+      # Step 6: プロダクションデプロイ
+      # -----------------------------------------------------------------------
+      - name: Deploy to Vercel (Production)
+        id: deploy
+        run: |
+          URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          echo "deploy-url=$URL" >> $GITHUB_OUTPUT
+
+      # -----------------------------------------------------------------------
+      # Step 7: デプロイ結果の表示
+      # -----------------------------------------------------------------------
+      - name: デプロイ結果の表示
+        run: |
+          echo "## Frontend Production Deployment Successful! :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** ${{ steps.deploy.outputs.deploy-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Ref:** ${{ github.event.inputs.ref || github.ref }}" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Job 3: Slack通知
+  # ===========================================================================
+  notify:
+    name: Slack Notification
+    needs: deploy
+    if: always()
+    runs-on: ubuntu-latest
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    steps:
+      - name: Slack通知
+        if: env.SLACK_WEBHOOK_URL != ''
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ needs.deploy.result }}
+          fields: repo,message,commit,author,workflow

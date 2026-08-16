@@ -1,4 +1,12 @@
-import type { Memo, CreateMemoDto, UpdateMemoDto } from '../types/memo';
+import type {
+	Memo,
+	CreateMemoDto,
+	UpdateMemoDto,
+	PublishMemoResponseDto,
+	PublicMemoListItemDto,
+	PublicMemoResponseDto,
+} from '../types/memo';
+import type { SubmitFeedbackDto } from '../types/feedback';
 import type {
 	Tag,
 	CreateTagDto,
@@ -9,10 +17,27 @@ import type {
 } from '../types/tag';
 import type { Theme, ThemeSearchParams, CreateThemeData, UpdateThemeData } from '../types/theme';
 import type { Notebook, CreateNotebookDto, UpdateNotebookDto } from '../types/notebook';
-import type { InvitationVerificationResponse } from '../types/invitation';
+import type {
+	InvitationVerificationResponse,
+	InvitationCode,
+	CreateInvitationDto,
+	InvitationContextResponse,
+	InvitationWithShareUrlResponse,
+	UserQuotaResponse,
+	InvitationOAuthProvider,
+	OAuthStartResponse,
+} from '../types/invitation';
 import type { PaginationParams, PaginatedResult } from '../types/pagination';
+import type {
+	RecentMemoDto,
+	WeeklyCountDto,
+	ActivityDatesDto,
+	NotebookWithMemoCountDto,
+} from '../types/dashboard';
 import { AuthTokenManager } from './auth';
 import { getBackendUrl } from './env';
+import { refreshClient } from './refreshClient';
+import { ApiError } from './apiError';
 
 const API_BASE_URL = getBackendUrl();
 
@@ -20,6 +45,7 @@ type AuthLevel = 'REQUIRED' | 'OPTIONAL' | 'NONE';
 
 interface RequestConfig extends RequestInit {
 	authLevel?: AuthLevel;
+	_retried?: boolean;
 }
 
 class ApiClient {
@@ -43,18 +69,36 @@ class ApiClient {
 	}
 
 	private async request<T>(endpoint: string, config: RequestConfig = {}): Promise<T> {
-		const { authLevel = 'REQUIRED', ...fetchConfig } = config;
+		const { authLevel = 'REQUIRED', _retried = false, ...fetchConfig } = config;
 		const url = `${API_BASE_URL}${endpoint}`;
+
+		// アクセストークンがローカルで期限切れ／不在でも、Refresh Token Cookie は
+		// 長寿命なため先回りでリフレッシュを試みる。これをしないと getAuthHeaders が
+		// fetch 前に同期 throw し、401 時の透過リフレッシュ経路へ到達できない
+		// （放置後にメモ一覧を開くと「認証が必要です」になる原因）。
+		if (authLevel === 'REQUIRED' && !_retried) {
+			const token = AuthTokenManager.getAccessToken();
+			if (!token || AuthTokenManager.isTokenExpired(token)) {
+				try {
+					await refreshClient.ensureRefreshed();
+				} catch {
+					throw new Error('認証エラー: ログインし直してください');
+				}
+				return this.request<T>(endpoint, { ...config, _retried: true });
+			}
+		}
 
 		const authHeaders = this.getAuthHeaders(authLevel);
 
 		const finalConfig: RequestInit = {
+			...fetchConfig,
+			// クロスオリジン構成で Cookie（Refresh Token 等）を送受信するために必須
+			credentials: 'include',
 			headers: {
 				'Content-Type': 'application/json',
 				...authHeaders,
 				...fetchConfig.headers,
 			},
-			...fetchConfig,
 		};
 
 		let response: Response;
@@ -67,11 +111,48 @@ class ApiClient {
 
 		if (!response.ok) {
 			if (response.status === 401 && authLevel === 'REQUIRED') {
+				if (!_retried) {
+					try {
+						await refreshClient.ensureRefreshed();
+						return this.request<T>(endpoint, { ...config, _retried: true });
+					} catch {
+						throw new Error('認証エラー: ログインし直してください');
+					}
+				}
 				throw new Error('認証エラー: ログインし直してください');
 			}
-			throw new Error(`HTTP error! status: ${response.status}`);
+
+			let errorMessage = `HTTP error! status: ${response.status}`;
+			let errorCode: string | null = null;
+			const contentType = response.headers.get('content-type');
+			if (contentType && contentType.includes('application/json')) {
+				try {
+					const errorBody = await response.json();
+					if (errorBody.message) {
+						errorMessage = errorBody.message;
+					}
+					if (typeof errorBody.code === 'string') {
+						errorCode = errorBody.code;
+					}
+				} catch {
+					// JSON パース失敗時はフォールバックメッセージを使用
+				}
+			}
+
+			if (errorCode) {
+				throw new ApiError({
+					code: errorCode,
+					message: errorMessage,
+					statusCode: response.status,
+				});
+			}
+			throw new Error(errorMessage);
 		}
 
+		const contentType = response.headers.get('content-type');
+		if (!contentType?.includes('application/json')) {
+			return undefined as T;
+		}
 		return response.json();
 	}
 
@@ -110,17 +191,43 @@ class ApiClient {
 		});
 	}
 
-	// メモ更新
-	async updateMemo(id: string, data: UpdateMemoDto): Promise<Memo> {
+	// メモ更新（clientUpdatedAt を含めると last-write-wins チェックの対象になる）
+	async updateMemo(id: string, data: UpdateMemoDto & { clientUpdatedAt?: string }): Promise<Memo> {
 		return this.request<Memo>(`/memos/${id}`, {
 			method: 'PATCH',
 			body: JSON.stringify(data),
 		});
 	}
 
-	// メモ削除
-	async deleteMemo(id: string): Promise<void> {
-		await this.request(`/memos/${id}`, {
+	// メモ削除（soft delete: ゴミ箱に移動）
+	async deleteMemo(id: string): Promise<Memo> {
+		return this.request<Memo>(`/memos/${id}`, {
+			method: 'DELETE',
+		});
+	}
+
+	// ゴミ箱内メモ一覧取得
+	async getTrashMemos(): Promise<Memo[]> {
+		return this.request<Memo[]>('/memos/trash');
+	}
+
+	// ゴミ箱内メモを復元する
+	async restoreMemo(id: string): Promise<Memo> {
+		return this.request<Memo>(`/memos/${id}/restore`, {
+			method: 'PATCH',
+		});
+	}
+
+	// ゴミ箱内メモを完全削除する
+	async permanentDeleteMemo(id: string): Promise<Memo> {
+		return this.request<Memo>(`/memos/${id}/permanent`, {
+			method: 'DELETE',
+		});
+	}
+
+	// ゴミ箱を空にする
+	async emptyTrash(): Promise<{ count: number }> {
+		return this.request<{ count: number }>('/memos/trash', {
 			method: 'DELETE',
 		});
 	}
@@ -240,35 +347,69 @@ class ApiClient {
 
 	// 招待コード検証（認証不要）
 	async verifyInvitationCode(code: string): Promise<InvitationVerificationResponse> {
-		const url = `${API_BASE_URL}/invitation/verify`;
-
-		const config: RequestInit = {
+		return this.requestPublic<InvitationVerificationResponse>('/invitation/verify', {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
 			body: JSON.stringify({ code }),
-		};
+		});
+	}
 
-		const response = await fetch(url, config);
+	// 招待コード一覧取得（ADMIN専用）
+	async getInvitations(): Promise<InvitationCode[]> {
+		return this.request<InvitationCode[]>('/invitation');
+	}
 
-		if (!response.ok) {
-			let errorMessage = 'Invalid invitation code';
-			try {
-				const contentType = response.headers.get('content-type');
-				if (contentType && contentType.includes('application/json')) {
-					const error = await response.json();
-					errorMessage = error.message || errorMessage;
-				} else {
-					errorMessage = `API Error: ${response.status} ${response.statusText}`;
-				}
-			} catch {
-				errorMessage = `Network Error: ${response.status} ${response.statusText}`;
-			}
-			throw new Error(errorMessage);
-		}
+	// 招待コード作成（ADMIN専用）
+	async createInvitation(data: CreateInvitationDto): Promise<InvitationCode> {
+		return this.request<InvitationCode>('/invitation', {
+			method: 'POST',
+			body: JSON.stringify(data),
+		});
+	}
 
-		return response.json();
+	// 招待コード削除（ADMIN専用）
+	async deleteInvitation(id: string): Promise<void> {
+		await this.request(`/invitation/${id}`, { method: 'DELETE' });
+	}
+
+	// 招待コード文脈検証（受信者向け、認証不要）
+	async verifyInvitationContext(input: { code: string }): Promise<InvitationContextResponse> {
+		return this.requestPublic<InvitationContextResponse>('/invitation/verify-context', {
+			method: 'POST',
+			body: JSON.stringify({ code: input.code }),
+		});
+	}
+
+	// 自分の招待コードを発行
+	async createMyInvitation(): Promise<InvitationWithShareUrlResponse> {
+		return this.request<InvitationWithShareUrlResponse>('/invitation/me', {
+			method: 'POST',
+		});
+	}
+
+	// 自分の招待コード一覧
+	async getMyInvitations(): Promise<InvitationWithShareUrlResponse[]> {
+		return this.request<InvitationWithShareUrlResponse[]>('/invitation/me');
+	}
+
+	// 自分の招待 quota 残数
+	async getMyInvitationQuota(): Promise<UserQuotaResponse> {
+		return this.request<UserQuotaResponse>('/invitation/me/quota');
+	}
+
+	// 自分の招待コードを削除
+	async deleteMyInvitation(input: { id: string }): Promise<void> {
+		await this.request(`/invitation/me/${input.id}`, { method: 'DELETE' });
+	}
+
+	// OAuth 登録開始（招待コードを開始前に検証 → state 経由でコールバックへ）
+	async startOAuthRegistration(input: {
+		provider: InvitationOAuthProvider;
+		invitationCode: string;
+	}): Promise<OAuthStartResponse> {
+		return this.requestPublic<OAuthStartResponse>(`/auth/oauth/${input.provider}/start`, {
+			method: 'POST',
+			body: JSON.stringify({ invitationCode: input.invitationCode }),
+		});
 	}
 
 	// ========== テーマ関連API ==========
@@ -389,6 +530,71 @@ class ApiClient {
 
 	async deleteNotebook(id: string): Promise<void> {
 		await this.request(`/notebooks/${id}`, { method: 'DELETE' });
+	}
+
+	// ヘルスチェック（オフライン状態判定用 heartbeat。認証不要）
+	async health(): Promise<{ status: string }> {
+		return this.request<{ status: string }>('/health', { authLevel: 'NONE' });
+	}
+
+	// ========== メモ公開系API ==========
+
+	// メモを公開する（所有者向け）
+	async publishMemo(id: string): Promise<PublishMemoResponseDto> {
+		return this.request<PublishMemoResponseDto>(`/memos/${id}/share`, {
+			method: 'POST',
+		});
+	}
+
+	// メモを非公開にする（所有者向け）
+	async unpublishMemo(id: string): Promise<{ success: boolean }> {
+		return this.request<{ success: boolean }>(`/memos/${id}/share`, {
+			method: 'DELETE',
+		});
+	}
+
+	// 公開トークンを再生成する（所有者向け）
+	async regenerateMemoToken(id: string): Promise<PublishMemoResponseDto> {
+		return this.request<PublishMemoResponseDto>(`/memos/${id}/share/regenerate`, {
+			method: 'POST',
+		});
+	}
+
+	// 自分の公開中メモ一覧を取得する（所有者向け）
+	async getMyPublicMemos(): Promise<PublicMemoListItemDto[]> {
+		return this.request<PublicMemoListItemDto[]>('/memos/me/public-memos');
+	}
+
+	// 公開トークンでメモを取得する（未ログイン閲覧者向け、認証不要）
+	async getPublicMemo(token: string): Promise<PublicMemoResponseDto> {
+		return this.requestPublic<PublicMemoResponseDto>(`/memos/public/${token}`);
+	}
+
+	// フィードバック送信（ログイン済みユーザー専用）
+	async submitFeedback(dto: SubmitFeedbackDto): Promise<void> {
+		await this.request('/feedback', {
+			method: 'POST',
+			body: JSON.stringify(dto),
+		});
+	}
+
+	// ========== ダッシュボード関連API ==========
+
+	async getDashboardRecentMemos(): Promise<RecentMemoDto[]> {
+		return this.request<RecentMemoDto[]>('/dashboard/recent-memos');
+	}
+
+	async getDashboardWeeklyCount(): Promise<WeeklyCountDto> {
+		return this.request<WeeklyCountDto>('/dashboard/weekly-count');
+	}
+
+	async getDashboardActivityDates(from: string, to: string): Promise<ActivityDatesDto> {
+		const params = new URLSearchParams({ from, to });
+		return this.request<ActivityDatesDto>(`/dashboard/activity-dates?${params.toString()}`);
+	}
+
+	async getDashboardNotebooks(): Promise<NotebookWithMemoCountDto[]> {
+		return this.request<NotebookWithMemoCountDto[]>('/dashboard/notebooks');
 	}
 }
 

@@ -1,4 +1,16 @@
-import { Controller, Post, Body, Get, UseGuards, Request, Response } from '@nestjs/common';
+import {
+	Controller,
+	Post,
+	Body,
+	Get,
+	HttpCode,
+	HttpStatus,
+	Param,
+	UseGuards,
+	Request,
+	Response,
+	Req,
+} from '@nestjs/common';
 import {
 	ERROR_CODES,
 	throwBadRequest,
@@ -9,27 +21,45 @@ import { Throttle } from '@nestjs/throttler';
 import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import type { AuthenticatedRequest, OAuthRequest } from './types';
 import type {
-	GitHubStrategyUser,
 	GoogleStrategyUser,
+	AppleStrategyUser,
+	XStrategyUser,
 	OAuthStrategyUser,
-	// XStrategyUser,
+	OAuthProvider,
 } from './types/oauth.types';
 import { ConfigService } from '../config/config.service';
-import { GoogleRegisterWithInvitationDto } from './dto/google-register-with-invitation.dto';
-import { GithubRegisterWithInvitationDto } from './dto/github-register-with-invitation.dto';
-// import { XRegisterWithInvitationDto } from './dto/x-register-with-invitation.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { GoogleAuthGuard, GitHubAuthGuard } from './oauth-auth.guards';
-// XAuthGuard も同ファイルからエクスポート可能
-import { Public } from './public.decorator';
-import { AuthService } from './auth.service';
+import { GoogleAuthGuard, AppleAuthGuard } from './oauth-auth.guards';
+import { Public } from '../common/decorators/public.decorator';
+import { AuthService, type AuthLoginResult, type AuthRequestContext } from './auth.service';
+import { OAuthService, type OAuthLoginResult } from './oauth.service';
 import { InvitationService } from '../invitation/invitation.service';
+import { OAuthStateService, type OAuthStatePayload } from './oauth-state.service';
+import { XOAuthService } from './x-oauth.service';
+import { generatePkcePair } from './pkce-codec';
+import {
+	OAuthStartBodyDto,
+	OAuthStartParamsDto,
+	type OAuthStartResponse,
+} from './dto/oauth-start.dto';
 import { RegisterUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
-import { ResetPasswordRequestDto, ChangePasswordDto } from './dto/reset-password.dto';
-import { THROTTLE_CONFIG } from '../config/auth-constants';
+import {
+	ResetPasswordRequestDto,
+	ResetPasswordDto,
+	ChangePasswordDto,
+} from './dto/reset-password.dto';
+import { THROTTLE_CONFIG, REFRESH_COOKIE_NAME } from '../config/auth-constants';
+import { PasswordResetService } from './password-reset.service';
 import { AppLogger } from '../common/logger/app-logger.service';
+import { JwtTokenService } from './jwt.service';
+import { RefreshTokenService } from './refresh-token.service';
+import { RefreshCookieHelper } from './refresh-cookie.helper';
+import { RefreshCsrfGuard } from './refresh-csrf.guard';
+import * as Sentry from '@sentry/nestjs';
+import { AppException } from '../common/exceptions/app.exception';
+import type { OAuthRegisterArgs } from './oauth.service';
 
 @Controller('auth')
 export class AuthController {
@@ -38,47 +68,222 @@ export class AuthController {
 	constructor(
 		private readonly prisma: PrismaService,
 		private readonly authService: AuthService,
-		private readonly invitationService: InvitationService,
+		private readonly oauthService: OAuthService,
 		private readonly configService: ConfigService,
+		private readonly jwtTokenService: JwtTokenService,
+		private readonly refreshTokenService: RefreshTokenService,
+		private readonly refreshCookieHelper: RefreshCookieHelper,
+		private readonly invitationService: InvitationService,
+		private readonly oauthStateService: OAuthStateService,
+		private readonly xOAuthService: XOAuthService,
+		private readonly passwordResetService: PasswordResetService,
 	) {
 		this.logger.setContext('AuthController');
 	}
 
 	/**
-	 * OAuth認証コールバック共通処理
+	 * 有効3プロバイダ（Google/X/Apple）統一の OAuth 開始エンドポイント。
+	 * 招待コードを事前検証し、署名 state を発行してプロバイダへリダイレクトする URL を返す。
+	 * X は PKCE pair を生成して verifier を state に封緘し、他2社は従来どおり code のみ。
 	 */
-	private async handleOAuthCallback<TUser extends OAuthStrategyUser>(
-		authMethod: (user: TUser) => Promise<{ accessToken: string; user: unknown }>,
-		req: OAuthRequest<TUser>,
+	@Public()
+	@Throttle({
+		default: { limit: THROTTLE_CONFIG.LOGIN.LIMIT, ttl: THROTTLE_CONFIG.LOGIN.TTL },
+	})
+	@HttpCode(HttpStatus.OK)
+	@Post('oauth/:provider/start')
+	async startOAuthRegistration(
+		@Param() params: OAuthStartParamsDto,
+		@Body() body: OAuthStartBodyDto,
+	): Promise<OAuthStartResponse> {
+		await this.invitationService.verifyInvitation(body.invitationCode);
+
+		let authorizationUrl: string;
+
+		if (params.provider === 'x') {
+			const pkce = generatePkcePair();
+			const signedState = this.oauthStateService.issueState({
+				provider: 'x',
+				code: body.invitationCode,
+				verifier: pkce.verifier,
+			});
+			authorizationUrl = this.configService.generateOAuthAuthorizationUrl(
+				'x',
+				signedState,
+				pkce.challenge,
+			);
+		} else {
+			const signedState = this.oauthStateService.issueState({
+				provider: params.provider,
+				code: body.invitationCode,
+			});
+			authorizationUrl = this.configService.generateOAuthAuthorizationUrl(
+				params.provider,
+				signedState,
+			);
+		}
+
+		return { authorizationUrl };
+	}
+
+	private extractRequestContext(req: ExpressRequest): AuthRequestContext {
+		const ip = req.ip ?? null;
+		const uaHeader = req.headers['user-agent'];
+		const userAgent = typeof uaHeader === 'string' ? uaHeader.slice(0, 512) : null;
+		return { ip, userAgent };
+	}
+
+	private readRefreshCookie(req: ExpressRequest): string | null {
+		const cookies = (req as unknown as { cookies?: Record<string, string> }).cookies;
+		const value = cookies?.[REFRESH_COOKIE_NAME];
+		return typeof value === 'string' && value.length > 0 ? value : null;
+	}
+
+	/**
+	 * 共通コールバック finalize。`payload.code` の有無で招待登録/ログインを選び、
+	 * refresh cookie 設定・MCP ハンドオフ・成功 redirect を行う（プロバイダ分岐なし）。
+	 * MCP ハンドオフのみ session を読み書きするが、OAuth 認証成立はその成否に非依存。
+	 */
+	private async finalizeOAuthCallback<TUser extends OAuthStrategyUser>(
+		payload: OAuthStatePayload | null,
+		user: TUser,
+		loginFn: (user: TUser, ctx: AuthRequestContext) => Promise<OAuthLoginResult>,
+		registerFn: (
+			args: OAuthRegisterArgs<TUser> & { fallbackEmail?: string },
+		) => Promise<OAuthLoginResult>,
+		req: ExpressRequest,
 		res: ExpressResponse,
 		providerName: string,
 	): Promise<void> {
 		try {
-			const result = await authMethod(req.user);
+			const ctx = this.extractRequestContext(req);
+			let result: OAuthLoginResult;
 
-			// フロントエンドにトークンを渡すため、URLパラメータとしてリダイレクト
-			const redirectUrl = this.configService.generateSuccessRedirectUrl(
-				result.accessToken,
-				result.user,
-			);
-
-			return res.redirect(redirectUrl);
-		} catch (error: unknown) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
-			this.logger.error(`${providerName} auth error: ${errorMessage}`);
-
-			// 新規ユーザーで招待コードが必要な場合
-			if (errorMessage.includes('invitation code')) {
-				const redirectUrl = this.configService.generateInvitationRequiredUrl(
-					providerName,
-					req.user,
-				);
-				return res.redirect(redirectUrl);
+			if (payload?.code) {
+				result = await registerFn({ oauthUser: user, invitationCode: payload.code, ctx });
+			} else {
+				result = await loginFn(user, ctx);
 			}
 
-			const errorUrl = this.configService.generateAuthFailedUrl();
-			return res.redirect(errorUrl);
+			this.refreshCookieHelper.setRefreshCookie(
+				res,
+				result.refresh.plainRt,
+				result.refresh.expiresAt,
+			);
+
+			// MCP 認可フロー専用ハンドオフ（OAuth 認証成立はこの session 書き込みに非依存）
+			const mcpSession = req.session as unknown as
+				| { mcpAuthorizeReturn?: string; mcpUserId?: string }
+				| undefined;
+			if (mcpSession?.mcpAuthorizeReturn) {
+				const returnTo = mcpSession.mcpAuthorizeReturn;
+				mcpSession.mcpAuthorizeReturn = undefined;
+				mcpSession.mcpUserId = result.user.id;
+				return res.redirect(returnTo);
+			}
+
+			return res.redirect(
+				this.configService.generateSuccessRedirectUrl(result.accessToken, result.user),
+			);
+		} catch (error: unknown) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			const failureCode = error instanceof AppException ? error.code : 'unknown';
+			this.logger.error(`${providerName} auth error: ${errorMessage}`);
+
+			try {
+				Sentry.captureMessage('oauth_callback_failed', {
+					level: 'warning',
+					tags: { feature_area: 'invitation', invitation_failure_code: failureCode },
+				});
+			} catch (sentryError) {
+				this.logger.warn(
+					`Sentry captureMessage failed: ${sentryError instanceof Error ? sentryError.message : String(sentryError)}`,
+				);
+			}
+
+			return res.redirect(this.configService.generateAuthFailedUrl());
 		}
+	}
+
+	/**
+	 * state 検証込みの OAuth コールバック dispatcher（4 社向け）。
+	 * state があれば OAuthStateService で検証し finalizeOAuthCallback（登録経路）へ。
+	 * state なしは finalizeOAuthCallback（ログイン経路）へ。
+	 */
+	private async runOAuthCallbackWithStateSupport<TUser extends OAuthStrategyUser>(
+		provider: OAuthProvider,
+		loginMethod: (user: TUser, ctx: AuthRequestContext) => Promise<OAuthLoginResult>,
+		stateRegister: (
+			args: OAuthRegisterArgs<TUser> & { fallbackEmail?: string },
+		) => Promise<OAuthLoginResult>,
+		req: OAuthRequest<TUser>,
+		res: ExpressResponse,
+		providerName: string,
+	): Promise<void> {
+		const stateValue = this.extractStateFromRequest(req);
+
+		if (stateValue !== null) {
+			let payload: OAuthStatePayload;
+			try {
+				payload = this.oauthStateService.verifyState(stateValue, provider);
+			} catch (error: unknown) {
+				const failureCode = error instanceof AppException ? error.code : 'unknown';
+				const invitationCode = this.oauthStateService.tryExtractInvitationCode(stateValue) ?? '';
+
+				try {
+					Sentry.captureMessage('invitation_state_invalid', {
+						level: 'warning',
+						tags: {
+							feature_area: 'invitation',
+							invitation_failure_code: failureCode,
+						},
+					});
+				} catch (sentryError) {
+					this.logger.warn(
+						`Sentry captureMessage failed: ${sentryError instanceof Error ? sentryError.message : String(sentryError)}`,
+					);
+				}
+
+				this.logger.warn(
+					`${providerName} OAuth state invalid: ${error instanceof Error ? error.message : String(error)}`,
+				);
+				return res.redirect(this.configService.generateInvitationStateInvalidUrl(invitationCode));
+			}
+
+			return this.finalizeOAuthCallback(
+				payload,
+				req.user,
+				loginMethod,
+				stateRegister,
+				req,
+				res,
+				providerName,
+			);
+		}
+
+		return this.finalizeOAuthCallback(
+			null,
+			req.user,
+			loginMethod,
+			stateRegister,
+			req,
+			res,
+			providerName,
+		);
+	}
+
+	private extractStateFromRequest(req: ExpressRequest): string | null {
+		const queryState = (req.query as Record<string, unknown> | undefined)?.state;
+		if (typeof queryState === 'string' && queryState.length > 0) {
+			return queryState;
+		}
+
+		const bodyState = (req.body as Record<string, unknown> | undefined)?.state;
+		if (typeof bodyState === 'string' && bodyState.length > 0) {
+			return bodyState;
+		}
+
+		return null;
 	}
 
 	@Public()
@@ -86,23 +291,30 @@ export class AuthController {
 		default: { limit: THROTTLE_CONFIG.REGISTER.LIMIT, ttl: THROTTLE_CONFIG.REGISTER.TTL },
 	})
 	@Post('register')
-	async register(@Body() registerUserDto: RegisterUserDto) {
+	async register(
+		@Body() registerUserDto: RegisterUserDto,
+		@Req() req: ExpressRequest,
+		@Response({ passthrough: true }) res: ExpressResponse,
+	) {
 		const { email, password, name, invitationCode } = registerUserDto;
 
 		try {
-			// 招待コードを検証
-			await this.invitationService.verifyInvitation(invitationCode);
+			const ctx = this.extractRequestContext(req);
+			const result = await this.authService.registerWithTokens(
+				email,
+				password,
+				name,
+				invitationCode,
+				ctx,
+			);
 
-			// ユーザー登録
-			const user = await this.authService.register(email, password, name, invitationCode);
+			this.refreshCookieHelper.setRefreshCookie(
+				res,
+				result.refresh.plainRt,
+				result.refresh.expiresAt,
+			);
 
-			// 招待コードの使用回数を増やす
-			await this.invitationService.useInvitation(invitationCode);
-
-			return {
-				message: 'Registration successful. You can now login.',
-				user,
-			};
+			return this.buildAuthResponse(result, 'Registration successful');
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : 'Registration failed';
 			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_INPUT, message);
@@ -112,28 +324,84 @@ export class AuthController {
 	@Public()
 	@Throttle({ default: { limit: THROTTLE_CONFIG.LOGIN.LIMIT, ttl: THROTTLE_CONFIG.LOGIN.TTL } })
 	@Post('login')
-	async login(@Body() loginDto: LoginDto) {
+	async login(
+		@Body() loginDto: LoginDto,
+		@Req() req: ExpressRequest,
+		@Response({ passthrough: true }) res: ExpressResponse,
+	) {
 		const { email, password } = loginDto;
 
 		try {
-			const result = await this.authService.login(email, password);
-			return {
-				message: 'Login successful',
-				...result,
-			};
+			const ctx = this.extractRequestContext(req);
+			const result = await this.authService.login(email, password, ctx);
+
+			this.refreshCookieHelper.setRefreshCookie(
+				res,
+				result.refresh.plainRt,
+				result.refresh.expiresAt,
+			);
+
+			return this.buildAuthResponse(result, 'Login successful');
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : 'Login failed';
 			throwUnauthorized(ERROR_CODES.AUTH.INVALID_CREDENTIALS, message);
 		}
 	}
 
-	@Post('logout')
 	@Public()
-	logout() {
-		// JWTはステートレスなので、ログアウト処理は主にクライアント側で実装
-		// 必要に応じてトークンをブラックリストに追加する処理を実装可能
+	@UseGuards(RefreshCsrfGuard)
+	@Throttle({
+		default: { limit: THROTTLE_CONFIG.REFRESH.LIMIT, ttl: THROTTLE_CONFIG.REFRESH.TTL },
+	})
+	@HttpCode(HttpStatus.OK)
+	@Post('refresh')
+	async refresh(@Req() req: ExpressRequest, @Response({ passthrough: true }) res: ExpressResponse) {
+		const plainRt = this.readRefreshCookie(req);
+		if (!plainRt) {
+			throwUnauthorized(ERROR_CODES.AUTH.REFRESH_TOKEN_INVALID);
+		}
+
+		const ctx = this.extractRequestContext(req);
+		const rotated = await this.refreshTokenService.rotate({
+			plainRt,
+			ip: ctx.ip,
+			userAgent: ctx.userAgent,
+		});
+
+		const user = await this.authService.findUserById(rotated.userId);
+		const tokens = this.jwtTokenService.generateTokens(user.id, user.email, user.role);
+
+		this.refreshCookieHelper.setRefreshCookie(res, rotated.plainRt, rotated.expiresAt);
+
 		return {
-			message: 'Logout successful',
+			accessToken: tokens.accessToken,
+			user,
+		};
+	}
+
+	@Public()
+	@UseGuards(RefreshCsrfGuard)
+	@Throttle({
+		default: { limit: THROTTLE_CONFIG.REFRESH.LIMIT, ttl: THROTTLE_CONFIG.REFRESH.TTL },
+	})
+	@HttpCode(HttpStatus.OK)
+	@Post('logout')
+	async logout(@Req() req: ExpressRequest, @Response({ passthrough: true }) res: ExpressResponse) {
+		const plainRt = this.readRefreshCookie(req);
+		if (plainRt) {
+			await this.refreshTokenService.revoke(plainRt);
+		}
+
+		this.refreshCookieHelper.clearRefreshCookie(res);
+
+		return { message: 'Logout successful' };
+	}
+
+	private buildAuthResponse(result: AuthLoginResult | OAuthLoginResult, message: string) {
+		return {
+			message,
+			accessToken: result.accessToken,
+			user: result.user,
 		};
 	}
 
@@ -147,7 +415,6 @@ export class AuthController {
 			throwNotFound(ERROR_CODES.AUTH.USER_NOT_FOUND);
 		}
 
-		// 既存ユーザーの管理者権限を確認・更新
 		const adminEmail = this.configService.adminEmail;
 		const shouldBeAdmin = adminEmail && user.email === adminEmail;
 
@@ -163,42 +430,34 @@ export class AuthController {
 	}
 
 	@Public()
+	@Throttle({
+		default: {
+			limit: THROTTLE_CONFIG.PASSWORD_RESET.LIMIT,
+			ttl: THROTTLE_CONFIG.PASSWORD_RESET.TTL,
+		},
+	})
+	@HttpCode(HttpStatus.OK)
 	@Post('reset-password')
 	async resetPassword(@Body() resetPasswordRequestDto: ResetPasswordRequestDto) {
-		const { email } = resetPasswordRequestDto;
+		await this.passwordResetService.requestReset(resetPasswordRequestDto.email);
+		return { message: 'パスワードリセットリンクをお送りしました。メールをご確認ください。' };
+	}
 
-		try {
-			// パスワードリセット機能の実装（メール送信など）
-			// 現在は簡単なレスポンスのみ
-			const user = await this.prisma.user.findUnique({
-				where: { email },
-			});
-
-			if (!user) {
-				// セキュリティ上、存在しないメールでも成功レスポンスを返す
-				return {
-					message: 'If the email exists, a password reset link has been sent.',
-				};
-			}
-
-			// TODO: メール送信機能を実装
-			// const resetToken = crypto.randomUUID();
-			// await this.prisma.user.update({
-			//   where: { id: user.id },
-			//   data: {
-			//     resetPasswordToken: resetToken,
-			//     resetPasswordExpires: new Date(Date.now() + 3600000), // 1時間後
-			//   },
-			// });
-
-			return {
-				message: 'If the email exists, a password reset link has been sent.',
-			};
-		} catch (error: unknown) {
-			const message =
-				error instanceof Error ? error.message : 'Failed to send password reset email';
-			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_INPUT, message);
-		}
+	@Public()
+	@Throttle({
+		default: {
+			limit: THROTTLE_CONFIG.PASSWORD_RESET.LIMIT,
+			ttl: THROTTLE_CONFIG.PASSWORD_RESET.TTL,
+		},
+	})
+	@HttpCode(HttpStatus.OK)
+	@Post('reset-password/confirm')
+	async resetPasswordConfirm(@Body() resetPasswordDto: ResetPasswordDto) {
+		await this.passwordResetService.confirmReset(
+			resetPasswordDto.token,
+			resetPasswordDto.newPassword,
+		);
+		return { message: 'パスワードを再設定しました' };
 	}
 
 	@Post('change-password')
@@ -206,6 +465,7 @@ export class AuthController {
 	async changePassword(
 		@Request() req: AuthenticatedRequest,
 		@Body() changePasswordDto: ChangePasswordDto,
+		@Response({ passthrough: true }) res: ExpressResponse,
 	) {
 		const userId = req.user.id;
 		const { currentPassword, newPassword } = changePasswordDto;
@@ -219,7 +479,6 @@ export class AuthController {
 				throwBadRequest(ERROR_CODES.AUTH.PASSWORD_NOT_SET);
 			}
 
-			// 現在のパスワードを検証
 			const isCurrentPasswordValid = await this.authService.comparePassword(
 				currentPassword,
 				user.password,
@@ -229,16 +488,16 @@ export class AuthController {
 				throwUnauthorized(ERROR_CODES.AUTH.INVALID_PASSWORD);
 			}
 
-			// 新しいパスワードをハッシュ化して更新
 			const hashedNewPassword = await this.authService.hashPassword(newPassword);
 			await this.prisma.user.update({
 				where: { id: userId },
 				data: { password: hashedNewPassword },
 			});
 
-			return {
-				message: 'Password changed successfully',
-			};
+			await this.refreshTokenService.revokeAllForUser(userId, 'password_change');
+			this.refreshCookieHelper.clearRefreshCookie(res);
+
+			return { message: 'Password changed successfully' };
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : 'Failed to change password';
 			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_INPUT, message);
@@ -250,7 +509,6 @@ export class AuthController {
 	async updateAdminRole(@Request() req: AuthenticatedRequest) {
 		const currentUser = req.user;
 
-		// 管理者メールアドレスかどうかをチェック
 		const shouldBeAdmin = this.configService.isAdminEmail(currentUser.email);
 
 		if (!shouldBeAdmin) {
@@ -276,194 +534,158 @@ export class AuthController {
 		};
 	}
 
-	// 後方互換性のため一時的に保持（将来削除予定）
-	@Post('sync-user')
-	@UseGuards(JwtAuthGuard)
-	syncUser(@Request() req: AuthenticatedRequest) {
-		// 新しい認証システムでは不要だが、フロントエンドの移行期間中は保持
-		return req.user;
-	}
-
-	@Post('sync-user-with-invite')
-	@UseGuards(JwtAuthGuard)
-	syncUserWithInvite(@Request() req: AuthenticatedRequest) {
-		// 新しい認証システムでは不要だが、フロントエンドの移行期間中は保持
-		return req.user;
-	}
-
 	// Google OAuth エンドポイント
+	@Public()
 	@Get('google')
 	@UseGuards(GoogleAuthGuard)
 	googleAuth(@Request() _req: ExpressRequest) {
 		// Google認証画面にリダイレクト
 	}
 
+	@Public()
 	@Get('google/callback')
 	@UseGuards(GoogleAuthGuard)
 	async googleAuthRedirect(
 		@Request() req: OAuthRequest<GoogleStrategyUser>,
 		@Response() res: ExpressResponse,
 	) {
-		return this.handleOAuthCallback(
-			(user) => this.authService.googleLogin(user),
+		return this.runOAuthCallbackWithStateSupport<GoogleStrategyUser>(
+			'google',
+			(user, ctx) => this.oauthService.googleLogin(user, ctx),
+			(args) => this.oauthService.googleRegisterWithStateInvitation(args),
 			req,
 			res,
 			'Google',
 		);
 	}
 
-	/**
-	 * OAuth招待コード登録の共通処理
-	 */
-	private async handleOAuthRegisterWithInvitation<TUser extends OAuthStrategyUser>(
-		user: Record<string, unknown>,
-		invitationCode: string,
-		parser: (user: Record<string, unknown>) => TUser,
-		registerMethod: (user: TUser, code: string) => Promise<{ accessToken: string; user: unknown }>,
-	) {
-		const parsedUser = parser(user);
-
-		try {
-			const result = await registerMethod(parsedUser, invitationCode);
-
-			return {
-				message: 'Registration successful',
-				...result,
-			};
-		} catch (error: unknown) {
-			const message = error instanceof Error ? error.message : 'Registration failed';
-			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_INPUT, message);
-		}
+	// Apple OAuth エンドポイント
+	@Public()
+	@Get('apple')
+	@UseGuards(AppleAuthGuard)
+	appleAuth(@Request() _req: ExpressRequest) {
+		// Apple認証画面にリダイレクト
 	}
 
 	@Public()
-	@Post('google/register-with-invitation')
-	async googleRegisterWithInvitation(@Body() body: GoogleRegisterWithInvitationDto) {
-		const { googleUser, invitationCode } = body;
-		return this.handleOAuthRegisterWithInvitation(
-			googleUser,
-			invitationCode,
-			this.parseGoogleUser.bind(this),
-			this.authService.googleRegisterWithInvitation.bind(this.authService),
-		);
-	}
-
-	// GitHub OAuth エンドポイント
-	@Get('github')
-	@UseGuards(GitHubAuthGuard)
-	githubAuth(@Request() _req: ExpressRequest) {
-		// GitHub認証画面にリダイレクト
-	}
-
-	@Get('github/callback')
-	@UseGuards(GitHubAuthGuard)
-	async githubAuthRedirect(
-		@Request() req: OAuthRequest<GitHubStrategyUser>,
+	@Post('apple/callback')
+	@UseGuards(AppleAuthGuard)
+	async appleAuthCallback(
+		@Request() req: OAuthRequest<AppleStrategyUser>,
 		@Response() res: ExpressResponse,
 	) {
-		return this.handleOAuthCallback(
-			(user) => this.authService.githubLogin(user),
+		return this.runOAuthCallbackWithStateSupport<AppleStrategyUser>(
+			'apple',
+			(user, ctx) => this.oauthService.appleLogin(user, ctx),
+			(args) => this.oauthService.appleRegisterWithStateInvitation(args),
 			req,
 			res,
-			'GitHub',
+			'Apple',
 		);
 	}
 
+	// X OAuth エンドポイント（手組みステートレスフロー）
+
+	/**
+	 * X 通常ログイン開始。passport guard を廃し、PKCE pair 生成 → 署名 state 発行 →
+	 * X authorize へ 302。verifier は state 内（AEAD 暗号化）にのみ保持し session には保存しない。
+	 */
 	@Public()
-	@Post('github/register-with-invitation')
-	async githubRegisterWithInvitation(@Body() body: GithubRegisterWithInvitationDto) {
-		const { githubUser, invitationCode } = body;
-		return this.handleOAuthRegisterWithInvitation(
-			githubUser,
-			invitationCode,
-			this.parseGithubUser.bind(this),
-			this.authService.githubRegisterWithInvitation.bind(this.authService),
+	@Get('x')
+	xAuth(@Response() res: ExpressResponse): void {
+		if (!this.xOAuthService.isConfigured()) {
+			res.status(503).json({ message: 'X OAuth provider is not configured' });
+			return;
+		}
+		const pkce = generatePkcePair();
+		const signedState = this.oauthStateService.issueState({
+			provider: 'x',
+			verifier: pkce.verifier,
+		});
+		const authorizationUrl = this.configService.generateOAuthAuthorizationUrl(
+			'x',
+			signedState,
+			pkce.challenge,
+		);
+		res.redirect(authorizationUrl);
+	}
+
+	/**
+	 * X コールバック（手組みステートレスフロー）。
+	 * verifyState → token/profile 交換 → finalizeOAuthCallback で処理。
+	 * session には一切触れない（認証成立に非依存）。
+	 */
+	@Public()
+	@Get('x/callback')
+	async xAuthCallback(
+		@Request() req: ExpressRequest,
+		@Response() res: ExpressResponse,
+	): Promise<void> {
+		const stateValue = this.extractStateFromRequest(req);
+		const code = (req.query as Record<string, unknown>).code;
+
+		if (!stateValue || typeof code !== 'string' || code.length === 0) {
+			res.redirect(this.configService.generateAuthFailedUrl());
+			return;
+		}
+
+		let payload: OAuthStatePayload;
+		try {
+			payload = this.oauthStateService.verifyState(stateValue, 'x');
+		} catch (error: unknown) {
+			const failureCode = error instanceof AppException ? error.code : 'unknown';
+			const invitationCode = this.oauthStateService.tryExtractInvitationCode(stateValue) ?? '';
+
+			try {
+				Sentry.captureMessage('invitation_state_invalid', {
+					level: 'warning',
+					tags: { feature_area: 'invitation', invitation_failure_code: failureCode },
+				});
+			} catch (sentryError) {
+				this.logger.warn(
+					`Sentry captureMessage failed: ${sentryError instanceof Error ? sentryError.message : String(sentryError)}`,
+				);
+			}
+
+			this.logger.warn(
+				`X OAuth state invalid: ${error instanceof Error ? error.message : String(error)}`,
+			);
+
+			if (invitationCode) {
+				res.redirect(this.configService.generateInvitationStateInvalidUrl(invitationCode));
+			} else {
+				res.redirect(this.configService.generateAuthFailedUrl());
+			}
+			return;
+		}
+
+		if (!payload.verifier) {
+			this.logger.error('X callback: state missing PKCE verifier');
+			res.redirect(this.configService.generateAuthFailedUrl());
+			return;
+		}
+
+		let xUser: XStrategyUser;
+		try {
+			xUser = await this.xOAuthService.exchangeCodeForUser({
+				code,
+				verifier: payload.verifier,
+			});
+		} catch (error: unknown) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.logger.error(`X token/profile exchange failed: ${errorMessage}`);
+			res.redirect(this.configService.generateAuthFailedUrl());
+			return;
+		}
+
+		return this.finalizeOAuthCallback(
+			payload,
+			xUser,
+			(user, ctx) => this.oauthService.xLogin(user, ctx),
+			(args) => this.oauthService.xRegisterWithStateInvitation(args),
+			req,
+			res,
+			'X',
 		);
 	}
-
-	// X OAuth エンドポイント (Disabled - X OAuth is not currently in use)
-	// @Get('x')
-	// @UseGuards(XAuthGuard)
-	// xAuth(@Request() _req: ExpressRequest) {
-	// 	// X認証画面にリダイレクト
-	// }
-
-	// @Get('x/callback')
-	// @UseGuards(XAuthGuard)
-	// async xAuthRedirect(
-	// 	@Request() req: OAuthRequest<XStrategyUser>,
-	// 	@Response() res: ExpressResponse,
-	// ) {
-	// 	return this.handleOAuthCallback((user) => this.authService.xLogin(user), req, res, 'X');
-	// }
-
-	// @Public()
-	// @Post('x/register-with-invitation')
-	// async xRegisterWithInvitation(@Body() body: XRegisterWithInvitationDto) {
-	// 	const { xUser, invitationCode } = body;
-	// 	return this.handleOAuthRegisterWithInvitation(
-	// 		xUser,
-	// 		invitationCode,
-	// 		this.parseXUser.bind(this),
-	// 		this.authService.xRegisterWithInvitation.bind(this.authService),
-	// 	);
-	// }
-
-	private parseGoogleUser(value: Record<string, unknown>): GoogleStrategyUser {
-		const googleId = value.googleId;
-		const name = value.name;
-		if (typeof googleId !== 'string' || typeof name !== 'string') {
-			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_PAYLOAD);
-		}
-
-		const email = typeof value.email === 'string' ? value.email : undefined;
-		return {
-			googleId,
-			name,
-			email,
-			accessToken: typeof value.accessToken === 'string' ? value.accessToken : undefined,
-			refreshToken: typeof value.refreshToken === 'string' ? value.refreshToken : undefined,
-			firstName: typeof value.firstName === 'string' ? value.firstName : undefined,
-			lastName: typeof value.lastName === 'string' ? value.lastName : undefined,
-			picture: typeof value.picture === 'string' ? value.picture : undefined,
-		};
-	}
-
-	private parseGithubUser(value: Record<string, unknown>): GitHubStrategyUser {
-		const githubId = value.githubId;
-		const name = value.name;
-		if (typeof githubId !== 'string' || typeof name !== 'string') {
-			throwBadRequest(ERROR_CODES.VALIDATION.INVALID_PAYLOAD);
-		}
-
-		const email = typeof value.email === 'string' ? value.email : undefined;
-		return {
-			githubId,
-			name,
-			email,
-			username: typeof value.username === 'string' ? value.username : undefined,
-			picture: typeof value.picture === 'string' ? value.picture : undefined,
-			accessToken: typeof value.accessToken === 'string' ? value.accessToken : undefined,
-			refreshToken: typeof value.refreshToken === 'string' ? value.refreshToken : undefined,
-		};
-	}
-
-	// private parseXUser(value: Record<string, unknown>): XStrategyUser {
-	// 	const xId = value.xId;
-	// 	const name = value.name;
-	// 	if (typeof xId !== 'string' || typeof name !== 'string') {
-	// 		throw new BadRequestException('Invalid X user payload');
-	// 	}
-
-	// 	const email = typeof value.email === 'string' ? value.email : undefined;
-	// 	return {
-	// 		xId,
-	// 		name,
-	// 		email,
-	// 		username: typeof value.username === 'string' ? value.username : undefined,
-	// 		picture: typeof value.picture === 'string' ? value.picture : undefined,
-	// 		accessToken: typeof value.accessToken === 'string' ? value.accessToken : undefined,
-	// 		tokenSecret: typeof value.tokenSecret === 'string' ? value.tokenSecret : undefined,
-	// 	};
-	// }
 }

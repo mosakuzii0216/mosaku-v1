@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Setup Node.js (root)
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -21,10 +21,6 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install workspaces (root)
         run: npm ci
-      - name: Setup Node.js for frontend
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
 
       - name: Prettier format check
         run: npm run format:check
@@ -44,7 +40,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Setup Node.js (root)
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -52,10 +48,6 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install workspaces (root)
         run: npm ci
-      - name: Setup Node.js for backend
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
 
       - name: Prettier format check
         run: npm run format:check
@@ -68,3 +60,26 @@ jobs:
       - name: ESLintでコードチェック
         run: npm run lint
         working-directory: backend
+
+  # ===========================================================================
+  # lockfile 同期チェック
+  # ===========================================================================
+  # 本リポジトリは lockfile が root / backend / frontend の 3 系統あり、
+  # Dependabot もそれぞれに PR を出すため「片方だけ更新される」ズレが起きうる。
+  # npm ci は逆向きのズレ（package.json から消したのに lockfile に残る宣言）を
+  # 検知できないので、専用スクリプトで検査する。
+  # JSON を読むだけなので npm ci は不要。
+  # ===========================================================================
+  lockfile-sync:
+    name: lockfile sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: lockfile と package.json の同期チェック
+        run: node scripts/check-lockfile-sync.mjs

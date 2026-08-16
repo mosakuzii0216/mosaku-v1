@@ -1,0 +1,25 @@
+{
+	"feature_name": "dogfooding-friction-log",
+	"created_at": "2026-04-21T07:40:00.000Z",
+	"updated_at": "2026-04-23T00:00:00.000Z",
+	"language": "ja",
+	"phase": "archived",
+	"archived": true,
+	"archived_at": "2026-04-23T00:00:00.000Z",
+	"archived_reason": "永続価値のある機能が残らないため。摩擦ログは既存の memo + notebook + tag + タグ命名規約（#blocker / #major / #spec-done など）で運用ルールとして達成可能。ドッグフーディング期間限定の専用機能（Slack通知 / トリアージビュー / クイックキャプチャショートカット / ADMINゲート）を実装すると、ユーザー公開後にテックデブトとして残るため archive。汎用価値がありそうな『ノートブック単位のテンプレート』機能は、必要になった時点で別 spec として再起票する。",
+	"approvals": {
+		"requirements": {
+			"generated": true,
+			"approved": true
+		},
+		"design": {
+			"generated": true,
+			"approved": true
+		},
+		"tasks": {
+			"generated": true,
+			"approved": false
+		}
+	},
+	"ready_for_implementation": false
+}

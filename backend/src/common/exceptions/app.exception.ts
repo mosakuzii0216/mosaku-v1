@@ -81,3 +81,11 @@ export function throwForbidden(code: ErrorCode, message?: string, details?: unkn
 export function throwNotFound(code: ErrorCode, message?: string, details?: unknown): never {
 	throw new AppException(code, HttpStatus.NOT_FOUND, message, details);
 }
+
+/**
+ * ヘルパー関数: ConflictException相当（HTTP 409）
+ * last-write-wins などで楽観ロックに敗北した際に使用する。
+ */
+export function throwConflict(code: ErrorCode, message?: string, details?: unknown): never {
+	throw new AppException(code, HttpStatus.CONFLICT, message, details);
+}

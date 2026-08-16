@@ -13,6 +13,9 @@ export const THEME_SELECT = {
 	name: true,
 	styles: true,
 	cssFilePath: true,
+	// metadata（effectKey 等）を含めないと、ノートブック/メモ経由で取得したテーマから
+	// getEffectKey() が effectKey を解決できず、没入エフェクト層（森など）が発火しない。
+	metadata: true,
 } as const satisfies Prisma.ThemeSelect;
 
 /**

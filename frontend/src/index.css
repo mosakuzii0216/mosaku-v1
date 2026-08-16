@@ -1,3 +1,12 @@
+/* Shell Token Contract（Layer① / render-blocking）。
+   @import は他ルールより前に置く必要があるため @tailwind より上に配置する。
+   中立既定値は現行 Tailwind と一致するため data-theme 未設定時の見た目は不変（7.1）。 */
+@import './themes/shell/tokens.css';
+
+/* Quality Primitives（Layer① / render-blocking）。tokens.css のトークンを読む
+   theme-neutral な構造クラス（.shell-*）。色は持たず必ず var(--token) 経由（1.2, 1.4）。 */
+@import './themes/shell/primitives.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -49,4 +58,91 @@ body {
 	transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
 	transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 	transition-duration: 150ms;
+}
+
+/* ===== 森テーマ: ログイン画面アニメーション ===== */
+
+/* 霧の流れ: 横方向スライド + opacity 変化 */
+@keyframes fog-drift {
+	0% {
+		transform: translateX(-20%);
+		opacity: 0;
+	}
+	20% {
+		opacity: 0.3;
+	}
+	80% {
+		opacity: 0.2;
+	}
+	100% {
+		transform: translateX(110%);
+		opacity: 0;
+	}
+}
+
+/* 葉の漂い: 上から下へゆっくり流れ、横揺れを加える */
+@keyframes leaf-float {
+	0% {
+		transform: translateY(-10%) translateX(0) rotate(0deg);
+		opacity: 0;
+	}
+	10% {
+		opacity: 0.6;
+	}
+	50% {
+		transform: translateY(50%) translateX(30px) rotate(180deg);
+	}
+	90% {
+		opacity: 0.4;
+	}
+	100% {
+		transform: translateY(110%) translateX(-20px) rotate(360deg);
+		opacity: 0;
+	}
+}
+
+/* 波打ち: 背景グラデーションの位置変化 */
+@keyframes wave-pulse {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
+}
+
+/* reduced-motion: 全アニメーションを停止 */
+@media (prefers-reduced-motion: reduce) {
+	.forest-animation * {
+		animation: none !important;
+		transition: none !important;
+	}
+}
+
+/* 表示モード（FocusMemoOverlay）の本文タイポグラフィ。
+   PublicMemoRenderer は `prose prose-sm sm:prose-base lg:prose-lg xl:prose-xl text-gray-900` を
+   ProseMirror 要素へ直接付けるため、オーバーレイ親に置いた --dm-* / テーマ文字色は届かない。
+   ここで詳細度を 1 段上げ、読みやすさスタイル（Req 2.5）とテーマ追随（Req 5.1）を成立させる。 */
+.display-mode-content .ProseMirror {
+	font-size: var(--dm-font-size, 18px);
+	line-height: var(--dm-line-height, 1.8);
+	color: inherit;
+
+	/* 見出し・引用・リンク等の prose 既定色をテーマ文字色へ寄せ、本文と同じコントラスト対を保つ */
+	--tw-prose-body: currentColor;
+	--tw-prose-headings: currentColor;
+	--tw-prose-lead: currentColor;
+	--tw-prose-links: currentColor;
+	--tw-prose-bold: currentColor;
+	--tw-prose-counters: currentColor;
+	--tw-prose-bullets: currentColor;
+	--tw-prose-quotes: currentColor;
+	--tw-prose-captions: currentColor;
+	--tw-prose-hr: color-mix(in srgb, currentColor 30%, transparent);
+	--tw-prose-quote-borders: color-mix(in srgb, currentColor 40%, transparent);
+	--tw-prose-th-borders: color-mix(in srgb, currentColor 40%, transparent);
+	--tw-prose-td-borders: color-mix(in srgb, currentColor 25%, transparent);
 }

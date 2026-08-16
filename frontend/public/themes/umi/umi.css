@@ -1,0 +1,291 @@
+/* umi: 海に潜るような、深く静かな没入の海テーマ（mori と同系統の世界観）
+   冒険の局面＝「漕ぎ出す・見渡す」／道標モチーフ＝水平線・灯台・羅針盤 */
+
+/* 1. ルートトークンとベーススタイル */
+.theme-root {
+	/* カラー（深い海中：暗地に泡白、差し色は発光する水色） */
+	--theme-bg: linear-gradient(160deg, #001e3c, #013a63, #045a8d, #013a63, #001e3c);
+	--theme-text-color: #eaf6fb;
+	--theme-heading-color: #f0fbff;
+	--theme-accent-color: #5fd3e8;
+	--theme-border-color: rgba(95, 211, 232, 0.35);
+
+	/* タイポグラフィ（mori と同じ明朝＝ブランド共通の文学的トーン） */
+	--theme-font-family:
+		'游明朝', 'Yu Mincho', 'YuMincho', 'ヒラギノ明朝 ProN', 'Hiragino Mincho ProN',
+		'Times New Roman', serif;
+	--theme-font-size: 16px;
+	--theme-line-height: 1.9;
+
+	/* レイアウト */
+	--theme-padding: 2rem;
+	--theme-margin: 1rem;
+	--theme-border-radius: 0.75rem;
+
+	position: relative;
+	/* 引き算：box-shadow を撤去し、浮いたカードではなく一面の海に没入させる */
+	background: var(--theme-bg);
+	background-size: 400% 400%;
+	color: var(--theme-text-color);
+	font-family: var(--theme-font-family);
+	font-size: var(--theme-font-size);
+	line-height: var(--theme-line-height);
+	overflow: hidden;
+	/* 潮の満ち引き：グラデーションがゆっくり上下に流れる */
+	animation: tide-drift 16s ease-in-out infinite;
+
+	/* editor セマンティックパレット（rich-editor-blocks Task 2.3）: テキスト色のみ本文グラデ
+	   （--theme-bg）の両端 #001e3c に対して AA(4.5:1) を満たす実値へ上書きする。マーカー/
+	   コールアウトは不透明な自己完結ペアのため tokens.css :root の既定値をそのまま継承する。 */
+	--editor-text-wakaba: #39c651;
+	--editor-text-sora: #2890d9;
+	--editor-text-kohaku: #df8f20;
+	--editor-text-sumire: #b26dd5;
+}
+
+/* 2. 大気レイヤー（mori の霧 → 海版）
+   ::before = 差し込む光線(god rays) / ::after = 水面から落ちる光のにじみ */
+.theme-root::before {
+	content: '';
+	position: absolute;
+	inset: -20%;
+	background: repeating-linear-gradient(
+		105deg,
+		transparent 0,
+		transparent 70px,
+		rgba(95, 211, 232, 0.05) 88px,
+		rgba(173, 232, 244, 0.11) 100px,
+		rgba(95, 211, 232, 0.05) 112px,
+		transparent 130px
+	);
+	filter: blur(6px);
+	pointer-events: none;
+	animation: god-rays 26s ease-in-out infinite;
+	z-index: 0;
+}
+
+.theme-root::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: radial-gradient(
+		ellipse 130% 55% at 50% -12%,
+		rgba(95, 211, 232, 0.2),
+		transparent 62%
+	);
+	pointer-events: none;
+	animation: surface-glow 20s ease-in-out infinite;
+	z-index: 0;
+}
+
+/* 3. メモタイトル
+   NOTE: ヘッダー/サイドバー/汎用 button・input・a への配色は廃止。
+   他テーマと同様、テーマ対象はメモ編集面（.memo-title / .memo-content）に限定する。
+   理由: .theme-root button が要素型セレクタとして Tailwind の text-gray-600 に勝ち、
+   白背景ヘッダーのナビ文字が消えるため（friction log: ヘッダー文字消失）。 */
+.theme-root .memo-title {
+	position: relative;
+	z-index: 1;
+	color: var(--theme-heading-color);
+	font-size: 2rem;
+	font-weight: 700;
+	margin-bottom: 1.5rem;
+	border-bottom: 2px solid var(--theme-accent-color);
+	padding-bottom: 0.5rem;
+	letter-spacing: 0.02em;
+	text-shadow: 0 1px 4px rgba(0, 15, 30, 0.6);
+}
+
+.theme-root .memo-title::placeholder {
+	color: rgba(234, 246, 251, 0.45);
+}
+
+/* 4. メモ本文（光線レイヤーより前面に重ねて没入させる） */
+.theme-root .memo-content {
+	position: relative;
+	z-index: 1;
+	color: var(--theme-text-color);
+	font-size: var(--theme-font-size);
+	line-height: var(--theme-line-height);
+	/* 可読性死守：グラデの明るい所/光線上でも本文が読めるよう薄い影を敷く */
+	text-shadow: 0 1px 3px rgba(0, 15, 30, 0.55);
+}
+
+.theme-root .memo-content h1,
+.theme-root .memo-content h2,
+.theme-root .memo-content h3,
+.theme-root .memo-content h4,
+.theme-root .memo-content h5,
+.theme-root .memo-content h6 {
+	color: var(--theme-heading-color);
+	font-weight: 600;
+	margin-top: 1.5rem;
+	margin-bottom: 0.75rem;
+	text-shadow: 0 1px 4px rgba(0, 15, 30, 0.6);
+}
+
+.theme-root .memo-content h1 {
+	font-size: 2rem;
+}
+
+.theme-root .memo-content h2 {
+	font-size: 1.5rem;
+	border-bottom: 1px solid var(--theme-border-color);
+	padding-bottom: 0.25rem;
+}
+
+.theme-root .memo-content h3 {
+	font-size: 1.25rem;
+}
+
+.theme-root .memo-content p {
+	margin-bottom: 1rem;
+}
+
+.theme-root .memo-content strong {
+	font-weight: 700;
+	color: var(--theme-heading-color);
+}
+
+.theme-root .memo-content em {
+	font-style: italic;
+	color: #aee8f4;
+}
+
+.theme-root .memo-content s {
+	text-decoration: line-through;
+	opacity: 0.7;
+}
+
+.theme-root .memo-content ul,
+.theme-root .memo-content ol {
+	margin-left: 1.5rem;
+	margin-bottom: 1rem;
+}
+
+.theme-root .memo-content li {
+	margin-bottom: 0.5rem;
+}
+
+.theme-root .memo-content blockquote {
+	border-left: 4px solid var(--theme-accent-color);
+	padding-left: 1rem;
+	margin-left: 0;
+	margin-bottom: 1rem;
+	color: rgba(234, 246, 251, 0.82);
+	font-style: italic;
+	background: rgba(95, 211, 232, 0.07);
+	padding-top: 0.5rem;
+	padding-bottom: 0.5rem;
+	border-radius: 0 0.375rem 0.375rem 0;
+}
+
+.theme-root .memo-content pre {
+	background-color: rgba(0, 20, 40, 0.55);
+	border: 1px solid var(--theme-border-color);
+	border-radius: 0.375rem;
+	padding: 1rem;
+	overflow-x: auto;
+	margin-bottom: 1rem;
+	text-shadow: none;
+}
+
+.theme-root .memo-content code {
+	background-color: rgba(0, 20, 40, 0.55);
+	padding: 0.2rem 0.4rem;
+	border-radius: 0.375rem;
+	font-family: 'Monaco', 'Courier New', monospace;
+	font-size: 0.9em;
+	color: #aee8f4;
+	text-shadow: none;
+}
+
+.theme-root .memo-content hr {
+	border: none;
+	border-top: 1px solid var(--theme-border-color);
+	margin: 2rem 0;
+}
+
+.theme-root .memo-content a {
+	color: var(--theme-accent-color);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+	transition: text-shadow 0.2s ease;
+}
+
+.theme-root .memo-content a:hover {
+	color: #aee8f4;
+	/* 発光する水色：ホバーで淡く光る */
+	text-shadow: 0 0 8px rgba(95, 211, 232, 0.7);
+}
+
+/* 5. レスポンシブ */
+@media (max-width: 768px) {
+	.theme-root {
+		padding: 1rem;
+	}
+
+	.theme-root .memo-title {
+		font-size: 1.5rem;
+	}
+
+	.theme-root .memo-content h1 {
+		font-size: 1.5rem;
+	}
+
+	.theme-root .memo-content h2 {
+		font-size: 1.25rem;
+	}
+
+	.theme-root .memo-content h3 {
+		font-size: 1.1rem;
+	}
+}
+
+/* 6. アクセシビリティ（prefers-reduced-motion: reduce）
+   アニメーションだけ停止し、海パレット・背景グラデは維持 */
+@media (prefers-reduced-motion: reduce) {
+	.theme-root,
+	.theme-root::before,
+	.theme-root::after {
+		animation: none;
+	}
+}
+
+/* 7. keyframes — 他テーマは umi.css を読み込まないため名前衝突は発生しない */
+@keyframes tide-drift {
+	0% {
+		background-position: 50% 0%;
+	}
+	50% {
+		background-position: 50% 100%;
+	}
+	100% {
+		background-position: 50% 0%;
+	}
+}
+
+@keyframes god-rays {
+	0% {
+		transform: translateX(-6%);
+		opacity: 0.45;
+	}
+	50% {
+		transform: translateX(6%);
+		opacity: 0.85;
+	}
+	100% {
+		transform: translateX(-6%);
+		opacity: 0.45;
+	}
+}
+
+@keyframes surface-glow {
+	0%,
+	100% {
+		opacity: 0.55;
+	}
+	50% {
+		opacity: 1;
+	}
+}

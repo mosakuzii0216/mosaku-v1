@@ -1,0 +1,12 @@
+-- This migration is intentionally a no-op.
+--
+-- 経緯:
+-- 本番 DB では同名・同内容の `20250713094055_add_tag_system` が 2026-01-12 に
+-- 先行して適用済みで、tags / memo_tags テーブルはそちらが作成している。
+-- このマイグレーションは後から追加された重複定義で、本番では
+-- `_prisma_migrations` に "applied" として記録されているのみで実体 SQL は実行されていない。
+--
+-- 過去にこのファイルへ notebook_tags 等を後付け編集した結果、フレッシュ DB に対する
+-- `prisma migrate deploy` が「notebooks がまだ存在しない」エラーで失敗していたため、
+-- 本ファイルを no-op に戻して整合させている。
+-- notebook_tags は `20251107080000_add_notebook_tags` が IF NOT EXISTS 付きで作成する。

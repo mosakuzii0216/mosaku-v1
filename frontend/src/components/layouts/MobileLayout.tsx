@@ -1,28 +1,38 @@
 import { useEffect } from 'react';
-import { useMemoStore } from '../../stores/useMemoStore';
+import { useViewStore } from '../../stores/useViewStore';
+import { useMemoDataStore } from '../../stores/useMemoDataStore';
+import { usePaletteStore } from '../../stores/usePaletteStore';
+import { useNavigation } from '../../hooks/useNavigation';
+import { useMemo as useMemoQuery } from '../../hooks/useMemoQueries';
 import { useAppInit } from '../../hooks/useAppInit';
+import { useReconnectSync } from '../../hooks/useReconnectSync';
+import { useActiveTheme } from '../../hooks/useActiveTheme';
+import { useThemeCSS } from '../../hooks/useThemeCSS';
+import { useDocumentThemeSync } from '../../hooks/useDocumentThemeSync';
+import { ThemeEffectHost } from '../effects/ThemeEffectHost';
 import { Header } from '../ui/Header';
 import { MemoEditor } from '../memo/MemoEditor';
 import { MemoList } from '../memo/MemoList';
+import { TrashView } from '../memo/TrashView';
 import { TagManager } from '../tag/TagManager';
 import { NotebookList } from '../notebook/NotebookList';
 import { NotebookEditor } from '../notebook/NotebookEditor';
 import { MemoPalette } from '../memo/MemoPalette';
+import { FocusMemoOverlay } from '../memo/FocusMemoOverlay';
+import { HomeDashboard } from '../home/HomeDashboard';
+import { getEffectKey } from '../../types/theme';
 
 export const MobileLayout = () => {
-	const {
-		currentObject,
-		currentView,
-		selectedMemo,
-		goToMemoCreate,
-		goToNotebookCreate,
-		selectedNotebookId,
-		paletteOpen,
-		paletteMode,
-		closeMemoPalette,
-		openMemoPalette,
-	} = useMemoStore();
+	const { currentObject, currentView } = useViewStore();
+	const { selectedMemoId, selectedNotebookId } = useMemoDataStore();
+	const { paletteOpen, paletteMode, closeMemoPalette, openMemoPalette } = usePaletteStore();
+	const { goToMemoCreate, goToNotebookCreate } = useNavigation();
+	const { data: selectedMemo } = useMemoQuery(selectedMemoId ?? '');
+	const activeTheme = useActiveTheme();
+	useThemeCSS(activeTheme);
+	useDocumentThemeSync(activeTheme);
 	useAppInit(); // アプリ初期化（タグロード等）
+	useReconnectSync(); // 再接続時のサーバー状態再取得
 
 	// ショートカットキーのハンドリング
 	useEffect(() => {
@@ -55,6 +65,9 @@ export const MobileLayout = () => {
 
 	const renderContent = () => {
 		switch (currentObject) {
+			case 'home':
+				return <HomeDashboard />;
+
 			case 'memo':
 				switch (currentView) {
 					case 'list':
@@ -64,9 +77,9 @@ export const MobileLayout = () => {
 						return selectedMemo ? (
 							<MemoEditor memo={selectedMemo} />
 						) : (
-							<div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
+							<div className="flex flex-col items-center justify-center h-full text-center text-[var(--on-surface-variant)]">
 								<p>メモが選択されていません</p>
-								<p className="mt-2 text-sm text-gray-400">
+								<p className="mt-2 text-sm text-[var(--on-surface-variant)]">
 									新規作成:{' '}
 									{/Mac|iPod|iPhone|iPad/.test(window.navigator.platform)
 										? 'Cmd + Option'
@@ -77,6 +90,8 @@ export const MobileLayout = () => {
 						);
 					case 'create':
 						return <MemoEditor isCreate />;
+					case 'trash':
+						return <TrashView />;
 				}
 				// 内部switchが網羅的でも静的解析ではfallthroughと判断されるため明示的にbreak
 				break;
@@ -90,14 +105,12 @@ export const MobileLayout = () => {
 						return <NotebookEditor notebookId={selectedNotebookId ?? undefined} />;
 				}
 				break;
-				// fallthrough防止のため明示的にbreak
-				break;
 			case 'tag':
 				return <TagManager />;
 
 			default:
 				return (
-					<div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
+					<div className="flex flex-col items-center justify-center h-full text-center text-[var(--on-surface-variant)]">
 						<p>メモ一覧は現在利用できません</p>
 					</div>
 				);
@@ -105,12 +118,24 @@ export const MobileLayout = () => {
 	};
 
 	return (
-		<div className="h-screen flex flex-col bg-white">
-			<Header onMemoCreateClick={goToMemoCreate} onNotebookCreateClick={goToNotebookCreate} />
-			<main className="flex-1 overflow-hidden">{renderContent()}</main>
+		<div
+			className={`h-dvh flex flex-col app-shell ${activeTheme ? 'theme-root' : ''}`}
+			data-theme={getEffectKey(activeTheme)}
+			data-theme-id={activeTheme?.id}
+		>
+			<ThemeEffectHost theme={activeTheme} />
+			{/* 生きた背景（MoriEffectLayer / fixed z-0）より前面にコンテンツを重ねる。
+			    ヘッダー側は main より一段高い z-20（内側ドロップダウンが <main> に覆われるのを防ぐ） */}
+			<div className="relative z-20 flex-shrink-0">
+				<Header onMemoCreateClick={goToMemoCreate} onNotebookCreateClick={goToNotebookCreate} />
+			</div>
+			<main className="relative z-10 flex-1 overflow-hidden">{renderContent()}</main>
 
 			{/* メモパレット */}
 			<MemoPalette isOpen={paletteOpen} onClose={closeMemoPalette} initialMode={paletteMode} />
+
+			{/* 表示モードオーバーレイ */}
+			<FocusMemoOverlay />
 		</div>
 	);
 };

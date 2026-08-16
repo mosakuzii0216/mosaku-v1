@@ -10,7 +10,4 @@ import { AuthGuard } from '@nestjs/passport';
 export class GoogleAuthGuard extends AuthGuard('google') {}
 
 @Injectable()
-export class GitHubAuthGuard extends AuthGuard('github') {}
-
-@Injectable()
-export class XAuthGuard extends AuthGuard('x') {}
+export class AppleAuthGuard extends AuthGuard('apple') {}

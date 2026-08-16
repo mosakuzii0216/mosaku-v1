@@ -1,4 +1,17 @@
-export type OAuthProvider = 'google' | 'github' | 'x';
+import type { OAUTH_START_PROVIDERS } from '../dto/oauth-start.dto';
+
+/** 有効プロバイダ集合の単一真実源（`OAUTH_START_PROVIDERS`）から導出。 */
+export type OAuthProvider = (typeof OAUTH_START_PROVIDERS)[number];
+
+export interface GoogleProfile {
+	id: string;
+	name?: {
+		givenName?: string;
+		familyName?: string;
+	};
+	emails?: Array<{ value: string }>;
+	photos?: Array<{ value: string }>;
+}
 
 export interface BaseOAuthUser {
 	id: string;
@@ -12,18 +25,7 @@ export interface GoogleOAuthUser extends BaseOAuthUser {
 	googleId: string;
 }
 
-export interface GitHubOAuthUser extends BaseOAuthUser {
-	provider: 'github';
-	githubId: string;
-}
-
-export interface XOAuthUser extends BaseOAuthUser {
-	provider: 'x';
-	xId: string;
-	username?: string;
-}
-
-export type OAuthUser = GoogleOAuthUser | GitHubOAuthUser | XOAuthUser;
+export type OAuthUser = GoogleOAuthUser;
 
 export interface GoogleStrategyUser {
 	googleId: string;
@@ -36,27 +38,23 @@ export interface GoogleStrategyUser {
 	refreshToken?: string;
 }
 
-export interface GitHubStrategyUser {
-	githubId: string;
-	email?: string;
+export interface AppleStrategyUser {
+	appleId: string;
 	name: string;
-	username?: string;
-	picture?: string;
+	email?: string;
 	accessToken?: string;
-	refreshToken?: string;
 }
 
 export interface XStrategyUser {
 	xId: string;
-	email?: string;
 	name: string;
 	username?: string;
+	email?: string;
 	picture?: string;
 	accessToken?: string;
-	tokenSecret?: string;
 }
 
-export type OAuthStrategyUser = GoogleStrategyUser | GitHubStrategyUser | XStrategyUser;
+export type OAuthStrategyUser = GoogleStrategyUser | AppleStrategyUser | XStrategyUser;
 
 export interface OAuthConfig {
 	getProviderId: (user: OAuthStrategyUser) => string;

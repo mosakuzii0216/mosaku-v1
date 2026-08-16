@@ -46,12 +46,8 @@ export const useAuth = (): AuthState & AuthActions => {
 	};
 
 	const login = async (email: string, password: string): Promise<void> => {
-		try {
-			const response = await AuthAPI.login(email, password);
-			setUser(response.user);
-		} catch (error) {
-			throw error;
-		}
+		const response = await AuthAPI.login(email, password);
+		setUser(response.user);
 	};
 
 	const register = async (
@@ -60,12 +56,7 @@ export const useAuth = (): AuthState & AuthActions => {
 		name?: string,
 		invitationCode?: string,
 	): Promise<void> => {
-		try {
-			await AuthAPI.register(email, password, name, invitationCode);
-			// Registration successful, but user needs to login
-		} catch (error) {
-			throw error;
-		}
+		await AuthAPI.register(email, password, name, invitationCode);
 	};
 
 	const logout = async (): Promise<void> => {
@@ -82,19 +73,11 @@ export const useAuth = (): AuthState & AuthActions => {
 	};
 
 	const resetPassword = async (email: string): Promise<void> => {
-		try {
-			await AuthAPI.resetPassword(email);
-		} catch (error) {
-			throw error;
-		}
+		await AuthAPI.resetPassword(email);
 	};
 
 	const changePassword = async (currentPassword: string, newPassword: string): Promise<void> => {
-		try {
-			await AuthAPI.changePassword(currentPassword, newPassword);
-		} catch (error) {
-			throw error;
-		}
+		await AuthAPI.changePassword(currentPassword, newPassword);
 	};
 
 	const refreshUser = async (): Promise<void> => {

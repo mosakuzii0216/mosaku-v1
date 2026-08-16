@@ -1,0 +1,116 @@
+/*
+ * コードブロック構文ハイライト用 CSS。
+ *
+ * lowlight（highlight.js）が生成する `.hljs-*` トークンクラスへ配色を当てる。
+ * 既存テーマ CSS（frontend/public/themes/）と衝突しないよう、セレクタは
+ * エディタ（.rich-text-editor）と公開表示（.public-memo-renderer）の
+ * スコープ配下にのみ限定する。グローバルへは一切漏らさない。
+ */
+
+.rich-text-editor pre,
+.public-memo-renderer pre {
+	background: #f6f8fa;
+	color: #24292e;
+	border-radius: 6px;
+	padding: 0.75rem 1rem;
+	overflow-x: auto;
+}
+
+.rich-text-editor pre code,
+.public-memo-renderer pre code {
+	background: none;
+	color: inherit;
+	padding: 0;
+	font-size: 0.875em;
+	font-family:
+		ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+/* highlight.js トークン配色（GitHub Light 系・エディタスコープ限定） */
+.rich-text-editor .hljs-comment,
+.rich-text-editor .hljs-quote,
+.public-memo-renderer .hljs-comment,
+.public-memo-renderer .hljs-quote {
+	color: #6a737d;
+	font-style: italic;
+}
+
+.rich-text-editor .hljs-keyword,
+.rich-text-editor .hljs-selector-tag,
+.rich-text-editor .hljs-literal,
+.rich-text-editor .hljs-type,
+.public-memo-renderer .hljs-keyword,
+.public-memo-renderer .hljs-selector-tag,
+.public-memo-renderer .hljs-literal,
+.public-memo-renderer .hljs-type {
+	color: #d73a49;
+}
+
+.rich-text-editor .hljs-string,
+.rich-text-editor .hljs-meta-string,
+.rich-text-editor .hljs-regexp,
+.public-memo-renderer .hljs-string,
+.public-memo-renderer .hljs-meta-string,
+.public-memo-renderer .hljs-regexp {
+	color: #032f62;
+}
+
+.rich-text-editor .hljs-number,
+.rich-text-editor .hljs-symbol,
+.rich-text-editor .hljs-bullet,
+.public-memo-renderer .hljs-number,
+.public-memo-renderer .hljs-symbol,
+.public-memo-renderer .hljs-bullet {
+	color: #005cc5;
+}
+
+.rich-text-editor .hljs-title,
+.rich-text-editor .hljs-section,
+.rich-text-editor .hljs-function .hljs-title,
+.public-memo-renderer .hljs-title,
+.public-memo-renderer .hljs-section,
+.public-memo-renderer .hljs-function .hljs-title {
+	color: #6f42c1;
+}
+
+.rich-text-editor .hljs-attr,
+.rich-text-editor .hljs-attribute,
+.rich-text-editor .hljs-variable,
+.rich-text-editor .hljs-template-variable,
+.public-memo-renderer .hljs-attr,
+.public-memo-renderer .hljs-attribute,
+.public-memo-renderer .hljs-variable,
+.public-memo-renderer .hljs-template-variable {
+	color: #e36209;
+}
+
+.rich-text-editor .hljs-built_in,
+.rich-text-editor .hljs-builtin-name,
+.rich-text-editor .hljs-class .hljs-title,
+.public-memo-renderer .hljs-built_in,
+.public-memo-renderer .hljs-builtin-name,
+.public-memo-renderer .hljs-class .hljs-title {
+	color: #e36209;
+}
+
+.rich-text-editor .hljs-addition,
+.public-memo-renderer .hljs-addition {
+	color: #22863a;
+	background-color: #f0fff4;
+}
+
+.rich-text-editor .hljs-deletion,
+.public-memo-renderer .hljs-deletion {
+	color: #b31d28;
+	background-color: #ffeef0;
+}
+
+.rich-text-editor .hljs-emphasis,
+.public-memo-renderer .hljs-emphasis {
+	font-style: italic;
+}
+
+.rich-text-editor .hljs-strong,
+.public-memo-renderer .hljs-strong {
+	font-weight: 600;
+}
