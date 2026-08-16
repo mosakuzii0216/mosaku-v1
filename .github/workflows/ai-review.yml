@@ -51,6 +51,11 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # GitHub 側の認証を明示的に渡す。省略すると Claude GitHub App の
+          # インストールトークンへ交換しようとし、App 未インストールだと
+          # 401「Claude Code is not installed on this repository」で落ちる。
+          # Actions 標準トークンで PR コメントは投稿できるため App 依存を外す。
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
