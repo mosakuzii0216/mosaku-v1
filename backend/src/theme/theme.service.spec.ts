@@ -351,9 +351,12 @@ describe('ThemeService', () => {
 
 	describe('getUserFavorites()', () => {
 		it('should map favorites to themes with isFavorited/favoriteCount/usageCount', async () => {
-			const favorite = {
-				theme: mockTheme({ _count: { userFavorites: 4, notebooks: 1 } }),
-			};
+			// getUserFavorites() の実クエリは theme.userFavorites を include しないため、
+			// mockTheme() のデフォルト userFavorites を落として実際のレスポンス形に合わせる
+			const { userFavorites: _unused, ...themeWithoutFavorites } = mockTheme({
+				_count: { userFavorites: 4, notebooks: 1 },
+			});
+			const favorite = { theme: themeWithoutFavorites };
 			mockPrismaService.userFavoriteTheme.findMany.mockResolvedValue([favorite]);
 
 			const result = await service.getUserFavorites('user-1');
