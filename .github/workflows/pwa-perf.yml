@@ -14,8 +14,12 @@
 #     電車内シナリオ / PWA インストールフローを検証
 #
 # トリガー:
-#   - frontend/ / backend/ / .github/workflows/pwa-perf.yml 配下の変更
+#   - すべての Pull Request（実行要否は changes ジョブが判定する）
 #   - main への push（リリース確認）
+#
+# `paths:` を使わない理由は scripts/detect-changed-areas.sh のヘッダを参照。
+# 要約: paths: だと workflow ごと発火せず、必須ステータスチェックが永久に
+# pending になりマージ不能になる。job の if: なら skipped として報告される。
 #
 # =============================================================================
 
@@ -23,19 +27,44 @@ name: PWA Offline Perf & E2E
 
 on:
   pull_request:
-    paths:
-      - 'frontend/**'
-      - 'backend/**'
-      - '.github/workflows/pwa-perf.yml'
   push:
     branches: [main]
 
 jobs:
   # ===========================================================================
+  # Job 0: 変更範囲の判定
+  # ===========================================================================
+  changes:
+    name: 変更範囲の判定（pwa）
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.detect.outputs.backend }}
+      frontend: ${{ steps.detect.outputs.frontend }}
+      workflows: ${{ steps.detect.outputs.workflows }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/detect-changed-areas.sh
+          sparse-checkout-cone-mode: false
+
+      - name: 変更エリアを判定
+        id: detect
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: bash scripts/detect-changed-areas.sh
+
+  # ===========================================================================
   # Job 1: パフォーマンス計測（バックエンド不要）
   # ===========================================================================
   perf:
     name: PWA performance benches
+    needs: changes
+    if: >-
+      needs.changes.outputs.frontend == 'true' ||
+      needs.changes.outputs.backend == 'true' ||
+      needs.changes.outputs.workflows == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -80,6 +109,11 @@ jobs:
   # ===========================================================================
   e2e:
     name: PWA E2E (train-scenario + pwa-install)
+    needs: changes
+    if: >-
+      needs.changes.outputs.frontend == 'true' ||
+      needs.changes.outputs.backend == 'true' ||
+      needs.changes.outputs.workflows == 'true'
     runs-on: ubuntu-latest
 
     services:
