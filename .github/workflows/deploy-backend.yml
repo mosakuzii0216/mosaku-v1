@@ -75,7 +75,7 @@ jobs:
       # package-lock.json をキーにして依存関係をキャッシュ
       # 2回目以降のビルドが高速化される
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: 'npm'
@@ -138,7 +138,7 @@ jobs:
           ref: ${{ github.event.inputs.ref || 'main' }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: 'npm'
