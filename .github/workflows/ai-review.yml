@@ -1,0 +1,132 @@
+# =============================================================================
+# AI コードレビュー ワークフロー
+# =============================================================================
+#
+# 概要:
+#   Pull Request を Claude がレビューし、指摘を PR にコメントする。
+#   さらに構造化された判定（verdict）を取り出し、必須ステータスチェックとして
+#   マージをブロックできる形にする。
+#
+# なぜ独立した workflow か:
+#   週次品質監査（.claude/skills/weekly-quality-audit）は無人でコードを変更し
+#   PR を作る。その PR を**同じエージェント**が採点してもレビューにならないため、
+#   別セッションの Claude が CI 上で独立に判定する。
+#
+# ブロックの方針:
+#   - verdict が request_changes のときだけ落とす（＝マージを止める）
+#   - API エラー等のインフラ起因の失敗ではブロックしない。レビューが動かない
+#     ことを理由に全 PR が止まる方が害が大きいため、warning を出して通す
+#
+# =============================================================================
+
+name: AI Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# 同一 PR で連続 push されたとき、古いレビューは打ち切る
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: AI review
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Claude によるレビュー
+        id: claude
+        continue-on-error: true
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            この Pull Request をレビューしてください。PR ブランチは既にカレント
+            ディレクトリにチェックアウト済みです。
+
+            ## このリポジトリで特に見るべき観点
+
+            CLAUDE.md に定義されたアーキテクチャの不変則に違反していないか:
+            - サーバー状態の真実の源泉は React Query。Zustand へのデータコピー禁止
+            - API コールは apiClient 経由（utils/api.ts）。直接 fetch 禁止
+            - 所有権チェックは AuthorizationService.validateOwnership() で一元化
+            - 認証はグローバル JWT Guard + @Public() オプトアウト
+            - テーマは CSS ファイル管理。DB にはメタデータのみ
+            - ゴミ箱は Soft Delete + cron 物理削除
+
+            加えて一般的な観点:
+            - 正しさ（境界値・null/undefined・エラー処理・競合状態）
+            - セキュリティ（認可漏れ・秘密の混入・インジェクション）
+            - テストが変更内容を実際に守れているか
+
+            ## 判定の基準
+
+            **request_changes は「マージするとリスクがある」ときだけ**にしてください。
+            好みの問題・些細な命名・「あればより良い」提案では止めないこと。
+            このリポジトリでは判定がマージのゲートになるため、過剰に止めると
+            自律的な運用が回らなくなります。迷ったら approve にして、懸念は
+            コメントとして残してください。
+
+            ## やること
+
+            1. 指摘は `gh pr comment` でまとめて 1 件投稿する
+            2. 特定行への指摘は mcp__github_inline_comment__create_inline_comment
+               （confirmed: true）を使う
+            3. 最後に判定を構造化出力として返す
+
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Grep,Glob"
+            --json-schema '{"type":"object","required":["verdict","summary","blocking_issues"],"properties":{"verdict":{"type":"string","enum":["approve","request_changes"]},"summary":{"type":"string","description":"判定理由を1〜2文で"},"blocking_issues":{"type":"array","items":{"type":"string"},"description":"マージを止めるべき問題。approve のときは空配列"}}}'
+
+      # -----------------------------------------------------------------------
+      # 判定をチェックの合否へ変換する
+      # -----------------------------------------------------------------------
+      # レビュー本体が失敗した場合（API エラー等）は構造化出力が無い。
+      # その場合はブロックせず warning に留める（方針は冒頭のコメント参照）。
+      - name: 判定を評価
+        env:
+          REVIEW_OUTCOME: ${{ steps.claude.outcome }}
+          STRUCTURED: ${{ steps.claude.outputs.structured_output }}
+        run: |
+          if [ "$REVIEW_OUTCOME" != "success" ] || [ -z "$STRUCTURED" ]; then
+            echo "::warning::AI レビューを実行できませんでした（outcome=$REVIEW_OUTCOME）。マージはブロックしません。"
+            exit 0
+          fi
+
+          verdict=$(printf '%s' "$STRUCTURED" | jq -r '.verdict // "unknown"')
+          summary=$(printf '%s' "$STRUCTURED" | jq -r '.summary // ""')
+
+          echo "### AI レビュー判定: \`$verdict\`" >>"$GITHUB_STEP_SUMMARY"
+          echo "" >>"$GITHUB_STEP_SUMMARY"
+          echo "$summary" >>"$GITHUB_STEP_SUMMARY"
+
+          if [ "$verdict" = "request_changes" ]; then
+            echo "" >>"$GITHUB_STEP_SUMMARY"
+            echo "#### マージを止める理由" >>"$GITHUB_STEP_SUMMARY"
+            printf '%s' "$STRUCTURED" | jq -r '.blocking_issues[]? | "- \(.)"' >>"$GITHUB_STEP_SUMMARY"
+
+            echo "AI レビューが変更を要求しています:"
+            printf '%s' "$STRUCTURED" | jq -r '.blocking_issues[]? | "  - \(.)"'
+            exit 1
+          fi
+
+          if [ "$verdict" != "approve" ]; then
+            echo "::warning::想定外の verdict（$verdict）のためブロックしません"
+            exit 0
+          fi
+
+          echo "AI レビュー: 指摘なし"
