@@ -1,4 +1,5 @@
 import { IsString, IsNotEmpty, MaxLength, IsOptional } from 'class-validator';
+import { IsProseMirrorDoc, type ProseMirrorDoc } from '../../common/utils/prosemirror-types';
 
 export class CreateMemoDto {
 	@IsString()
@@ -6,10 +7,10 @@ export class CreateMemoDto {
 	@MaxLength(100)
 	title: string;
 
-	@IsString()
-	content: string;
+	@IsProseMirrorDoc()
+	content: ProseMirrorDoc;
 
 	@IsString()
 	@IsOptional()
-	notebookId?: string; // ノートブックID（オプショナル、未指定はInbox）
+	notebookId?: string;
 }

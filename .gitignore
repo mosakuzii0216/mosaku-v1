@@ -128,3 +128,14 @@ temp/
 
 # Private documentation
 docs/private/
+
+# Claude Code local settings (machine-specific)
+.claude/settings.local.json
+.claude/prompt-log.jsonl
+.claude/scheduled_tasks.lock
+
+# Playwright / E2E test artifacts
+test-results/
+backend/test-results/
+frontend/test-results/
+.env*

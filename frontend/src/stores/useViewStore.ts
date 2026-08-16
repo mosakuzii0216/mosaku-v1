@@ -11,6 +11,7 @@ interface ViewState {
 	searchQuery: string;
 	isLoading: boolean;
 	notebookFilter: 'ALL' | 'INBOX' | string;
+	isDisplayMode: boolean;
 
 	// Actions
 	setIsMobile: (isMobile: boolean) => void;
@@ -20,26 +21,31 @@ interface ViewState {
 	setSearchQuery: (query: string) => void;
 	setIsLoading: (isLoading: boolean) => void;
 	setNotebookFilter: (filter: 'ALL' | 'INBOX' | string) => void;
+	openDisplayMode: () => void;
+	closeDisplayMode: () => void;
 
 	// Navigation helpers
-	goToList: () => void;
+	goToHome: () => void;
+	goToMemoList: () => void;
 	goToMemoCreate: () => void;
 	goToNotebookCreate: () => void;
 	goToNotebookList: () => void;
 	goToMemosForNotebook: (filter: 'ALL' | 'INBOX' | string) => void;
 	goToTags: () => void;
+	goToTrash: () => void;
 	logCurrent: () => void;
 }
 
 export const useViewStore = create<ViewState>((set, get) => ({
 	// 初期状態
 	isMobile: false,
-	currentObject: 'memo',
-	currentView: 'create',
+	currentObject: 'home',
+	currentView: 'list',
 	isEditing: false,
 	searchQuery: '',
 	isLoading: false,
 	notebookFilter: 'ALL',
+	isDisplayMode: false,
 
 	// Actions
 	setIsMobile: (isMobile) => set({ isMobile }),
@@ -49,9 +55,18 @@ export const useViewStore = create<ViewState>((set, get) => ({
 	setSearchQuery: (query) => set({ searchQuery: query }),
 	setIsLoading: (isLoading) => set({ isLoading }),
 	setNotebookFilter: (filter) => set({ notebookFilter: filter }),
+	openDisplayMode: () => set({ isDisplayMode: true }),
+	closeDisplayMode: () => set({ isDisplayMode: false }),
 
 	// Navigation helpers
-	goToList: () =>
+	goToHome: () =>
+		set({
+			currentObject: 'home',
+			currentView: 'list',
+			isEditing: false,
+		}),
+
+	goToMemoList: () =>
 		set({
 			currentObject: 'memo',
 			currentView: 'list',
@@ -91,6 +106,13 @@ export const useViewStore = create<ViewState>((set, get) => ({
 		set({
 			currentObject: 'tag',
 			currentView: 'list',
+			isEditing: false,
+		}),
+
+	goToTrash: () =>
+		set({
+			currentObject: 'memo',
+			currentView: 'trash',
 			isEditing: false,
 		}),
 

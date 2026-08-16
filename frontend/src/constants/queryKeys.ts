@@ -8,7 +8,6 @@
 import type { ThemeSearchParams } from '../types/theme';
 
 export const queryKeys = {
-	// メモ関連
 	memos: {
 		all: ['memos'] as const,
 		lists: () => [...queryKeys.memos.all, 'list'] as const,
@@ -18,23 +17,23 @@ export const queryKeys = {
 		searches: () => [...queryKeys.memos.all, 'search'] as const,
 		search: (query: string, tagIds?: string[]) =>
 			[...queryKeys.memos.searches(), query, { tagIds }] as const,
+		trash: () => [...queryKeys.memos.all, 'trash'] as const,
+		publicMine: () => [...queryKeys.memos.all, 'public', 'mine'] as const,
+		publicView: (token: string) => [...queryKeys.memos.all, 'public', 'view', token] as const,
 	},
 
-	// ノートブック関連
 	notebooks: {
 		all: ['notebooks'] as const,
 		details: () => [...queryKeys.notebooks.all, 'detail'] as const,
 		detail: (id: string) => [...queryKeys.notebooks.details(), id] as const,
 	},
 
-	// タグ関連
 	tags: {
 		all: ['tags'] as const,
 		searches: () => [...queryKeys.tags.all, 'search'] as const,
 		search: (query: string) => [...queryKeys.tags.searches(), query] as const,
 	},
 
-	// テーマ関連
 	themes: {
 		all: ['themes'] as const,
 		lists: () => [...queryKeys.themes.all, 'list'] as const,
@@ -45,5 +44,21 @@ export const queryKeys = {
 		public: () => [...queryKeys.themes.all, 'public'] as const,
 		category: (category: string) => [...queryKeys.themes.all, 'category', category] as const,
 		favorites: () => [...queryKeys.themes.all, 'favorites'] as const,
+	},
+
+	invitations: {
+		all: ['invitations'] as const,
+		context: (code: string) => [...queryKeys.invitations.all, 'context', code] as const,
+		myList: () => [...queryKeys.invitations.all, 'me', 'list'] as const,
+		myQuota: () => [...queryKeys.invitations.all, 'me', 'quota'] as const,
+	},
+
+	dashboard: {
+		all: ['dashboard'] as const,
+		recentMemos: () => [...queryKeys.dashboard.all, 'recent-memos'] as const,
+		weeklyCount: () => [...queryKeys.dashboard.all, 'weekly-count'] as const,
+		activityDates: (from: string, to: string) =>
+			[...queryKeys.dashboard.all, 'activity-dates', { from, to }] as const,
+		notebooks: () => [...queryKeys.dashboard.all, 'notebooks'] as const,
 	},
 } as const;

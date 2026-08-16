@@ -1,0 +1,185 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import type { CookieOptions, Response } from 'express';
+import { RefreshCookieHelper } from './refresh-cookie.helper';
+import { ConfigService, type RefreshCookieOptions } from '../config/config.service';
+import { REFRESH_COOKIE_NAME } from '../config/auth-constants';
+
+type CookieMock = jest.Mock<void, [string, string, CookieOptions]>;
+type ClearCookieMock = jest.Mock<void, [string, CookieOptions]>;
+
+describe('RefreshCookieHelper', () => {
+	let helper: RefreshCookieHelper;
+
+	const buildRes = (): Pick<Response, 'cookie' | 'clearCookie'> => ({
+		cookie: jest.fn(),
+		clearCookie: jest.fn(),
+	});
+
+	const buildHelperWith = async (options: RefreshCookieOptions): Promise<RefreshCookieHelper> => {
+		const module: TestingModule = await Test.createTestingModule({
+			providers: [
+				RefreshCookieHelper,
+				{ provide: ConfigService, useValue: { refreshCookieOptions: options } },
+			],
+		}).compile();
+		return module.get(RefreshCookieHelper);
+	};
+
+	describe('setRefreshCookie', () => {
+		it('Production の Lax/Secure で正しい Cookie 属性を組み立てる', async () => {
+			helper = await buildHelperWith({
+				sameSite: 'lax',
+				secure: true,
+				path: '/auth',
+				domain: '.mosaku.jp',
+			});
+			const res = buildRes();
+			const expiresAt = new Date('2030-01-01T00:00:00.000Z');
+
+			helper.setRefreshCookie(res as Response, 'plain-rt-string', expiresAt);
+
+			expect(res.cookie).toHaveBeenCalledTimes(1);
+			expect(res.cookie).toHaveBeenCalledWith(
+				REFRESH_COOKIE_NAME,
+				'plain-rt-string',
+				expect.objectContaining({
+					httpOnly: true,
+					secure: true,
+					sameSite: 'lax',
+					path: '/auth',
+					domain: '.mosaku.jp',
+					expires: expiresAt,
+				}),
+			);
+		});
+
+		it('domain 未指定なら domain は付与しない', async () => {
+			helper = await buildHelperWith({
+				sameSite: 'lax',
+				secure: false,
+				path: '/auth',
+			});
+			const res = buildRes();
+
+			helper.setRefreshCookie(res as Response, 'plain', new Date('2030-01-01T00:00:00.000Z'));
+
+			const callArg = (res.cookie as unknown as CookieMock).mock.calls[0][2];
+			expect(callArg.domain).toBeUndefined();
+		});
+
+		it('SameSite=none かつ secure=true を env で切替可能', async () => {
+			helper = await buildHelperWith({
+				sameSite: 'none',
+				secure: true,
+				path: '/auth',
+				domain: undefined,
+			});
+			const res = buildRes();
+
+			helper.setRefreshCookie(res as Response, 'plain', new Date('2030-01-01T00:00:00.000Z'));
+
+			const callArg = (res.cookie as unknown as CookieMock).mock.calls[0][2];
+			expect(callArg.sameSite).toBe('none');
+			expect(callArg.secure).toBe(true);
+		});
+
+		it('plain Refresh Token は引数として渡るが他には漏れない（HttpOnly 必須）', async () => {
+			helper = await buildHelperWith({
+				sameSite: 'lax',
+				secure: false,
+				path: '/auth',
+			});
+			const res = buildRes();
+
+			helper.setRefreshCookie(
+				res as Response,
+				'sensitive-rt',
+				new Date('2030-01-01T00:00:00.000Z'),
+			);
+
+			const callArg = (res.cookie as unknown as CookieMock).mock.calls[0][2];
+			expect(callArg.httpOnly).toBe(true);
+		});
+	});
+
+	describe('clearRefreshCookie', () => {
+		it('Cookie を Max-Age=0 で削除指示する', async () => {
+			helper = await buildHelperWith({
+				sameSite: 'lax',
+				secure: true,
+				path: '/auth',
+				domain: '.mosaku.jp',
+			});
+			const res = buildRes();
+
+			helper.clearRefreshCookie(res as Response);
+
+			// domain 指定時は host-only 旧 Cookie の駆逐 + 本体削除の 2 回呼ばれる
+			expect(res.clearCookie).toHaveBeenCalledTimes(2);
+			expect(res.clearCookie).toHaveBeenCalledWith(
+				REFRESH_COOKIE_NAME,
+				expect.objectContaining({
+					path: '/auth',
+					domain: '.mosaku.jp',
+					sameSite: 'lax',
+					secure: true,
+					httpOnly: true,
+				}),
+			);
+		});
+
+		it('domain 未指定なら clearCookie でも domain を付けない（host-only 駆逐もしない）', async () => {
+			helper = await buildHelperWith({
+				sameSite: 'lax',
+				secure: false,
+				path: '/auth',
+			});
+			const res = buildRes();
+
+			helper.clearRefreshCookie(res as Response);
+
+			// domain 未指定（ローカル開発等）では現行 Cookie 自体が host-only なので駆逐は行わず 1 回のみ
+			expect(res.clearCookie).toHaveBeenCalledTimes(1);
+			const callArg = (res.clearCookie as unknown as ClearCookieMock).mock.calls[0][1];
+			expect(callArg.domain).toBeUndefined();
+		});
+	});
+
+	describe('host-only 旧 Cookie の駆逐', () => {
+		it('domain 指定時の setRefreshCookie は host-only 変種を expire させる', async () => {
+			helper = await buildHelperWith({
+				sameSite: 'none',
+				secure: true,
+				path: '/auth',
+				domain: '.mosaku.jp',
+			});
+			const res = buildRes();
+
+			helper.setRefreshCookie(res as Response, 'plain', new Date('2030-01-01T00:00:00.000Z'));
+
+			// 本体の発行は cookie() で 1 回
+			expect(res.cookie).toHaveBeenCalledTimes(1);
+			// host-only（domain 無し）の駆逐 clearCookie が 1 回
+			expect(res.clearCookie).toHaveBeenCalledTimes(1);
+			const evictArg = (res.clearCookie as unknown as ClearCookieMock).mock.calls[0][1];
+			expect(evictArg.domain).toBeUndefined();
+			expect(evictArg.path).toBe('/auth');
+			expect(evictArg.sameSite).toBe('none');
+			expect(evictArg.secure).toBe(true);
+			expect(evictArg.httpOnly).toBe(true);
+		});
+
+		it('domain 未指定の setRefreshCookie は host-only 駆逐をしない', async () => {
+			helper = await buildHelperWith({
+				sameSite: 'lax',
+				secure: false,
+				path: '/auth',
+			});
+			const res = buildRes();
+
+			helper.setRefreshCookie(res as Response, 'plain', new Date('2030-01-01T00:00:00.000Z'));
+
+			expect(res.clearCookie).not.toHaveBeenCalled();
+		});
+	});
+});

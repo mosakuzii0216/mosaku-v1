@@ -8,6 +8,50 @@
 		<meta name="description" content="" />
 		<meta name="theme-color" content="#ffffff" />
 		<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+		<!--
+			Shell theme boot（FOUC 回避 / theme-immersive-world Task 3.3）。
+			first paint 前に永続テーマ（localStorage）を同期適用し、白フラッシュを消す
+			render-blocking な classic script（依存ゼロ・例外安全）。
+			CSP: フロントは Vercel 配信で CSP ヘッダー無し（helmet の CSP は backend のみ）→ インライン許容。
+			値は src/themes/shell/shellThemeCritical.ts の CRITICAL_THEME_VARS と一致させること
+			（drift は shellThemeBoot.test.ts が機械検出する）。
+		-->
+		<script>
+			(function () {
+				try {
+					var raw = localStorage.getItem('mosaku.shell-theme');
+					if (!raw) return;
+					var sel = JSON.parse(raw);
+					var slug = sel && sel.slug;
+					var SLUGS = { mori: 1, umi: 1, yoru: 1, asa: 1 };
+					if (!slug || !SLUGS[slug]) return;
+					var el = document.documentElement;
+					el.setAttribute('data-theme', slug);
+					// critical コア変数（surface / on-surface / 地色）のみ。accent/outline/elevation は
+					// Layer①（バンドル CSS）が first paint で供給する＝半テーマ窓を作らない。
+					var VARS = {
+						mori: {
+							'--surface': 'rgba(6, 38, 22, 0.74)',
+							'--on-surface': '#e8f6ee',
+							'--shell-base-bg': '#062616',
+						},
+					};
+					var vars = VARS[slug];
+					if (!vars) return;
+					for (var k in vars) {
+						if (Object.prototype.hasOwnProperty.call(vars, k)) {
+							el.style.setProperty(k, vars[k]);
+						}
+					}
+					// belt-and-suspenders: <html> 地色を最初のフレームで実際に塗る
+					if (vars['--shell-base-bg']) {
+						el.style.backgroundColor = vars['--shell-base-bg'];
+					}
+				} catch (e) {
+					/* localStorage 不可・破損 → 中立既定（白）にフォールバック */
+				}
+			})();
+		</script>
 	</head>
 	<body>
 		<div id="root"></div>

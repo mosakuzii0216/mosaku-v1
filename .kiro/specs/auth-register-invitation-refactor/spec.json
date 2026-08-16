@@ -1,0 +1,22 @@
+{
+	"feature_name": "auth-register-invitation-refactor",
+	"created_at": "2026-04-13T00:00:00Z",
+	"updated_at": "2026-04-13T11:00:00Z",
+	"language": "ja",
+	"phase": "implementation-validated",
+	"approvals": {
+		"requirements": {
+			"generated": true,
+			"approved": true
+		},
+		"design": {
+			"generated": true,
+			"approved": true
+		},
+		"tasks": {
+			"generated": true,
+			"approved": true
+		}
+	},
+	"ready_for_implementation": true
+}

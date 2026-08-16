@@ -32,26 +32,6 @@ export const FEATURES = {
 	PASSWORD_RESET_EMAIL: getFeatureFlag(process.env.FEATURE_PASSWORD_RESET_EMAIL, false),
 
 	/**
-	 * X (Twitter) OAuth認証
-	 * - true: X OAuth有効
-	 * - false: X OAuth無効（コメントアウト中）
-	 *
-	 * 環境変数: FEATURE_OAUTH_X
-	 * デフォルト: false（現在無効）
-	 */
-	OAUTH_X: getFeatureFlag(process.env.FEATURE_OAUTH_X, false),
-
-	/**
-	 * プレミアム機能
-	 * - true: プレミアム機能有効
-	 * - false: プレミアム機能無効
-	 *
-	 * 環境変数: FEATURE_PREMIUM
-	 * デフォルト: false
-	 */
-	PREMIUM_FEATURES: getFeatureFlag(process.env.FEATURE_PREMIUM, false),
-
-	/**
 	 * ページネーションAPI
 	 * - true: ページネーション対応エンドポイント有効
 	 * - false: 従来の全件取得のみ
@@ -60,16 +40,6 @@ export const FEATURES = {
 	 * デフォルト: true（実装済み）
 	 */
 	PAGINATION: getFeatureFlag(process.env.FEATURE_PAGINATION, true),
-
-	/**
-	 * レガシーSyncエンドポイント
-	 * - true: 後方互換性のためのエンドポイント有効
-	 * - false: レガシーエンドポイント無効
-	 *
-	 * 環境変数: FEATURE_LEGACY_SYNC
-	 * デフォルト: true（移行期間中は有効）
-	 */
-	LEGACY_SYNC_ENDPOINTS: getFeatureFlag(process.env.FEATURE_LEGACY_SYNC, true),
 
 	/**
 	 * 詳細ログ出力
@@ -83,6 +53,16 @@ export const FEATURES = {
 		process.env.FEATURE_VERBOSE_LOGGING,
 		process.env.NODE_ENV !== 'production',
 	),
+
+	/**
+	 * MCP（Model Context Protocol）エンドポイント
+	 * - true: `/mcp` および OAuth 認可サーバー入口を有効化
+	 * - false: MCP 入口を完全に無効化（既存機能には無影響）
+	 *
+	 * 環境変数: FEATURE_MCP_ENDPOINT
+	 * デフォルト: false（段階公開のため既定で off。flag off で本番デプロイ可能）
+	 */
+	MCP_ENDPOINT: getFeatureFlag(process.env.FEATURE_MCP_ENDPOINT, false),
 } as const;
 
 /**

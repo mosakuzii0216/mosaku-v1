@@ -1,3 +1,5 @@
+import './instrument';
+import type { Express } from 'express';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
@@ -9,7 +11,8 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import * as session from 'express-session';
+import cookieSession from 'cookie-session';
+import cookieParser from 'cookie-parser';
 import { ConfigService } from './config/config.service';
 import helmet from 'helmet';
 import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.filter';
@@ -33,18 +36,23 @@ async function bootstrap() {
 		}),
 	);
 
-	// Session設定（X OAuth用）
+	// Refresh Token Cookie の読み取りに必要（HttpOnly Cookie 経由で配送）
+	app.use(cookieParser());
+
+	// MCP 認可フロー専用 session（cookie-session）。
+	// OAuth ログイン（Google/Apple/X）は stateless HMAC 署名 state で完結し、
+	// session には依存しない。session が必要なのは MCP authorize の mcpUserId 注入のみ。
+	// 適用順序は helmet → cookie-parser → cookie-session → CORS を維持する。
+	const sessionCookie = configService.sessionCookieOptions;
 	app.use(
-		session({
-			secret: configService.sessionSecret,
-			resave: false,
-			saveUninitialized: false,
-			cookie: {
-				secure: configService.isProduction, // 本番環境ではHTTPS必須
-				httpOnly: true, // XSS対策
-				sameSite: 'lax', // CSRF対策
-				maxAge: 1000 * 60 * 60, // 1時間
-			},
+		cookieSession({
+			name: 'mosaku.sid',
+			// 全インスタンス完全同一の単一署名鍵が多インスタンス耐性の前提（ConfigService.sessionSecret 参照）。
+			keys: [configService.sessionSecret],
+			secure: sessionCookie.secure,
+			httpOnly: sessionCookie.httpOnly,
+			sameSite: sessionCookie.sameSite,
+			maxAge: sessionCookie.maxAge,
 		}),
 	);
 
@@ -66,6 +74,9 @@ async function bootstrap() {
 
 	// レート制限エラーのカスタムフィルター
 	app.useGlobalFilters(new ThrottlerExceptionFilter());
+
+	// リバースプロキシ（GCLB / Cloud Run）配下で正しい接続元 IP を解決する
+	(app.getHttpAdapter().getInstance() as Express).set('trust proxy', 1);
 
 	await app.listen(configService.port);
 }

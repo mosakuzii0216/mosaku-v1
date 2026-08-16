@@ -1,0 +1,303 @@
+/* yoru: 墨のような静寂の夜。和・ミニマル・内省のテーマ（mori と同系統の世界観）
+   冒険の局面＝「立ち止まり星を読む・内省」／道標モチーフ＝北極星（控えめに）
+   設計思想：引き算。星は最小限、余白を主役にする。 */
+
+/* 1. ルートトークンとベーススタイル */
+.theme-root {
+	/* カラー（ほぼ黒の藍墨＋青白い月光、差し色は冷たい星白） */
+	--theme-bg: linear-gradient(180deg, #05080f, #0a121e, #0d1b2a, #0a121e, #05080f);
+	--theme-text-color: #c8d6e5;
+	--theme-heading-color: #e8eef5;
+	--theme-accent-color: #cfe0ff;
+	--theme-border-color: rgba(207, 224, 255, 0.16);
+
+	/* タイポグラフィ（tsuki 由来の明朝＝ブランド共通の署名） */
+	--theme-font-family:
+		'游明朝', 'Yu Mincho', 'YuMincho', 'ヒラギノ明朝 ProN', 'Hiragino Mincho ProN', Georgia, serif;
+	--theme-font-size: 16px;
+	--theme-line-height: 2;
+
+	/* レイアウト（余白を主役に：padding はやや広めに） */
+	--theme-padding: 2.5rem;
+	--theme-margin: 1rem;
+	--theme-border-radius: 0.5rem;
+
+	position: relative;
+	/* 引き算：box-shadow を撤去し、浮いたカードではなく一面の夜に没入させる */
+	background: var(--theme-bg);
+	background-size: 400% 400%;
+	color: var(--theme-text-color);
+	font-family: var(--theme-font-family);
+	font-size: var(--theme-font-size);
+	line-height: var(--theme-line-height);
+	overflow: hidden;
+	/* 夜がゆっくり巡る（静寂なのでごく緩やかに） */
+	animation: night-drift 30s ease-in-out infinite;
+
+	/* editor セマンティックパレット（rich-editor-blocks Task 2.3）: テキスト色のみ本文グラデ
+	   （--theme-bg）の両端 #05080f に対して AA(4.5:1) を満たす実値へ上書きする。マーカー/
+	   コールアウトは不透明な自己完結ペアのため tokens.css :root の既定値をそのまま継承する。 */
+	--editor-text-wakaba: #39c651;
+	--editor-text-sora: #268ed9;
+	--editor-text-kohaku: #df8f20;
+	--editor-text-sumire: #aa5dd0;
+}
+
+/* 2. 大気＝星（mori の霧 / umi の光線 → 夜版）
+   ::before = 疎らな星群A / ::after = 星群B＋控えめな北極星（導きの星）
+   2層を別位相でまたたかせ、最小限の星で"生きた静寂"を出す */
+.theme-root::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background-image:
+		radial-gradient(1px 1px at 18% 24%, rgba(207, 224, 255, 0.7), transparent),
+		radial-gradient(1px 1px at 72% 18%, rgba(207, 224, 255, 0.5), transparent),
+		radial-gradient(1.5px 1.5px at 44% 62%, rgba(207, 224, 255, 0.55), transparent),
+		radial-gradient(1px 1px at 88% 70%, rgba(207, 224, 255, 0.4), transparent),
+		radial-gradient(1px 1px at 32% 84%, rgba(207, 224, 255, 0.45), transparent);
+	pointer-events: none;
+	animation: twinkle-a 7s ease-in-out infinite;
+	z-index: 0;
+}
+
+.theme-root::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background-image:
+		/* 北極星：少しだけ存在感を持たせ、淡く発光（道標モチーフ／でも控えめに） */
+		radial-gradient(
+			2px 2px at 50% 13%,
+			rgba(223, 236, 255, 0.95),
+			rgba(207, 224, 255, 0.22) 40%,
+			transparent 72%
+		),
+		radial-gradient(1px 1px at 61% 41%, rgba(207, 224, 255, 0.5), transparent),
+		radial-gradient(1px 1px at 12% 52%, rgba(207, 224, 255, 0.38), transparent),
+		radial-gradient(1px 1px at 80% 49%, rgba(207, 224, 255, 0.42), transparent);
+	pointer-events: none;
+	animation: twinkle-b 9s ease-in-out infinite;
+	z-index: 0;
+}
+
+/* 3. メモタイトル
+   NOTE: ヘッダー/サイドバー/汎用 button・input・a への配色は廃止。
+   テーマ対象はメモ編集面（.memo-title / .memo-content）に限定する。
+   理由: .theme-root button が要素型セレクタとして Tailwind の text-gray-600 に勝ち、
+   白背景ヘッダーのナビ文字が消えるため（friction log: ヘッダー文字消失）。 */
+.theme-root .memo-title {
+	position: relative;
+	z-index: 1;
+	color: var(--theme-heading-color);
+	font-size: 1.75rem;
+	font-weight: 700;
+	margin-bottom: 1.5rem;
+	border-bottom: 1px solid var(--theme-border-color);
+	padding-bottom: 0.75rem;
+	letter-spacing: 0.05em;
+	text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+.theme-root .memo-title::placeholder {
+	color: rgba(200, 214, 229, 0.3);
+}
+
+/* 4. メモ本文（星より前面に重ねる） */
+.theme-root .memo-content {
+	position: relative;
+	z-index: 1;
+	color: var(--theme-text-color);
+	font-size: var(--theme-font-size);
+	line-height: var(--theme-line-height);
+	/* 可読性死守：星の上でも文字が読めるよう、ごく薄い影 */
+	text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+
+.theme-root .memo-content h1 {
+	color: var(--theme-heading-color);
+	font-size: 1.75rem;
+	font-weight: 700;
+	margin-top: 2rem;
+	margin-bottom: 0.75rem;
+	letter-spacing: 0.05em;
+}
+
+.theme-root .memo-content h2 {
+	color: var(--theme-heading-color);
+	font-size: 1.375rem;
+	font-weight: 600;
+	margin-top: 1.75rem;
+	margin-bottom: 0.75rem;
+	border-bottom: 1px solid var(--theme-border-color);
+	padding-bottom: 0.25rem;
+}
+
+.theme-root .memo-content h3 {
+	color: var(--theme-heading-color);
+	font-size: 1.125rem;
+	font-weight: 600;
+	margin-top: 1.5rem;
+	margin-bottom: 0.5rem;
+}
+
+.theme-root .memo-content h4,
+.theme-root .memo-content h5,
+.theme-root .memo-content h6 {
+	color: var(--theme-heading-color);
+	font-weight: 600;
+	margin-top: 1.5rem;
+	margin-bottom: 0.5rem;
+}
+
+.theme-root .memo-content p {
+	margin-bottom: 1.25rem;
+}
+
+.theme-root .memo-content strong {
+	font-weight: 700;
+	color: var(--theme-heading-color);
+}
+
+.theme-root .memo-content em {
+	font-style: italic;
+	color: #a8c0d8;
+}
+
+.theme-root .memo-content s {
+	text-decoration: line-through;
+	opacity: 0.5;
+}
+
+.theme-root .memo-content ul,
+.theme-root .memo-content ol {
+	margin-left: 1.5rem;
+	margin-bottom: 1.25rem;
+}
+
+.theme-root .memo-content li {
+	margin-bottom: 0.5rem;
+}
+
+.theme-root .memo-content blockquote {
+	border-left: 2px solid var(--theme-accent-color);
+	padding-left: 1.25rem;
+	margin-left: 0;
+	margin-bottom: 1.25rem;
+	color: rgba(200, 214, 229, 0.62);
+	font-style: italic;
+	background: rgba(207, 224, 255, 0.05);
+	padding-top: 0.5rem;
+	padding-bottom: 0.5rem;
+	border-radius: 0 0.375rem 0.375rem 0;
+}
+
+.theme-root .memo-content pre {
+	background-color: rgba(5, 8, 15, 0.6);
+	border: 1px solid var(--theme-border-color);
+	border-radius: 0.375rem;
+	padding: 1rem;
+	overflow-x: auto;
+	margin-bottom: 1.25rem;
+	font-family: 'Monaco', 'Courier New', monospace;
+	font-size: 0.875em;
+	text-shadow: none;
+}
+
+.theme-root .memo-content code {
+	background-color: rgba(5, 8, 15, 0.6);
+	padding: 0.2rem 0.4rem;
+	border-radius: 0.25rem;
+	font-family: 'Monaco', 'Courier New', monospace;
+	font-size: 0.875em;
+	color: #a8c0d8;
+	text-shadow: none;
+}
+
+.theme-root .memo-content hr {
+	border: none;
+	border-top: 1px solid var(--theme-border-color);
+	margin: 2.5rem 0;
+}
+
+.theme-root .memo-content a {
+	color: var(--theme-accent-color);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+	transition: text-shadow 0.2s ease;
+}
+
+.theme-root .memo-content a:hover {
+	color: #e8eef5;
+	/* 冷たい星白：ホバーでかすかに光る */
+	text-shadow: 0 0 8px rgba(207, 224, 255, 0.6);
+}
+
+/* 5. レスポンシブ */
+@media (max-width: 768px) {
+	.theme-root {
+		padding: 1.5rem;
+	}
+
+	.theme-root .memo-title {
+		font-size: 1.375rem;
+	}
+
+	.theme-root .memo-content h1 {
+		font-size: 1.375rem;
+	}
+
+	.theme-root .memo-content h2 {
+		font-size: 1.125rem;
+	}
+
+	.theme-root .memo-content h3 {
+		font-size: 1rem;
+	}
+}
+
+/* 6. アクセシビリティ（prefers-reduced-motion: reduce）
+   またたき・夜の巡りを停止し、夜空パレット・星の配置は維持 */
+@media (prefers-reduced-motion: reduce) {
+	.theme-root,
+	.theme-root::before,
+	.theme-root::after {
+		animation: none;
+	}
+}
+
+/* 7. keyframes — 他テーマは yoru.css を読み込まないため名前衝突は発生しない */
+@keyframes night-drift {
+	0% {
+		background-position: 50% 0%;
+	}
+	50% {
+		background-position: 50% 100%;
+	}
+	100% {
+		background-position: 50% 0%;
+	}
+}
+
+@keyframes twinkle-a {
+	0%,
+	100% {
+		opacity: 0.35;
+	}
+	50% {
+		opacity: 0.8;
+	}
+}
+
+@keyframes twinkle-b {
+	0%,
+	100% {
+		opacity: 0.55;
+	}
+	40% {
+		opacity: 0.25;
+	}
+	70% {
+		opacity: 0.75;
+	}
+}

@@ -1,0 +1,322 @@
+/*
+ * Quality Primitives — theme-immersive-world / Task 2
+ * ===================================================
+ * 質感 5 軸（テクスチャ／奥行き／余白／タイポ／マイクロインタラクション）を、
+ * 「トークン（tokens.css）を読むだけ」の theme-neutral な構造クラスとして提供する層。
+ *
+ * なぜこの層を分けるか（ロールバック回避の前提条件）:
+ *   玄関コンポーネントは生の色（bg-white / text-gray-* / bg-blue-*）を直当てせず、
+ *   本層の .shell-* クラスを className に付けるだけで彩色・質感を得る。色は必ず
+ *   var(--token) 経由＝「面側にトークンを当て、要素型セレクタで HTML 要素の文字色を
+ *   直接上書きしない」契約を実体化し、過去のヘッダー文字消失を構造的に防ぐ（1.2, 1.4）。
+ *
+ * 層所有（Layer①: bundle / render-blocking）:
+ *   index.css から tokens.css の直後に @import される。中立既定（:root）では「今日の見た目」、
+ *   html[data-theme="mori"] が付くと tokens.css の mori 値で質感が立ち上がる。本層は
+ *   theme-neutral＝特定テーマ名を書かないため、海・夜・朝は値差し替えだけで相乗りする（6.2）。
+ *   重量テクスチャ（多層グラデ／data-URI noise）は持たず、--surface-texture のフックだけを
+ *   開けておき、Layer③（mori.css, mori 有効時のみ fetch）が後追いで精緻化する（7.5）。
+ *
+ * 不変則:
+ *   - 生の色リテラル（#hex / rgb()）を一切持たない。色は tokens.css が単一の源泉。
+ *   - トップレベルセレクタは .shell-* クラスのみ（要素型セレクタで配色を漏らさない）。
+ *   - reduced-motion では「動き（transition）」のみ停止し、テクスチャ・奥行き・余白・
+ *     タイポの静的質感は維持する（4.6）。
+ */
+
+/* ===== アプリシェルのルート面：玄関全体の床。中立は地色、テーマ時は透過し生きた背景を一本化 ===== */
+
+.app-shell {
+	/* 中立＝地色（今日の白 / 7.1）。テーマ時は tokens 側で transparent になり、MoriEffectLayer
+	   （fixed z-0）と <html> 地色を一本のソースとして透かす（二重背景回避 / G-4, 5.2）。
+	   ルートは「床」に徹し、Header やカード等の各 surface だけが半透明 scrim を重ねる。 */
+	background-color: var(--app-shell-bg);
+}
+
+/* ===== 面の地：半透明 surface ＋ backdrop で生きた背景を透かす（5.2, 4.1） ===== */
+
+.shell-surface {
+	background-color: var(--surface);
+	background-image: var(--surface-texture);
+	color: var(--on-surface);
+	/* 中立は --surface-backdrop: none＝磨りガラス無効（今日の見た目）。mori で blur が立ち上がる */
+	-webkit-backdrop-filter: var(--surface-backdrop);
+	backdrop-filter: var(--surface-backdrop);
+	/* 游明朝を軸にした署名タイポ・字間・行間を面全体に行き渡らせる（4.4） */
+	font-family: var(--shell-font);
+	font-size: var(--shell-text-base);
+	line-height: var(--shell-line-height);
+	letter-spacing: var(--shell-letter-spacing);
+}
+
+/* ===== パネル／カード：奥行き（エレベーション）＋テクスチャで意図的な階層（4.1, 4.2） ===== */
+
+.shell-panel {
+	background-color: var(--surface);
+	background-image: var(--surface-texture);
+	color: var(--on-surface);
+	border: 1px solid var(--outline);
+	border-radius: 0.75rem;
+	padding: var(--shell-space-4);
+	box-shadow: var(--elevation-2);
+	-webkit-backdrop-filter: var(--surface-backdrop);
+	backdrop-filter: var(--surface-backdrop);
+}
+
+.shell-card {
+	background-color: var(--surface);
+	background-image: var(--surface-texture);
+	color: var(--on-surface);
+	border: 1px solid var(--outline);
+	border-radius: 0.75rem;
+	padding: var(--shell-space-4);
+	box-shadow: var(--elevation-1);
+	-webkit-backdrop-filter: var(--surface-backdrop);
+	backdrop-filter: var(--surface-backdrop);
+	/* マイクロインタラクション：奥行きと境界の状態遷移（4.5） */
+	transition:
+		box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1),
+		border-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shell-card:hover {
+	/* 位置移動でなく影の深まり＋署名グリーン境界で「持ち上がり」を表現（reduced-motion 安全） */
+	box-shadow: var(--elevation-3);
+	border-color: var(--accent);
+}
+
+/* ===== ナビ要素：on-surface ＋状態トークン＋focus-ring で背景と区別可能（3.2, 3.3） ===== */
+
+.shell-nav-item {
+	color: var(--on-surface);
+	background-color: transparent;
+	border-radius: 0.5rem;
+	padding: var(--shell-space-2) var(--shell-space-3);
+	transition:
+		background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+		color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shell-nav-item:hover {
+	background-color: var(--state-hover);
+}
+
+.shell-nav-item:focus-visible {
+	outline: 2px solid var(--focus-ring);
+	outline-offset: 2px;
+}
+
+/* アクティブ（選択中）ナビ：選択層の地＋その上で読める文字（3.3） */
+.shell-nav-item[aria-current='page'],
+.shell-nav-item.is-active {
+	background-color: var(--state-selected);
+	color: var(--on-state-selected);
+}
+
+/* ===== 入力：outline ＋ focus-ring（3.3）。低強調プレースホルダも判読下限を維持（3.4） ===== */
+
+.shell-field {
+	background-color: var(--surface);
+	color: var(--on-surface);
+	border: 1px solid var(--outline);
+	border-radius: 0.5rem;
+	padding: var(--shell-space-2) var(--shell-space-3);
+	font-family: var(--shell-font);
+	font-size: var(--shell-text-base);
+	transition:
+		border-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+		box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shell-field::placeholder {
+	color: var(--on-surface-variant);
+}
+
+.shell-field:focus-visible {
+	outline: 2px solid var(--focus-ring);
+	outline-offset: 1px;
+	border-color: var(--focus-ring);
+}
+
+/* ===== ボタン：accent × on-accent をペアで（3.1）。押下/ホバーを奥行きで提示（4.5） ===== */
+
+.shell-button {
+	background-color: var(--surface-variant);
+	color: var(--on-surface);
+	border: 1px solid var(--outline);
+	border-radius: 0.5rem;
+	padding: var(--shell-space-2) var(--shell-space-4);
+	font-family: var(--shell-font);
+	font-size: var(--shell-text-base);
+	box-shadow: var(--elevation-1);
+	transition:
+		box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1),
+		background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shell-button-primary {
+	background-color: var(--accent);
+	color: var(--on-accent);
+	border: 1px solid transparent;
+	border-radius: 0.5rem;
+	padding: var(--shell-space-2) var(--shell-space-4);
+	font-family: var(--shell-font);
+	font-size: var(--shell-text-base);
+	box-shadow: var(--elevation-1);
+	transition:
+		box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1),
+		background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shell-button:not([aria-pressed='true']):hover,
+.shell-button-primary:not([aria-pressed='true']):hover {
+	/* ホバーは非押下時のみ効かせ、押下中のホバーで ON 表現が壊れないようにする（2.5） */
+	background-color: var(--state-hover);
+	box-shadow: var(--elevation-2);
+}
+
+.shell-button:active,
+.shell-button-primary:active {
+	/* 押下＝影を浅くして「沈み込み」を表現（位置移動を使わず reduced-motion 安全） */
+	box-shadow: var(--elevation-1);
+}
+
+.shell-button:focus-visible,
+.shell-button-primary:focus-visible {
+	outline: 2px solid var(--focus-ring);
+	outline-offset: 2px;
+}
+
+/* ===== トグル押下（ON）状態：地・文字・境界・字幅の4軸を同時に変える（editor-surface-tokenization 2.1）
+   mori の --state-hover と --state-selected は地の差だけでは相互比が識別不能に近いため（実測 1.253）、
+   font-weight と aria-pressed 属性の手がかりを併用する（2.1, 2.2, 2.4, 6.4, 7.5） ===== */
+.shell-button[aria-pressed='true'],
+.shell-button-primary[aria-pressed='true'] {
+	background-color: var(--state-selected);
+	color: var(--on-state-selected);
+	border-color: var(--accent);
+	font-weight: 600;
+}
+
+/* ===== 無効状態：不透明度を使わず前景色の切替で表現する（editor-surface-tokenization 2.1）
+   半透明 surface に opacity を重ねると生きた背景の最明値が二重に透けて実効コントラストが
+   崩壊するため、前景色の切替（1段合成）で AA を維持する（2.6） ===== */
+.shell-button:disabled,
+.shell-button-primary:disabled {
+	background-color: var(--surface-variant);
+	color: var(--on-surface-variant);
+	border-color: var(--outline);
+	box-shadow: none;
+	cursor: not-allowed;
+}
+
+/* ===== 浮遊面：本文の上に重なるポップオーバー（editor-surface-tokenization 2.2）
+   バブルメニュー／スラッシュ候補／メモパレット／共有メニューという構造の異なる4面へ
+   同じクラスが当たるため、本プリミティブは「面の質感のみ」を所有し、高さ制約・
+   スクロール・寸法は各面のレイアウトユーティリティへ残す（1.3, 1.6, 3.1, 3.2）。
+   持たせると外殻より内側リストが低くなり、フッターが隠れて入れ子スクロールが生じる。 ===== */
+
+.shell-popover {
+	background-color: var(--surface);
+	background-image: var(--surface-texture);
+	color: var(--on-surface);
+	border: 1px solid var(--outline);
+	border-radius: 0.75rem;
+	box-shadow: var(--elevation-3);
+	-webkit-backdrop-filter: var(--surface-backdrop);
+	backdrop-filter: var(--surface-backdrop);
+}
+
+/* ===== 候補行：浮遊面内のリスト項目。ホバー・選択・フォーカスの状態表現を持つ（3.3） ===== */
+
+.shell-popover-item {
+	color: var(--on-surface);
+	background-color: transparent;
+	transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shell-popover-item:hover {
+	background-color: var(--state-hover);
+}
+
+.shell-popover-item[aria-selected='true'] {
+	/* 選択中が非選択と判別可能なコントラストを保つ（3.3） */
+	background-color: var(--state-selected);
+	color: var(--on-state-selected);
+}
+
+.shell-popover-item:focus-visible {
+	outline: 2px solid var(--focus-ring);
+	outline-offset: -2px;
+}
+
+/* ===== 暗幕：モーダル背後のスクリム。前景を持たない非テキスト面（3.2） ===== */
+
+.shell-scrim {
+	background-color: var(--scrim);
+}
+
+/* ===== Prose Bridge：本文編集面の色所有権を Layer③ に残したまま prose の組み込み
+   パレットを脱色する（editor-surface-tokenization 4.1-4.4, 4.6, 5.2, 5.3）。
+   .shell-prose-host は中立時の着地先を var(--on-surface)（= 現行 text-gray-900）に
+   固定するだけで、テーマ時は Layer③ の [data-theme-id] .memo-content（詳細度 (0,2,0)）
+   が勝つ。.ProseMirror 側は color: inherit のみを持ち、.prose の直接指定 (0,1,0) を
+   打ち消して親から色を継承する。--tw-prose-* は色の定義ではなく脱色であり、
+   見出し・引用・リンク等の prose 既定色を currentColor へ寄せるだけで色を決めない。 ===== */
+
+.shell-prose-host {
+	color: var(--on-surface);
+}
+
+.shell-prose-host .ProseMirror {
+	color: inherit;
+
+	--tw-prose-body: currentColor;
+	--tw-prose-headings: currentColor;
+	--tw-prose-lead: currentColor;
+	--tw-prose-links: currentColor;
+	--tw-prose-bold: currentColor;
+	--tw-prose-counters: currentColor;
+	--tw-prose-bullets: currentColor;
+	--tw-prose-quotes: currentColor;
+	--tw-prose-captions: currentColor;
+	--tw-prose-hr: color-mix(in srgb, currentColor 30%, transparent);
+	--tw-prose-quote-borders: color-mix(in srgb, currentColor 40%, transparent);
+	--tw-prose-th-borders: color-mix(in srgb, currentColor 40%, transparent);
+	--tw-prose-td-borders: color-mix(in srgb, currentColor 25%, transparent);
+}
+
+/* ===== タイポ階層：游明朝を軸にした字階層と低強調（4.4, 3.4） ===== */
+
+.shell-title {
+	font-family: var(--shell-font);
+	font-size: var(--shell-text-xl);
+	line-height: 1.3;
+	letter-spacing: var(--shell-letter-spacing);
+	color: var(--on-surface);
+}
+
+.shell-subtitle {
+	font-family: var(--shell-font);
+	font-size: var(--shell-text-lg);
+	line-height: 1.4;
+	color: var(--on-surface);
+}
+
+.shell-text-muted {
+	color: var(--on-surface-variant);
+	font-size: var(--shell-text-sm);
+}
+
+/* ===== reduced-motion：動き（transition）のみ停止。静的質感は維持する（4.6） ===== */
+
+@media (prefers-reduced-motion: reduce) {
+	.shell-card,
+	.shell-nav-item,
+	.shell-field,
+	.shell-button,
+	.shell-button-primary,
+	.shell-popover-item {
+		transition: none;
+	}
+}

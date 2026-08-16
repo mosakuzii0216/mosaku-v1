@@ -1,4 +1,3 @@
-// JWT Token Management Utilities
 import { getBackendUrl } from './env';
 import { logger } from './logger';
 
@@ -6,7 +5,7 @@ export interface UserProfile {
 	id: string;
 	email: string;
 	name: string | null;
-	role: 'FREE' | 'PREMIUM' | 'ADMIN';
+	role: 'USER' | 'ADMIN';
 	createdAt: string;
 	updatedAt: string;
 }
@@ -27,8 +26,8 @@ export interface RegisterResponse {
 }
 
 export interface OAuthUserData {
-	oauthId: string;
-	email: string;
+	oauthId?: string;
+	email?: string;
 	name: string;
 	picture?: string;
 }
@@ -37,7 +36,7 @@ export interface TokenPayload {
 	sub: string;
 	email: string;
 	name: string;
-	role: 'FREE' | 'PREMIUM' | 'ADMIN';
+	role: 'USER' | 'ADMIN';
 	iat: number;
 	exp: number;
 }
@@ -82,7 +81,6 @@ class AuthTokenManager {
 	}
 }
 
-// API Call Helper with Authentication
 export class AuthAPI {
 	private static readonly BASE_URL = getBackendUrl();
 
@@ -90,7 +88,6 @@ export class AuthAPI {
 		const token = AuthTokenManager.getAccessToken();
 		const headers = new Headers(options.headers);
 
-		// Content-Typeをセット。既存の値は上書きされる。
 		headers.set('Content-Type', 'application/json');
 
 		if (token && !AuthTokenManager.isTokenExpired(token)) {
@@ -99,16 +96,16 @@ export class AuthAPI {
 
 		return fetch(`${this.BASE_URL}${endpoint}`, {
 			...options,
+			// クロスオリジン（frontend ↔ api.mosaku.jp）で Refresh Token Cookie を
+			// 保存・送信するために必須。これがないとログイン時の Set-Cookie が破棄される。
+			credentials: 'include',
 			headers,
 		});
 	}
 
 	static async login(email: string, password: string): Promise<LoginResponse> {
-		const response = await fetch(`${this.BASE_URL}/auth/login`, {
+		const response = await this.makeRequest('/auth/login', {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
 			body: JSON.stringify({ email, password }),
 		});
 
@@ -128,11 +125,8 @@ export class AuthAPI {
 		name?: string,
 		invitationCode?: string,
 	): Promise<RegisterResponse> {
-		const response = await fetch(`${this.BASE_URL}/auth/register`, {
+		const response = await this.makeRequest('/auth/register', {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
 			body: JSON.stringify({ email, password, name, invitationCode }),
 		});
 
@@ -170,17 +164,31 @@ export class AuthAPI {
 	}
 
 	static async resetPassword(email: string): Promise<{ message: string }> {
-		const response = await fetch(`${this.BASE_URL}/auth/reset-password`, {
+		const response = await this.makeRequest('/auth/reset-password', {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
 			body: JSON.stringify({ email }),
 		});
 
 		if (!response.ok) {
 			const error = await response.json();
 			throw new Error(error.message || 'Failed to send password reset email');
+		}
+
+		return response.json();
+	}
+
+	static async confirmPasswordReset(
+		token: string,
+		newPassword: string,
+	): Promise<{ message: string }> {
+		const response = await this.makeRequest('/auth/reset-password/confirm', {
+			method: 'POST',
+			body: JSON.stringify({ token, newPassword }),
+		});
+
+		if (!response.ok) {
+			const error = await response.json();
+			throw new Error(error.message || 'Failed to reset password');
 		}
 
 		return response.json();
@@ -201,72 +209,6 @@ export class AuthAPI {
 		}
 
 		return response.json();
-	}
-
-	static async googleRegisterWithInvitation(
-		googleUser: OAuthUserData,
-		invitationCode: string,
-	): Promise<LoginResponse> {
-		const response = await fetch(`${this.BASE_URL}/auth/google/register-with-invitation`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({ googleUser, invitationCode }),
-		});
-
-		if (!response.ok) {
-			const error = await response.json();
-			throw new Error(error.message || 'Google registration failed');
-		}
-
-		const data = await response.json();
-		AuthTokenManager.setAccessToken(data.accessToken);
-		return data;
-	}
-
-	static async githubRegisterWithInvitation(
-		githubUser: OAuthUserData,
-		invitationCode: string,
-	): Promise<LoginResponse> {
-		const response = await fetch(`${this.BASE_URL}/auth/github/register-with-invitation`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({ githubUser, invitationCode }),
-		});
-
-		if (!response.ok) {
-			const error = await response.json();
-			throw new Error(error.message || 'GitHub registration failed');
-		}
-
-		const data = await response.json();
-		AuthTokenManager.setAccessToken(data.accessToken);
-		return data;
-	}
-
-	static async xRegisterWithInvitation(
-		xUser: OAuthUserData,
-		invitationCode: string,
-	): Promise<LoginResponse> {
-		const response = await fetch(`${this.BASE_URL}/auth/x/register-with-invitation`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({ xUser, invitationCode }),
-		});
-
-		if (!response.ok) {
-			const error = await response.json();
-			throw new Error(error.message || 'X registration failed');
-		}
-
-		const data = await response.json();
-		AuthTokenManager.setAccessToken(data.accessToken);
-		return data;
 	}
 }
 

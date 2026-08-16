@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNotebooks } from '../../hooks/useNotebookQueries';
 import { useMemos } from '../../hooks/useMemoQueries';
-import { useMemoStore } from '../../stores/useMemoStore';
+import { usePaletteStore } from '../../stores/usePaletteStore';
+import { useNavigation } from '../../hooks/useNavigation';
 import type { Memo } from '../../types/memo';
 import { logger } from '../../utils/logger';
+import { extractPlainText } from '../../utils/editor/prosemirrorText';
 
 type PaletteMode = 'notebook-select' | 'memo-select';
 
@@ -20,7 +22,8 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 	const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 
-	const { goToEdit, paletteNotebookFilter } = useMemoStore();
+	const { paletteNotebookFilter } = usePaletteStore();
+	const { goToEdit } = useNavigation();
 	const { data: notebooks = [] } = useNotebooks();
 	const { data: memos = [] } = useMemos();
 
@@ -90,8 +93,10 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 			// 検索クエリフィルタ
 			if (searchQuery) {
 				const query = searchQuery.toLowerCase();
+				// content は JSONContent（ProseMirror doc）。文字列メソッドは使えない
 				return (
-					memo.title.toLowerCase().includes(query) || memo.content.toLowerCase().includes(query)
+					memo.title.toLowerCase().includes(query) ||
+					extractPlainText(memo.content).toLowerCase().includes(query)
 				);
 			}
 
@@ -180,12 +185,12 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 	return (
 		<div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh]">
 			{/* オーバーレイ */}
-			<div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose} />
+			<div className="shell-scrim absolute inset-0" onClick={onClose} />
 
 			{/* パレット本体 */}
-			<div className="relative w-full max-w-2xl mx-4 bg-white rounded-lg shadow-2xl overflow-hidden">
+			<div className="shell-popover relative w-full max-w-2xl mx-4 overflow-hidden">
 				{/* 検索入力 */}
-				<div className="p-4 border-b border-gray-200">
+				<div className="p-4 border-b border-[var(--outline)]">
 					<input
 						ref={inputRef}
 						type="text"
@@ -196,14 +201,14 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 								? 'ノートブックを検索...'
 								: 'メモを検索... (タイトル、内容)'
 						}
-						className="w-full px-4 py-2 text-lg border-none outline-none bg-transparent"
+						className="shell-field w-full border-none outline-none"
 					/>
 				</div>
 
 				{/* ノートブックフィルタ（memo-selectモード時のみ） */}
 				{mode === 'memo-select' && (
-					<div className="px-4 py-2 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
-						<span className="text-sm text-gray-600">ノートブック:</span>
+					<div className="shell-surface px-4 py-2 border-b border-[var(--outline)] flex items-center gap-2">
+						<span className="shell-text-muted text-sm">ノートブック:</span>
 						<button
 							onClick={() => {
 								if (initialMode === 'notebook-select') {
@@ -211,7 +216,7 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 									setSelectedNotebookId(null);
 								}
 							}}
-							className="text-sm px-2 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200"
+							className="shell-button-primary text-sm px-2 py-1"
 						>
 							{selectedNotebookId === 'ALL'
 								? 'すべて'
@@ -223,7 +228,7 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 				)}
 
 				{/* 結果一覧 */}
-				<div className="max-h-96 overflow-y-auto">
+				<div className="max-h-96 overflow-y-auto" role="listbox">
 					{mode === 'notebook-select' ? (
 						<NotebookList
 							notebooks={notebookOptions}
@@ -247,20 +252,20 @@ export const MemoPalette = ({ isOpen, onClose, initialMode = 'memo-select' }: Me
 				</div>
 
 				{/* フッター（ヒント） */}
-				<div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 flex items-center justify-between">
+				<div className="shell-surface px-4 py-2 border-t border-[var(--outline)] text-xs flex items-center justify-between">
 					<div className="flex gap-4">
-						<span>
-							<kbd className="px-1 py-0.5 bg-white border rounded">↑↓</kbd> 選択
+						<span className="shell-text-muted">
+							<kbd className="shell-button px-1 py-0.5">↑↓</kbd> 選択
 						</span>
-						<span>
-							<kbd className="px-1 py-0.5 bg-white border rounded">Enter</kbd> 決定
+						<span className="shell-text-muted">
+							<kbd className="shell-button px-1 py-0.5">Enter</kbd> 決定
 						</span>
-						<span>
-							<kbd className="px-1 py-0.5 bg-white border rounded">Esc</kbd> 閉じる
+						<span className="shell-text-muted">
+							<kbd className="shell-button px-1 py-0.5">Esc</kbd> 閉じる
 						</span>
 					</div>
 					{mode === 'memo-select' && (
-						<div className="text-gray-400">{filteredMemos.length} 件のメモ</div>
+						<div className="shell-text-muted">{filteredMemos.length} 件のメモ</div>
 					)}
 				</div>
 			</div>
@@ -289,7 +294,7 @@ const NotebookList = ({ notebooks, selectedIndex, onSelect }: NotebookListProps)
 	}, [selectedIndex]);
 
 	if (notebooks.length === 0) {
-		return <div className="p-8 text-center text-gray-500">ノートブックが見つかりません</div>;
+		return <div className="shell-text-muted p-8 text-center">ノートブックが見つかりません</div>;
 	}
 
 	return (
@@ -297,16 +302,16 @@ const NotebookList = ({ notebooks, selectedIndex, onSelect }: NotebookListProps)
 			{notebooks.map((nb, index) => (
 				<div
 					key={nb.id}
+					role="option"
+					aria-selected={index === selectedIndex}
 					onClick={() => onSelect(nb)}
-					className={`px-4 py-3 cursor-pointer transition-colors ${
-						index === selectedIndex
-							? 'bg-blue-50 border-l-4 border-blue-500'
-							: 'hover:bg-gray-50 border-l-4 border-transparent'
+					className={`shell-popover-item px-4 py-3 cursor-pointer border-l-4 ${
+						index === selectedIndex ? 'border-[var(--accent)]' : 'border-transparent'
 					}`}
 				>
-					<div className="font-medium text-gray-900">{nb.name || '(名称未設定)'}</div>
+					<div className="font-medium">{nb.name || '(名称未設定)'}</div>
 					{nb.isSpecial && (
-						<div className="text-xs text-gray-500 mt-1">
+						<div className="shell-text-muted mt-1">
 							{nb.id === 'ALL' ? '全てのメモを表示' : 'ノートブック未設定のメモ'}
 						</div>
 					)}
@@ -337,7 +342,7 @@ const MemoList = ({ memos, selectedIndex, onSelect }: MemoListProps) => {
 	}, [selectedIndex]);
 
 	if (memos.length === 0) {
-		return <div className="p-8 text-center text-gray-500">メモが見つかりません</div>;
+		return <div className="shell-text-muted p-8 text-center">メモが見つかりません</div>;
 	}
 
 	return (
@@ -345,20 +350,20 @@ const MemoList = ({ memos, selectedIndex, onSelect }: MemoListProps) => {
 			{memos.map((memo, index) => (
 				<div
 					key={memo.id}
+					role="option"
+					aria-selected={index === selectedIndex}
 					onClick={() => onSelect(memo)}
-					className={`px-4 py-3 cursor-pointer transition-colors ${
-						index === selectedIndex
-							? 'bg-blue-50 border-l-4 border-blue-500'
-							: 'hover:bg-gray-50 border-l-4 border-transparent'
+					className={`shell-popover-item px-4 py-3 cursor-pointer border-l-4 ${
+						index === selectedIndex ? 'border-[var(--accent)]' : 'border-transparent'
 					}`}
 				>
-					<div className="font-medium text-gray-900">{memo.title || '無題'}</div>
-					{memo.content && (
-						<div className="text-sm text-gray-600 mt-1 line-clamp-2">
-							{memo.content.replace(/<[^>]*>/g, '').substring(0, 100)}
+					<div className="font-medium">{memo.title || '無題'}</div>
+					{extractPlainText(memo.content) && (
+						<div className="shell-text-muted mt-1 line-clamp-2">
+							{extractPlainText(memo.content).substring(0, 100)}
 						</div>
 					)}
-					<div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+					<div className="shell-text-muted flex items-center gap-2 mt-2">
 						<span>{new Date(memo.updatedAt).toLocaleDateString('ja-JP')}</span>
 						{memo.memoTags && memo.memoTags.length > 0 && (
 							<span>• {memo.memoTags.length} タグ</span>

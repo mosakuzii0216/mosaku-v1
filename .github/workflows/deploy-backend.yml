@@ -1,5 +1,5 @@
 # =============================================================================
-# バックエンド自動デプロイワークフロー
+# バックエンド本番デプロイワークフロー
 # =============================================================================
 #
 # 概要:
@@ -7,30 +7,34 @@
 #   自動的にテスト → ビルド → Cloud Run へデプロイを行う
 #
 # トリガー:
-#   - main ブランチへの push (backend/ 配下の変更時のみ)
+#   - main ブランチへの push (backend/ 配下の変更時)
 #   - 手動実行 (GitHub Actions の UI から)
 #
 # 前提条件:
-#   - GitHub Secrets に GCP_SA_KEY が登録されていること
+#   - Workload Identity Federation が設定されていること
 #   - サービスアカウントに必要な権限が付与されていること
 #     - roles/run.admin
 #     - roles/storage.admin
 #     - roles/iam.serviceAccountUser
+#   - GitHub Environment 'production' が設定されていること（承認ゲート）
 #
 # =============================================================================
 
-name: Deploy Backend to Cloud Run
+name: Deploy Backend to Cloud Run (Production)
 
 on:
   push:
     branches:
       - main
     paths:
-      # backend/ 配下の変更時のみ実行（フロントエンドの変更では実行しない）
       - 'backend/**'
       - '.github/workflows/deploy-backend.yml'
-  # 手動実行を許可（GitHub Actions の UI から実行可能）
   workflow_dispatch:
+    inputs:
+      ref:
+        description: 'デプロイするブランチ or コミットSHA（省略時は main HEAD）'
+        required: false
+        default: 'main'
 
 # -----------------------------------------------------------------------------
 # 環境変数（ワークフロー全体で使用）
@@ -39,7 +43,8 @@ env:
   PROJECT_ID: igneous-core-480923-j0          # GCP プロジェクトID
   REGION: asia-northeast1                      # Cloud Run のリージョン（東京）
   SERVICE_NAME: mosaku-backend                 # Cloud Run サービス名
-  IMAGE_NAME: gcr.io/igneous-core-480923-j0/mosaku-backend  # Docker イメージ名
+  # Artifact Registry のイメージパス（asia-northeast1 の mosaku-backend リポジトリ配下の api イメージ）
+  IMAGE_NAME: asia-northeast1-docker.pkg.dev/igneous-core-480923-j0/mosaku-backend/api
 
 jobs:
   # ===========================================================================
@@ -61,6 +66,8 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || 'main' }}
 
       # -----------------------------------------------------------------------
       # Step 2: Node.js 環境のセットアップ
@@ -101,8 +108,9 @@ jobs:
       # Step 6: テスト実行
       # -----------------------------------------------------------------------
       # --passWithNoTests: テストファイルがなくてもエラーにしない
+      # `--` を挟まないと npm 自身のフラグとして食われ Jest まで届かない
       - name: Run tests
-        run: npm run test --passWithNoTests
+        run: npm run test -- --passWithNoTests
 
       # -----------------------------------------------------------------------
       # Step 7: TypeScript ビルド
@@ -112,15 +120,57 @@ jobs:
         run: npm run build
 
   # ===========================================================================
-  # Job 2: Cloud Run へデプロイ
+  # Job 2: DBマイグレーション（本番）
   # ===========================================================================
-  # test ジョブが成功した場合のみ実行
+  migrate:
+    name: DB Migration (Production)
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production  # 本番マイグレーションも承認ゲートを通す
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || 'main' }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run DB migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.PROD_DIRECT_URL }}
+
+  # ===========================================================================
+  # Job 3: Cloud Run へデプロイ
+  # ===========================================================================
+  # test・migrate ジョブが成功した場合のみ実行
   # Docker イメージをビルドして Cloud Run にデプロイ
   # ===========================================================================
   deploy:
-    name: Deploy to Cloud Run
-    needs: test  # test ジョブの成功が必須
+    name: Deploy to Cloud Run (Production)
+    needs: migrate
     runs-on: ubuntu-latest
+    environment: production  # GitHub Environment による承認ゲート
+    # Workload Identity Federation で OIDC トークンを発行するために必要
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       # -----------------------------------------------------------------------
@@ -128,16 +178,19 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || 'main' }}
 
       # -----------------------------------------------------------------------
-      # Step 2: GCP 認証
+      # Step 2: GCP 認証（Workload Identity Federation）
       # -----------------------------------------------------------------------
-      # GitHub Secrets に保存したサービスアカウントキーで認証
-      # これにより gcloud コマンドが使用可能になる
+      # GitHub Actions の OIDC トークンを GCP が検証して、SA の短寿命トークンを発行
+      # SA キーを GitHub Secrets に保存しないので漏洩リスクが無い
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          workload_identity_provider: projects/129805115778/locations/global/workloadIdentityPools/github/providers/github
+          service_account: github-actions@igneous-core-480923-j0.iam.gserviceaccount.com
 
       # -----------------------------------------------------------------------
       # Step 3: Cloud SDK セットアップ
@@ -150,9 +203,9 @@ jobs:
       # -----------------------------------------------------------------------
       # Step 4: Docker 認証設定
       # -----------------------------------------------------------------------
-      # Container Registry (gcr.io) にプッシュするための認証
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker --quiet
+      # Artifact Registry (asia-northeast1-docker.pkg.dev) にプッシュするための認証
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker asia-northeast1-docker.pkg.dev --quiet
 
       # -----------------------------------------------------------------------
       # Step 5: Docker イメージのビルド & プッシュ
@@ -171,12 +224,20 @@ jobs:
       # Step 6: Cloud Run へデプロイ
       # -----------------------------------------------------------------------
       # コミットSHAタグのイメージを使用（トレーサビリティのため）
+      # --update-env-vars / --update-secrets で「上書きせず追記」する
+      # （--set-env-vars / --set-secrets は既存設定を全削除するため絶対に使わない）
+      #   - SENTRY_RELEASE: Sentry のリリース突合キー (= git sha)
+      #   - SENTRY_ENVIRONMENT: 単一プロジェクト運用なので production 固定
+      #   - SENTRY_TRACES_SAMPLE_RATE / SENTRY_PROFILES_SAMPLE_RATE: 月次 quota を超えないため 0.1 既定
+      # SENTRY_DSN は Secret Manager の `sentry-dsn` から `--update-secrets` で投入
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image=${{ env.IMAGE_NAME }}:${{ github.sha }} \
             --region=${{ env.REGION }} \
             --platform=managed \
+            --update-env-vars="SENTRY_RELEASE=${{ github.sha }},SENTRY_ENVIRONMENT=production,SENTRY_TRACES_SAMPLE_RATE=0.1,SENTRY_PROFILES_SAMPLE_RATE=0.1" \
+            --update-secrets="SENTRY_DSN=sentry-dsn:latest" \
             --quiet
 
       # -----------------------------------------------------------------------
@@ -192,3 +253,72 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Service URL:** $URL" >> $GITHUB_STEP_SUMMARY
           echo "**Image:** ${{ env.IMAGE_NAME }}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Job 4: Sentry リリース登録
+  # ===========================================================================
+  # Cloud Run デプロイが成功した後、Sentry に release タグを作成 → コミット紐付け → finalize
+  # 失敗してもデプロイ自体は成功扱いとする（observability は correctness を妨げない）
+  # ===========================================================================
+  sentry-release:
+    name: Sentry Release Tracking
+    needs: deploy
+    if: success()
+    runs-on: ubuntu-latest
+    env:
+      # Sentry CLI が参照する 3 点セット。Project は backend 専用 secret を流す
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT_BACKEND }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || 'main' }}
+          # set-commits --auto がコミット履歴を解析するため shallow clone では不足
+          fetch-depth: 0
+
+      # シークレット未設定の組織でもワークフロー全体を fail させない fallback
+      - name: Detect missing Sentry secrets
+        id: gate
+        run: |
+          if [ -z "$SENTRY_AUTH_TOKEN" ] || [ -z "$SENTRY_ORG" ] || [ -z "$SENTRY_PROJECT" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::Sentry release tracking skipped: SENTRY_AUTH_TOKEN / SENTRY_ORG / SENTRY_PROJECT_BACKEND が未設定"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Sentry release
+        if: steps.gate.outputs.skip == 'false'
+        run: npx --yes @sentry/cli releases new ${{ github.sha }}
+
+      - name: Associate commits with release
+        if: steps.gate.outputs.skip == 'false'
+        run: npx --yes @sentry/cli releases set-commits ${{ github.sha }} --auto
+
+      - name: Finalize Sentry release
+        if: steps.gate.outputs.skip == 'false'
+        run: npx --yes @sentry/cli releases finalize ${{ github.sha }}
+
+  # ===========================================================================
+  # Job 5: Slack通知
+  # ===========================================================================
+  # デプロイの成功/失敗をSlackに通知（Sentry → Slack はネイティブ統合側で処理）
+  # ===========================================================================
+  notify:
+    name: Slack Notification
+    needs: [migrate, deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    steps:
+      - name: Slack通知
+        if: env.SLACK_WEBHOOK_URL != ''
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ needs.deploy.result }}
+          fields: repo,message,commit,author,workflow

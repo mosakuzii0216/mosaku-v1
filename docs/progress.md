@@ -1,0 +1,572 @@
+# Mosaku 進捗ログ
+
+毎週末に更新する進捗ログ。計画書（`docs/project-plan-2026.md`）は方針・計画を、本ファイルは**実際に何が起きたか**を記録する。
+
+- 形式: 新しいエントリは**先頭**に追記する（最新が上）
+- 粒度: 週次（週末に1エントリ）
+- 計画変更が発生した場合は本ファイルにメモした上で `docs/project-plan-2026.md` も更新する
+
+---
+
+## エントリフォーマット
+
+```markdown
+## YYYY-MM-DD（フェーズ名 / 状況サマリ）
+
+### 今週やったこと
+
+- 完了した spec / コミット / 意思決定を箇条書き
+
+### 来週の予定
+
+- 着手予定の spec / タスク
+
+### ブロッカー・懸念
+
+- なし、または具体的に
+
+### メモ
+
+- 数字（テーマ数 / テスト数 / FCP 等）や所感
+```
+
+---
+
+## 2026-08-02（Phase 1 完走 → Phase 2 着手 / content JSONB 移行・リッチエディタブロック・OAuth 3 社縮約を完走）
+
+> 前回（7/1）から約 1 ヶ月ぶりの追いつきエントリ。7 月は content 永続化の JSON-first 化・エディタのリッチブロック・OAuth プロバイダ縮約という 3 大 spec を完走した。
+
+### 今週やったこと
+
+- **`content-jsonb-migration`（content の JSONB 化）を完走 → `implementation-validated`**（7/3〜7/4）
+  - メモ / ノートブック本文の永続化を HTML 文字列から **ProseMirror JSON（JSONB）＋派生 contentText の二重持ち**へ移行。書込経路で content(JSONB) と contentText を原子的に永続化し、本文検索を contentText へ切替
+  - backend `common` に ProseMirror 型・検証・`extractPlainText` を新設。content DTO を `ProseMirrorDoc` 検証へ切替。公開共有・ダッシュボードプレビュー・MCP excerpt を JSON/contentText 由来へ統一
+  - frontend: エディタ・ホスト・公開ビューの content を HTML→JSON 化、オフライン層 v2（IndexedDB スキーマ刷新・検索テキストの JSON 化）、HTML→JSON 移行パイプライン Stage1〜3 ＋検証スクリプトを整備
+  - **本番反映（7/22）**: CI の deploy-backend が失敗カットオーバー（P3009）で約 3 週間デッドロックし、6/25 の BE 凍結が `400 content must be a string` の真因だった。バックフィル → `migrate resolve` → cutover → rev00102 デプロイで復旧し、本番でも JSON-first 化が完了
+- **`rich-editor-blocks`（リッチブロック）を完走 → `implementation-validated`**（7/11・Task 1〜8）
+  - コールアウト / 表 / トグル（Details）/ palette をスラッシュコマンドへ統合。トグルを単一情報源へ本登録し、選択時バブルメニューを実装
+- **`oauth-providers-reduction`（OAuth 5→3 縮約）を完走 → `implementation-validated`**（7/18 決定 → 7/21 完了）
+  - OAuth プロバイダを **Google / X / Apple の 3 種へ縮約**（LINE / GitHub を廃止）。BE / FE のログイン導線と MCP `oauth.controller` の許可プロバイダを **BE 単一真実源**へ追従。廃止プロバイダの依存パッケージを除去。`lineId` 列は `oauthId` 共用で非破壊保持することをスキーマに文書化
+- **daily-refactor による品質地ならし（継続）**
+  - `MS_PER_DAY` / `expires_in=3600` のマジックナンバー定数化、refresh-token e2e の `no-unsafe-assignment` 解消、backend テストの ESLint 警告 14 件解消
+- **小修正**: 空 body `POST /invitation/me` の 500 を `DefaultValuePipe` で解消。不要な型アサーション削除・`@ts-expect-error` の説明付与・型 import 分離
+
+### 来週の予定
+
+- **Phase 2（8〜9 月）着手**: 利用規約・プライバシーポリシーの骨子作成（日本語、3h）
+- **テーマ作成のリカバリ**: 7 月 +5 / 8 月 +2（計 22 目標）が未着手のまま滞留 → 和テーマ横展開（海・夜・朝＝森トークン基盤への相乗り）を再開
+- content の JSON-first 化が完了したので、本文検索の強化（pg_bigm 等）は需要を見て判断
+
+### ブロッカー・懸念
+
+- **X / Apple の本番 OAuth クレデンシャル未設定**: OAuth 3 社縮約はコード完成済だが、本番導線の最終確認（本番クレデンシャル設定 ＋ ブラウザ手動確認）が残っている
+- **`verify.ts` にバグの記録あり**（要確認・修正）
+- **テーマ作成が 2 ヶ月連続で未着手**（7 月 +5 / 8 月 +2 が滞留）。22 テーマ目標に対しビハインド。8 月は法的着手も重なるため優先度の再調整が要る
+- 7 月は spec 実装に集中しテーマ枠を消化できず。Phase 2 では「運用フロー整備 × テーマ」の時間配分を意識する
+
+### メモ
+
+- この期間のコミットは **53 本**（feat 15 / fix 6 / refactor 4 / test 4 / 残り docs・README・chore 系）
+- spec **38 本、全て終了状態**（進行中ゼロ）。前回 35 本から +3（`content-jsonb-migration` / `rich-editor-blocks` / `oauth-providers-reduction` がいずれも `implementation-validated` に到達）
+- 内訳: completed 12 / implementation-validated 24 / implementation-complete 1 / implemented 1
+- content 永続化が **JSON-first** になり、本文検索・公開共有・ダッシュボード・MCP・オフラインが全て contentText / JSON 由来に統一された
+
+## 2026-07-01（Phase 1 ドッグフーディング中 / 招待特典・森の世界没入を完走、全 spec を完了状態に）
+
+### 今週やったこと
+
+- **`invitation-perks`（招待特典）を実装完走 → `completed`**（6/24 Task1 着手 → 6/26 クローズ）
+  - 課金ウォレット非依存の独立部のみを実装：perk 属性の直付け / 人数キャンペーン発行 / 招待登録 UX の刷新（特典バッジ表示）
+  - 登録フローには COMP 適用の seam と `PerkGate` の DI を置くに留め、`COMP_PERK_ENABLED`（既定 OFF）で既存挙動を不変に保つ縮退設計。COMP 適用本体は後続 spec へ
+  - backend API 統合テスト・frontend 登録 UX の E2E を追加
+
+- **`theme-immersive-world`（森の"入る世界"化）を起票 → Task 1〜7 完走 → `implementation-validated`**（6/25 brainstorm → 6/27 design/tasks 承認 → 6/29 実装完了 → 7/1 検証 GO）
+  - テーマを「メモ本文だけの色替え」から「アプリを開いた瞬間に玄関ごと切り替わる世界」へ再定義。フラッグシップ森の垂直スライス
+  - 過去ロールバック（ヘッダー文字消失）を構造的に回避するため、生の色直当てを廃し**セマンティックトークン契約＋質感プリミティブの 3 層 CSS 分割**で再構築。FOUC ゼロと非森バンドル不増を両立
+  - 玄関 6 面（ヘッダー / レイアウト / メモ一覧 / カード / ホーム）を全面トークン駆動化し生 Tailwind を排除。コントラスト AA を白床 worst-case 合成で機械検証
+  - 検証結果: frontend 1151 テスト全緑・リグレッションゼロで GO
+
+- **ESLint 警告を全件 0 に地ならし**（6/30）
+  - backend テスト群の `no-unsafe-*` を型キャスト／eslint-disable で解消、不要 async・未使用 import を一掃（200 件超）。`InvitationStateService` を `OAuthStateService` へ統合
+
+### 来週の予定
+
+- 7 月計画（PWA + content JSONB 移行着手月 / テーマ 20 目標）に沿って次 spec を起票
+- 候補: content の JSONB 移行 or 和テーマの没入横展開（海・夜・朝＝森で作った基盤への相乗り）
+
+### ブロッカー・懸念
+
+- なし（前週の `config.service.spec.ts` 未コミット差分は解消済み、main クリーン）
+
+### メモ
+
+- **spec 35 本が全て完了状態に到達（進行中ゼロ）**。内訳: completed 12 / implementation-validated 21 / implementation-complete 1 / implemented 1
+- frontend ユニット/統合テスト 1151 passed（120 ファイル）
+- 和の 4 テーマ（mori/umi/yoru/asa）に集約済み、mori は玄関〜本文まで完全没入化を達成。残り 3 テーマはトークン差し替えで相乗りできる土台が完成
+- 開発プロセス: 1 Todo = 1 Commit 維持。ESLint 警告 0 を達成しコード品質を地ならし
+
+## 2026-06-24（Phase 1 ドッグフーディング中 / X OAuth ステートレス統一を完走・招待特典 spec を承認）
+
+### 今週やったこと
+
+- **`oauth-stateless-unification` を起票 → 全タスク TDD 完走 → `implementation-validated`**（6/22 起票、6/23 実装完了）
+  - 前週 `oauth-session-durability` で passport 一本化した X OAuth を、さらに**ステートレス化**して 4 社（Google / GitHub / LINE / Apple）と同じ手組みフローへ統一。passport-twitter 依存を撤去
+  - 暗号基盤を新設: PKCE verifier/challenge 生成 → **AES-256-GCM AEAD 封緘サービス `OAuthStateCrypto`** → state に PKCE verifier を封緘して持ち回る `OAuthStateService`。`ConfigService` に `oauthStateEncKey` と X 認可 URL 生成を追加
+  - `XOAuthService` を新設（token 交換・profile 取得）し、X コールバックを共通 `finalize` 経路へ合流。cookie-session は **MCP ハンドオフ専用**へ縮退させ、認証フローからセッション依存を排除（多インスタンス耐性）
+  - 回帰テスト: 拒否経路統合テスト（実 `OAuthStateService` + `OAuthStateCrypto`）、MCP ハンドオフ不変、4 社コールバック回帰を追加
+- **`invitation-perks`（招待特典）を起票 → requirements / design 生成 → tasks 承認**（6/22 起票、6/24 tasks 承認）
+  - 旧 `trialDays` + Stripe 案を破棄し、monetization v2 の **COMP 方式**（`subscriptionStatus=COMP`）に統一
+  - スコープを二層化し、本 spec は課金ウォレット非依存の**独立部のみ**（perk 属性直付け / 人数キャンペーン発行 / 登録 UX 刷新）。COMP 適用本体は後続 spec へ分離
+  - `COMP_PERK_ENABLED`（既定 OFF）の縮退フラグでゲートし、フラグ OFF 間は既存挙動不変を担保する設計。Task 4 は登録フローに適用 seam コメントを置くのみ（配線しない）
+
+### 来週の予定
+
+- **`invitation-perks` を `/kiro:spec-impl` で実装着手**（Task 1 基盤から TDD・1 Todo = 1 Commit）。Task 1.1〜1.3 は並列可
+- backend(Task 2〜4) / frontend(Task 5) を並行トラックで進め Task 6 で統合
+
+### ブロッカー・懸念
+
+- `backend/src/config/config.service.spec.ts` に未コミット差分が 1 件残存（oauth 作業の余り）。invitation-perks 着手前に整理する
+
+### メモ
+
+- spec 総数 34 本。うち完了（completed / implementation-validated / implemented / implementation-complete）33 本、進行中 1 本（`invitation-perks` = tasks-approved）
+- X OAuth はメモの「両フローとも壊れていた」状態から、案(b)（passport 一本化）→ ステートレス統一まで 2 週で着地。認証スタックがセッション非依存になった
+
+---
+
+## 2026-06-22（Phase 1 ドッグフーディング中 / PWA SW 自動更新を起票〜実装完了）
+
+### 今週やったこと
+
+- **`pwa-sw-auto-update` を起票 → 実装完了 → `implementation-validated` まで一気通貫**
+  - 6/20 に方針決定した「SW 更新方式の構造的改善」を spec 化。ギャップ分析・リサーチ・要件・設計・タスクを承認まで進め、全 6 タスクを TDD で完走
+  - 採用機構は **M1（`registerType:'prompt'` を据え置いたままガード通過時に自動駆動）＋ Option C（関心分離ハイブリッド）**。workbox 設定は無改修で保全契約を維持
+  - 主要コンポーネント: 保存状態の横断レジストリ `useSaveStatusStore`（新設）、`useAutoSave` に publish 副作用を追加、`useSwRegistration` を `updateAvailable`/`applyUpdate` + 定期/フォーカス probe へ再設計、ガード付きオーケストレータ `useGuardedAutoUpdate`（one-shot + bounded escape + 不発検知）、headless マウント点 `SwAutoUpdater`（新設）
+  - 更新トースト `SwUpdatePrompt` をファイルごと撤去し、更新に関するユーザー通知・操作要求をゼロに。完全自動更新へ移行
+  - 観測性は Sentry breadcrumb / カウンタ（`feature_area:'system'`）で自動リロード起動・保留継続・不発を本番観測可能に
+
+### 来週の予定
+
+- `pwa-sw-auto-update` の **本番検証**（デプロイ後に新版 SW の waiting 到達・非フォーカス時の自動リロード・onboarding 削除済み UI 非表示を DevTools で確認）
+- 次 spec 候補: `oauth-stateless-unification`（5 社統一・session 撤去）/ 招待特典 spec の起票検討
+
+### ブロッカー・懸念
+
+- なし。`pwa-sw-auto-update` はローカル検証 GO、本番検証のみデプロイ待ち
+
+### メモ
+
+- 6/21 以降のコミット 9 件（feat 5 / docs 4）。spec ライフサイクルを 1 週間で initialized → validated まで通した
+- これで 6/20 の「PWA キャッシュ残りで旧バンドルが出る」問題が構造的に解消される見込み
+
+---
+
+## 2026-06-20（onboarding 削除の本番検証 / PWA キャッシュ起因の特定）
+
+### 今週やったこと
+
+- **`onboarding-removal` の本番デプロイ検証完了**
+  - `api.mosaku.jp` で `POST /onboarding/*` が 404（`GET /auth/google` は 302 でサーバー稼働）を確認し、onboarding が本番からも削除デプロイ済みであることを確定。`HEAD = origin/main = dc54b5c`
+  - 「本番でまだ onboarding が出る」事象の真因は PWA Service Worker の `prompt` 方式によるキャッシュ残り（削除作業の漏れではない）と判明。検証証跡を `.kiro/specs/onboarding-removal/verification.md` に記録
+- **SW 更新方式の改善方針を決定（spec 化は次段）**
+  - SW 更新を `registerType: 'autoUpdate'` 化してキャッシュ残り問題を構造的に解消する方針を決定。編集中の自動保存保全・SW の一世代遅れ特性を論点として整理。spec（`pwa-sw-auto-update`）の起票は次段
+
+### ブロッカー・懸念
+
+- なし。SW 更新方式の改善は spec 化（`pwa-sw-auto-update`）を次段で実施予定
+
+---
+
+## 2026-06-18（Phase 1 ドッグフーディング中 / オンボーディング・自動保存・パスワードリセット・OAuth durability 確定 + MCP / PWA E2E 完了）
+
+### 今週やったこと（6/11 エントリ以降）
+
+- **`onboarding-experience` 完了 → `implementation-validated`**
+  - 残っていたフロント UI（テーマ選択 → ようこそ NB → サンプルメモ）と統合テストを完成させ、6 月計画の「オンボーディング改善」本体を着地
+- **`notebook-autosave` 完了 → `implementation-validated`**
+  - NotebookEditor に MemoEditor 同等の debounce 自動保存を実装。入力保持・タブ切替時のタイマー混入防止までテストで固定
+- **`password-reset-email` 完了 → `implementation-validated`**
+  - Resend ラッパの `MailModule` / `MailService`、`PasswordResetService` + `/reset-password/*` エンドポイント、フロントのリセット確定画面 + API クライアントを実装。設定・エラーコード基盤も追加
+- **`mcp-endpoint` 完了 → implementation-complete**
+  - MCP エンドポイントを実装。OAuth を完全実装（スキーマ・認可・tool・観測性）し、フィーチャーフラグで安全に隔離。ブレストから要件 → 設計 → タスク → 実装まで一気通貫
+- **`pwa-e2e-greenup` 完了 → `completed`**
+  - PWA E2E を緑化。env 欠落（白画面）・login 401 / register 429 の seed・レート制限を解消し、再接続 sync とヘルパーを統一して全 5 スペック緑を確認
+- **`oauth-session-durability` 完了 → `implementation-validated`**
+  - X OAuth が両フロー（既存ログイン / 招待登録）とも未成立だった設計矛盾を是正。`express-session`（MemoryStore）を `cookie-session`（署名付き Cookie）に置換して多インスタンス耐性を確保し、X を passport 一本化（controller の二重 state 誤認・ダミー PKCE を撤廃、register-start guard + ExceptionFilter で招待コードを session 往復）。全 13 タスク完了・X 関連 180 テスト含む backend 全 803 テスト緑で validate 済み
+- **`ai-billing-foundation` 起票 → 中止・削除**
+  - 課金基盤を要件（R1–R10）・設計準備まで進めたが中止。代わりに**課金モデル v2** を `monetization.md` に正典化し、招待無料枠（COMP）の確定仕様も追記
+- **perf**: メモ一覧ホットパスに複合インデックスを追加
+- **fix**: アクセストークン期限切れ時の先回りリフレッシュ、テーマエフェクト統合テストの flaky 解消
+- **chore/docs**: `/commit-split` コマンド追加、所有権チェックのメソッド名を `validateOwnership` に統一
+
+### 来週の予定
+
+- **モバイル操作感の実機確認・改善**（6 月計画の最後の未着手 ⬜。スマホで全画面を触って摩擦起票）
+- **`oauth-session-durability` の Cloud Run 実機検証**（別インスタンス到達・secure/SameSite Cookie 送出を本番相当で確認 / `SESSION_SECRET` 全インスタンス同一の運用不変則チェック）
+- 余裕があれば 7 月前倒しタスク（content JSONB 移行・テーマ追加）の下調べ
+
+### ブロッカー・懸念
+
+- なし。`oauth-session-durability` はユニット/統合レベルでは validate 済み。残るは Cloud Run 実機での多インスタンス耐性・Cookie 属性の最終確認（E2E/Manual レッグ）のみ
+
+### メモ
+
+- 今週の主要前進: spec を **5 本確定**（onboarding / notebook-autosave / password-reset-email / pwa-e2e-greenup / oauth-session-durability）+ mcp-endpoint 実装完了
+- ai-billing-foundation は「spec 化せず steering 正典化で吸収」という判断。基盤先行 → 別 spec の招待特典構想と整合
+- 6 月計画の残 ⬜ は「モバイル実機確認」のみ。友人公開（6 月末）品質に向けて順調
+
+## 2026-06-11（Phase 1 ドッグフーディング中 / ダッシュボード・表示モード・フィードバック永続化を確定 + オンボーディング着手）
+
+### 今週やったこと（6/08 エントリ以降）
+
+- **`home-dashboard` 完了 → `implementation-validated`**（大型 spec）
+  - backend: DashboardModule（最近メモ・今週件数・書いた日・NB別件数の4集計 API。JST 週境界固定・`trashedAt IS NULL` 除外・`feature_area:'dashboard'` 追加）
+  - frontend: 型 / apiClient / React Query フック（staleTime 5分・Zustand 非コピー）+ セクション群（NewMemoHero / RecentMemos / WeeklyActivitySummary / ActivityCalendar / HomeNotebookSection / DailyPrompt）
+  - 起動時の初期画面を `home` に変更し、ランチャー＋ダッシュボードを最初に表示。テスト 57 緑（backend 20 + frontend 37）
+  - approvals は3フェーズ済みなのに phase が `tasks-generated` で取り残されていた不整合も是正
+- **`memo-display-mode` 完了 → `implementation-validated`**
+  - リードオンリー全画面フォーカス表示。`FocusMemoOverlay` を `createPortal` で body マウント、ESC・背景クリック・✕ で終了、テーマ CSS 変数継承・スクロールロック
+  - `MemoEditor` に起動ボタンを統合（新規作成時は非表示）。テスト 29 緑
+- **`feedback-db-persistence` 完了 → `implementation-validated`**
+  - フィードバックを `feedbacks` テーブルへ永続化。Slack=必須レッグ（失敗は Sentry）/ DB=補助レッグ（失敗は `logger.warn`）の named outcome 並列副作用。どちらの失敗でも 201 を維持。テスト 21 緑
+- **`onboarding-experience` 着手（9/18 タスク）**
+  - 要件承認 → backend（`onboarding_completed` カラム + complete/skip API）→ frontend（`useOnboardingStore` + apiClient + React Query）まで完了
+  - 残りはテーマ選択 UI・OnboardingModal・OnboardingGate・BE テスト（別ウィンドウで継続中）
+- **`notebook-autosave` 起票（friction log 駆動）**
+  - NotebookEditor に MemoEditor 同等の debounce 自動保存を導入する spec。要件 → 設計まで進行（別ウィンドウ）
+- **認証レートリミットを友人公開向けに緩和**し env で調整可能化
+- 表示/摩擦修正：アプリシェル高さ `h-screen→h-dvh`、mori テーマの枠配色撤廃でヘッダー文字消失を解消
+- steering：`writing-habit` ステアリング追加、エディタ共有ファクトリパターンを structure に追記
+
+### 来週の予定
+
+- **`onboarding-experience` 残り 9 タスク完了 → validate**（テーマ選択 UI・OnboardingModal・OnboardingGate・BE テスト）
+- **`notebook-autosave` 設計承認 → tasks → TDD 実装**
+- 6月末公開準備：**モバイル操作感の実機確認**（必須3項目で唯一の未着手）
+
+### ブロッカー・懸念
+
+- なし
+
+### メモ
+
+- 本日のセッションで完了済み3 spec を `validate-impl` で締め、計 **107 テスト緑**を確認（feedback 21 / display 29 / dashboard 57）
+- `home-dashboard` の phase 取り残しを是正。メタデータ確定は `docs`（正常確定2本）と `fix`（不整合是正1本）の2コミットに分離
+- `npx` 実行で `backend/package-lock.json` が丸ごと書き換わる副作用 → `git checkout` で巻き戻し、コミット汚染を回避
+- 6月末公開の必須3項目（モバイル実機・フィードバック・オンボーディング）のうち、フィードバックは永続化まで完了・オンボーディングは実装中・モバイル実機が残課題
+
+---
+
+## 2026-06-08（Phase 1 ドッグフーディング中 / エディタ品質を大幅強化 + アプリ内フィードバック完成）
+
+### 今週やったこと（6/02 エントリ以降）
+
+- **`markdown-wysiwyg-editor` 完了 → `implementation-validated`**（大型 spec）
+  - 共有拡張ファクトリ `createEditorExtensions` を新設し、エディタと `PublicMemoRenderer` の拡張定義を一本化
+  - スラッシュコマンドメニュー（トリガー制御・mode 遷移・クエリ絞り込み）を実装
+  - `lowlight` 構文ハイライト基盤を整備、`echo-ref` 方式で content 同期を再設計
+  - 単体・結合（保存 HTML 往復）・E2E・非回帰テストを追加して GO 判定
+- **`editor-prose-typography` 完了 → `implementation-validated`**
+  - `@tailwindcss/typography` を導入し prose スタイルを設定。E2E 視覚検証 + 非回帰ガードテストを追加
+- **`in-app-feedback` 完了 → `implementation-validated`**（本日 validate-impl GO）
+  - backend: DTO + Slack 通知サービス（カテゴリ別絵文字・色、5秒タイムアウト、Slack 障害は Sentry 記録で握りつぶし）+ controller（JWT 保護・Throttle 3req/min）
+  - frontend: Zustand 開閉ストア + React Query mutation + モーダル UI、ヘッダー・設定ページに導線追加
+  - ユニット/統合/E2E テスト全緑（backend 16・frontend 20）
+- **クロスオリジン認証バグを解消**：backend fetch に `credentials:'include'` を付与し、host-only な旧 Refresh Cookie を駆逐してリロード時の 401 を解決
+- **摩擦 UX 修正**：スマホヘッダーのナビラベル非表示・新規メモ編集の blank 画面解消・ノートブックテーマの即時反映/全体維持
+- **レビュー基盤追加**：良い警官・悪い警官の並列レビュースキル（`review`）を導入
+- リファクタ：CLAUDE.md 規約違反コメント削除（8件）・test lint 警告解消
+
+### 来週の予定
+
+- **`feedback-db-persistence`**（フィードバックの DB 永続化）：要件生成済み。並行で設計→タスク→TDD 実装を進行中
+- 6月末公開に向けた未着手タスク：オンボーディング改善・モバイル実機確認・レートリミット見直し
+
+### ブロッカー・懸念
+
+- なし
+
+### メモ
+
+- 今週は 42 コミット、3 spec を `implementation-validated` に締めた
+- エディタ系（WYSIWYG + prose typography）は計画外ボーナス枠。エディタ品質が一段引き上がった
+- `in-app-feedback` は DB 永続化なしの MVP で先行。永続化は `feedback-db-persistence` で追加予定
+
+---
+
+## 2026-06-02（Phase 1 ドッグフーディング中 / spec phase を全整合 + 6月テーマ +5 を前倒し達成）
+
+### 今週やったこと（5/31 エントリ以降）
+
+- **前週末の宿題「実装完了済み spec の phase 整合」を完了**
+  - `refresh-token-auto-login` / `memo-public-sharing` / `memo-public-isolation` の 3 spec を `implementation-validated` に締めた（5/31 時点のブロッカーだった phase ズレを解消）
+  - 本日さらに `viral-invitation` を `/kiro:validate-impl` で検証 → GO（Backend 152/152・Frontend 50/50 緑、旧 `register-with-invitation` 5 本と文字列マッチ判定の残存ゼロを確認）→ `implemented` から `implementation-validated` へ
+  - **これで全 18 spec が `completed` / `implementation-validated` に到達**（phase 未整合ゼロ）
+- **6月マイルストーンのテーマ作成（+5、計15）を前倒し達成**（`sakura` / `yuyake` / `sumi` / `neon` / `wakaba`）
+- **DB プール監視の運用補強**（`memo-public-isolation` 由来）
+  - DB プール使用率の定期観測サービスを追加、`DB_POOL_MAX_CONNECTIONS` を `.env.example` に追記、運用 runbook の gcloud/MQL 断片を実機検証で修正
+
+### 来週の予定
+
+- 7月テーマ作成（+5、計20）に着手 — 6月分を前倒し済みのためペースに余裕
+- モバイル操作感の実機確認・改善
+- エディタ E2E テスト追加（Playwright、TipTap v3 安定性の自動検知）
+- 次の摩擦 Top2〜3 の選定 → `/kiro:spec-init`（候補: ピン留め / Markdown エクスポート / 全文検索 / キーボードショートカット）
+
+### ブロッカー・懸念
+
+- なし（spec phase ズレは全解消）
+- main がローカル先行（push 未実施分の有無を要確認）
+
+### メモ
+
+- 完了 spec 状況: **18 spec すべてが `completed`（8）/ `implementation-validated`（10）**。実装完了率 100%、phase 整合済み
+- テーマ数: **15**（6月マイルストーン達成）。9月マイルストーン（23）に向け 7〜8月で +8 ペース
+- 5/31 の高密度 2 週間の後、今週は「締め」週。実装より phase 整合・運用補強・テーマ量産にウェイト
+
+---
+
+## 2026-05-31（Phase 1 ドッグフーディング中 / 摩擦駆動 spec を量産 — 認証・招待・公開共有が前進）
+
+### 今週やったこと（5/20〜5/31 の2週間ぶん）
+
+- **`refresh-token-auto-login` を実装完走**（5/21〜23）
+  - Backend: cookie-parser 導入 + Refresh Cookie ヘルパ、Refresh Token 用 CSRF Guard、Refresh Token のリポジトリ／サービス層、`/auth/refresh` `/logout` 新設、`JwtAuthGuard` をグローバル化し `@Public()` opt-out に統一、`refresh_token_issue_failed` イベント + tokenHash scrubber
+  - Frontend: `AuthContext` を Refresh Token 復元優先に再構築、API Client の 401 経路で透過リフレッシュ発火、Refresh Client モジュール新設
+  - E2E: バックエンドの Refresh フロー、フロントの「ブラウザ再起動相当の自動復元」Playwright。`docs/deployment/cloud-run.md` にリリース後検証チェックリスト追加
+  - ※ `spec.json` の phase は `tasks-approved` のままだが tasks.md は完了マーク済み（実態は実装完了）
+- **`viral-invitation` を実装**（5/24〜26、phase=`implemented`）
+  - Backend: `InvitationStateService` を HMAC-SHA256 で実装、OAuth 開始 API 新設 + コールバックに state 検証分岐、`QuotaPolicy` をロール別評価 + 楽観ロック減算、`CodeGenerator`（nanoid no-look-alike）、`InvitationController/Service` を verify-context / 自分用 CRUD / shareUrl 付与に拡張、`User.invitationQuota` カラム追加、`INVITATION_STATE_SECRET` を `JWT_SECRET` と分離
+  - Frontend: `/invite/:code` ページ、`AuthForm` を新フロー（prefill / OAuth start / 自動ログイン）に整合、`useInvitationsQueries`、`shareInvitation`（Web Share + clipboard フォールバック）、`ApiError` 導入、設定ページに招待管理セクション
+- **`memo-public-sharing`（メモ公開共有）を実装**（5/28〜30、tasks 35/35 完了）
+  - Backend: `memos` に公開トークン・公開日時カラム追加、`MemoSharingService`、公開/解除/再生成/閲覧 API（リバースプロキシ対応）、ゴミ箱遷移時の公開自動解除カスケード
+  - Frontend: 公開系データアクセス層、未ログイン閲覧者向け公開ビュー、エディタヘッダーの公開コントロール、設定ページの公開メモ管理カード、E2E シナリオ
+  - ※ phase は `implementing` のままだが tasks 全完了（実態は実装完了）
+- **`memo-public-isolation`（公開メモ隔離）を新規起票 → 実装まで完走**（5/30〜31）
+  - 公開読み取り／編集経路の対称な観測 Interceptor、メトリクスの公開／編集分離、一方向 DI 継ぎ目のフィットネステスト、データ境界回帰テスト、公開メモトークンの Sentry 流出防止、運用 runbook（ログメトリクス / アラート / 段階的分離 Playbook）、不変則テスト（bk+fe）
+  - 差分を 6 コミットにタスク単位で整理し main に fast-forward 済み（backend 65 / frontend 13 テスト緑）
+- **ドッグフーディング運用ルールを steering に正式追加**（`.kiro/steering/dogfooding.md`、5/22）。5/19 時点の未着手タスクを解消
+- **メモ一覧の UX 改善**（5/21〜22）: 検索バー / ソート切替 / タイトル・件数表示 / 新規作成ボタン / 空状態の作成 CTA
+- **自動保存のデバウンスを 1000ms → 200ms に短縮**（5/25、体感改善）
+- **オンライン編集も IndexedDB キュー経由に統一**（5/26、`MemoBridge`/`SyncEngine` の pending 通知配線）
+- **CLAUDE.md 更新**（5/22）: アーキ不変則・dogfooding・コミット規約を追記し環境変数を圧縮
+- **OAuth Strategy 未設定時の起動継続**を Google / GitHub にも適用（警告降格）
+- **lint クリーンアップ多数**（`no-unsafe-*` 警告を auth/test・sentry・backend test で計数十件解消）
+
+### 来週の予定
+
+- 実装完了済み spec の phase 整合（`refresh-token-auto-login` / `memo-public-sharing` / `memo-public-isolation` を `/kiro:validate-impl` で `implementation-validated` へ）
+- 6月テーマ作成（+5、計15）に着手
+- モバイル実機確認・エディタ E2E（TipTap v3 安定性検知）
+- 次の摩擦 Top の選定 → `/kiro:spec-init`
+
+### ブロッカー・懸念
+
+- **spec.json の phase と実装実態のズレ**が複数（`refresh-token-auto-login`=tasks-approved / `memo-public-sharing`=implementing / `memo-public-isolation`=tasks-generated だが、いずれも実装・テスト完了）。validate-impl で締めて整合させたい
+- main がローカル先行（push 未実施の分あり）
+
+### メモ
+
+- 期間中コミット数: 約100（5/19〜5/31、2週間ぶん）。大型 spec 4本が並行で進んだ密度の高い2週間
+- 完了 spec 状況: 18 spec 中、completed / implementation-validated が 14、implemented が 1（`viral-invitation`）、実装完了だが phase 未整合が 3（`refresh-token-auto-login` / `memo-public-sharing` / `memo-public-isolation`）
+- テーマ数: 10（変わらず）。9月マイルストーン（23テーマ）に向け 6〜8月で +13 ペースが必要
+- `refresh-token` / `viral-invitation` / メモ一覧 UX / 自動保存高速化は、いずれもドッグフーディングで露出した摩擦の解消にあたる
+
+---
+
+## 2026-05-19（Phase 1 / 5月マイルストーンほぼ達成 + 認識ズレ訂正）
+
+### 今週やったこと
+
+- **`api.mosaku.jp` の UptimeRobot 間欠 Down 解消**
+  - 原因は **DNS ではなく Cloud Run のコールドスタート + Domain Mapping のオーバーヘッド**（5分間隔チェックでほぼ毎回コールドスタートに当たる構造）。UptimeRobot は接続タイムアウトを "DNS Resolving problem" と表記することがある
+  - `gcloud run services update mosaku-backend --region=asia-northeast1 --min-instances=1` を本番適用 → リビジョン `mosaku-backend-00049-rmj`
+  - 適用後の 10 回連続 `/health` チェック: HTTP 200 が **10/10**、TTFB 平均 1.4s（最大 4.4s / 最小 0.4s）。UptimeRobot のタイムアウト（30s）に余裕で収まる範囲に
+  - `docs/deployment/cloud-run.md` を更新（初回デプロイのコマンド例 `--min-instances=0` → `=1`、説明文、トラブルシューティングに UptimeRobot 誤検知の注記と Phase 1 適用済みのメモを追記）→ コミット `01268b2 docs(deployment): Cloud Run min-instances=1 への変更を反映`
+  - GitHub Actions のデプロイは `--update-env-vars` / `--update-secrets` のみ指定で既存値を保持するため、毎回のデプロイで `--min-instances` が上書きされないことを確認
+- **過去エントリの認識ズレを訂正**（5/14 エントリは時点の認識として残し、本エントリで補正）
+  - **`SLACK_WEBHOOK_URL`**: 5/14 22:46 時点で GitHub Secrets に登録済み。`deploy-backend.yml` / `deploy-frontend-prod.yml` の `notify` ジョブ（`8398a7/action-slack@v3`）も実装済みで、最新の backend デプロイ（5/18 22:20）の `Slack Notification` ジョブが **success** → 既に通知は飛んでいる
+  - **テーマ +3（計 10）**: 5/15 に `20260515000000_add_umi_tsuki_yuki_themes` マイグレーションをコミット（`dc7f703 feat(theme): umi・tsuki・yuki テーマを追加（計10テーマ）`）し、5/17 22:37 の backend デプロイで本番 DB に `migrate deploy` 済み（DB Migration ジョブ success）。CSS ファイル（`frontend/public/themes/`）も 10 個揃っている: `aka` / `ao` / `code` / `kami` / `kuro` / `mori` / `siro` / `umi` / `tsuki` / `yuki`
+
+### 来週の予定
+
+- **ドッグフーディング開始**（Notion を閉じる、`Friction Log` ノートブック作成、`#blocker` / `#major` / `#spec-done` タグ命名規約、金曜トリアージのルール文書化）
+- 摩擦記録が貯まり次第、**摩擦 Top1 の選定 → `/kiro:spec-init`**
+- 6 月以降のテーマ作成ペース見直し（9 月マイルストーン 30 テーマに向けて、月 4 テーマペース要）
+
+### ブロッカー・懸念
+
+- なし
+
+### メモ
+
+- **5 月マイルストーン: Sentry / PWA / UptimeRobot / api.mosaku.jp DNS / SLACK_WEBHOOK_URL / テーマ +3 = 6/7 達成**。残るは「ドッグフーディング開始」のみ
+- Cloud Run `min-instances=1` 適用に伴う**月額コスト増は約 $13〜18**。Phase 1 ドッグフーディング期間の安定性投資として許容
+- UptimeRobot の "DNS Resolving problem" 表記は実際にはタイムアウト系も含むことを `docs/deployment/cloud-run.md` の TS セクションに記録済み（将来同様の症状が出たときの参照用）
+- 次のテーマ作成マイルストーン警告: 9 月 30 / 10 月 40 / 12 月 50 → 現在 10 から 6〜8 月で +20、月 4 テーマペースが必要
+
+---
+
+## 2026-05-14（Phase 1 準備中 / UptimeRobot 導入完了）
+
+### 今週やったこと
+
+- **UptimeRobot 導入完了**（mosaku.jp / api.mosaku.jp の2モニター設定、5分間隔）
+  - api.mosaku.jp は DNS Resolving problem を検知中 → 並行対応中
+- **NotebookEditor に変更検知とエラー表示を追加**（`fix(notebook)`）
+- API 障害監視ツールの構想をドキュメント化（`docs/development/`）
+- Sentry 導入 spec を `completed` に確定
+
+### 来週の予定
+
+- api.mosaku.jp DNS 問題の解消（対応中）
+- ドッグフーディング開始（Notion を閉じる）・摩擦記録運用ルール開始
+- GitHub Secrets に `SLACK_WEBHOOK_URL` を追加（デプロイ通知）
+- テーマ作成（+3テーマ、計 10。5月マイルストーン達成）
+- 摩擦 Top1 の選定 → `/kiro:spec-init`
+
+### ブロッカー・懸念
+
+- api.mosaku.jp: DNS Resolving problem を UptimeRobot が検知中（並行対応中）
+
+### メモ
+
+- テーマ数: 7（変わらず）
+- Phase 1 5月後半タスク: Sentry ✅ / UptimeRobot ✅ / SLACK_WEBHOOK_URL ⬜ / ドッグフーディング ⬜ / テーマ +3 ⬜ / 摩擦 Top1 ⬜
+
+---
+
+## 2026-05-12（Phase 1 / PWA + オフライン対応完了 — 計画大幅前倒し）
+
+### 今週やったこと
+
+- **`pwa-offline-support` を完走**（31/31 タスク、`/kiro:validate-impl` で `implementation-validated` に確定）
+  - 当初 7〜8月予定の PWA + オフライン対応を 5月で前倒し完了
+  - Domain 層: `OfflineMemoRepository`（`frontend/src/utils/offline/repository.ts`）/ `SyncEngine`（`frontend/src/utils/sync/sync-engine.ts`）/ `QuotaManager` / `SyncTelemetry` / `NetworkStatusStore`
+  - Hooks 層: `useNetworkStatus` / `useSyncEngine` / `useSwRegistration`、`useAutoSave` を 6 状態（`'offline-saved'` 追加）に拡張、`useMemoQueries` を Repository 経由に切替
+  - UI 層: `OfflineBadge`（ヘッダー常時表示）/ `SyncToast` / `SwUpdatePrompt` / `DebugPanel`、`MemoEditor` の削除/ゴミ箱送りも Repository 経由
+  - PWA 設定: `vite-plugin-pwa` を `prompt` 更新方式に切替、`/api/*` の runtimeCaching 完全排除、`themes/*.css` を precache から外して CacheFirst の遅延キャッシュ化
+  - Backend: `PATCH /memos/:id` に `clientUpdatedAt`（`@IsISO8601()` + TZ 検証）を追加し、サーバー側が新しい場合は `ConflictException`（409 + 現在表現）を返す last-write-wins を実装
+  - E2E: 電車内シナリオ / PWA インストール / アプリシェル / SW 更新 / パフォーマンス計測 CI ジョブ（precache 1.5x 以下・同期 30 秒以内・検索 300 ms 以内）
+  - 観測性: `SyncTelemetry` 経由で `feature_area: memo` / `route` / `user_facing` タグ付き Sentry breadcrumb + リトライ上限到達時のみ `level: error`
+- **テスト結果**: Frontend Vitest **519/519 緑**、Backend memo Jest **32/32 緑**、Backend e2e `memo-last-write-wins.e2e-spec.ts` 含む
+
+### 来週の予定
+
+- ドッグフーディング開始（Notion 閉じる）・摩擦記録運用ルール開始（`Friction Log` ノートブック作成）
+- UptimeRobot 導入（Sentry とセットの未完了タスク）
+- GitHub Secrets に `SLACK_WEBHOOK_URL` を追加（デプロイ通知）
+- テーマ作成（+3 テーマ、計 10。5 月マイルストーン達成）
+- 摩擦 Top1 の選定 → `/kiro:spec-init`
+
+### ブロッカー・懸念
+
+- なし
+
+### メモ
+
+- spec 名は計画書記載の `pwa-and-offline-cache` から `pwa-offline-support` に変わった（実装スコープを「単一デバイス前提のオフライン CRUD + シングル PWA」に明示化）
+- `multi-device-conflict-resolution` は引き続き別 spec（Phase 3 / 11 月）として温存
+- 当初 7〜8 月の PWA 枠が空いたため、その時間で content JSONB 移行 / 利用規約・PP 骨子 / 摩擦 Top の積み増しなどに余裕ができた
+- 計画書の Phase 1 PWA 行を ✅ に更新、最終更新日を 2026-05-12 に変更
+
+---
+
+## 2026-05-09（Phase 1 / Sentry 統合完了）
+
+### 今週やったこと
+
+- **`sentry-integration` を完走**（26/26 タスク、`spec.json` を `completed` に更新）
+  - Backend: SDK 初期化、PII scrubber、構造化タグ、認証 Interceptor、ConfigService 拡張
+  - Frontend: SDK 初期化、`@sentry/vite-plugin` で source map upload、`useSentryRouteTag`、`AuthContext` の `setUser` 連携
+  - CI: `deploy-backend.yml` / `deploy-frontend-prod.yml` に release / token / サンプリング率を注入
+  - ドキュメント: `docs/deployment/sentry.md` を新規作成し single source of truth 化、`cloud-run.md` / `vercel.md` の旧セクションを誘導に整理
+  - Steering: `CLAUDE.md` / `.kiro/steering/tech.md` に Sentry 環境変数を反映
+  - Sentry Platform 側の Production プロジェクト・Alert Rule・Slack 通知を設定し smoke test 完了
+- **タグシステムの DB マイグレーションと UI コンポーネント追加**（`feat(tag)`）
+- **コード品質リファクタ多数**: `auth` / `memo` / `theme` / `tag` の ESLint 警告解消、`any` → `unknown` 置換、`auth.controller.ts` の `.bind(this)` をアロー関数化、WHAT コメントを CLAUDE.md 規約に沿って削除
+- **デプロイまわりの修正**: Vercel Git Integration の自動デプロイ無効化、Cloud Run の secret 全削除リスク修正、SW source map 残留対応
+- **意思決定**: オフライン対応・PWA 化の方針を会話で確定
+  - 2 spec に分割: `pwa-and-offline-cache`（PWA 基盤 + オフライン CRUD、シングルデバイス前提）→ `multi-device-conflict-resolution`（競合解決）
+  - 競合解決は CRDT ではなく `updatedAt` 比較 + 409 + ユーザー選択 UI で割り切り
+  - キャッシュポリシーは LRU（直近 50 件 + 直近 30 日編集）
+
+### 来週の予定
+
+- `/kiro:spec-init` で `pwa-and-offline-cache` を起票し、要件定義フェーズに入る
+- 摩擦記録の運用開始（`Friction Log` ノートブック作成）
+- UptimeRobot 導入（Sentry とセットの未完了タスク）
+- テーマ作成（+3、計 10）
+
+### ブロッカー・懸念
+
+- なし
+
+### メモ
+
+- 期間中コミット数: 42（前回からの差分、2.5 週分）
+- spec 完了状況: 13 spec 中 7 件が `completed` または `implementation-validated`、3 件が `tasks-generated` で停滞
+- `AuthContext.tsx` のオフライン起動時 `removeTokens()` 落とし穴を発見 → `pwa-and-offline-cache` の中で同梱修正予定
+- JWT 有効期限は 24h ハードコード気味、リフレッシュトークン未実装。将来課題として認識
+
+---
+
+## 2026-04-23（Phase 1 spec 整理）
+
+### 今週やったこと
+
+- **`dogfooding-friction-log` を archive**（`.kiro/specs/_archived/dogfooding-friction-log/` に移動）
+  - 要件・設計・タスク生成まで進めたが、永続性レビューで「Mosaku 本体に残すべき機能が無い」と判断
+  - 摩擦ログは既存 `memo` + `notebook` + `tag` で運用ルール（タグ命名規約 `#blocker` / `#major` / `#spec-done` 等、`Friction Log` ノートブック手動作成、金曜トリアージ）として達成可能
+  - 専用機能（Slack 通知 / トリアージ UI / クイックキャプチャショートカット / ADMIN ゲート）はドッグフーディング期間限定でユーザー公開後にテックデブト化するため不採用
+  - 汎用価値がありそうな「ノートブック単位のテンプレート」機能は、必要になった時点で別 spec として再起票
+
+### 来週の予定
+
+- `sentry-integration`・`uptime-monitoring` の spec-init / requirements に着手
+- ドッグフーディング運用ルールを `.kiro/steering/` または `CLAUDE.md` に短く追記するか検討
+
+### ブロッカー・懸念
+
+- なし
+
+### メモ
+
+- 「あとで削除するのが面倒」を判断軸にすると、Phase 1 ドッグフーディング期間中の自分専用機能は基本的に作らない方が筋が良いと再確認
+
+---
+
+## 2026-04-20（Phase 0完了 → Phase 1移行間）
+
+### 今週やったこと
+
+- **`mosaku-brand-theme` 実装完了 → `implementation-validated` で確定**（28/28 タスク完了、2026-04-21 検証）
+  - `mori` テーマを深緑の森ブランドテーマに全面リライト
+  - テーマエフェクト基盤を新設（`ThemeEffectKey` 契約 / `themeEffectRegistry` / `ThemeEffectHost` / `useEditorFocusStore` / `useMoriEffectControl` / `useActiveTheme`）
+  - エフェクトコンポーネントを `frontend/src/components/effects/` に集約（共通: `ForestAnimationLayer` / `ParticleCanvas`、mori専用: `mori/MoriEffectLayer`）
+  - mori テーマレコードに `effectKey: 'mori'` メタデータを追加するマイグレーションを backend に投入
+  - バンドル分離・ライフサイクル・a11y 検証テストを追加
+  - `/kiro:validate-impl` 結果: Vitest 256/256 緑、`MoriEffectLayer-*.js` が独立チャンク化、要件 1〜7 全トレース可能 → GO
+- **`auth-register-invitation-refactor`** が `implementation-validated` で完了
+- **CLAUDE.md 更新**（コミット `70431de`）
+- **CI 改善**: Backend デプロイ認証を Workload Identity Federation に移行 / Artifact Registry 移行 / Slack 通知の安全化
+
+### 来週の予定
+
+- `/kiro:steering` で steering ファイルを再同期（今回手動で更新したが、コード進化に追従するため）
+- Phase 1 の spec 3 本を `spec-init`：
+  - `dogfooding-friction-log`（ドッグフーディング摩擦記録の運用と仕組み）
+  - `sentry-integration`（バックエンド + フロントエンド）
+  - `uptime-monitoring`（UptimeRobot 連携 + `/health` エンドポイント整備）
+- 新規テーマ作成の素案（+3、計10テーマに向けて）
+
+### ブロッカー・懸念
+
+- なし
+
+### メモ
+
+- Phase 0 のリリース要件（コアリファクタ + 自動保存 + ゴミ箱 + Staging）は完了済み
+- 計画外ボーナスとして 3 spec（`login-visual-redesign` / `oauth-providers-expansion` / `mosaku-brand-theme`）を実装。ブランド表現と認証選択肢が大きく強化された
+- 開発プロセス: cc-sdd（仕様駆動開発）が定着。1 Todo = 1 Commit ルールも維持

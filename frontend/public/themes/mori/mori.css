@@ -1,39 +1,49 @@
-/* mori: 緑系のテーマ */
+/* mori: Mosaku ブランドテーマ（ログイン画面と同じ深緑の森の世界観） */
 
-/* 1. CSS変数の定義とベーススタイル */
+/* 1. ルートトークンとベーススタイル
+   NOTE: wave-pulse グラデ・fog-drift 霧（生きた背景）は MoriEffectLayer / ForestAnimationLayer
+   が position:fixed z-0 の単一ソースとして担う（Task 6 G-4 二重背景解消）。
+   .theme-root は生きた背景を描かず、CSS 変数・タイポ・本文面スタイルのみ持つ。 */
 .theme-root {
-	/* カラー */
-	--theme-bg: linear-gradient(70deg, #00552e, #47885e);
-	--theme-text-color: #86efac;
-	--theme-heading-color: #86efac;
-	--theme-accent-color: #22c55e;
-	--theme-border-color: #86efac;
+	/* カラー（login-visual-redesign と同トーン） */
+	--theme-bg: linear-gradient(135deg, #00552e, #1a4d2e, #47885e, #1a4d2e, #00552e);
+	--theme-text-color: #e7f5ec;
+	--theme-heading-color: #f0fdf4;
+	--theme-accent-color: #86efac;
+	--theme-border-color: rgba(134, 239, 172, 0.35);
 
 	/* タイポグラフィ */
 	--theme-font-family:
 		'游明朝', 'Yu Mincho', 'YuMincho', 'ヒラギノ明朝 ProN', 'Hiragino Mincho ProN',
 		'Times New Roman', serif;
 	--theme-font-size: 16px;
-	--theme-line-height: 2;
+	--theme-line-height: 1.9;
 
 	/* レイアウト */
 	--theme-padding: 2rem;
 	--theme-margin: 1rem;
-	--theme-border-radius: 0.5rem;
+	--theme-border-radius: 0.75rem;
 
-	/* ベーススタイルの適用 */
-	background: var(--theme-bg);
-	background-size: 200% 200%;
-	animation: gradientShift 10s ease infinite;
 	color: var(--theme-text-color);
-	padding: var(--theme-padding);
-	border-radius: var(--theme-border-radius);
 	font-family: var(--theme-font-family);
 	font-size: var(--theme-font-size);
 	line-height: var(--theme-line-height);
+
+	/* editor セマンティックパレット（rich-editor-blocks Task 2.3）: テキスト色のみ本文グラデ
+	   （--theme-bg）の両端 #00552e に対して AA(4.5:1) を満たす実値へ上書きする。マーカー/
+	   コールアウトは不透明な自己完結ペアのため tokens.css :root の既定値をそのまま継承する。 */
+	--editor-text-wakaba: #63d275;
+	--editor-text-sora: #8ac2ea;
+	--editor-text-kohaku: #e9b163;
+	--editor-text-sumire: #d4aee7;
 }
 
-/* 2. タイトル */
+/* 3. メモタイトル
+   NOTE: ヘッダー/サイドバー/汎用 button・input・a への配色は廃止。
+   他14テーマと同様、テーマ対象はメモ編集面（.memo-title / .memo-content）に限定する。
+   理由: .theme-root button が要素型セレクタとして Tailwind の text-gray-600 (詳細度同等)
+   に勝ち、白背景ヘッダーのナビ文字がほぼ白(#f0fdf4)になって消えていたため
+   （friction log: ヘッダー文字消失）。ヘッダーの正式なテーマ化は別途設計で扱う。 */
 .theme-root .memo-title {
 	color: var(--theme-heading-color);
 	font-size: 2rem;
@@ -44,41 +54,21 @@
 }
 
 .theme-root .memo-title::placeholder {
-	color: rgba(21, 128, 61, 0.5);
+	color: rgba(231, 245, 236, 0.5);
 }
 
-/* 3. コンテンツエリア */
+/* 4. メモ本文（.memo-content） */
 .theme-root .memo-content {
 	color: var(--theme-text-color);
 	font-size: var(--theme-font-size);
 	line-height: var(--theme-line-height);
+	position: relative;
+	z-index: 1;
 }
 
-/* 4. 見出し */
-.theme-root .memo-content h1 {
-	color: var(--theme-heading-color);
-	font-size: 2rem;
-	font-weight: 600;
-	margin-top: 1.5rem;
-	margin-bottom: 0.75rem;
-}
-
-.theme-root .memo-content h2 {
-	color: var(--theme-heading-color);
-	font-size: 1.5rem;
-	font-weight: 600;
-	margin-top: 1.5rem;
-	margin-bottom: 0.75rem;
-}
-
-.theme-root .memo-content h3 {
-	color: var(--theme-heading-color);
-	font-size: 1.25rem;
-	font-weight: 600;
-	margin-top: 1.5rem;
-	margin-bottom: 0.75rem;
-}
-
+.theme-root .memo-content h1,
+.theme-root .memo-content h2,
+.theme-root .memo-content h3,
 .theme-root .memo-content h4,
 .theme-root .memo-content h5,
 .theme-root .memo-content h6 {
@@ -88,12 +78,22 @@
 	margin-bottom: 0.75rem;
 }
 
-/* 5. 段落 */
+.theme-root .memo-content h1 {
+	font-size: 2rem;
+}
+
+.theme-root .memo-content h2 {
+	font-size: 1.5rem;
+}
+
+.theme-root .memo-content h3 {
+	font-size: 1.25rem;
+}
+
 .theme-root .memo-content p {
 	margin-bottom: 1rem;
 }
 
-/* 6. 強調・斜体・取消線 */
 .theme-root .memo-content strong {
 	font-weight: 700;
 	color: var(--theme-heading-color);
@@ -108,7 +108,6 @@
 	opacity: 0.7;
 }
 
-/* 7. リスト */
 .theme-root .memo-content ul,
 .theme-root .memo-content ol {
 	margin-left: 1.5rem;
@@ -119,52 +118,80 @@
 	margin-bottom: 0.5rem;
 }
 
-/* 8. 引用 */
 .theme-root .memo-content blockquote {
 	border-left: 4px solid var(--theme-accent-color);
 	padding-left: 1rem;
 	margin-left: 0;
 	margin-bottom: 1rem;
-	color: rgba(13, 43, 26, 0.8);
+	color: rgba(231, 245, 236, 0.8);
 	font-style: italic;
 }
 
-/* 9. コードブロック */
 .theme-root .memo-content pre {
-	background-color: rgba(34, 197, 94, 0.1);
+	background-color: rgba(0, 41, 21, 0.55);
 	border: 1px solid var(--theme-border-color);
-	border-radius: 0.25rem;
+	border-radius: 0.375rem;
 	padding: 1rem;
 	overflow-x: auto;
 	margin-bottom: 1rem;
 }
 
 .theme-root .memo-content code {
-	background-color: rgba(34, 197, 94, 0.1);
+	background-color: rgba(0, 41, 21, 0.55);
 	padding: 0.2rem 0.4rem;
-	border-radius: 0.25rem;
+	border-radius: 0.375rem;
 	font-family: 'Monaco', 'Courier New', monospace;
 	font-size: 0.9em;
 }
 
-/* 10. 水平線 */
 .theme-root .memo-content hr {
 	border: none;
 	border-top: 2px solid var(--theme-border-color);
 	margin: 2rem 0;
 }
 
-/* 11. リンク */
 .theme-root .memo-content a {
 	color: var(--theme-accent-color);
 	text-decoration: underline;
 }
 
 .theme-root .memo-content a:hover {
-	color: var(--theme-heading-color);
+	color: #bbf7d0;
 }
 
-/* 12. レスポンシブ */
+/* 4.5 森リッチパック（theme-immersive-world / Task 5.1・Layer③）
+   ---------------------------------------------------------------------------
+   色・構造トークンの単一の源泉は Layer①（src/themes/shell/tokens.css の
+   [data-theme="mori"]）。本層はそこへ「重量テクスチャ（多層グラデ・data-URI noise・
+   内側ハイライト）」だけを後追いで重ね、accent/outline/elevation の半テーマ窓を作らない。
+   mori 有効時のみ useThemeCSS が fetch するため、非森ユーザーの初期バンドルは増えない（7.5）。
+   ※ shell トークン（--surface 等）はここで再定義しない（Layer① を上書きしない）。 */
+
+/* 森のざらつき：自己完結のインライン SVG（feTurbulence）。外部リソース不使用。
+   内側の url 参照・括弧・# は %-エンコードし、リテラル url() は外側 1 個のみに保つ。 */
+.theme-root {
+	--mori-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%23n%29' opacity='0.35'/%3E%3C/svg%3E");
+}
+
+/* プリミティブ面（半透明 surface）へ森固有のテクスチャを重ねる。
+   上から：内側ハイライト（上端の射光）→ 木漏れ日 → 下層の苔の沈み込み → 森のざらつき。
+   いずれも半透明＝背後の生きた背景と Layer① の scrim を潰さず精緻化のみ。 */
+.theme-root .shell-surface,
+.theme-root .shell-panel,
+.theme-root .shell-card {
+	background-image:
+		linear-gradient(180deg, rgba(134, 239, 172, 0.1), transparent 14%),
+		radial-gradient(135% 110% at 50% -20%, rgba(71, 136, 94, 0.18), transparent 65%),
+		linear-gradient(180deg, transparent 55%, rgba(0, 24, 13, 0.16)), var(--mori-noise);
+	background-repeat: no-repeat, no-repeat, no-repeat, repeat;
+	background-size:
+		auto,
+		auto,
+		auto,
+		160px 160px;
+}
+
+/* 6. レスポンシブ */
 @media (max-width: 768px) {
 	.theme-root {
 		padding: 1rem;
@@ -187,15 +214,6 @@
 	}
 }
 
-/* 13. アニメーション */
-@keyframes gradientShift {
-	0% {
-		background-position: 0% 50%;
-	}
-	50% {
-		background-position: 100% 50%;
-	}
-	100% {
-		background-position: 0% 50%;
-	}
-}
+/* 旧 6. prefers-reduced-motion / 旧 7. keyframes は Task 6 で撤去した。
+   wave-pulse・fog-drift は src/index.css が定義し、ForestAnimationLayer の
+   useMoriEffectControl（4 条件自動停止）が JS レベルで制御する（G-4 単一ソース化）。 */

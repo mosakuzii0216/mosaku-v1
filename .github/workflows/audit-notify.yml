@@ -1,0 +1,79 @@
+name: Weekly Audit Notify
+
+# =============================================================================
+# 週次品質監査（.claude/skills/weekly-quality-audit）の結果を Slack へ通知する。
+#
+# 監査はクラウドの定期エージェントが毎週金曜に実行し、成果をブランチ + PR で出す。
+# 通知をエージェント本体ではなくこの workflow に持たせているのは、Slack Webhook URL
+# をクラウド実行環境ではなく GitHub Actions secrets 側に閉じ込めるため。
+#
+# トリガーは監査ブランチ（chore/weekly-audit-*）の PR に限定する。
+# 通常の PR まで Slack に流すとノイズになるため。
+# =============================================================================
+
+on:
+  pull_request:
+    types: [opened]
+    branches: [main]
+
+jobs:
+  notify:
+    name: Slack へ監査結果を通知
+    # 監査エージェントが作るブランチだけに反応する
+    if: startsWith(github.head_ref, 'chore/weekly-audit-')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slack へ通知
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_AUDIT_WEBHOOK_URL }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          # PR 本文には監査レポート全文が入っている（スキルの「無人実行モード」参照）
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_AUDIT_WEBHOOK_URL が未設定のため通知をスキップします"
+            exit 0
+          fi
+
+          # 本文の切り詰めは jq 側で行う。
+          # head -c / ${#var} はバイト単位で数えるため、日本語主体のレポートでは
+          # マルチバイト文字の途中で切れて文字化けし、かつ「省略した」注記も
+          # 付かずに本文が黙って欠ける。jq の length / スライスはコードポイント
+          # 単位なのでこの問題が起きない。
+          payload=$(jq -n \
+            --arg title "$PR_TITLE" \
+            --arg url "$PR_URL" \
+            --arg number "$PR_NUMBER" \
+            --arg body "$PR_BODY" \
+            --argjson limit 2500 \
+            '($body | if (length > $limit)
+                      then .[0:$limit] + "\n\n…（以下省略。全文は PR を参照）"
+                      else . end) as $trimmed |
+             {
+              blocks: [
+                {
+                  type: "header",
+                  text: { type: "plain_text", text: "🧹 今週の品質監査", emoji: true }
+                },
+                {
+                  type: "section",
+                  text: { type: "mrkdwn", text: ("<" + $url + "|#" + $number + " " + $title + ">") }
+                },
+                {
+                  type: "section",
+                  text: { type: "mrkdwn", text: ("```" + $trimmed + "```") }
+                }
+              ]
+            }')
+
+          status=$(printf '%s' "$payload" | curl -sS -o /dev/stderr -w '%{http_code}' \
+            -X POST -H 'Content-Type: application/json' \
+            --data @- "$SLACK_WEBHOOK_URL")
+
+          if [ "$status" != "200" ]; then
+            echo "Slack への通知が HTTP $status で失敗しました"
+            exit 1
+          fi
+          echo "Slack へ通知しました"

@@ -1,0 +1,78 @@
+import { useMemo } from 'react';
+import { useActivityDates } from '../../hooks/useHomeDashboardQueries';
+import { toJSTDateString } from '../../utils/jstDate';
+
+const buildLast35Days = (): string[] => {
+	const today = new Date();
+	const days: string[] = [];
+	for (let i = 34; i >= 0; i--) {
+		const d = new Date(today);
+		d.setDate(today.getDate() - i);
+		days.push(toJSTDateString(d));
+	}
+	return days;
+};
+
+export const ActivityCalendar = () => {
+	const { from, to } = useMemo(() => {
+		const days = buildLast35Days();
+		return { from: days[0], to: days[days.length - 1] };
+	}, []);
+
+	const { data, isLoading, isError, refetch } = useActivityDates(from, to);
+
+	const days = useMemo(() => buildLast35Days(), []);
+	const activeSet = useMemo(() => new Set(data?.dates ?? []), [data]);
+
+	if (isLoading) {
+		return (
+			<div className="px-4 py-3">
+				<h2 className="text-sm font-semibold text-[var(--on-surface-variant)] mb-2">書いた日</h2>
+				<div data-testid="activity-calendar-skeleton" className="grid grid-cols-7 gap-1">
+					{Array.from({ length: 35 }).map((_, i) => (
+						<div key={i} className="w-6 h-6 bg-[var(--surface-variant)] rounded animate-pulse" />
+					))}
+				</div>
+			</div>
+		);
+	}
+
+	if (isError) {
+		return (
+			<div className="px-4 py-3">
+				<h2 className="text-sm font-semibold text-[var(--on-surface-variant)] mb-1">書いた日</h2>
+				<div className="text-sm text-[var(--on-surface-variant)]">
+					<p>データを取得できませんでした</p>
+					<button onClick={() => refetch()} className="mt-1 text-[var(--accent)] text-sm">
+						再試行
+					</button>
+				</div>
+			</div>
+		);
+	}
+
+	return (
+		<div className="px-4 py-3">
+			<h2 className="text-sm font-semibold text-[var(--on-surface-variant)] mb-2">書いた日</h2>
+			<div className="grid grid-cols-7 gap-1">
+				{days.map((day) => {
+					const isActive = activeSet.has(day);
+					return (
+						<div
+							key={day}
+							data-testid="calendar-cell"
+							className="w-6 h-6 flex items-center justify-center"
+						>
+							{isActive && (
+								<span
+									data-testid="active-dot"
+									className="w-3 h-3 rounded-full bg-[var(--accent)]"
+								/>
+							)}
+						</div>
+					);
+				})}
+			</div>
+		</div>
+	);
+};

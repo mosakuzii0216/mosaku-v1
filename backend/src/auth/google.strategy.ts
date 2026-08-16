@@ -1,31 +1,37 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy, StrategyOptions } from 'passport-google-oauth20';
+import { Strategy } from 'passport-google-oauth20';
 import { ConfigService } from '../config/config.service';
-import type { GoogleStrategyUser } from './types/oauth.types';
-
-interface GoogleProfile {
-	id: string;
-	name?: {
-		givenName?: string;
-		familyName?: string;
-	};
-	emails?: Array<{ value: string }>;
-	photos?: Array<{ value: string }>;
-}
+import { AppLogger } from '../common/logger/app-logger.service';
+import type { GoogleProfile, GoogleStrategyUser } from './types/oauth.types';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
+	private readonly isConfigured: boolean;
+	private readonly logger = new AppLogger();
+
 	constructor(private readonly configService: ConfigService) {
+		const clientID = configService.googleClientId;
+		const clientSecret = configService.googleClientSecret;
 		super({
-			clientID: configService.googleClientId,
-			clientSecret: configService.googleClientSecret,
+			clientID: clientID ?? 'unconfigured',
+			clientSecret: clientSecret ?? 'unconfigured',
 			callbackURL: configService.googleRedirectUri,
 			scope: ['email', 'profile'],
-		} as StrategyOptions);
+		});
+		this.isConfigured = !!(clientID && clientSecret);
+		if (!this.isConfigured) {
+			this.logger.warn(
+				'Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to enable Google login.',
+				'GoogleStrategy',
+			);
+		}
 	}
 
 	validate(accessToken: string, refreshToken: string, profile: GoogleProfile): GoogleStrategyUser {
+		if (!this.isConfigured) {
+			throw new ServiceUnavailableException('Google OAuth provider is not configured');
+		}
 		const { id, name, emails, photos } = profile;
 
 		const user: GoogleStrategyUser = {

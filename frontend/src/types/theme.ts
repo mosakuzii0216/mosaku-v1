@@ -1,6 +1,22 @@
-/**
- * テーマ関連の型定義
- */
+const VALID_EFFECT_KEYS = new Set<string>(['mori', 'umi', 'yoru', 'asa']);
+
+export type ThemeEffectKey = 'mori' | 'umi' | 'yoru' | 'asa';
+
+export interface ThemeMetadata {
+	effectKey?: ThemeEffectKey;
+	previewColor?: string;
+	[key: string]: unknown;
+}
+
+export function getEffectKey(
+	theme: { metadata?: ThemeMetadata } | null | undefined,
+): ThemeEffectKey | undefined {
+	const raw = theme?.metadata?.effectKey;
+	if (typeof raw === 'string' && VALID_EFFECT_KEYS.has(raw)) {
+		return raw as ThemeEffectKey;
+	}
+	return undefined;
+}
 
 export interface ThemeColors {
 	backgroundColor: string;
@@ -75,7 +91,7 @@ export interface Theme {
 	isSystem: boolean;
 	isPublic: boolean;
 	cssFilePath: string; // CSSファイルのパス
-	metadata?: Record<string, any>; // メタデータ（アクセシビリティ設定など）
+	metadata?: ThemeMetadata;
 	styles?: ThemeStyles; // 後方互換性のため残す
 	createdAt: string;
 	updatedAt: string;
@@ -117,21 +133,4 @@ export interface UpdateThemeData {
 	description?: string;
 	isPublic?: boolean;
 	styles?: ThemeStyles;
-}
-
-/**
- * CSS Variables用の型
- */
-export interface ThemeCSSVariables {
-	'--theme-bg-color': string;
-	'--theme-text-color': string;
-	'--theme-border-color': string;
-	'--theme-accent-color': string;
-	'--theme-font-family': string;
-	'--theme-font-size': string;
-	'--theme-line-height': string;
-	'--theme-border-radius': string;
-	'--theme-padding': string;
-	'--theme-margin': string;
-	[key: string]: string;
 }

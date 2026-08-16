@@ -1,28 +1,20 @@
-/**
- * AuthContext - 認証状態管理
- *
- * 内部で以下のカスタムフックを使用して責務を分離:
- * - useEmailAuth: Email/Password認証
- * - useOAuth: OAuth認証（Google, GitHub, X）
- */
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { AuthAPI, AuthTokenManager } from '../utils/auth';
-import type { UserProfile, OAuthUserData } from '../utils/auth';
-import { useEmailAuth, initializeEmailAuth, performLogout } from '../hooks/useEmailAuth';
-import { useOAuth, type OAuthProvider } from '../hooks/useOAuth';
+import type { UserProfile } from '../utils/auth';
+import { useEmailAuth, initializeEmailAuth } from '../hooks/useEmailAuth';
+import { useOAuth } from '../hooks/useOAuth';
+import { useSentryAuthSync } from '../hooks/useSentryAuthSync';
+import { refreshClient } from '../utils/refreshClient';
 import { logger } from '../utils/logger';
 
-// 状態の型定義
 export interface AuthState {
 	user: UserProfile | null;
 	loading: boolean;
 	isAuthenticated: boolean;
 }
 
-// アクションの型定義
 export interface AuthActions {
-	// Email認証
 	login: (email: string, password: string) => Promise<void>;
 	register: (
 		email: string,
@@ -32,22 +24,9 @@ export interface AuthActions {
 	) => Promise<void>;
 	resetPassword: (email: string) => Promise<void>;
 	changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
-
-	// OAuth認証
 	googleLogin: () => void;
-	googleRegisterWithInvitation: (
-		googleUser: OAuthUserData,
-		invitationCode: string,
-	) => Promise<void>;
-	githubLogin: () => void;
-	githubRegisterWithInvitation: (
-		githubUser: OAuthUserData,
-		invitationCode: string,
-	) => Promise<void>;
+	appleLogin: () => void;
 	xLogin: () => void;
-	xRegisterWithInvitation: (xUser: OAuthUserData, invitationCode: string) => Promise<void>;
-
-	// 共通
 	logout: () => Promise<void>;
 	refreshUser: () => Promise<void>;
 }
@@ -64,40 +43,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	const [user, setUser] = useState<UserProfile | null>(null);
 	const [loading, setLoading] = useState(true);
 
-	// カスタムフックを使用
 	const emailAuth = useEmailAuth();
 	const oauth = useOAuth();
 
-	// 認証成功時のハンドラー
+	// Sentry scope を user state に同期する（id のみ。email / provider は渡さない）
+	useSentryAuthSync(user);
+
 	const handleAuthSuccess = useCallback((token: string, userProfile: UserProfile) => {
 		AuthTokenManager.setAccessToken(token);
 		setUser(userProfile);
 	}, []);
 
-	// 招待コードが必要な場合のハンドラー（現在は何もしない - UIで処理）
-	const handleInvitationRequired = useCallback(
-		(_provider: OAuthProvider, _userData: OAuthUserData) => {
-			// 招待コード入力フォームはAuthFormコンポーネントで処理
-		},
-		[],
-	);
+	const { handleCallback: oauthHandleCallback } = oauth;
 
-	// 初期化
 	useEffect(() => {
 		const initialize = async () => {
 			try {
-				// OAuthコールバックをチェック
-				const oauthHandled = oauth.handleCallback(
-					(token, userProfile) => handleAuthSuccess(token, userProfile),
-					handleInvitationRequired,
+				// 1. OAuthコールバックをチェック
+				const oauthHandled = oauthHandleCallback((token, userProfile) =>
+					handleAuthSuccess(token, userProfile),
 				);
 
 				if (oauthHandled) {
-					setLoading(false);
 					return;
 				}
 
-				// 既存のJWT認証をチェック
+				// 2. Refresh Token 経由の自動セッション復元
+				const refreshed = await refreshClient.tryAutoRefresh();
+				if (refreshed) {
+					setUser(refreshed.user);
+					return;
+				}
+
+				// 3. 既存の localStorage 内 Access Token によるフォールバック
 				const userProfile = await initializeEmailAuth();
 				if (userProfile) {
 					setUser(userProfile);
@@ -111,9 +89,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		};
 
 		initialize();
-	}, [oauth, handleAuthSuccess, handleInvitationRequired]);
+	}, [oauthHandleCallback, handleAuthSuccess]);
 
-	// Email認証アクション
 	const login = useCallback(
 		async (email: string, password: string): Promise<void> => {
 			const userProfile = await emailAuth.login(email, password);
@@ -148,13 +125,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		[emailAuth],
 	);
 
-	// ログアウト
 	const logout = useCallback(async (): Promise<void> => {
 		setUser(null);
-		await performLogout();
+		await refreshClient.logout();
 	}, []);
 
-	// ユーザー情報更新
 	const refreshUser = useCallback(async (): Promise<void> => {
 		try {
 			if (AuthTokenManager.isAuthenticated()) {
@@ -168,56 +143,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		}
 	}, []);
 
-	// OAuthアクション
 	const googleLogin = useCallback(() => oauth.startLogin('google'), [oauth]);
-	const githubLogin = useCallback(() => oauth.startLogin('github'), [oauth]);
+	const appleLogin = useCallback(() => oauth.startLogin('apple'), [oauth]);
 	const xLogin = useCallback(() => oauth.startLogin('x'), [oauth]);
 
-	const googleRegisterWithInvitation = useCallback(
-		async (googleUser: OAuthUserData, invitationCode: string): Promise<void> => {
-			const response = await oauth.registerWithInvitation('google', googleUser, invitationCode);
-			handleAuthSuccess(response.accessToken, response.user);
-		},
-		[oauth, handleAuthSuccess],
-	);
-
-	const githubRegisterWithInvitation = useCallback(
-		async (githubUser: OAuthUserData, invitationCode: string): Promise<void> => {
-			const response = await oauth.registerWithInvitation('github', githubUser, invitationCode);
-			handleAuthSuccess(response.accessToken, response.user);
-		},
-		[oauth, handleAuthSuccess],
-	);
-
-	const xRegisterWithInvitation = useCallback(
-		async (xUser: OAuthUserData, invitationCode: string): Promise<void> => {
-			const response = await oauth.registerWithInvitation('x', xUser, invitationCode);
-			handleAuthSuccess(response.accessToken, response.user);
-		},
-		[oauth, handleAuthSuccess],
-	);
-
 	const value: AuthContextType = {
-		// 状態
 		user,
 		loading,
 		isAuthenticated: !!user && AuthTokenManager.isAuthenticated(),
-
-		// Email認証
 		login,
 		register,
 		resetPassword,
 		changePassword,
-
-		// OAuth認証
 		googleLogin,
-		googleRegisterWithInvitation,
-		githubLogin,
-		githubRegisterWithInvitation,
+		appleLogin,
 		xLogin,
-		xRegisterWithInvitation,
-
-		// 共通
 		logout,
 		refreshUser,
 	};
@@ -225,6 +165,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextType => {
 	const context = useContext(AuthContext);
 	if (context === undefined) {
@@ -233,6 +174,7 @@ export const useAuth = (): AuthContextType => {
 	return context;
 };
 
-// カスタムフックを再エクスポート
+// eslint-disable-next-line react-refresh/only-export-components
 export { useOAuth, type OAuthProvider } from '../hooks/useOAuth';
+// eslint-disable-next-line react-refresh/only-export-components
 export { useEmailAuth } from '../hooks/useEmailAuth';

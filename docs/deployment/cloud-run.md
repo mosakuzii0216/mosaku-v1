@@ -33,6 +33,7 @@ Phase C6: モニタリング・CI/CD（0.5-1日）
    - 無料トライアル（$300クレジット、90日間）を有効化
 
 2. **新規プロジェクトの作成**
+
    ```bash
    # Google Cloud Console (https://console.cloud.google.com/) でプロジェクト作成
    # プロジェクト名: mosaku-production
@@ -44,6 +45,7 @@ Phase C6: モニタリング・CI/CD（0.5-1日）
    - 無料枠を超えた場合に備えて
 
 **成果物**:
+
 - ✅ GCPアカウント作成済み
 - ✅ プロジェクト作成済み（プロジェクトIDをメモ）
 - ✅ 課金有効化済み
@@ -55,6 +57,7 @@ Phase C6: モニタリング・CI/CD（0.5-1日）
 **作業内容**:
 
 **macOSの場合**:
+
 ```bash
 # Homebrewでインストール
 brew install --cask google-cloud-sdk
@@ -71,6 +74,7 @@ gcloud --version
 ```
 
 **Linuxの場合**:
+
 ```bash
 # 公式インストールスクリプト
 curl https://sdk.cloud.google.com | bash
@@ -79,6 +83,7 @@ gcloud --version
 ```
 
 **認証とプロジェクト設定**:
+
 ```bash
 # Google Cloudにログイン
 gcloud auth login
@@ -94,6 +99,7 @@ gcloud config list
 ```
 
 **成果物**:
+
 - ✅ gcloud CLIインストール済み
 - ✅ 認証完了
 - ✅ プロジェクト・リージョン設定済み
@@ -122,6 +128,7 @@ gcloud services list --enabled
 ```
 
 **成果物**:
+
 - ✅ 必要なAPIがすべて有効化済み
 
 ---
@@ -145,6 +152,7 @@ gcloud artifacts repositories list
 ```
 
 **成果物**:
+
 - ✅ Artifact Registryリポジトリ作成済み
 - ✅ Docker認証設定済み
 
@@ -240,6 +248,7 @@ CMD ["node", "dist/main.js"]
 ```
 
 **成果物**:
+
 - ✅ Cloud Run最適化済みDockerfile
 
 ---
@@ -292,6 +301,7 @@ prisma/migrations/*
 ```
 
 **成果物**:
+
 - ✅ `.dockerignore`作成済み
 
 ---
@@ -323,12 +333,14 @@ curl http://localhost:8080/health
 ```
 
 **確認項目**:
+
 - ✅ ビルドエラーがない
 - ✅ イメージサイズが妥当（通常200MB-1GB程度）
 - ✅ ローカルで起動する
 - ✅ ヘルスエンドポイントが応答する
 
 **成果物**:
+
 - ✅ ローカルDockerビルド成功
 
 ---
@@ -382,6 +394,7 @@ options:
 ```
 
 **成果物**:
+
 - ✅ `cloudbuild.yaml`作成済み（CI/CD用）
 
 ---
@@ -440,6 +453,7 @@ gcloud secrets add-iam-policy-binding supabase-anon-key \
 ```
 
 **成果物**:
+
 - ✅ すべてのシークレットがSecret Managerに保存済み
 - ✅ アクセス権限設定済み
 
@@ -449,40 +463,37 @@ gcloud secrets add-iam-policy-binding supabase-anon-key \
 
 **新規ファイル作成**: `backend/CLOUD_RUN_ENV_VARS.md`
 
-```markdown
+````markdown
 # Cloud Run環境変数設定リスト
 
 ## シークレット（Secret Manager経由）
 
-| 変数名 | Secret Manager名 | 説明 |
-|--------|------------------|------|
-| `DATABASE_URL` | `database-url` | Supabase接続文字列（Connection Pooling） |
-| `DIRECT_URL` | `direct-url` | Supabase接続文字列（Direct、マイグレーション用） |
-| `SUPABASE_ANON_KEY` | `supabase-anon-key` | Supabase匿名キー |
-| `JWT_SECRET` | `jwt-secret` | JWT署名用シークレット（認証移行前のみ） |
-| `SESSION_SECRET` | `session-secret` | セッション暗号化用（認証移行前のみ） |
+| 変数名              | Secret Manager名    | 説明                                             |
+| ------------------- | ------------------- | ------------------------------------------------ |
+| `DATABASE_URL`      | `database-url`      | Supabase接続文字列（Connection Pooling）         |
+| `DIRECT_URL`        | `direct-url`        | Supabase接続文字列（Direct、マイグレーション用） |
+| `SUPABASE_ANON_KEY` | `supabase-anon-key` | Supabase匿名キー                                 |
+| `JWT_SECRET`        | `jwt-secret`        | JWT署名用シークレット（認証移行前のみ）          |
+| `SESSION_SECRET`    | `session-secret`    | セッション暗号化用（認証移行前のみ）             |
 
 ## 環境変数（平文）
 
-| 変数名 | 値 | 説明 |
-|--------|-----|------|
-| `NODE_ENV` | `production` | 実行環境 |
-| `PORT` | `8080` | Cloud Runが自動設定（通常変更不要） |
-| `SUPABASE_URL` | `https://pxrouvdpdffdfoitmoyv.supabase.co` | Supabase URL |
-| `CORS_ORIGINS` | `https://[YOUR-APP].vercel.app,https://[YOUR-APP]-*.vercel.app` | CORS許可オリジン |
-| `ADMIN_EMAIL` | `admin@example.com` | 管理者メールアドレス |
-| `FRONTEND_URL` | `https://[YOUR-APP].vercel.app` | フロントエンドURL |
+| 変数名         | 値                                                              | 説明                                |
+| -------------- | --------------------------------------------------------------- | ----------------------------------- |
+| `NODE_ENV`     | `production`                                                    | 実行環境                            |
+| `PORT`         | `8080`                                                          | Cloud Runが自動設定（通常変更不要） |
+| `SUPABASE_URL` | `https://pxrouvdpdffdfoitmoyv.supabase.co`                      | Supabase URL                        |
+| `CORS_ORIGINS` | `https://[YOUR-APP].vercel.app,https://[YOUR-APP]-*.vercel.app` | CORS許可オリジン                    |
+| `ADMIN_EMAIL`  | `admin@example.com`                                             | 管理者メールアドレス                |
+| `FRONTEND_URL` | `https://[YOUR-APP].vercel.app`                                 | フロントエンドURL                   |
 
 ## OAuth設定（認証移行前のみ、オプション）
 
-| 変数名 | 値 | 説明 |
-|--------|-----|------|
-| `GOOGLE_CLIENT_ID` | `xxx.apps.googleusercontent.com` | Google OAuth Client ID |
-| `GOOGLE_CLIENT_SECRET` | Secret Manager: `google-client-secret` | Google OAuth Secret |
-| `GOOGLE_REDIRECT_URI` | `https://[SERVICE-URL]/auth/google/callback` | Google Redirect URI |
-| `GITHUB_CLIENT_ID` | `Iv1.xxxxx` | GitHub OAuth Client ID |
-| `GITHUB_CLIENT_SECRET` | Secret Manager: `github-client-secret` | GitHub OAuth Secret |
-| `GITHUB_REDIRECT_URI` | `https://[SERVICE-URL]/auth/github/callback` | GitHub Redirect URI |
+| 変数名                 | 値                                           | 説明                   |
+| ---------------------- | -------------------------------------------- | ---------------------- |
+| `GOOGLE_CLIENT_ID`     | `xxx.apps.googleusercontent.com`             | Google OAuth Client ID |
+| `GOOGLE_CLIENT_SECRET` | Secret Manager: `google-client-secret`       | Google OAuth Secret    |
+| `GOOGLE_REDIRECT_URI`  | `https://[SERVICE-URL]/auth/google/callback` | Google Redirect URI    |
 
 ## デプロイコマンド例
 
@@ -494,7 +505,9 @@ gcloud run deploy mosaku-backend \
   --set-env-vars="NODE_ENV=production,SUPABASE_URL=https://pxrouvdpdffdfoitmoyv.supabase.co,CORS_ORIGINS=https://yourapp.vercel.app" \
   --set-secrets="DATABASE_URL=database-url:latest,DIRECT_URL=direct-url:latest,SUPABASE_ANON_KEY=supabase-anon-key:latest"
 ```
-```
+````
+
+````
 
 **成果物**:
 - ✅ `CLOUD_RUN_ENV_VARS.md`作成済み
@@ -538,13 +551,10 @@ SESSION_SECRET=<Secret Manager: session-secret>
 GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=<Secret Manager: google-client-secret>
 GOOGLE_REDIRECT_URI=https://[SERVICE-URL].a.run.app/auth/google/callback
-
-GITHUB_CLIENT_ID=Iv1.xxxxx
-GITHUB_CLIENT_SECRET=<Secret Manager: github-client-secret>
-GITHUB_REDIRECT_URI=https://[SERVICE-URL].a.run.app/auth/github/callback
-```
+````
 
 **成果物**:
+
 - ✅ `.env.cloudrun.template`作成済み
 
 ---
@@ -577,6 +587,7 @@ gcloud artifacts docker images list ${REGION}-docker.pkg.dev/${PROJECT_ID}/${IMA
 ```
 
 **成果物**:
+
 - ✅ コンテナイメージがArtifact Registryにプッシュ済み
 
 ---
@@ -600,7 +611,7 @@ gcloud run deploy ${SERVICE_NAME} \
   --port=8080 \
   --cpu=1 \
   --memory=512Mi \
-  --min-instances=0 \
+  --min-instances=1 \
   --max-instances=10 \
   --timeout=300 \
   --set-env-vars="NODE_ENV=production,PORT=8080,SUPABASE_URL=https://pxrouvdpdffdfoitmoyv.supabase.co" \
@@ -611,14 +622,16 @@ gcloud run deploy ${SERVICE_NAME} \
 ```
 
 **デプロイ設定の説明**:
+
 - `--allow-unauthenticated`: パブリックアクセス許可（フロントエンドから呼び出すため）
 - `--cpu=1`: 1vCPU（必要に応じて調整）
 - `--memory=512Mi`: 512MBメモリ（必要に応じて調整）
-- `--min-instances=0`: アイドル時はインスタンスをゼロに（コスト削減）
+- `--min-instances=1`: 常時1インスタンス起動（コールドスタート防止 / UptimeRobot 誤検知防止）
 - `--max-instances=10`: 最大10インスタンス（負荷に応じてスケール）
 - `--timeout=300`: タイムアウト5分
 
 **成果物**:
+
 - ✅ Cloud Runサービスがデプロイ済み
 - ✅ サービスURLを取得（例: `https://mosaku-backend-xxxxx-an.a.run.app`）
 
@@ -647,11 +660,13 @@ gcloud run logs read mosaku-backend --region=asia-northeast1 --limit=50
 ```
 
 **確認項目**:
+
 - ✅ ヘルスエンドポイントが200を返す
 - ✅ ログにエラーがない
 - ✅ サービスが正常に起動している
 
 **成果物**:
+
 - ✅ 初回デプロイ動作確認完了
 
 ---
@@ -661,6 +676,7 @@ gcloud run logs read mosaku-backend --region=asia-northeast1 --limit=50
 **パフォーマンステスト後に調整**:
 
 **CPU・メモリの調整**:
+
 ```bash
 # より高いスペックが必要な場合
 gcloud run services update mosaku-backend \
@@ -670,6 +686,7 @@ gcloud run services update mosaku-backend \
 ```
 
 **スケーリング設定の調整**:
+
 ```bash
 # 常に1インスタンス起動（コールドスタート回避、コストは上がる）
 gcloud run services update mosaku-backend \
@@ -683,6 +700,7 @@ gcloud run services update mosaku-backend \
 ```
 
 **同時実行数の調整**:
+
 ```bash
 # 1インスタンスあたりの同時リクエスト数（デフォルト80）
 gcloud run services update mosaku-backend \
@@ -691,6 +709,7 @@ gcloud run services update mosaku-backend \
 ```
 
 **成果物**:
+
 - ✅ リソース設定が最適化済み
 
 ---
@@ -732,11 +751,13 @@ gcloud run logs read mosaku-backend --region=asia-northeast1 --limit=100 | grep 
 ```
 
 **確認項目**:
+
 - ✅ Prismaがデータベースに接続できている
 - ✅ クエリが正常に実行される
 - ✅ 接続プーリングが動作している
 
 **成果物**:
+
 - ✅ Supabase接続確認完了
 
 ---
@@ -754,8 +775,8 @@ cat backend/src/main.ts | grep -A 10 "enableCors"
 ```typescript
 // backend/src/main.ts
 app.enableCors({
-  origin: configService.corsOrigins, // Vercel URLsが含まれているか
-  credentials: true,
+	origin: configService.corsOrigins, // Vercel URLsが含まれているか
+	credentials: true,
 });
 ```
 
@@ -782,10 +803,12 @@ fetch('https://mosaku-backend-xxxxx-an.a.run.app/memo', {
 ```
 
 **確認項目**:
+
 - ✅ CORSエラーが発生しない
 - ✅ ブラウザからAPIリクエストが成功する
 
 **成果物**:
+
 - ✅ CORS設定完了
 
 ---
@@ -804,9 +827,11 @@ fetch('https://mosaku-backend-xxxxx-an.a.run.app/memo', {
 ```
 
 **Vercelを再デプロイ**:
+
 - Vercel Dashboard > Deployments > Latest > Redeploy
 
 **E2Eテスト**:
+
 1. Vercel URLにアクセス
 2. ログイン
 3. メモ作成・編集・削除
@@ -814,11 +839,13 @@ fetch('https://mosaku-backend-xxxxx-an.a.run.app/memo', {
 5. タグ操作
 
 **確認項目**:
+
 - ✅ フロントエンドからバックエンドAPIが呼び出せる
 - ✅ すべてのCRUD操作が動作する
 - ✅ 認証が正常に動作する
 
 **成果物**:
+
 - ✅ フロントエンド・バックエンド統合完了
 
 ---
@@ -828,6 +855,7 @@ fetch('https://mosaku-backend-xxxxx-an.a.run.app/memo', {
 **負荷テスト（オプション）**:
 
 **Apache Benchを使用**:
+
 ```bash
 # 100リクエスト、同時実行10
 ab -n 100 -c 10 https://mosaku-backend-xxxxx-an.a.run.app/health
@@ -839,6 +867,7 @@ ab -n 100 -c 10 https://mosaku-backend-xxxxx-an.a.run.app/health
 ```
 
 **Cloud Runメトリクスを確認**:
+
 ```bash
 # Cloud Console > Cloud Run > mosaku-backend > Metrics
 # - リクエスト数
@@ -849,11 +878,13 @@ ab -n 100 -c 10 https://mosaku-backend-xxxxx-an.a.run.app/health
 ```
 
 **ボトルネック分析**:
+
 - メモリ不足 → メモリを増やす
 - CPU高負荷 → CPUを増やす、またはコード最適化
 - コールドスタート遅延 → min-instances を1に
 
 **成果物**:
+
 - ✅ パフォーマンステスト完了
 - ✅ 必要に応じてリソース調整済み
 
@@ -898,57 +929,43 @@ gcloud run logs read mosaku-backend \
    - Notification: メール通知
 
 **成果物**:
+
 - ✅ ログ監視設定済み
 - ✅ エラーアラート設定済み
 
 ---
 
-### タスクC6.2: エラー監視の設定（オプション: Sentry）
+### タスクC6.2: Sentry エラー監視の設定
 
-**Sentryのインストール**:
+> Sentry の運用手順（プロジェクト作成 / Alert Rule / smoke test / PII / サンプリング率）は **[docs/deployment/sentry.md](./sentry.md) が single source of truth**。本セクションは Cloud Run 固有の env / Secret 投入チェックリストのみ残す。
 
-```bash
-cd backend
-npm install @sentry/node @sentry/tracing
-```
+#### Cloud Run に投入する Sentry 関連 env / Secret
 
-**main.tsに初期化コード追加**:
-
-```typescript
-// backend/src/main.ts
-import * as Sentry from '@sentry/node';
-import '@sentry/tracing';
-
-async function bootstrap() {
-  // Sentry初期化
-  if (process.env.NODE_ENV === 'production') {
-    Sentry.init({
-      dsn: process.env.SENTRY_DSN,
-      environment: process.env.NODE_ENV,
-      tracesSampleRate: 0.1,
-    });
-  }
-
-  const app = await NestFactory.create(AppModule);
-
-  // ... 既存のコード
-}
-```
-
-**Secret ManagerにSentry DSNを追加**:
+| 種別                    | キー                                                        | 投入元                                        |
+| ----------------------- | ----------------------------------------------------------- | --------------------------------------------- |
+| Secret Manager          | `SENTRY_DSN`                                                | `sentry-dsn` Secret（`--update-secrets`）     |
+| `--set-env-vars` で投入 | `SENTRY_ENVIRONMENT`                                        | 固定 `production`                             |
+| `--set-env-vars` で投入 | `SENTRY_RELEASE`                                            | CI から `${{ github.sha }}`                   |
+| `--set-env-vars` で投入 | `SENTRY_TRACES_SAMPLE_RATE` / `SENTRY_PROFILES_SAMPLE_RATE` | 既定 `0.1`（quota 逼迫時は `sentry.md` §5.3） |
 
 ```bash
-echo -n "https://xxx@xxx.ingest.sentry.io/xxx" | \
-gcloud secrets create sentry-dsn --data-file=-
+# DSN を Secret Manager に登録（初回のみ）
+echo -n "https://<public-key>@<org>.ingest.sentry.io/<project-id>" \
+  | gcloud secrets create sentry-dsn --data-file=- --project=mosaku-prod
 
-# Cloud Runに環境変数を追加
-gcloud run services update mosaku-backend \
-  --region=asia-northeast1 \
-  --set-secrets="SENTRY_DSN=sentry-dsn:latest"
+# Cloud Run サービスアカウントに secretAccessor 権限を付与
+gcloud secrets add-iam-policy-binding sentry-dsn \
+  --member="serviceAccount:<service-account-email>" \
+  --role="roles/secretmanager.secretAccessor" \
+  --project=mosaku-prod
 ```
+
+`deploy-backend.yml` が上記 env / Secret を Cloud Run にデプロイ時に投入する。プロジェクト作成・Alert Rule・smoke test 手順は **[sentry.md §1〜§4](./sentry.md)** を参照。
 
 **成果物**:
-- ✅ Sentry統合済み（オプション）
+
+- ✅ `sentry-dsn` Secret 登録済み + サービスアカウントに `secretAccessor` 権限
+- ✅ Cloud Run サービスに Sentry 関連 env が投入される CI 設定
 
 ---
 
@@ -968,30 +985,30 @@ import { Public } from '../auth/public.decorator';
 
 @Controller('health')
 export class HealthController {
-  @Public()
-  @Get()
-  check() {
-    return {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      environment: process.env.NODE_ENV,
-    };
-  }
+	@Public()
+	@Get()
+	check() {
+		return {
+			status: 'ok',
+			timestamp: new Date().toISOString(),
+			uptime: process.uptime(),
+			environment: process.env.NODE_ENV,
+		};
+	}
 
-  @Public()
-  @Get('ready')
-  ready() {
-    // データベース接続などの準備状態を確認
-    return { status: 'ready' };
-  }
+	@Public()
+	@Get('ready')
+	ready() {
+		// データベース接続などの準備状態を確認
+		return { status: 'ready' };
+	}
 
-  @Public()
-  @Get('live')
-  live() {
-    // アプリケーションが生きているかの確認
-    return { status: 'alive' };
-  }
+	@Public()
+	@Get('live')
+	live() {
+		// アプリケーションが生きているかの確認
+		return { status: 'alive' };
+	}
 }
 ```
 
@@ -1002,8 +1019,8 @@ export class HealthController {
 import { HealthController } from './health/health.controller';
 
 @Module({
-  controllers: [HealthController],
-  // ...
+	controllers: [HealthController],
+	// ...
 })
 export class AppModule {}
 ```
@@ -1018,6 +1035,7 @@ gcloud run services update mosaku-backend \
 ```
 
 **成果物**:
+
 - ✅ ヘルスチェックエンドポイント実装済み
 
 ---
@@ -1129,49 +1147,139 @@ gcloud iam service-accounts add-iam-policy-binding github-actions@mosaku-prod-xx
 ```
 
 **GitHub Secretsに追加**:
+
 ```
 WIF_PROVIDER: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github-provider
 WIF_SERVICE_ACCOUNT: github-actions@mosaku-prod-xxxxx.iam.gserviceaccount.com
 ```
 
 **成果物**:
+
 - ✅ GitHub Actions CI/CD設定済み（オプション）
 - ✅ mainブランチプッシュで自動デプロイ
+
+---
+
+## 🔄 Refresh Token リリース後検証チェックリスト
+
+Refresh Token 機構（`feat/refresh-token-auto-login`）を本番にデプロイした直後に、`/health` / `/auth/login` / `/auth/refresh` / Sentry `refresh_token_issued` イベント発火の **4 点** を必ず手動で確認する。`npx prisma migrate deploy` は Cloud Run のビルドステップに組み込み済みである前提。
+
+### 前提
+
+- Secret Manager に `REFRESH_TOKEN_PEPPER` が登録され、Cloud Run サービスアカウントに `secretAccessor` 権限が付いている
+- `--set-env-vars` に `REFRESH_COOKIE_DOMAIN` / `REFRESH_COOKIE_SAMESITE=none` / `REFRESH_COOKIE_SECURE=true`（本番） / `JWT_EXPIRATION=15m`（既定）が投入されている
+- 機構自体に隠しフィーチャーフラグはなく、deploy 直後から **常時 ON** で動作する（`spec/refresh-token-auto-login` Requirement 8.5）
+
+### 4 点チェックリスト
+
+```bash
+SERVICE_URL=$(gcloud run services describe mosaku-backend \
+  --region=asia-northeast1 \
+  --format="value(status.url)")
+
+ORIGIN="https://mosaku.jp"   # 本番フロントオリジン
+```
+
+1. **`/health` 200**
+
+   ```bash
+   curl -fsS "${SERVICE_URL}/health"
+   # => { "status": "ok", ... }
+   ```
+
+2. **`/auth/login` で `Set-Cookie: refresh_token=...` が付くこと**
+
+   ```bash
+   curl -i -X POST "${SERVICE_URL}/auth/login" \
+     -H "Origin: ${ORIGIN}" \
+     -H "Content-Type: application/json" \
+     -d '{"email":"<verify-account>","password":"<verify-password>"}'
+   # => HTTP/2 200
+   # => set-cookie: refresh_token=<...>; Path=/auth; Domain=.mosaku.jp; HttpOnly; Secure; SameSite=None
+   # => body に accessToken / user を含む（refresh_token 平文は body に含まれないこと）
+   ```
+
+3. **`/auth/refresh` で新 Access Token と新 Set-Cookie が返ること**
+
+   ```bash
+   # 2 で得た Cookie ジャーを利用
+   curl -i -X POST "${SERVICE_URL}/auth/refresh" \
+     -H "Origin: ${ORIGIN}" \
+     -H "X-Refresh-Request: 1" \
+     -b cookie-jar.txt
+   # => HTTP/2 200, accessToken と新しい set-cookie: refresh_token=... が返る
+
+   # Cookie 不在経路は 401 (AUTH010) に帰着することも一度確認する
+   curl -i -X POST "${SERVICE_URL}/auth/refresh" \
+     -H "Origin: ${ORIGIN}" \
+     -H "X-Refresh-Request: 1"
+   # => HTTP/2 401, { "code": "AUTH010", ... }
+   ```
+
+4. **Sentry に `refresh_token_issued` イベントが発火すること**
+   - Sentry プロジェクト `mosaku-backend` の Issues / Events で `feature_area: auth` タグの `refresh_token_issued`（level: `info`）が deploy 直後の login で生成されているか確認
+   - PII スクラバが効いており、イベント本文に `refreshToken` / `tokenHash` / `accessToken` の生値が含まれていないことを目視確認
+   - 24h 以内に `refresh_token_rotated`（透過リフレッシュ）も流れていることを後追いで確認
+
+### 旧 24h Access Token との互換性手動シナリオ
+
+- リリース直前に発行された旧 24h AT を持つユーザーは、その AT の `exp` までは通常通り認証が通る（`jwt.strategy.ts` は `ignoreExpiration: false` のまま、JWT 署名検証のみで判定）。
+- 旧 AT が exp 切れになると、Cookie 不在のため `/auth/refresh` は 401 (`AUTH010`) を返し、フロントはログイン画面に遷移して 1 回再ログインで新方式に乗る（`design.md §Migration Strategy` Phase 2-3）。
+- 上記移行挙動を以下で抜き打ち確認しておく:
+  1. deploy 直前に旧 AT を取得して localStorage に温存
+  2. deploy 直後にその AT で API を叩いて 200 が返ること
+  3. AT 期限切れ後、`/auth/refresh` が Cookie 不在で 401 を返し、再ログインに帰着すること
+
+### ロールバックトリガー
+
+| 観測対象                                                              | 閾値                            | アクション                         |
+| --------------------------------------------------------------------- | ------------------------------- | ---------------------------------- |
+| `/auth/refresh` 5xx 率                                                | 5 分平均 > 10%                  | Cloud Run previous revision に戻す |
+| 全 OAuth login 5xx                                                    | 5 分連続失敗                    | Cloud Run previous revision に戻す |
+| Sentry `refresh_token_reuse_detected` 大量発火（family 設計バグ兆候） | 1 時間で同一 user に対し > 5 件 | revision rollback + family ID 監査 |
+
+Prisma マイグレーションは `RefreshToken` テーブル追加のみで `User` への列追加なし → コード rollback で動作不整合は出ない（`design.md §Migration Strategy`）。
 
 ---
 
 ## ✅ Phase C完了チェックリスト
 
 ### Phase C1: Google Cloud準備
+
 - [ ] GCPアカウント・プロジェクト作成済み
 - [ ] gcloud CLIインストール・認証済み
 - [ ] 必要なAPI有効化済み
 - [ ] Artifact Registryリポジトリ作成済み
 
 ### Phase C2: Dockerfile・ビルド設定
+
 - [ ] Cloud Run最適化Dockerfile作成済み
 - [ ] .dockerignore作成済み
 - [ ] ローカルDockerビルド成功
 - [ ] cloudbuild.yaml作成済み（オプション）
 
 ### Phase C3: 環境変数・シークレット
+
 - [ ] Secret Managerにシークレット登録済み
 - [ ] アクセス権限設定済み
 - [ ] 環境変数リスト作成済み
 
 ### Phase C4: 初回デプロイ
+
 - [ ] コンテナイメージプッシュ済み
 - [ ] Cloud Runサービスデプロイ済み
 - [ ] デプロイ動作確認完了
 - [ ] リソース設定最適化済み
 
 ### Phase C5: データベース・API統合
+
 - [ ] Supabase接続確認済み
 - [ ] CORS設定完了
 - [ ] フロントエンド統合完了
 - [ ] パフォーマンステスト完了
 
 ### Phase C6: モニタリング・CI/CD
+
 - [ ] Cloud Logging設定済み
 - [ ] エラー監視設定済み（オプション）
 - [ ] ヘルスチェック実装済み
@@ -1184,26 +1292,31 @@ WIF_SERVICE_ACCOUNT: github-actions@mosaku-prod-xxxxx.iam.gserviceaccount.com
 **Cloud Run料金**（東京リージョン、2024年1月時点）:
 
 **無料枠**:
+
 - 月間200万リクエスト
 - 360,000 vCPU秒
 - 180,000 GiB秒
 
 **有料料金**（無料枠超過後）:
+
 - リクエスト: $0.40 / 100万リクエスト
 - CPU: $0.00002400 / vCPU秒
 - メモリ: $0.00000250 / GiB秒
 
 **試算例**（月間100万リクエスト、平均応答時間200ms、1vCPU/512MB）:
+
 - リクエスト: 無料枠内
 - CPU: 100万 × 0.2秒 × $0.000024 = $4.8
 - メモリ: 100万 × 0.2秒 × 0.5GB × $0.0000025 = $0.25
 - **合計: 約$5/月**
 
 **Artifact Registry料金**:
+
 - ストレージ: $0.10 / GB/月（最初の0.5GBは無料）
 - イメージサイズ500MBの場合: $0.05/月
 
 **Secret Manager料金**:
+
 - アクティブなシークレット: $0.06 / シークレット/月
 - シークレット5個の場合: $0.30/月
 
@@ -1218,6 +1331,7 @@ WIF_SERVICE_ACCOUNT: github-actions@mosaku-prod-xxxxx.iam.gserviceaccount.com
 **問題**: Dockerビルドが失敗する
 
 **解決策**:
+
 ```bash
 # ビルドログを詳細表示
 docker build --progress=plain -t test .
@@ -1234,6 +1348,7 @@ docker build --target=build -t test .
 **問題**: Cloud Runデプロイが失敗する
 
 **解決策**:
+
 ```bash
 # デプロイログを確認
 gcloud run logs read mosaku-backend --region=asia-northeast1
@@ -1250,6 +1365,7 @@ gcloud artifacts docker images list asia-northeast1-docker.pkg.dev/mosaku-prod-x
 **問題**: PrismaがSupabaseに接続できない
 
 **解決策**:
+
 1. DATABASE_URLが正しいか確認（特にConnection Pooling URL）
 2. Secret Managerの権限を確認
 3. Supabase IPホワイトリスト確認（通常不要だが、設定している場合）
@@ -1263,6 +1379,7 @@ gcloud artifacts docker images list asia-northeast1-docker.pkg.dev/mosaku-prod-x
 **問題**: フロントエンドからのAPIリクエストでCORSエラー
 
 **解決策**:
+
 1. CORS_ORIGINS環境変数にVercel URLが含まれているか確認
 2. ワイルドカード使用: `https://*.vercel.app`
 3. `credentials: true`が設定されているか確認
@@ -1270,9 +1387,10 @@ gcloud artifacts docker images list asia-northeast1-docker.pkg.dev/mosaku-prod-x
 
 ### コールドスタート遅延
 
-**問題**: 初回リクエストが遅い（5秒以上）
+**問題**: 初回リクエストが遅い（5秒以上）/ UptimeRobot 等の外形監視が間欠的に Down 判定（"DNS Resolving problem" 表記になることもある）
 
 **解決策**:
+
 ```bash
 # 最小インスタンス数を1に設定（コスト増加あり）
 gcloud run services update mosaku-backend \
@@ -1285,6 +1403,8 @@ gcloud run services update mosaku-backend \
   --startup-cpu-boost
 ```
 
+> Phase 1（2026-05）で UptimeRobot の間欠 Down を解消するため `--min-instances=1` を本番に適用済み。GitHub Actions のデプロイは `--update-env-vars` / `--update-secrets` のみ指定で既存値を保持するため、毎回のデプロイで上書きされない。
+
 ---
 
 ## 📝 次のアクション
@@ -1294,6 +1414,7 @@ Cloud Runデプロイを開始しますか？
 準備ができたら「Phase C1を開始します」と伝えてください。
 
 全体の移行計画については以下のドキュメントを参照:
+
 - **SUPABASE_FULL_MIGRATION_PLAN.md** - データベース移行
 - **SUPABASE_AUTH_MIGRATION_PLAN.md** - 認証移行
 - **VERCEL_DEPLOYMENT_PLAN.md** - フロントエンドデプロイ
