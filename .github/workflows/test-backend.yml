@@ -7,11 +7,17 @@
 #   自動的にテストを実行して品質をチェックする
 #
 # トリガー:
-#   - backend/ 配下を変更する Pull Request
+#   - すべての Pull Request（実行要否は changes ジョブが判定する）
 #
 # 目的:
 #   - マージ前にテストが通ることを確認
 #   - カバレッジレポートを生成して品質を可視化
+#
+# なぜ `paths:` を使わないか:
+#   `paths:` は条件に合わない PR で workflow ごと発火しないため、必須ステータス
+#   チェックに指定すると報告が来ず永久に pending になる。job レベルの `if:` で
+#   落とせば skipped として報告され必須チェックを満たす。詳細は
+#   scripts/detect-changed-areas.sh のヘッダを参照。
 #
 # =============================================================================
 
@@ -19,17 +25,38 @@ name: Backend Tests
 
 on:
   pull_request:
-    paths:
-      # backend/ 配下の変更時のみ実行
-      - 'backend/**'
-      - '.github/workflows/test-backend.yml'
 
 jobs:
+  # ===========================================================================
+  # Job: 変更範囲の判定
+  # ===========================================================================
+  changes:
+    name: 変更範囲の判定（backend）
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.detect.outputs.backend }}
+      workflows: ${{ steps.detect.outputs.workflows }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/detect-changed-areas.sh
+          sparse-checkout-cone-mode: false
+
+      - name: 変更エリアを判定
+        id: detect
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: bash scripts/detect-changed-areas.sh
+
   # ===========================================================================
   # Job: テスト実行
   # ===========================================================================
   test:
     name: Run Backend Tests
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -99,6 +126,8 @@ jobs:
   # ===========================================================================
   e2e-test:
     name: Run Backend E2E Tests
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
