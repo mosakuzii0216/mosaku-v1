@@ -3,15 +3,30 @@
 # =============================================================================
 #
 # 概要:
-#   ルート、backend、frontend の依存関係を週次でチェックし、
-#   更新がある場合にPRを自動作成する
+#   依存関係を週次でチェックし、更新がある場合に PR を自動作成する。
+#
+# なぜ npm のエントリがルート 1 本だけなのか:
+#   本リポジトリは npm workspaces で、依存関係の解決結果はルートの
+#   package-lock.json に集約される。にもかかわらず backend/ は Docker の
+#   ビルドコンテキストが backend/ 単独であるため独自の lockfile を持ち、
+#   frontend/ も同様に lockfile を持つ（計 3 系統）。
+#
+#   以前は /backend と /frontend にも updates エントリを置いていたが、
+#   Dependabot はそのディレクトリの lockfile しか更新しないため、
+#   ルートの lockfile が取り残されて `npm ci` が EUSAGE で失敗し、
+#   **依存を入れる全ジョブが連鎖的に落ちる**状態になっていた。
+#   実際 2026-02 以降の PR 19 本がこの理由で 6 か月間マージ不能だった。
+#
+#   そこで npm はルート 1 本に集約し、派生 lockfile
+#   （backend/ と frontend/）は .github/workflows/dependabot-lockfile.yml が
+#   自動で再生成する。グループ定義もここに集約している。
 #
 # =============================================================================
 
 version: 2
 updates:
   # -------------------------------------------------------------------------
-  # ルート package.json（npm workspaces）
+  # npm（workspaces 全体をルートから見る）
   # -------------------------------------------------------------------------
   - package-ecosystem: "npm"
     directory: "/"
@@ -24,51 +39,10 @@ updates:
     labels:
       - "dependencies"
     groups:
-      minor-and-patch:
-        update-types:
-          - "minor"
-          - "patch"
-
-  # -------------------------------------------------------------------------
-  # Backend 依存関係
-  # -------------------------------------------------------------------------
-  - package-ecosystem: "npm"
-    directory: "/backend"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Asia/Tokyo"
-    open-pull-requests-limit: 10
-    labels:
-      - "dependencies"
-      - "backend"
-    groups:
+      # メジャー更新は移行作業を伴うため、グループに含めず個別 PR のままにする
       nestjs:
         patterns:
           - "@nestjs/*"
-      minor-and-patch:
-        update-types:
-          - "minor"
-          - "patch"
-        exclude-patterns:
-          - "@nestjs/*"
-
-  # -------------------------------------------------------------------------
-  # Frontend 依存関係
-  # -------------------------------------------------------------------------
-  - package-ecosystem: "npm"
-    directory: "/frontend"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Asia/Tokyo"
-    open-pull-requests-limit: 10
-    labels:
-      - "dependencies"
-      - "frontend"
-    groups:
       react:
         patterns:
           - "react"
@@ -82,6 +56,7 @@ updates:
           - "minor"
           - "patch"
         exclude-patterns:
+          - "@nestjs/*"
           - "react"
           - "react-dom"
           - "@types/react*"

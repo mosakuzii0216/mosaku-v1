@@ -1,0 +1,123 @@
+# =============================================================================
+# Dependabot PR の派生 lockfile 再生成ワークフロー
+# =============================================================================
+#
+# 概要:
+#   Dependabot がルートの package.json / package-lock.json を更新した PR に対し、
+#   派生 lockfile（backend/ と frontend/）を再生成して同じ PR へ push する。
+#
+# なぜ必要か:
+#   本リポジトリは npm workspaces でルートの lockfile に依存が集約されるが、
+#   backend/ は Docker のビルドコンテキストが backend/ 単独であるため独自の
+#   lockfile を持ち、frontend/ も同様（計 3 系統）。Dependabot は 1 つの
+#   ディレクトリの lockfile しか更新しないため、放置すると `npm ci` が
+#   EUSAGE で失敗し依存を入れる全ジョブが連鎖的に落ちる。
+#   詳細な経緯は .github/dependabot.yml のヘッダを参照。
+#
+# 安全のためのガード:
+#   - actor が dependabot[bot] の PR のみ（人間の PR では動かない）
+#   - 変更を許すのは 3 つの lockfile だけ。それ以外に差分が出たら失敗させる
+#   - 差分が無ければ何もせず終了（無限ループを防ぐ）
+#
+# =============================================================================
+
+name: Dependabot Lockfile Sync
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    name: 派生 lockfile の再生成
+    # Dependabot の PR だけを対象にする。人間の PR には一切触れない
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          # push し返すため、デフォルトの detached HEAD ではなくブランチを取る
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # -----------------------------------------------------------------------
+      # 派生 lockfile を再生成する
+      # -----------------------------------------------------------------------
+      # ワークスペース内で `npm install` を実行しても派生 lockfile は再生成
+      # されない。npm がルートまで遡って workspaces として解決するため、
+      # 「up to date」と言って何もしないまま終わる（実測で確認済み）。
+      #
+      # そこで package.json / package-lock.json を一時ディレクトリへ写し、
+      # ワークスペースのルートが見えない場所で解決させてから書き戻す。
+      #
+      # --package-lock-only: node_modules を作らず lockfile だけ更新する
+      # --ignore-scripts: postinstall 等を走らせない（PR の内容は未検証のため）
+      - name: 派生 lockfile を再生成
+        run: |
+          regenerate() {
+            local dir="$1"
+            local tmp
+            tmp=$(mktemp -d)
+
+            cp "$dir/package.json" "$dir/package-lock.json" "$tmp/"
+            ( cd "$tmp" && npm install --package-lock-only --ignore-scripts )
+            cp "$tmp/package-lock.json" "$dir/package-lock.json"
+
+            rm -rf "$tmp"
+            echo "$dir の lockfile を再生成しました"
+          }
+
+          regenerate backend
+          regenerate frontend
+
+      # -----------------------------------------------------------------------
+      # 想定外のファイルが変わっていないか検査する
+      # -----------------------------------------------------------------------
+      # CI が PR へ push する構成なので、lockfile 以外に手が入る余地を残さない。
+      - name: 差分が lockfile だけか検査
+        id: check
+        run: |
+          changed=$(git diff --name-only)
+
+          if [ -z "$changed" ]; then
+            echo "差分なし。再生成は不要でした"
+            echo "has_changes=false" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "--- 変更されたファイル ---"
+          printf '%s\n' "$changed" | sed 's/^/  /'
+
+          unexpected=$(printf '%s\n' "$changed" \
+            | grep -vE '^(package-lock\.json|backend/package-lock\.json|frontend/package-lock\.json)$' \
+            || true)
+
+          if [ -n "$unexpected" ]; then
+            echo "::error::lockfile 以外に差分が出ました。安全のため中断します:"
+            printf '%s\n' "$unexpected" | sed 's/^/  /'
+            exit 1
+          fi
+
+          echo "has_changes=true" >>"$GITHUB_OUTPUT"
+
+      - name: 再生成した lockfile を push
+        if: steps.check.outputs.has_changes == 'true'
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add package-lock.json backend/package-lock.json frontend/package-lock.json
+          git commit -m 'chore(deps): 派生 lockfile を再生成する
+
+          npm workspaces のルート lockfile 更新に backend/ と frontend/ の
+          lockfile を追随させる。詳細は .github/dependabot.yml のヘッダを参照。'
+          git push
