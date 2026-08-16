@@ -187,7 +187,7 @@ jobs:
       # GitHub Actions の OIDC トークンを GCP が検証して、SA の短寿命トークンを発行
       # SA キーを GitHub Secrets に保存しないので漏洩リスクが無い
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: projects/129805115778/locations/global/workloadIdentityPools/github/providers/github
           service_account: github-actions@igneous-core-480923-j0.iam.gserviceaccount.com
