@@ -65,7 +65,7 @@ jobs:
       # Step 1: リポジトリのチェックアウト
       # -----------------------------------------------------------------------
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.ref || 'main' }}
 
@@ -133,7 +133,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.ref || 'main' }}
 
@@ -177,7 +177,7 @@ jobs:
       # Step 1: リポジトリのチェックアウト
       # -----------------------------------------------------------------------
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.ref || 'main' }}
 
@@ -273,7 +273,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.ref || 'main' }}
           # set-commits --auto がコミット履歴を解析するため shallow clone では不足

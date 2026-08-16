@@ -38,7 +38,7 @@ jobs:
       workflows: ${{ steps.detect.outputs.workflows }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           sparse-checkout: scripts/detect-changed-areas.sh
           sparse-checkout-cone-mode: false
@@ -67,7 +67,7 @@ jobs:
       # Step 1: リポジトリのチェックアウト
       # -----------------------------------------------------------------------
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # -----------------------------------------------------------------------
       # Step 2: Node.js 環境のセットアップ
@@ -163,7 +163,7 @@ jobs:
       # Step 1: リポジトリのチェックアウト
       # -----------------------------------------------------------------------
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # -----------------------------------------------------------------------
       # Step 2: Node.js 環境のセットアップ
