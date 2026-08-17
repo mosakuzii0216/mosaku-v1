@@ -112,7 +112,7 @@ jobs:
       # 7日間保存され、GitHub Actions の Artifacts からダウンロード可能
       # if: always() により、テストが失敗しても実行される
       - name: Upload coverage report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage-report
