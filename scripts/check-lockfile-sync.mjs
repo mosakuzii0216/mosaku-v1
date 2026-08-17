@@ -148,8 +148,12 @@ for (const { label, pkg, lock, entry } of PAIRS) {
 if (failed) {
   console.error('');
   console.error('lockfile が package.json と同期していません。');
-  console.error('該当ディレクトリで以下を実行して lockfile を更新してください:');
-  console.error('  npm install --package-lock-only');
+  console.error('以下を実行して派生 lockfile（backend / frontend）を再生成してください:');
+  console.error('  bash scripts/sync-derived-lockfiles.sh');
+  console.error('');
+  console.error('※ 該当ディレクトリで `npm install --package-lock-only` を実行しても直りません。');
+  console.error('   npm がワークスペースのルートまで遡って解決するため、派生 lockfile を');
+  console.error('   更新しないまま「up to date」と言って終了します。');
   process.exit(1);
 }
 
