@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { useReducedMotion } from '../../../hooks/useReducedMotion';
+import { useRef } from 'react';
+import { useAmbientCanvas } from '../../../hooks/useAmbientCanvas';
 
 interface Mote {
 	x: number;
@@ -21,70 +21,35 @@ interface LightMoteCanvasProps {
 const MOTE_TINT = '233, 165, 74';
 const MAX_MOTES = 22;
 
+function createMote(canvas: HTMLCanvasElement): Mote {
+	return {
+		x: Math.random() * canvas.width,
+		y: Math.random() * canvas.height,
+		vx: (Math.random() - 0.5) * 14, // 横へゆるく
+		vy: (Math.random() - 0.5) * 14, // 上下どちらにもゆるく＝漂う
+		radius: 1.5 + Math.random() * 2.5,
+		phase: Math.random() * Math.PI * 2,
+		pulseSpeed: 0.6 + Math.random() * 0.9,
+		baseOpacity: 0.35 + Math.random() * 0.3,
+	};
+}
+
 /**
  * 朝の光の中を、埃や花粉のような光の粒がゆっくり漂う。
  * 上下左右にゆるくドリフトし、画面端は反対側へラップ。明滅でやわらかく瞬く。
  * reduced-motion / モバイルでは無効。
  */
 export function LightMoteCanvas({ disabled = false, paused = false }: LightMoteCanvasProps) {
-	const reducedMotion = useReducedMotion();
-	const isPointerCoarse = window.matchMedia('(pointer: coarse)').matches;
-
-	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const motesRef = useRef<Mote[]>([]);
-	const rafIdRef = useRef<number>(0);
-	const lastFrameTimeRef = useRef<number>(-1);
-	const pausedRef = useRef<boolean>(paused);
 
-	const isDisabled = disabled || reducedMotion || isPointerCoarse;
-
-	useEffect(() => {
-		pausedRef.current = paused;
-	}, [paused]);
-
-	useEffect(() => {
-		if (isDisabled) return;
-
-		const canvas = canvasRef.current;
-		if (!canvas) return;
-
-		canvas.width = window.innerWidth;
-		canvas.height = window.innerHeight;
-
-		const ctx = canvas.getContext('2d');
-
-		const handleResize = () => {
-			canvas.width = window.innerWidth;
-			canvas.height = window.innerHeight;
-		};
-
-		const createMote = (): Mote => ({
-			x: Math.random() * canvas.width,
-			y: Math.random() * canvas.height,
-			vx: (Math.random() - 0.5) * 14, // 横へゆるく
-			vy: (Math.random() - 0.5) * 14, // 上下どちらにもゆるく＝漂う
-			radius: 1.5 + Math.random() * 2.5,
-			phase: Math.random() * Math.PI * 2,
-			pulseSpeed: 0.6 + Math.random() * 0.9,
-			baseOpacity: 0.35 + Math.random() * 0.3,
-		});
-
+	const { canvasProps } = useAmbientCanvas({
+		disabled,
+		paused,
 		// 画面全体に散らして初期化
-		motesRef.current = Array.from({ length: MAX_MOTES }, () => createMote());
-
-		const drawLoop = (timestamp: number) => {
-			if (pausedRef.current || !ctx) {
-				lastFrameTimeRef.current = timestamp;
-				rafIdRef.current = requestAnimationFrame(drawLoop);
-				return;
-			}
-
-			const prevTime = lastFrameTimeRef.current;
-			const isFirstFrame = prevTime < 0;
-			const deltaMs = isFirstFrame ? 16 : Math.min(timestamp - prevTime, 64);
-			lastFrameTimeRef.current = timestamp;
-			const dt = deltaMs / 1000;
-
+		onStart: (canvas) => {
+			motesRef.current = Array.from({ length: MAX_MOTES }, () => createMote(canvas));
+		},
+		onFrame: ({ ctx, canvas, dt }) => {
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 			for (const m of motesRef.current) {
@@ -117,33 +82,11 @@ export function LightMoteCanvas({ disabled = false, paused = false }: LightMoteC
 				ctx.fillStyle = `rgba(255, 236, 200, ${alpha})`;
 				ctx.fill();
 			}
-
-			rafIdRef.current = requestAnimationFrame(drawLoop);
-		};
-
-		window.addEventListener('resize', handleResize);
-		rafIdRef.current = requestAnimationFrame(drawLoop);
-
-		return () => {
-			window.removeEventListener('resize', handleResize);
-			cancelAnimationFrame(rafIdRef.current);
+		},
+		onStop: () => {
 			motesRef.current = [];
-			lastFrameTimeRef.current = -1;
-		};
-	}, [isDisabled]);
+		},
+	});
 
-	if (isDisabled) {
-		return (
-			<canvas
-				ref={canvasRef}
-				className="absolute inset-0 pointer-events-none hidden"
-				aria-hidden="true"
-				data-hidden="true"
-			/>
-		);
-	}
-
-	return (
-		<canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" aria-hidden="true" />
-	);
+	return <canvas {...canvasProps} />;
 }
