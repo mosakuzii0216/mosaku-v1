@@ -140,6 +140,25 @@ export class AuthController {
 	}
 
 	/**
+	 * OAuth 失敗の警告を Sentry へ送る。Sentry 送信の失敗は認証フローの成否に非依存のため、
+	 * ログに残して握り潰す（送信失敗でコールバック処理を止めない）。
+	 */
+	private captureOAuthWarning(messageName: string, error: unknown): void {
+		const failureCode = error instanceof AppException ? error.code : 'unknown';
+
+		try {
+			Sentry.captureMessage(messageName, {
+				level: 'warning',
+				tags: { feature_area: 'invitation', invitation_failure_code: failureCode },
+			});
+		} catch (sentryError) {
+			this.logger.warn(
+				`Sentry captureMessage failed: ${sentryError instanceof Error ? sentryError.message : String(sentryError)}`,
+			);
+		}
+	}
+
+	/**
 	 * 共通コールバック finalize。`payload.code` の有無で招待登録/ログインを選び、
 	 * refresh cookie 設定・MCP ハンドオフ・成功 redirect を行う（プロバイダ分岐なし）。
 	 * MCP ハンドオフのみ session を読み書きするが、OAuth 認証成立はその成否に非依存。
@@ -187,19 +206,9 @@ export class AuthController {
 			);
 		} catch (error: unknown) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
-			const failureCode = error instanceof AppException ? error.code : 'unknown';
 			this.logger.error(`${providerName} auth error: ${errorMessage}`);
 
-			try {
-				Sentry.captureMessage('oauth_callback_failed', {
-					level: 'warning',
-					tags: { feature_area: 'invitation', invitation_failure_code: failureCode },
-				});
-			} catch (sentryError) {
-				this.logger.warn(
-					`Sentry captureMessage failed: ${sentryError instanceof Error ? sentryError.message : String(sentryError)}`,
-				);
-			}
+			this.captureOAuthWarning('oauth_callback_failed', error);
 
 			return res.redirect(this.configService.generateAuthFailedUrl());
 		}
@@ -227,22 +236,9 @@ export class AuthController {
 			try {
 				payload = this.oauthStateService.verifyState(stateValue, provider);
 			} catch (error: unknown) {
-				const failureCode = error instanceof AppException ? error.code : 'unknown';
 				const invitationCode = this.oauthStateService.tryExtractInvitationCode(stateValue) ?? '';
 
-				try {
-					Sentry.captureMessage('invitation_state_invalid', {
-						level: 'warning',
-						tags: {
-							feature_area: 'invitation',
-							invitation_failure_code: failureCode,
-						},
-					});
-				} catch (sentryError) {
-					this.logger.warn(
-						`Sentry captureMessage failed: ${sentryError instanceof Error ? sentryError.message : String(sentryError)}`,
-					);
-				}
+				this.captureOAuthWarning('invitation_state_invalid', error);
 
 				this.logger.warn(
 					`${providerName} OAuth state invalid: ${error instanceof Error ? error.message : String(error)}`,
@@ -633,19 +629,9 @@ export class AuthController {
 		try {
 			payload = this.oauthStateService.verifyState(stateValue, 'x');
 		} catch (error: unknown) {
-			const failureCode = error instanceof AppException ? error.code : 'unknown';
 			const invitationCode = this.oauthStateService.tryExtractInvitationCode(stateValue) ?? '';
 
-			try {
-				Sentry.captureMessage('invitation_state_invalid', {
-					level: 'warning',
-					tags: { feature_area: 'invitation', invitation_failure_code: failureCode },
-				});
-			} catch (sentryError) {
-				this.logger.warn(
-					`Sentry captureMessage failed: ${sentryError instanceof Error ? sentryError.message : String(sentryError)}`,
-				);
-			}
+			this.captureOAuthWarning('invitation_state_invalid', error);
 
 			this.logger.warn(
 				`X OAuth state invalid: ${error instanceof Error ? error.message : String(error)}`,
