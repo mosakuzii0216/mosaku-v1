@@ -22,7 +22,7 @@
 
 **Location**: `frontend/src/components/{domain}/`
 **Purpose**: UIコンポーネントをドメイン別に整理
-**Example**: `components/memo/MemoEditor.tsx`, `components/tag/TagSelector.tsx`
+**Example**: `components/memo/MemoEditor.tsx`, `components/tag/TagManager.tsx`
 
 ### Frontend: サーバー状態フック
 
