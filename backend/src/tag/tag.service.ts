@@ -56,129 +56,69 @@ export class TagService extends BaseOwnableService<TagWithRelations> {
 		});
 	}
 
-	private async assignTagsToEntity(
+	/**
+	 * タグ付け対象（メモ / ノートブック）の存在と所有権を検証する。
+	 */
+	private assertOwnedTaggable(
+		entity: { userId: string } | null,
+		entityName: string,
 		entityId: string,
-		assignTagsDto: AssignTagsDto,
 		userId: string,
-		entityType: 'memo' | 'notebook',
-	) {
-		// エンティティの取得と所有権検証
-		if (entityType === 'memo') {
-			const entity = await this.prisma.memo.findUnique({ where: { id: entityId } });
+	): void {
+		if (!entity) {
+			throwNotFound(ERROR_CODES.RESOURCE.NOT_FOUND, `${entityName} with ID ${entityId} not found`);
+		}
 
-			if (!entity) {
-				throwNotFound(ERROR_CODES.RESOURCE.NOT_FOUND, `Memo with ID ${entityId} not found`);
-			}
+		if (entity.userId !== userId) {
+			throwForbidden(ERROR_CODES.AUTHZ.NOT_OWNER);
+		}
+	}
 
-			if (entity.userId !== userId) {
-				throwForbidden(ERROR_CODES.AUTHZ.NOT_OWNER);
-			}
+	/**
+	 * 割り当てようとしているタグがすべて自分のものであることを検証する。
+	 */
+	private async assertTagsOwned(tagIds: string[], userId: string): Promise<void> {
+		const tags = await this.prisma.tag.findMany({
+			where: {
+				id: { in: tagIds },
+				userId,
+			},
+		});
 
-			// タグの所有権検証
-			const tags = await this.prisma.tag.findMany({
-				where: {
-					id: { in: assignTagsDto.tagIds },
-					userId,
-				},
-			});
-
-			if (tags.length !== assignTagsDto.tagIds.length) {
-				throwForbidden(ERROR_CODES.AUTHZ.NOT_OWNER, 'Some tags do not belong to you');
-			}
-
-			// 既存のタグ関連を削除して新しい関連を作成
-			await this.prisma.memoTag.deleteMany({
-				where: { memoId: entityId },
-			});
-
-			if (assignTagsDto.tagIds.length > 0) {
-				await this.prisma.memoTag.createMany({
-					data: assignTagsDto.tagIds.map((tagId) => ({
-						memoId: entityId,
-						tagId,
-					})),
-				});
-			}
-
-			// 更新後のエンティティを返却
-			return this.prisma.memo.findUnique({
-				where: { id: entityId },
-				include: {
-					memoTags: {
-						include: {
-							tag: true,
-						},
-					},
-				},
-			});
-		} else {
-			const entity = await this.prisma.notebook.findUnique({ where: { id: entityId } });
-
-			if (!entity) {
-				throwNotFound(ERROR_CODES.RESOURCE.NOT_FOUND, `Notebook with ID ${entityId} not found`);
-			}
-
-			if (entity.userId !== userId) {
-				throwForbidden(ERROR_CODES.AUTHZ.NOT_OWNER);
-			}
-
-			// タグの所有権検証
-			const tags = await this.prisma.tag.findMany({
-				where: {
-					id: { in: assignTagsDto.tagIds },
-					userId,
-				},
-			});
-
-			if (tags.length !== assignTagsDto.tagIds.length) {
-				throwForbidden(ERROR_CODES.AUTHZ.NOT_OWNER, 'Some tags do not belong to you');
-			}
-
-			// 既存のタグ関連を削除して新しい関連を作成
-			await this.prisma.notebookTag.deleteMany({
-				where: { notebookId: entityId },
-			});
-
-			if (assignTagsDto.tagIds.length > 0) {
-				await this.prisma.notebookTag.createMany({
-					data: assignTagsDto.tagIds.map((tagId) => ({
-						notebookId: entityId,
-						tagId,
-					})),
-				});
-			}
-
-			// 更新後のエンティティを返却
-			return this.prisma.notebook.findUnique({
-				where: { id: entityId },
-				include: {
-					notebookTags: {
-						include: {
-							tag: true,
-						},
-					},
-				},
-			});
+		if (tags.length !== tagIds.length) {
+			throwForbidden(ERROR_CODES.AUTHZ.NOT_OWNER, 'Some tags do not belong to you');
 		}
 	}
 
 	async assignTagsToMemo(memoId: string, assignTagsDto: AssignTagsDto, userId: string) {
-		return this.assignTagsToEntity(memoId, assignTagsDto, userId, 'memo');
+		const memo = await this.prisma.memo.findUnique({ where: { id: memoId } });
+		this.assertOwnedTaggable(memo, 'Memo', memoId, userId);
+		await this.assertTagsOwned(assignTagsDto.tagIds, userId);
+
+		// 既存のタグ関連を削除して新しい関連を作成
+		await this.prisma.memoTag.deleteMany({ where: { memoId } });
+
+		if (assignTagsDto.tagIds.length > 0) {
+			await this.prisma.memoTag.createMany({
+				data: assignTagsDto.tagIds.map((tagId) => ({ memoId, tagId })),
+			});
+		}
+
+		return this.prisma.memo.findUnique({
+			where: { id: memoId },
+			include: {
+				memoTags: {
+					include: {
+						tag: true,
+					},
+				},
+			},
+		});
 	}
 
 	async getMemoTags(memoId: string, userId: string) {
-		// Verify memo ownership
-		const memo = await this.prisma.memo.findUnique({
-			where: { id: memoId },
-		});
-
-		if (!memo) {
-			throwNotFound(ERROR_CODES.RESOURCE.NOT_FOUND, `Memo with ID ${memoId} not found`);
-		}
-
-		if (memo.userId !== userId) {
-			throwForbidden(ERROR_CODES.AUTHZ.NOT_OWNER);
-		}
+		const memo = await this.prisma.memo.findUnique({ where: { id: memoId } });
+		this.assertOwnedTaggable(memo, 'Memo', memoId, userId);
 
 		return this.prisma.memoTag.findMany({
 			where: { memoId },
@@ -190,17 +130,34 @@ export class TagService extends BaseOwnableService<TagWithRelations> {
 
 	// ==== Notebooks x Tags (mirror of memos) ====
 	async assignTagsToNotebook(notebookId: string, assignTagsDto: AssignTagsDto, userId: string) {
-		return this.assignTagsToEntity(notebookId, assignTagsDto, userId, 'notebook');
+		const notebook = await this.prisma.notebook.findUnique({ where: { id: notebookId } });
+		this.assertOwnedTaggable(notebook, 'Notebook', notebookId, userId);
+		await this.assertTagsOwned(assignTagsDto.tagIds, userId);
+
+		// 既存のタグ関連を削除して新しい関連を作成
+		await this.prisma.notebookTag.deleteMany({ where: { notebookId } });
+
+		if (assignTagsDto.tagIds.length > 0) {
+			await this.prisma.notebookTag.createMany({
+				data: assignTagsDto.tagIds.map((tagId) => ({ notebookId, tagId })),
+			});
+		}
+
+		return this.prisma.notebook.findUnique({
+			where: { id: notebookId },
+			include: {
+				notebookTags: {
+					include: {
+						tag: true,
+					},
+				},
+			},
+		});
 	}
 
 	async getNotebookTags(notebookId: string, userId: string) {
 		const notebook = await this.prisma.notebook.findUnique({ where: { id: notebookId } });
-		if (!notebook) {
-			throwNotFound(ERROR_CODES.RESOURCE.NOT_FOUND, `Notebook with ID ${notebookId} not found`);
-		}
-		if (notebook.userId !== userId) {
-			throwForbidden(ERROR_CODES.AUTHZ.NOT_OWNER);
-		}
+		this.assertOwnedTaggable(notebook, 'Notebook', notebookId, userId);
 
 		return this.prisma.notebookTag.findMany({
 			where: { notebookId },
