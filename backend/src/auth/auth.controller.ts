@@ -159,6 +159,34 @@ export class AuthController {
 	}
 
 	/**
+	 * state 検証失敗時の共通後始末（全プロバイダ共通）。
+	 * 招待コードを復号できたときのみ invite ページへ戻し、それ以外は auth_failed へ送る。
+	 * 空の招待コードで invite ページへ送ると `/invite/?error=invalid_state` という
+	 * ルートに一致しない URL になり、ユーザーが無言でトップに落ちるため分岐が必要。
+	 */
+	private redirectStateFailure(
+		res: ExpressResponse,
+		stateValue: string,
+		error: unknown,
+		providerName: string,
+	): void {
+		const invitationCode = this.oauthStateService.tryExtractInvitationCode(stateValue) ?? '';
+
+		this.captureOAuthWarning('invitation_state_invalid', error);
+
+		this.logger.warn(
+			`${providerName} OAuth state invalid: ${error instanceof Error ? error.message : String(error)}`,
+		);
+
+		if (invitationCode) {
+			res.redirect(this.configService.generateInvitationStateInvalidUrl(invitationCode));
+			return;
+		}
+
+		res.redirect(this.configService.generateAuthFailedUrl());
+	}
+
+	/**
 	 * 共通コールバック finalize。`payload.code` の有無で招待登録/ログインを選び、
 	 * refresh cookie 設定・MCP ハンドオフ・成功 redirect を行う（プロバイダ分岐なし）。
 	 * MCP ハンドオフのみ session を読み書きするが、OAuth 認証成立はその成否に非依存。
@@ -236,14 +264,7 @@ export class AuthController {
 			try {
 				payload = this.oauthStateService.verifyState(stateValue, provider);
 			} catch (error: unknown) {
-				const invitationCode = this.oauthStateService.tryExtractInvitationCode(stateValue) ?? '';
-
-				this.captureOAuthWarning('invitation_state_invalid', error);
-
-				this.logger.warn(
-					`${providerName} OAuth state invalid: ${error instanceof Error ? error.message : String(error)}`,
-				);
-				return res.redirect(this.configService.generateInvitationStateInvalidUrl(invitationCode));
+				return this.redirectStateFailure(res, stateValue, error, providerName);
 			}
 
 			return this.finalizeOAuthCallback(
@@ -629,19 +650,7 @@ export class AuthController {
 		try {
 			payload = this.oauthStateService.verifyState(stateValue, 'x');
 		} catch (error: unknown) {
-			const invitationCode = this.oauthStateService.tryExtractInvitationCode(stateValue) ?? '';
-
-			this.captureOAuthWarning('invitation_state_invalid', error);
-
-			this.logger.warn(
-				`X OAuth state invalid: ${error instanceof Error ? error.message : String(error)}`,
-			);
-
-			if (invitationCode) {
-				res.redirect(this.configService.generateInvitationStateInvalidUrl(invitationCode));
-			} else {
-				res.redirect(this.configService.generateAuthFailedUrl());
-			}
+			this.redirectStateFailure(res, stateValue, error, 'X');
 			return;
 		}
 

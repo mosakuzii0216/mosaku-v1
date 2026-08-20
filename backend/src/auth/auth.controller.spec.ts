@@ -395,7 +395,7 @@ describe('AuthController - Google / Apple / X エンドポイント', () => {
 			expect(res.redirect).toHaveBeenCalledWith('http://localhost?token=xxx');
 		});
 
-		it('state あり verify 失敗 → invalid_state redirect + Sentry.captureMessage', async () => {
+		it('state あり verify 失敗 + invitationCode 復号不可 → auth_failed + Sentry.captureMessage', async () => {
 			mockOAuthStateService.verifyState.mockImplementation(() => {
 				throw new AppException('INV001', 400);
 			});
@@ -412,7 +412,10 @@ describe('AuthController - Google / Apple / X エンドポイント', () => {
 
 			expect(mockOAuthService.googleRegisterWithStateInvitation).not.toHaveBeenCalled();
 			expect(mockOAuthService.googleLogin).not.toHaveBeenCalled();
-			expect(res.redirect).toHaveBeenCalledWith(expect.stringContaining('error=invalid_state'));
+			// 招待コードが無いのに invite ページへ送ると `/invite/?error=invalid_state` という
+			// ルートに一致しない URL になるため、auth_failed へ送る（X 経路と同じ扱い）。
+			expect(res.redirect).toHaveBeenCalledWith(expect.stringContaining('error=auth_failed'));
+			expect(res.redirect).not.toHaveBeenCalledWith(expect.stringContaining('invalid_state'));
 			expect(Sentry.captureMessage).toHaveBeenCalledWith(
 				'invitation_state_invalid',
 				expect.objectContaining({
@@ -421,6 +424,27 @@ describe('AuthController - Google / Apple / X エンドポイント', () => {
 						invitation_failure_code: 'INV001',
 					}) as unknown,
 				}),
+			);
+		});
+
+		it('state あり verify 失敗 + invitationCode 復号可 → invite ページへリダイレクト', async () => {
+			mockOAuthStateService.verifyState.mockImplementation(() => {
+				throw new AppException('INV001', 400);
+			});
+			mockOAuthStateService.tryExtractInvitationCode.mockReturnValue('GOOGLE-INV');
+
+			const req = {
+				...buildReq(),
+				query: { state: 'tampered.state' },
+				user: { googleId: 'g-1', name: 'G' },
+			};
+			const res = buildRes();
+
+			await controller.googleAuthRedirect(req as never, res as never);
+
+			expect(mockOAuthService.googleLogin).not.toHaveBeenCalled();
+			expect(res.redirect).toHaveBeenCalledWith(
+				'http://localhost/invite/GOOGLE-INV?error=invalid_state',
 			);
 		});
 

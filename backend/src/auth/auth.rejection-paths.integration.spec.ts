@@ -290,11 +290,12 @@ describe('Task 4.2: 拒否経路統合テスト（実 OAuthStateService + OAuthS
 	// ──────────────────────────────────────────────────────────────────────────
 
 	/**
-	 * 残 2 社（Google/Apple）は state 検証失敗時に常に invite ページへリダイレクトする。
-	 * これは認証成立へフォールスルーしない保証。
+	 * 残 2 社（Google/Apple）も X と同じ扱い。state 検証失敗時、招待コードを復号できたら
+	 * invite ページへ、復号できなければ auth_failed へ送る。
+	 * いずれの場合も認証成立へフォールスルーしないことが保証の本体。
 	 */
-	describe('Google コールバック拒否経路（残 2 社代表 - 失敗時は invite ページへ）', () => {
-		it('HMAC 改ざん状態 → invite ページへ（ログイン成立しない）', async () => {
+	describe('Google コールバック拒否経路（残 2 社代表）', () => {
+		it('HMAC 改ざん状態（招待コードなし）→ auth_failed（ログイン成立しない）', async () => {
 			const validState = oauthStateService.issueState({ provider: 'google' });
 			const tampered = tamperHmac(validState);
 
@@ -303,10 +304,10 @@ describe('Task 4.2: 拒否経路統合テスト（実 OAuthStateService + OAuthS
 				.expect(302);
 
 			expect(res.headers.location).not.toBe(SUCCESS_URL);
-			expect(res.headers.location).toContain('invalid_state');
+			expect(res.headers.location).toBe(AUTH_FAILED_URL);
 		});
 
-		it('provider 不一致（state は x、コールバックは google）→ invite ページへ（googleLogin 未呼び出し）', async () => {
+		it('provider 不一致（state は x、コールバックは google）→ auth_failed（googleLogin 未呼び出し）', async () => {
 			const wrongProviderState = oauthStateService.issueState({ provider: 'x' });
 
 			const res = await request(app.getHttpServer() as Server)
@@ -314,10 +315,10 @@ describe('Task 4.2: 拒否経路統合テスト（実 OAuthStateService + OAuthS
 				.expect(302);
 
 			expect(res.headers.location).not.toBe(SUCCESS_URL);
-			expect(res.headers.location).toContain('invalid_state');
+			expect(res.headers.location).toBe(AUTH_FAILED_URL);
 		});
 
-		it('TTL 超過（11 分前 iat）→ invite ページへ（googleLogin 未呼び出し）', async () => {
+		it('TTL 超過（11 分前 iat・招待コードなし）→ auth_failed（googleLogin 未呼び出し）', async () => {
 			const validState = oauthStateService.issueState({ provider: 'google' });
 			const expired = expireState(validState);
 
@@ -326,7 +327,7 @@ describe('Task 4.2: 拒否経路統合テスト（実 OAuthStateService + OAuthS
 				.expect(302);
 
 			expect(res.headers.location).not.toBe(SUCCESS_URL);
-			expect(res.headers.location).toContain('invalid_state');
+			expect(res.headers.location).toBe(AUTH_FAILED_URL);
 		});
 
 		it('招待コード付き改ざん state → invite ページへ（invitationCode が URL に含まれる）', async () => {
