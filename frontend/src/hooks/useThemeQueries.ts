@@ -144,8 +144,10 @@ export const useUpdateTheme = () => {
 		onSuccess: (updatedTheme) => {
 			// 特定テーマのキャッシュを更新
 			queryClient.setQueryData(queryKeys.themes.detail(updatedTheme.id), updatedTheme);
-			// テーマ一覧を無効化
-			queryClient.invalidateQueries({ queryKey: queryKeys.themes.lists() });
+			// themes 配下を全て無効化する。lists() は ['themes','list'] 前方一致のため
+			// 兄弟枝の system / public / category に届かず、それらを表示する画面
+			// （NotebookEditor 等）が古いテーマを表示し続ける。
+			queryClient.invalidateQueries({ queryKey: queryKeys.themes.all });
 		},
 	});
 };
@@ -167,8 +169,8 @@ export const useDeleteTheme = () => {
 		onSuccess: (deletedId) => {
 			// 削除されたテーマのキャッシュを削除
 			queryClient.removeQueries({ queryKey: queryKeys.themes.detail(deletedId) });
-			// テーマ一覧を無効化
-			queryClient.invalidateQueries({ queryKey: queryKeys.themes.lists() });
+			// system / public / category にも消えたテーマが載っているため themes 配下を全て無効化する
+			queryClient.invalidateQueries({ queryKey: queryKeys.themes.all });
 		},
 	});
 };
@@ -187,17 +189,16 @@ export const useAddToFavoriteThemes = () => {
 			}
 		},
 		onSuccess: (_, themeId) => {
-			// お気に入り一覧を無効化
-			queryClient.invalidateQueries({ queryKey: queryKeys.themes.favorites() });
-			// テーマ詳細のisFavoritedを更新
+			// 再取得を待たずに詳細画面へ反映する
 			queryClient.setQueryData(queryKeys.themes.detail(themeId), (old: Theme | undefined) => {
 				if (old) {
 					return { ...old, isFavorited: true, favoriteCount: old.favoriteCount + 1 };
 				}
 				return old;
 			});
-			// テーマ一覧も無効化（isFavoritedフラグの更新）
-			queryClient.invalidateQueries({ queryKey: queryKeys.themes.lists() });
+			// isFavorited / favoriteCount は favorites だけでなく list / system / public /
+			// category の全系統に載るため、themes 配下をまとめて無効化する。
+			queryClient.invalidateQueries({ queryKey: queryKeys.themes.all });
 		},
 	});
 };
@@ -216,17 +217,16 @@ export const useRemoveFromFavoriteThemes = () => {
 			}
 		},
 		onSuccess: (_, themeId) => {
-			// お気に入り一覧を無効化
-			queryClient.invalidateQueries({ queryKey: queryKeys.themes.favorites() });
-			// テーマ詳細のisFavoritedを更新
+			// 再取得を待たずに詳細画面へ反映する
 			queryClient.setQueryData(queryKeys.themes.detail(themeId), (old: Theme | undefined) => {
 				if (old) {
 					return { ...old, isFavorited: false, favoriteCount: Math.max(0, old.favoriteCount - 1) };
 				}
 				return old;
 			});
-			// テーマ一覧も無効化（isFavoritedフラグの更新）
-			queryClient.invalidateQueries({ queryKey: queryKeys.themes.lists() });
+			// isFavorited / favoriteCount は favorites だけでなく list / system / public /
+			// category の全系統に載るため、themes 配下をまとめて無効化する。
+			queryClient.invalidateQueries({ queryKey: queryKeys.themes.all });
 		},
 	});
 };

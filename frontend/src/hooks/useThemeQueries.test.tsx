@@ -200,7 +200,7 @@ describe('useUpdateTheme', () => {
 
 		expect(apiClient.updateTheme).toHaveBeenCalledWith('theme-1', { name: 'Renamed' });
 		expect(queryClient.getQueryData(queryKeys.themes.detail('theme-1'))).toEqual(updated);
-		expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.themes.lists() });
+		expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.themes.all });
 	});
 });
 
@@ -215,7 +215,7 @@ describe('useDeleteTheme', () => {
 		await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
 		expect(queryClient.getQueryData(queryKeys.themes.detail('theme-1'))).toBeUndefined();
-		expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.themes.lists() });
+		expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.themes.all });
 	});
 });
 
@@ -237,7 +237,7 @@ describe('useAddToFavoriteThemes', () => {
 		});
 	});
 
-	it('お気に入り一覧と一覧キャッシュの両方を無効化する', async () => {
+	it('テーマ関連キャッシュを全て無効化する（themes.all）', async () => {
 		vi.mocked(apiClient.addToFavoriteThemes).mockResolvedValue({ message: 'ok' });
 		const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -245,8 +245,7 @@ describe('useAddToFavoriteThemes', () => {
 		result.current.mutate('theme-1');
 		await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-		expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.themes.favorites() });
-		expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.themes.lists() });
+		expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.themes.all });
 	});
 
 	it('詳細キャッシュが無ければ書き込まない（undefined のまま）', async () => {
@@ -292,5 +291,84 @@ describe('useRemoveFromFavoriteThemes', () => {
 		expect(queryClient.getQueryData(queryKeys.themes.detail('theme-1'))).toMatchObject({
 			favoriteCount: 0,
 		});
+	});
+});
+
+// ─── 回帰: 無効化が list 以外の系統にも届くこと ─────────────────────────────────
+
+describe('無効化の到達範囲（回帰）', () => {
+	/**
+	 * queryKeys.themes は list / system / public / category / favorites が
+	 * ['themes', X] の兄弟枝として並ぶ。前方一致で無効化する React Query では
+	 * lists()（= ['themes','list']）を指定すると兄弟枝に届かず、system / public を
+	 * 表示する画面（NotebookEditor 等）が古いテーマを表示し続ける。
+	 * ミューテーションが themes.all を無効化することを実キャッシュ状態で確認する。
+	 */
+	const seedAllThemeCaches = () => {
+		queryClient.setQueryData(queryKeys.themes.list(undefined), [buildTheme()]);
+		queryClient.setQueryData(queryKeys.themes.system(), [buildTheme()]);
+		queryClient.setQueryData(queryKeys.themes.public(), [buildTheme()]);
+		queryClient.setQueryData(queryKeys.themes.category('creative'), [buildTheme()]);
+		queryClient.setQueryData(queryKeys.themes.favorites(), [buildTheme()]);
+	};
+
+	const invalidationState = () => ({
+		list: queryClient.getQueryState(queryKeys.themes.list(undefined))?.isInvalidated,
+		system: queryClient.getQueryState(queryKeys.themes.system())?.isInvalidated,
+		public: queryClient.getQueryState(queryKeys.themes.public())?.isInvalidated,
+		category: queryClient.getQueryState(queryKeys.themes.category('creative'))?.isInvalidated,
+		favorites: queryClient.getQueryState(queryKeys.themes.favorites())?.isInvalidated,
+	});
+
+	const allInvalidated = {
+		list: true,
+		system: true,
+		public: true,
+		category: true,
+		favorites: true,
+	};
+
+	it('useUpdateTheme は system / public / category / favorites も無効化する', async () => {
+		vi.mocked(apiClient.updateTheme).mockResolvedValue(buildTheme({ name: 'Renamed' }));
+		seedAllThemeCaches();
+
+		const { result } = renderHook(() => useUpdateTheme(), { wrapper });
+		result.current.mutate({ id: 'theme-1', data: { name: 'Renamed' } });
+		await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+		expect(invalidationState()).toEqual(allInvalidated);
+	});
+
+	it('useDeleteTheme は system / public / category / favorites も無効化する', async () => {
+		vi.mocked(apiClient.deleteTheme).mockResolvedValue(undefined);
+		seedAllThemeCaches();
+
+		const { result } = renderHook(() => useDeleteTheme(), { wrapper });
+		result.current.mutate('theme-1');
+		await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+		expect(invalidationState()).toEqual(allInvalidated);
+	});
+
+	it('useAddToFavoriteThemes は system / public / category も無効化する', async () => {
+		vi.mocked(apiClient.addToFavoriteThemes).mockResolvedValue({ message: 'ok' });
+		seedAllThemeCaches();
+
+		const { result } = renderHook(() => useAddToFavoriteThemes(), { wrapper });
+		result.current.mutate('theme-1');
+		await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+		expect(invalidationState()).toEqual(allInvalidated);
+	});
+
+	it('useRemoveFromFavoriteThemes は system / public / category も無効化する', async () => {
+		vi.mocked(apiClient.removeFromFavoriteThemes).mockResolvedValue({ message: 'ok' });
+		seedAllThemeCaches();
+
+		const { result } = renderHook(() => useRemoveFromFavoriteThemes(), { wrapper });
+		result.current.mutate('theme-1');
+		await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+		expect(invalidationState()).toEqual(allInvalidated);
 	});
 });
