@@ -220,8 +220,7 @@ export class AuthController {
 
 			// MCP 認可フロー専用ハンドオフ（OAuth 認証成立はこの session 書き込みに非依存）
 			const mcpSession = req.session as unknown as
-				| { mcpAuthorizeReturn?: string; mcpUserId?: string }
-				| undefined;
+				{ mcpAuthorizeReturn?: string; mcpUserId?: string } | undefined;
 			if (mcpSession?.mcpAuthorizeReturn) {
 				const returnTo = mcpSession.mcpAuthorizeReturn;
 				mcpSession.mcpAuthorizeReturn = undefined;

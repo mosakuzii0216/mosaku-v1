@@ -22,8 +22,7 @@ describe('tailwind.config（prose typography 有効化）', () => {
 
 	describe('prose 既定スタイルの override（Req 4.1/4.2/4.4/5.2）', () => {
 		const css = tailwindConfig.theme?.extend?.typography?.DEFAULT?.css as
-			| Record<string, unknown>
-			| undefined;
+			Record<string, unknown> | undefined;
 
 		it('DEFAULT.css に override を定義している', () => {
 			expect(css).toBeTruthy();

@@ -106,12 +106,7 @@ export interface Theme {
 }
 
 export type ThemeCategory =
-	| 'basic'
-	| 'business'
-	| 'creative'
-	| 'study'
-	| 'seasonal'
-	| 'accessibility';
+	'basic' | 'business' | 'creative' | 'study' | 'seasonal' | 'accessibility';
 
 export interface ThemeSearchParams {
 	query?: string;
