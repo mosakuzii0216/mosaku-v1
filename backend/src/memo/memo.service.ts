@@ -353,4 +353,31 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 			where: { userId, trashedAt: { not: null } },
 		});
 	}
+
+	// ─── ピン留め ─────────────────────────────────
+
+	/**
+	 * メモをピン留めする(一覧の先頭に固定)
+	 */
+
+	async pin(id: string, userId: string): Promise<MemoWithRelations> {
+		await this.findOne(id, userId); // 所有者検証（ゴミ箱ないメモはここで404）
+		return this.prisma.memo.update({
+			where: { id },
+			data: { pinnedAt: new Date() },
+			include: this.getDefaultInclude(),
+		});
+	}
+
+	/**
+	 * メモのピン留めを解除する
+	 */
+	async unpin(id: string, userId: string): Promise<MemoWithRelations> {
+		await this.findOne(id, userId);
+		return this.prisma.memo.update({
+			where: { id },
+			data: { pinnedAt: null },
+			include: this.getDefaultInclude(),
+		});
+	}
 }

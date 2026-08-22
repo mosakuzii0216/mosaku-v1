@@ -20,6 +20,7 @@ const mockMemo = (overrides: Record<string, unknown> = {}) => ({
 	createdAt: new Date(),
 	updatedAt: new Date(),
 	trashedAt: null,
+	pinnedAt: null,
 	userId: 'user-1',
 	notebookId: null,
 	publicToken: null,
@@ -510,6 +511,53 @@ describe('MemoService', () => {
 			const orClauses = callArgs.where.OR ?? [];
 			expect(orClauses.some((c) => 'contentText' in c)).toBe(true);
 			expect(orClauses.every((c) => !('content' in c))).toBe(true);
+		});
+	});
+
+	// ─── ピン留め ─────────────────────────────────
+	describe('pin / unpin', () => {
+		it('自分のメモをピン留めできる', async () => {
+			mockPrismaService.memo.findFirst.mockResolvedValue(mockMemo());
+			mockPrismaService.memo.update.mockResolvedValue(mockMemo({ pinnedAt: new Date() }));
+
+			const result = await service.pin('memo-1', 'user-1');
+
+			expect(mockPrismaService.memo.update).toHaveBeenCalledWith(
+				expect.objectContaining({
+					where: { id: 'memo-1' },
+					data: { pinnedAt: expect.any(Date) },
+				}),
+			);
+			expect(result.pinnedAt).not.toBeNull();
+		});
+
+		it('ピン留めを解除すると pinnedAt が null に戻る', async () => {
+			mockPrismaService.memo.findFirst.mockResolvedValue(mockMemo({ pinnedAt: new Date() }));
+			mockPrismaService.memo.update.mockResolvedValue(mockMemo({ pinnedAt: null }));
+
+			const result = await service.unpin('memo-1', 'user-1');
+
+			expect(mockPrismaService.memo.update).toHaveBeenCalledWith(
+				expect.objectContaining({ data: { pinnedAt: null } }),
+			);
+			expect(result.pinnedAt).toBeNull();
+		});
+
+		it('存在しないメモはピン留めできない（404）', async () => {
+			mockPrismaService.memo.findFirst.mockResolvedValue(null);
+
+			await expect(service.pin('nonexistent', 'user-1')).rejects.toMatchObject({
+				statusCode: HttpStatus.NOT_FOUND,
+			});
+		});
+
+		it('他人のメモはピン留めできない（403）', async () => {
+			mockPrismaService.memo.findFirst.mockResolvedValue(mockMemo({ userId: 'other-user' }));
+
+			await expect(service.pin('memo-1', 'user-1')).rejects.toMatchObject({
+				statusCode: HttpStatus.FORBIDDEN,
+			});
+			expect(mockPrismaService.memo.update).not.toHaveBeenCalled();
 		});
 	});
 });
