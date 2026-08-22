@@ -57,6 +57,7 @@ model Memo {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   trashedAt   DateTime? @map("trashed_at")
+  pinnedAt    DateTime? @map("pinned_at")
   userId      String    @map("user_id")
   notebookId  String?   @map("notebook_id")
   publicToken String?   @unique @map("public_token") @db.VarChar(64)
