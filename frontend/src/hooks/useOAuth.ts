@@ -15,7 +15,7 @@ interface OAuthProviderConfig {
 
 // OAuthプロバイダの設定（既存ユーザー向けのログイン開始のみを扱う。
 // 新規登録は `/invite/:code` → `/auth/oauth/:provider/start` 経由のみ）。
-export const OAUTH_PROVIDERS: Record<OAuthProvider, OAuthProviderConfig> = {
+const OAUTH_PROVIDERS: Record<OAuthProvider, OAuthProviderConfig> = {
 	google: {
 		name: 'Google',
 		utils: GoogleAuthUtils,

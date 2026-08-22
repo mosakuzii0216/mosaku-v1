@@ -9,7 +9,7 @@ export interface OfflineSavedSignal {
 
 export const OFFLINE_SAVED_SIGNAL: OfflineSavedSignal = Object.freeze({ kind: 'offline-saved' });
 
-export function isOfflineSavedSignal(value: unknown): value is OfflineSavedSignal {
+function isOfflineSavedSignal(value: unknown): value is OfflineSavedSignal {
 	return (
 		typeof value === 'object' &&
 		value !== null &&

@@ -88,7 +88,7 @@ export function compositeOver(fg: RGBA, bg: RGBA): RGBA {
 	};
 }
 
-export function relativeLuminance({ r, g, b }: RGBA): number {
+function relativeLuminance({ r, g, b }: RGBA): number {
 	const lin = (c: number): number => {
 		const v = c / 255;
 		return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
