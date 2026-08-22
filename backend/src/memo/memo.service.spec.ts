@@ -559,5 +559,17 @@ describe('MemoService', () => {
 			});
 			expect(mockPrismaService.memo.update).not.toHaveBeenCalled();
 		});
+
+		it('一覧はピン留めを先頭に、未ピンを末尾に並べる', async () => {
+			mockPrismaService.memo.findMany.mockResolvedValue([]);
+
+			await service.findAll('user-1');
+
+			expect(mockPrismaService.memo.findMany).toHaveBeenCalledWith(
+				expect.objectContaining({
+					orderBy: [{ pinnedAt: { sort: 'desc', nulls: 'last' } }, { updatedAt: 'desc' }],
+				}),
+			);
+		});
 	});
 });

@@ -50,8 +50,10 @@ export class MemoService extends BaseOwnableService<MemoWithRelations> {
 		};
 	}
 
-	protected getDefaultOrderBy() {
-		return { updatedAt: 'desc' as const };
+	protected getDefaultOrderBy(): Prisma.MemoOrderByWithRelationInput[] {
+		// ピン留めを最優先。pinnedAt は NULL 許容で、Postgres の DESC は既定
+		// NULLS FIRST のため、明示的に nulls: 'last' を指定していないと未ピンが先頭にくる。
+		return [{ pinnedAt: { sort: 'desc', nulls: 'last' } }, { updatedAt: 'desc' as const }];
 	}
 
 	/**
