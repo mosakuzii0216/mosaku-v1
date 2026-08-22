@@ -29,13 +29,3 @@ export const NOTEBOOK_WITH_THEME_SELECT = {
 		select: THEME_SELECT,
 	},
 } as const satisfies Prisma.NotebookSelect;
-
-/**
- * Notebook include object with theme
- * Used for Prisma include clauses
- */
-export const NOTEBOOK_INCLUDE_THEME = {
-	theme: {
-		select: THEME_SELECT,
-	},
-} as const satisfies Prisma.NotebookInclude;

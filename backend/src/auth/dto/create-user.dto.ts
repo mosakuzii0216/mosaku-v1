@@ -1,12 +1,6 @@
 import { IsString, IsOptional, IsEmail, IsNotEmpty } from 'class-validator';
 import { IsStrongPassword } from '../validators/password-strength.validator';
 
-export class CreateUserDto {
-	@IsString()
-	@IsOptional()
-	name?: string;
-}
-
 export class RegisterUserDto {
 	@IsEmail()
 	email: string;
