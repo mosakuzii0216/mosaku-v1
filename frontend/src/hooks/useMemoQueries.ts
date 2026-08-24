@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+import { apiClient } from '../utils/api';
 import { useViewStore } from '../stores/useViewStore';
 import { useTagStore } from '../stores/useTagStore';
 import type { CreateMemoDto, Memo, UpdateMemoDto } from '../types/memo';
@@ -207,6 +208,20 @@ export const useEmptyTrash = () => {
 		networkMode: 'offlineFirst',
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: queryKeys.memos.trash() });
+		},
+	});
+};
+
+// メモのピン留めを切り替える（オンライン専用）
+export const useTogglePin = () => {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: ({ id, pinned }: { id: string; pinned: boolean }) =>
+			pinned ? apiClient.unpinMemo(id) : apiClient.pinMemo(id),
+		onSuccess: () => {
+			// ピンは一覧・検索・ページネーションの並び全部に効くので memos 配下を丸ごと無効化する
+			queryClient.invalidateQueries({ queryKey: queryKeys.memos.all });
 		},
 	});
 };
