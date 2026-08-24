@@ -232,6 +232,20 @@ class ApiClient {
 		});
 	}
 
+	// メモをピン留めする
+	async pinMemo(id: string): Promise<Memo> {
+		return this.request<Memo>(`/memos/${id}/pin`, {
+			method: 'PATCH',
+		});
+	}
+
+	// メモのピン留めを解除する
+	async unpinMemo(id: string): Promise<Memo> {
+		return this.request<Memo>(`/memos/${id}/pin`, {
+			method: 'DELETE',
+		});
+	}
+
 	// メモ検索
 	async searchMemos(query: string, tagIds?: string[]): Promise<Memo[]> {
 		const params = new URLSearchParams();
