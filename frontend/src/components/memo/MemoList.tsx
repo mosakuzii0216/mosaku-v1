@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { useMemos, useSearchMemos } from '../../hooks/useMemoQueries';
+import { useMemos, useSearchMemos, useTogglePin } from '../../hooks/useMemoQueries';
+import type { Memo } from '../../types/memo';
 import { Search, Plus } from 'lucide-react';
 import { useViewStore } from '../../stores/useViewStore';
 import { useNavigation } from '../../hooks/useNavigation';
@@ -15,6 +16,7 @@ export const MemoList = () => {
 
 	const memosQuery = useMemos();
 	const searchQuery = useSearchMemos(trimmedQuery);
+	const togglePin = useTogglePin();
 
 	const activeQuery = isSearching ? searchQuery : memosQuery;
 	const { data: memos = [], isLoading, error } = activeQuery;
@@ -37,16 +39,25 @@ export const MemoList = () => {
 
 	const sortedMemos = useMemo(() => {
 		const list = [...filteredMemos];
-		switch (sortKey) {
-			case 'updated_desc':
-				return list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-			case 'updated_asc':
-				return list.sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
-			case 'created_desc':
-				return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-			case 'title_asc':
-				return list.sort((a, b) => a.title.localeCompare(b.title, 'ja'));
-		}
+		const compare = (a: Memo, b: Memo): number => {
+			switch (sortKey) {
+				case 'updated_desc':
+					return b.updatedAt.localeCompare(a.updatedAt);
+				case 'updated_asc':
+					return a.updatedAt.localeCompare(b.updatedAt);
+				case 'created_desc':
+					return b.createdAt.localeCompare(a.createdAt);
+				case 'title_asc':
+					return a.title.localeCompare(b.title, 'ja');
+			}
+		};
+
+		// ピン留めはソート選択より常に優先する。サーバ側の orderBy はこの sort で
+		// 上書きされるため、同じ規則をクライアントでも再現する必要がある。
+		return list.sort((a, b) => {
+			const pinDiff = (b.pinnedAt ? 1 : 0) - (a.pinnedAt ? 1 : 0);
+			return pinDiff !== 0 ? pinDiff : compare(a, b);
+		});
 	}, [filteredMemos, sortKey]);
 
 	if (isLoading) {
@@ -140,7 +151,12 @@ export const MemoList = () => {
 				</div>
 				<div className="space-y-2">
 					{sortedMemos.map((memo) => (
-						<MemoItem key={memo.id} memo={memo} onClick={() => goToEdit(memo)} />
+						<MemoItem
+							key={memo.id}
+							memo={memo}
+							onClick={() => goToEdit(memo)}
+							onTogglePin={() => togglePin.mutate({ id: memo.id, pinned: Boolean(memo.pinnedAt) })}
+						/>
 					))}
 				</div>
 			</div>

@@ -15,6 +15,7 @@ import { render, screen } from '@testing-library/react';
 vi.mock('../../hooks/useMemoQueries', () => ({
 	useMemos: vi.fn(),
 	useSearchMemos: vi.fn(),
+	useTogglePin: vi.fn(() => ({ mutate: vi.fn() })),
 }));
 
 vi.mock('../../stores/useViewStore', () => ({
@@ -32,7 +33,7 @@ vi.mock('./MemoItem', () => ({
 }));
 
 import { MemoList } from './MemoList';
-import { useMemos, useSearchMemos } from '../../hooks/useMemoQueries';
+import { useMemos, useSearchMemos, useTogglePin } from '../../hooks/useMemoQueries';
 
 const mockMemos = [
 	{
