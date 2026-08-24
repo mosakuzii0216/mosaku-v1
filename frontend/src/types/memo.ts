@@ -21,6 +21,8 @@ export interface Memo {
 	// 公開共有関連
 	publicToken?: string | null;
 	publishedAt?: string | null;
+	// ピン留め
+	pinnedAt?: string | null;
 }
 
 export interface CreateMemoDto {
