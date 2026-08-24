@@ -152,6 +152,24 @@ export class MemoController {
 	}
 
 	/**
+	 * メモをピン留めする
+	 * PATCH /memos/:id/pin
+	 */
+	@Patch(':id/pin')
+	pin(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
+		return this.memoService.pin(id, req.user.id);
+	}
+
+	/**
+	 * メモのピン留めを解除する
+	 * DELETE /memos/:id/pin
+	 */
+	@Delete(':id/pin')
+	unpin(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
+		return this.memoService.unpin(id, req.user.id);
+	}
+
+	/**
 	 * ゴミ箱内メモを完全削除する
 	 * DELETE /memos/:id/permanent
 	 */

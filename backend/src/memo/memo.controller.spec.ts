@@ -18,6 +18,8 @@ const mockMemoService = {
 	restore: jest.fn(),
 	permanentDelete: jest.fn(),
 	emptyTrash: jest.fn(),
+	pin: jest.fn(),
+	unpin: jest.fn(),
 };
 
 const mockMemoSharingService = {
@@ -167,6 +169,16 @@ describe('MemoController', () => {
 
 			expect(mockMemoSharingService.listMyPublicMemos).toHaveBeenCalledWith('user-1');
 			expect(result).toEqual(list);
+		});
+	});
+
+	describe('PATCH /memos/:id/pin', () => {
+		it('ログイン中のユーザIDで memoService.pin() を呼ぶ', async () => {
+			mockMemoService.pin.mockResolvedValue({ id: 'memo-1', pinnedAt: new Date() });
+
+			await controller.pin('memo-1', mockReq);
+
+			expect(mockMemoService.pin).toHaveBeenCalledWith('memo-1', 'user-1');
 		});
 	});
 });
