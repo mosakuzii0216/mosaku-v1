@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import type { Memo } from '../../types/memo';
 
 /*
@@ -53,5 +53,30 @@ describe('MemoItem — メモカードの奥行き化（4.4）', () => {
 	it('本文プレビューが表示される（補助テキストが消えない）', () => {
 		render(<MemoItem memo={mockMemo} onClick={vi.fn()} />);
 		expect(screen.getByText('本文プレビュー')).toBeTruthy();
+	});
+});
+
+describe('MemoItem - ピン留め', () => {
+	it('ピンを押しても親のカードは開かない', () => {
+		const onClick = vi.fn();
+		const onTogglePin = vi.fn();
+		render(<MemoItem memo={mockMemo} onClick={onClick} onTogglePin={onTogglePin} />);
+
+		fireEvent.click(screen.getByTestId('memo-pin-button'));
+
+		expect(onTogglePin).toHaveBeenCalledTimes(1);
+		expect(onClick).not.toHaveBeenCalled();
+	});
+
+	it('ピン留め済みなら押下状態を伝える', () => {
+		render(
+			<MemoItem
+				memo={{ ...mockMemo, pinnedAt: '2026-08-18T00:00:00.000Z' }}
+				onClick={vi.fn()}
+				onTogglePin={vi.fn()}
+			/>,
+		);
+
+		expect(screen.getByTestId('memo-pin-button').getAttribute('aria-pressed')).toBe('true');
 	});
 });

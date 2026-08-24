@@ -1,15 +1,18 @@
+import { Pin } from 'lucide-react';
 import type { Memo } from '../../types/memo';
 import { extractPlainText } from '../../utils/editor/prosemirrorText';
 
 interface MemoItemProps {
 	memo: Memo;
 	onClick: () => void;
+	onTogglePin?: () => void;
 }
 
-export const MemoItem = ({ memo, onClick }: MemoItemProps) => {
+export const MemoItem = ({ memo, onClick, onTogglePin }: MemoItemProps) => {
 	// content は JSONContent（ProseMirror doc）。HTML 文字列ではないため文字列メソッドは使えない
 	// （JSONContent の index signature が any を通すので tsc では検出できない）。
 	const plainContent = extractPlainText(memo.content);
+	const isPinned = Boolean(memo.pinnedAt);
 
 	return (
 		<div
@@ -61,6 +64,25 @@ export const MemoItem = ({ memo, onClick }: MemoItemProps) => {
 						)}
 					</div>
 				</div>
+				{onTogglePin && (
+					<button
+						type="button"
+						data-testid="memo-pin-button"
+						aria-label={isPinned ? 'ピン留めを解除' : 'ピン留めする'}
+						aria-pressed={isPinned}
+						onClick={(e) => {
+							e.stopPropagation();
+							onTogglePin();
+						}}
+						className={`shrink-0 -mr-1 p-1.5 rounded transition-opacity ${
+							isPinned
+								? 'text-[var(--accent)] opacity-100'
+								: 'text-[var(--on-surface-variant)] opacity-40 hover:opacity-100'
+						}`}
+					>
+						<Pin className="w-4 h-4" fill={isPinned ? 'currentColor' : 'none'} />
+					</button>
+				)}
 			</div>
 		</div>
 	);
