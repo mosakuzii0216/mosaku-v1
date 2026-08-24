@@ -59,12 +59,13 @@ vi.mock('../ui/OfflineBadge', () => ({
 vi.mock('../../hooks/useMemoQueries', () => ({
 	useMemos: vi.fn(() => ({ data: [], isLoading: false, error: null })),
 	useSearchMemos: vi.fn(() => ({ data: [], isLoading: false, error: null })),
+	useTogglePin: vi.fn(() => ({ mutate: vi.fn() })),
 }));
 
 import { Header } from '../ui/Header';
 import { MemoItem } from '../memo/MemoItem';
 import { MemoList } from '../memo/MemoList';
-import { useMemos, useSearchMemos } from '../../hooks/useMemoQueries';
+import { useMemos, useSearchMemos, useTogglePin } from '../../hooks/useMemoQueries';
 
 const mockMemo = {
 	id: 'memo-1',
