@@ -54,7 +54,9 @@ describe('useAutoSave', () => {
 		expect(onSave).not.toHaveBeenCalled();
 	});
 
-	it('isSaving = true の場合タイマー発火時にスキップされること', async () => {
+	it('isSaving = true の間は onSave を送らない(保留する)', async () => {
+		// 期待値は「捨てる」から「まだ送らない」へ変わった。
+		// 保留した分が後で送られることは別テストで固定している。
 		const onSave = vi.fn().mockResolvedValue(undefined);
 		const { result } = renderHook(() => useAutoSave({ canSave: true, isSaving: true, onSave }));
 
@@ -244,6 +246,35 @@ describe('useAutoSave', () => {
 		await act(async () => {
 			vi.advanceTimersByTime(1);
 		});
+		expect(onSave).toHaveBeenCalledTimes(1);
+	});
+
+	// ─── 保存中の編集を取りこぼさない ───────────────
+	it('保存中に編集した内容は、保存完了後に改めて保存される', async () => {
+		const onSave = vi.fn().mockResolvedValue(undefined);
+
+		// isSaving を props で切り替えられるようにする
+		const { result, rerender } = renderHook(
+			({ isSaving }) => useAutoSave({ canSave: true, isSaving, onSave }),
+			{ initialProps: { isSaving: true } },
+		);
+
+		// 保存が飛んでいる最中に編集した
+		act(() => {
+			result.current.scheduleAutoSave();
+		});
+		await act(async () => {
+			vi.advanceTimersByTime(1000);
+		});
+		expect(onSave).not.toHaveBeenCalled(); // ここまでは今までの挙動通り
+
+		// 保存が完了した
+		rerender({ isSaving: false });
+		await act(async () => {
+			vi.advanceTimersByTime(1000);
+		});
+
+		// 取りこぼした編集が、ここで送られてほしい
 		expect(onSave).toHaveBeenCalledTimes(1);
 	});
 });
