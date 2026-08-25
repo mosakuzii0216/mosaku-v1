@@ -70,6 +70,9 @@ export function useAutoSave({
 	const onSaveRef = useRef(onSave);
 	onSaveRef.current = onSave;
 
+	// 保存中に弾いた編集を覚えておく。isSaving が false に戻った時点で拾い直す。
+	const deferredRef = useRef(false);
+
 	const cancelDebounce = useCallback(() => {
 		if (debounceTimerRef.current !== null) {
 			clearTimeout(debounceTimerRef.current);
@@ -92,8 +95,14 @@ export function useAutoSave({
 			debounceTimerRef.current = null;
 
 			// タイマー発火時に再評価（Requirements: 4.1, 4.2, 4.3）
-			if (!canSaveRef.current || isSavingRef.current) {
+			if (!canSaveRef.current) {
 				setSaveStatus('idle');
+				return;
+			}
+
+			if (isSavingRef.current) {
+				// 送れないだけで、保存すべき編集は残っている。捨てずに保留し pending を維持する。
+				deferredRef.current = true;
 				return;
 			}
 
@@ -114,6 +123,13 @@ export function useAutoSave({
 			}
 		}, debounceMs);
 	}, [debounceMs]);
+
+	// 保存が終わった瞬間に、保留していた編集を拾い直す。
+	useEffect(() => {
+		if (isSaving || !deferredRef.current) return;
+		deferredRef.current = false;
+		scheduleAutoSave();
+	}, [isSaving, scheduleAutoSave]);
 
 	useEffect(() => {
 		return () => {
