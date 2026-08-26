@@ -17,6 +17,7 @@ function memoToSnapshot(memo: Memo): ServerMemoSnapshot {
 		createdAt: memo.createdAt,
 		updatedAt: memo.updatedAt,
 		trashedAt: memo.trashedAt,
+		pinnedAt: memo.pinnedAt ?? null,
 	};
 }
 
@@ -28,6 +29,7 @@ function cachedToMemo(record: CachedMemoRecord): Memo {
 		createdAt: record.createdAt,
 		updatedAt: record.updatedAt,
 		trashedAt: record.trashedAt,
+		pinnedAt: record.pinnedAt ?? null,
 		notebookId: record.notebookId,
 	};
 }
@@ -135,6 +137,8 @@ export class MemoBridge {
 			createdAt: existing?.createdAt ?? clientUpdatedAt,
 			updatedAt: clientUpdatedAt,
 			trashedAt: existing?.trashedAt ?? null,
+			// ピン留めはオフライン編集で失わない(サーバー同期まで保持する)
+			pinnedAt: existing?.pinnedAt ?? null,
 			syncStatus: 'offline-saved', // 後で synced に上書きする
 		};
 		const operation: PendingOperationRecord = {
@@ -210,6 +214,7 @@ export class MemoBridge {
 			createdAt: existing?.createdAt ?? clientUpdatedAt,
 			updatedAt: clientUpdatedAt,
 			trashedAt: clientUpdatedAt,
+			pinnedAt: existing?.pinnedAt ?? null,
 			syncStatus: 'offline-saved',
 		};
 		const operation: PendingOperationRecord = {
