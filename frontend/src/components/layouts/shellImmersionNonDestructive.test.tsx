@@ -65,7 +65,7 @@ vi.mock('../../hooks/useMemoQueries', () => ({
 import { Header } from '../ui/Header';
 import { MemoItem } from '../memo/MemoItem';
 import { MemoList } from '../memo/MemoList';
-import { useMemos, useSearchMemos, useTogglePin } from '../../hooks/useMemoQueries';
+import { useMemos, useSearchMemos } from '../../hooks/useMemoQueries';
 
 const mockMemo = {
 	id: 'memo-1',

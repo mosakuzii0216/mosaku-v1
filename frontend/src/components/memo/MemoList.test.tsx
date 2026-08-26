@@ -33,7 +33,7 @@ vi.mock('./MemoItem', () => ({
 }));
 
 import { MemoList } from './MemoList';
-import { useMemos, useSearchMemos, useTogglePin } from '../../hooks/useMemoQueries';
+import { useMemos, useSearchMemos } from '../../hooks/useMemoQueries';
 
 const mockMemos = [
 	{
