@@ -19,6 +19,8 @@ export interface CachedMemoRecord {
 	createdAt: string;
 	updatedAt: string;
 	trashedAt: string | null;
+	/** ピン留め日時。v2 以前に保存されたレコードには存在しないため optional。 */
+	pinnedAt?: string | null;
 	syncStatus: SyncStatus;
 }
 
