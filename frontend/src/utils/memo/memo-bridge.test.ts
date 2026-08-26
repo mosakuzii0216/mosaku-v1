@@ -185,6 +185,55 @@ describe('MemoBridge — offline', () => {
 		}
 	});
 
+	it('listMemos preserves pinnedAt through the offline cache round trip', async () => {
+		const api = makeApiMock();
+		const { bridge, repository, db } = await makeBridge({ online: false, api });
+		try {
+			await repository.upsertFromServer([
+				{
+					id: 'pinned',
+					title: 'cached',
+					content: '<p>x</p>',
+					tagIds: [],
+					notebookId: null,
+					createdAt: '2026-05-01T00:00:00.000Z',
+					updatedAt: '2026-05-01T00:00:00.000Z',
+					trashedAt: null,
+					pinnedAt: '2026-05-05T00:00:00.000Z',
+				},
+			]);
+			const [memo] = await bridge.listMemos();
+			expect(memo.pinnedAt).toBe('2026-05-05T00:00:00.000Z');
+		} finally {
+			db.close();
+		}
+	});
+
+	it('updateMemo keeps pinnedAt on the cached record while offline', async () => {
+		const api = makeApiMock();
+		const { bridge, repository, db } = await makeBridge({ online: false, api });
+		try {
+			await repository.upsertFromServer([
+				{
+					id: 'pinned',
+					title: 'cached',
+					content: '<p>x</p>',
+					tagIds: [],
+					notebookId: null,
+					createdAt: '2026-05-01T00:00:00.000Z',
+					updatedAt: '2026-05-01T00:00:00.000Z',
+					trashedAt: null,
+					pinnedAt: '2026-05-05T00:00:00.000Z',
+				},
+			]);
+			await bridge.updateMemo('pinned', { title: 'edited offline' });
+			const stored = await repository.getMemo('pinned');
+			expect(stored?.pinnedAt).toBe('2026-05-05T00:00:00.000Z');
+		} finally {
+			db.close();
+		}
+	});
+
 	it('updateMemo enqueues an offline pending operation and returns offline-saved', async () => {
 		const api = makeApiMock();
 		const { bridge, repository, db } = await makeBridge({ online: false, api });

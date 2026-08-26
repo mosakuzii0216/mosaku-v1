@@ -127,6 +127,30 @@ describe('OfflineMemoRepository — read API', () => {
 		}
 	});
 
+	it('upsertFromServer が pinnedAt を保存し、listMemos がピン留めを先頭に返す', async () => {
+		const { repo, db } = await makeRepo();
+		try {
+			await repo.upsertFromServer([
+				createSnapshot({ id: 'm1', updatedAt: '2026-05-03T00:00:00.000Z' }),
+				createSnapshot({
+					id: 'm2',
+					updatedAt: '2026-05-01T00:00:00.000Z',
+					pinnedAt: '2026-05-02T00:00:00.000Z',
+				}),
+			]);
+
+			expect((await db.get('memos', 'm2'))?.pinnedAt).toBe('2026-05-02T00:00:00.000Z');
+			// pinnedAt を持たないスナップショットは undefined ではなく null に正規化する
+			expect((await db.get('memos', 'm1'))?.pinnedAt).toBeNull();
+
+			// updatedAt では m1 が新しいが、ピン留めが優先される
+			const list = await repo.listMemos();
+			expect(list.map((m) => m.id)).toEqual(['m2', 'm1']);
+		} finally {
+			db.close();
+		}
+	});
+
 	it('listMemos excludes trashed memos by default', async () => {
 		const { repo, db } = await makeRepo();
 		try {
