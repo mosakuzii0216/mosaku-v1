@@ -13,6 +13,8 @@ export interface ServerMemoSnapshot {
 	createdAt: string;
 	updatedAt: string;
 	trashedAt: string | null;
+	/** 旧サーバー応答には存在しない可能性があるため optional。読み出し側で ?? null に正規化する。 */
+	pinnedAt?: string | null;
 }
 
 export interface ListMemosFilter {
@@ -94,7 +96,11 @@ export class OfflineMemoRepository {
 			filtered = filtered.filter((memo) => memo.tagIds.some((tag) => wanted.has(tag)));
 		}
 
+		// サーバーの getDefaultOrderBy() と同じ規則: ピン留め優先 → updatedAt 降順。
+		// 片方だけ直すとオンライン/オフラインで並びがズレる。
 		filtered.sort((a, b) => {
+			const pinDiff = (b.pinnedAt ? 1 : 0) - (a.pinnedAt ? 1 : 0);
+			if (pinDiff !== 0) return pinDiff;
 			if (a.updatedAt === b.updatedAt) return 0;
 			return a.updatedAt < b.updatedAt ? 1 : -1;
 		});
@@ -129,6 +135,7 @@ export class OfflineMemoRepository {
 				createdAt: snapshot.createdAt,
 				updatedAt: snapshot.updatedAt,
 				trashedAt: snapshot.trashedAt,
+				pinnedAt: snapshot.pinnedAt ?? null,
 				syncStatus: 'synced',
 			};
 			await store.put(record);
@@ -229,6 +236,7 @@ export class OfflineMemoRepository {
 			createdAt: snapshot.createdAt,
 			updatedAt: snapshot.updatedAt,
 			trashedAt: snapshot.trashedAt,
+			pinnedAt: snapshot.pinnedAt ?? null,
 			syncStatus: 'synced',
 		};
 		await this.opts.db.put('memos', record);
