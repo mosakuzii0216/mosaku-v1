@@ -77,8 +77,7 @@ describe('MemoService', () => {
 			expect(mockPrismaService.memo.update).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: { id: 'memo-1' },
-					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-					data: { trashedAt: expect.any(Date) },
+					data: { trashedAt: expect.any(Date) as unknown },
 				}),
 			);
 			expect(result.trashedAt).not.toBeNull();
@@ -525,7 +524,7 @@ describe('MemoService', () => {
 			expect(mockPrismaService.memo.update).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: { id: 'memo-1' },
-					data: { pinnedAt: expect.any(Date) },
+					data: { pinnedAt: expect.any(Date) as unknown },
 				}),
 			);
 			expect(result.pinnedAt).not.toBeNull();
