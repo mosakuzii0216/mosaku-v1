@@ -1,18 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import {
 	usePublishMemo,
 	useUnpublishMemo,
 	useRegenerateMemoToken,
 } from '../../hooks/useMemoSharingQueries';
+import { useTransientFeedback } from '../../hooks/useTransientFeedback';
 import { getAppUrl } from '../../utils/env';
 import type { Memo } from '../../types/memo';
-
-type FeedbackTone = 'success' | 'error';
-
-interface Feedback {
-	tone: FeedbackTone;
-	message: string;
-}
 
 interface ShareMemoControlProps {
 	memo: Memo;
@@ -20,8 +14,7 @@ interface ShareMemoControlProps {
 
 export const ShareMemoControl = ({ memo }: ShareMemoControlProps) => {
 	const [menuOpen, setMenuOpen] = useState(false);
-	const [feedback, setFeedback] = useState<Feedback | null>(null);
-	const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const { feedback, showFeedback } = useTransientFeedback();
 
 	const publishMemo = usePublishMemo();
 	const unpublishMemo = useUnpublishMemo();
@@ -32,18 +25,6 @@ export const ShareMemoControl = ({ memo }: ShareMemoControlProps) => {
 	const isPending = publishMemo.isPending || unpublishMemo.isPending || regenerateToken.isPending;
 
 	const publicUrl = memo.publicToken ? `${getAppUrl()}/p/${memo.publicToken}` : '';
-
-	useEffect(() => {
-		return () => {
-			if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
-		};
-	}, []);
-
-	const showFeedback = (tone: FeedbackTone, message: string) => {
-		if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
-		setFeedback({ tone, message });
-		feedbackTimerRef.current = setTimeout(() => setFeedback(null), 3000);
-	};
 
 	const handlePublish = async () => {
 		try {

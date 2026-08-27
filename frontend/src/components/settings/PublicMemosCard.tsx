@@ -1,17 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
 import {
 	useMyPublicMemos,
 	useUnpublishMemo,
 	useRegenerateMemoToken,
 } from '../../hooks/useMemoSharingQueries';
+import { useTransientFeedback, type FeedbackTone } from '../../hooks/useTransientFeedback';
 import { getAppUrl } from '../../utils/env';
-
-type FeedbackTone = 'success' | 'error';
-
-interface Feedback {
-	tone: FeedbackTone;
-	message: string;
-}
 
 const TONE_CLASSES: Record<FeedbackTone, string> = {
 	success: 'bg-green-50 border-green-300 text-green-800',
@@ -27,20 +20,7 @@ export function PublicMemosCard() {
 	const unpublishMemo = useUnpublishMemo();
 	const regenerateToken = useRegenerateMemoToken();
 
-	const [feedback, setFeedback] = useState<Feedback | null>(null);
-	const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-	useEffect(() => {
-		return () => {
-			if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
-		};
-	}, []);
-
-	const showFeedback = (tone: FeedbackTone, message: string) => {
-		if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
-		setFeedback({ tone, message });
-		feedbackTimerRef.current = setTimeout(() => setFeedback(null), 3000);
-	};
+	const { feedback, showFeedback } = useTransientFeedback();
 
 	const handleCopyUrl = async (token: string) => {
 		const url = `${getAppUrl()}/p/${token}`;
