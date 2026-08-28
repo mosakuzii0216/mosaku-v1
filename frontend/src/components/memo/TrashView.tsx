@@ -6,11 +6,12 @@ import {
 } from '../../hooks/useMemoQueries';
 import { Trash2, RotateCcw, X } from 'lucide-react';
 import { TRASH_RETENTION_DAYS } from '../../constants/trash';
+import { MS_PER_DAY } from '../../utils/jstDate';
 
 const getDaysRemaining = (trashedAt: string): number => {
 	const trashed = new Date(trashedAt).getTime();
 	const now = Date.now();
-	const daysSinceTrashed = (now - trashed) / (1000 * 60 * 60 * 24);
+	const daysSinceTrashed = (now - trashed) / MS_PER_DAY;
 	return Math.max(0, TRASH_RETENTION_DAYS - Math.floor(daysSinceTrashed));
 };
 

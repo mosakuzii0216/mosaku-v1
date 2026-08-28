@@ -35,6 +35,7 @@ vi.mock('../../hooks/useMemoQueries', () => ({
 
 import { useTrashMemos } from '../../hooks/useMemoQueries';
 import { TRASH_RETENTION_DAYS } from '../../constants/trash';
+import { MS_PER_DAY } from '../../utils/jstDate';
 import { TrashView } from './TrashView';
 
 describe('TrashView — トークン駆動化（6.3）', () => {
@@ -91,7 +92,7 @@ describe('TrashView — 自動削除までの残り日数', () => {
 
 	it('残り日数は保持期間の定数から算出する（backend の削除タイミングと同じ値）', () => {
 		const daysElapsed = 10;
-		const trashedAt = new Date(Date.now() - daysElapsed * 24 * 60 * 60 * 1000 - 1000).toISOString();
+		const trashedAt = new Date(Date.now() - daysElapsed * MS_PER_DAY - 1000).toISOString();
 		vi.mocked(useTrashMemos).mockReturnValueOnce({
 			data: [{ id: 'memo-1', title: '削除済みメモ', trashedAt }],
 			isLoading: false,
@@ -103,9 +104,7 @@ describe('TrashView — 自動削除までの残り日数', () => {
 	});
 
 	it('保持期間を過ぎたメモの残り日数は負にならず 0 で止まる', () => {
-		const trashedAt = new Date(
-			Date.now() - (TRASH_RETENTION_DAYS + 5) * 24 * 60 * 60 * 1000,
-		).toISOString();
+		const trashedAt = new Date(Date.now() - (TRASH_RETENTION_DAYS + 5) * MS_PER_DAY).toISOString();
 		vi.mocked(useTrashMemos).mockReturnValueOnce({
 			data: [{ id: 'memo-1', title: '削除済みメモ', trashedAt }],
 			isLoading: false,

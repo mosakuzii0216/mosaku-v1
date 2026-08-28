@@ -7,6 +7,7 @@ import {
 	formatRelativeTime,
 } from './save-status-presentation';
 import type { SaveStatus } from '../../hooks/useAutoSave';
+import { MS_PER_DAY } from '../jstDate';
 
 describe('describeSaveStatus', () => {
 	it('全 6 状態 (idle / pending / saving / saved / error / offline-saved) を網羅的に分岐する', () => {
@@ -78,12 +79,12 @@ describe('formatRelativeTime', () => {
 	});
 
 	it('1〜29日は「N日前」を返す', () => {
-		const target = new Date(base.getTime() - 7 * 24 * 60 * 60 * 1000);
+		const target = new Date(base.getTime() - 7 * MS_PER_DAY);
 		expect(formatRelativeTime(base, target)).toBe('7日前');
 	});
 
 	it('30日以上前は日付文字列を返す', () => {
-		const target = new Date(base.getTime() - 60 * 24 * 60 * 60 * 1000);
+		const target = new Date(base.getTime() - 60 * MS_PER_DAY);
 		const result = formatRelativeTime(base, target);
 		// ロケール非依存にゆるく検証（2026 を含む）
 		expect(result).toContain('2026');

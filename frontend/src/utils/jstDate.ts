@@ -1,3 +1,6 @@
+/** 1 日のミリ秒数。日数差の算出に使う。 */
+export const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 /** UTC から日本標準時（JST, UTC+9）へのオフセット（ミリ秒）。 */
 export const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
