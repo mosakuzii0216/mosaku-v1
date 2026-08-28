@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { TrashCleanupService } from './trash-cleanup.service';
+import { TrashCleanupService, TRASH_RETENTION_DAYS } from './trash-cleanup.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Logger } from '@nestjs/common';
 
@@ -32,12 +32,12 @@ describe('TrashCleanupService', () => {
 				[{ where: { trashedAt: { lte: Date } } }]
 			>;
 			expect(callArgs.where.trashedAt.lte).toBeDefined();
-			// 30日前以前の日時であることを確認
+			// cutoff が保持日数だけ過去にあることを確認（定数を変えれば期待値も追随する）
 			const cutoff = callArgs.where.trashedAt.lte;
 			const now = new Date();
 			const diffDays = (now.getTime() - cutoff.getTime()) / (1000 * 60 * 60 * 24);
-			expect(diffDays).toBeGreaterThanOrEqual(29.9);
-			expect(diffDays).toBeLessThan(31);
+			expect(diffDays).toBeGreaterThanOrEqual(TRASH_RETENTION_DAYS - 0.1);
+			expect(diffDays).toBeLessThan(TRASH_RETENTION_DAYS + 1);
 		});
 
 		it('should log the number of deleted memos', async () => {

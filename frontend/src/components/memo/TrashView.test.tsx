@@ -33,6 +33,8 @@ vi.mock('../../hooks/useMemoQueries', () => ({
 	useEmptyTrash: vi.fn(() => ({ mutate: emptyTrashMutate, isPending: false })),
 }));
 
+import { useTrashMemos } from '../../hooks/useMemoQueries';
+import { TRASH_RETENTION_DAYS } from '../../constants/trash';
 import { TrashView } from './TrashView';
 
 describe('TrashView — トークン駆動化（6.3）', () => {
@@ -79,5 +81,38 @@ describe('TrashView — トークン駆動化（6.3）', () => {
 		expect(container.innerHTML).not.toMatch(
 			/text-gray-500|text-gray-800|text-gray-400|divide-gray-100|hover:bg-gray-50/,
 		);
+	});
+});
+
+describe('TrashView — 自動削除までの残り日数', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it('残り日数は保持期間の定数から算出する（backend の削除タイミングと同じ値）', () => {
+		const daysElapsed = 10;
+		const trashedAt = new Date(Date.now() - daysElapsed * 24 * 60 * 60 * 1000 - 1000).toISOString();
+		vi.mocked(useTrashMemos).mockReturnValueOnce({
+			data: [{ id: 'memo-1', title: '削除済みメモ', trashedAt }],
+			isLoading: false,
+		} as unknown as ReturnType<typeof useTrashMemos>);
+
+		render(<TrashView />);
+
+		expect(screen.getByText(`${TRASH_RETENTION_DAYS - daysElapsed} 日`)).toBeTruthy();
+	});
+
+	it('保持期間を過ぎたメモの残り日数は負にならず 0 で止まる', () => {
+		const trashedAt = new Date(
+			Date.now() - (TRASH_RETENTION_DAYS + 5) * 24 * 60 * 60 * 1000,
+		).toISOString();
+		vi.mocked(useTrashMemos).mockReturnValueOnce({
+			data: [{ id: 'memo-1', title: '削除済みメモ', trashedAt }],
+			isLoading: false,
+		} as unknown as ReturnType<typeof useTrashMemos>);
+
+		render(<TrashView />);
+
+		expect(screen.getByText('0 日')).toBeTruthy();
 	});
 });
