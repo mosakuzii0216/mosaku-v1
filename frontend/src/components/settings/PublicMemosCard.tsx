@@ -5,15 +5,12 @@ import {
 } from '../../hooks/useMemoSharingQueries';
 import { useTransientFeedback, type FeedbackTone } from '../../hooks/useTransientFeedback';
 import { getAppUrl } from '../../utils/env';
+import { formatDateTimeJa } from '../../utils/formatDate';
 
 const TONE_CLASSES: Record<FeedbackTone, string> = {
 	success: 'bg-green-50 border-green-300 text-green-800',
 	error: 'bg-red-50 border-red-300 text-red-800',
 };
-
-function formatDate(iso: string): string {
-	return new Date(iso).toLocaleString('ja-JP');
-}
 
 export function PublicMemosCard() {
 	const { data: memos, isLoading } = useMyPublicMemos();
@@ -85,7 +82,9 @@ export function PublicMemosCard() {
 						>
 							<div className="space-y-1 min-w-0">
 								<p className="text-sm font-medium text-gray-800 truncate">{memo.title}</p>
-								<p className="text-xs text-gray-500">公開日: {formatDate(memo.publishedAt)}</p>
+								<p className="text-xs text-gray-500">
+									公開日: {formatDateTimeJa(memo.publishedAt)}
+								</p>
 							</div>
 							<div className="flex gap-2 flex-shrink-0">
 								<button

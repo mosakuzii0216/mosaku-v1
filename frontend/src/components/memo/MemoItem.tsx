@@ -1,6 +1,7 @@
 import { Pin } from 'lucide-react';
 import type { Memo } from '../../types/memo';
 import { extractPlainText } from '../../utils/editor/prosemirrorText';
+import { formatDateJa } from '../../utils/formatDate';
 
 interface MemoItemProps {
 	memo: Memo;
@@ -37,7 +38,7 @@ export const MemoItem = ({ memo, onClick, onTogglePin }: MemoItemProps) => {
 
 					{/* メタ情報 */}
 					<div className="flex items-center gap-3 text-xs text-[var(--on-surface-variant)]">
-						<span>{new Date(memo.updatedAt).toLocaleDateString('ja-JP')}</span>
+						<span>{formatDateJa(memo.updatedAt)}</span>
 
 						{/* タグ */}
 						{memo.memoTags && memo.memoTags.length > 0 && (

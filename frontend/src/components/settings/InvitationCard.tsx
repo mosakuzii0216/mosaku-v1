@@ -9,6 +9,7 @@ import {
 import { shareInvitation } from '../../utils/shareInvitation';
 import { resolveInvitationErrorMessage } from '../../constants/invitationErrorMessages';
 import { isApiError } from '../../utils/apiError';
+import { formatDateTimeJa } from '../../utils/formatDate';
 import type { InvitationWithShareUrlResponse } from '../../types/invitation';
 
 type FeedbackTone = 'success' | 'info' | 'error';
@@ -23,10 +24,6 @@ const TONE_CLASSES: Record<FeedbackTone, string> = {
 	info: 'bg-blue-50 border-blue-300 text-blue-800',
 	error: 'bg-red-50 border-red-300 text-red-800',
 };
-
-function formatDate(iso: string): string {
-	return new Date(iso).toLocaleString('ja-JP');
-}
 
 export function InvitationCard() {
 	const quotaQuery = useMyInvitationQuota();
@@ -154,7 +151,7 @@ export function InvitationCard() {
 										<span>
 											{invitation.usedCount}/{invitation.maxUses}
 										</span>
-										<span>{formatDate(invitation.createdAt)}</span>
+										<span>{formatDateTimeJa(invitation.createdAt)}</span>
 									</div>
 								</div>
 								<div className="flex gap-2">

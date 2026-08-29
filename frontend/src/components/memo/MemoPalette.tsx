@@ -6,6 +6,7 @@ import { useNavigation } from '../../hooks/useNavigation';
 import type { Memo } from '../../types/memo';
 import { logger } from '../../utils/logger';
 import { extractPlainText } from '../../utils/editor/prosemirrorText';
+import { formatDateJa } from '../../utils/formatDate';
 
 type PaletteMode = 'notebook-select' | 'memo-select';
 
@@ -364,7 +365,7 @@ const MemoList = ({ memos, selectedIndex, onSelect }: MemoListProps) => {
 						</div>
 					)}
 					<div className="shell-text-muted flex items-center gap-2 mt-2">
-						<span>{new Date(memo.updatedAt).toLocaleDateString('ja-JP')}</span>
+						<span>{formatDateJa(memo.updatedAt)}</span>
 						{memo.memoTags && memo.memoTags.length > 0 && (
 							<span>• {memo.memoTags.length} タグ</span>
 						)}

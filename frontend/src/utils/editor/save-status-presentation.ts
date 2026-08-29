@@ -1,4 +1,5 @@
 import type { SaveStatus } from '../../hooks/useAutoSave';
+import { formatDateJa } from '../formatDate';
 
 export type SaveStatusTone = 'idle' | 'progress' | 'success' | 'warn' | 'error';
 
@@ -50,7 +51,7 @@ export function formatRelativeTime(now: Date, target: Date): string {
 	if (diffHour < 24) return `${diffHour}時間前`;
 	const diffDay = Math.floor(diffHour / 24);
 	if (diffDay < 30) return `${diffDay}日前`;
-	return target.toLocaleDateString('ja-JP');
+	return formatDateJa(target);
 }
 
 export const SAVE_STATUS_TONE_CLASSES: Record<SaveStatusTone, string> = {

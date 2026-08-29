@@ -4,6 +4,7 @@ import { useTagStore } from '../../stores/useTagStore';
 import { TagForm } from './TagForm';
 import { TagChip } from './TagChip';
 import type { Tag, CreateTagDto, UpdateTagDto } from '../../types/tag';
+import { formatDateJa } from '../../utils/formatDate';
 
 export const TagManager: React.FC = () => {
 	const [showCreateForm, setShowCreateForm] = useState(false);
@@ -161,7 +162,7 @@ export const TagManager: React.FC = () => {
 										<div className="flex items-center gap-3">
 											<TagChip tag={tag} />
 											<div className="text-sm text-gray-500">
-												作成日: {new Date(tag.createdAt).toLocaleDateString('ja-JP')}
+												作成日: {formatDateJa(tag.createdAt)}
 											</div>
 										</div>
 

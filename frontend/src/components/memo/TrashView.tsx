@@ -7,6 +7,7 @@ import {
 import { Trash2, RotateCcw, X } from 'lucide-react';
 import { TRASH_RETENTION_DAYS } from '../../constants/trash';
 import { MS_PER_DAY } from '../../utils/jstDate';
+import { formatDateJa } from '../../utils/formatDate';
 
 const getDaysRemaining = (trashedAt: string): number => {
 	const trashed = new Date(trashedAt).getTime();
@@ -58,9 +59,7 @@ export const TrashView = () => {
 					<ul className="divide-y divide-[var(--outline)]">
 						{trashedMemos.map((memo) => {
 							const daysRemaining = memo.trashedAt ? getDaysRemaining(memo.trashedAt) : 0;
-							const trashedDate = memo.trashedAt
-								? new Date(memo.trashedAt).toLocaleDateString('ja-JP')
-								: '';
+							const trashedDate = memo.trashedAt ? formatDateJa(memo.trashedAt) : '';
 
 							return (
 								<li

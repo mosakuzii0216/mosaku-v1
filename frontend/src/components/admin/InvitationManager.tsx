@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { apiClient } from '../../utils/api';
 import type { InvitationCode } from '../../types/invitation';
 import { logger } from '../../utils/logger';
+import { formatDateTimeJa } from '../../utils/formatDate';
 
 export default function InvitationManager() {
 	const [invitations, setInvitations] = useState<InvitationCode[]>([]);
@@ -66,10 +67,6 @@ export default function InvitationManager() {
 	const copyToClipboard = (code: string) => {
 		navigator.clipboard.writeText(code);
 		setMessage('招待コードをクリップボードにコピーしました');
-	};
-
-	const formatDate = (dateString: string) => {
-		return new Date(dateString).toLocaleString('ja-JP');
 	};
 
 	if (loading) {
@@ -202,13 +199,15 @@ export default function InvitationManager() {
 															: 'text-gray-700'
 													}`}
 												>
-													{formatDate(invitation.expiresAt)}
+													{formatDateTimeJa(invitation.expiresAt)}
 												</span>
 											) : (
 												<span className="text-gray-500">なし</span>
 											)}
 										</td>
-										<td className="px-4 py-2 text-gray-600">{formatDate(invitation.createdAt)}</td>
+										<td className="px-4 py-2 text-gray-600">
+											{formatDateTimeJa(invitation.createdAt)}
+										</td>
 										<td className="px-4 py-2">
 											<button
 												onClick={() => deleteInvitation(invitation.id)}
