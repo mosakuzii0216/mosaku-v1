@@ -9,6 +9,7 @@ import { useTagQueries } from '../../hooks/useTagQueries';
 import { useThemeCSS } from '../../hooks/useThemeCSS';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import type { SaveStatus } from '../../hooks/useAutoSave';
+import { useLastSavedAt } from '../../hooks/useLastSavedAt';
 import { useViewStore } from '../../stores/useViewStore';
 import { useMemoDataStore } from '../../stores/useMemoDataStore';
 import { apiClient } from '../../utils/api';
@@ -36,8 +37,6 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 	const [name, setName] = useState<string>('');
 	const [themeId, setThemeId] = useState<string>('default');
 	const [hasChanges, setHasChanges] = useState<boolean>(false);
-	const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
-	const [, setTick] = useState(0);
 
 	const syncedNotebookIdRef = useRef<string | null>(null);
 
@@ -113,17 +112,7 @@ export const NotebookEditor = ({ isCreate, notebookId }: NotebookEditorProps) =>
 		onSave: handleSave,
 	});
 
-	useEffect(() => {
-		if (saveStatus === 'saved') {
-			setLastSavedAt(new Date());
-		}
-	}, [saveStatus]);
-
-	useEffect(() => {
-		if (!lastSavedAt) return;
-		const id = setInterval(() => setTick((n) => n + 1), 30 * 1000);
-		return () => clearInterval(id);
-	}, [lastSavedAt]);
+	const [lastSavedAt, setLastSavedAt] = useLastSavedAt(saveStatus);
 
 	useEffect(() => {
 		if (isCreate) {

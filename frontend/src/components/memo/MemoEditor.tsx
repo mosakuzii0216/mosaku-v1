@@ -14,6 +14,7 @@ import { ShareMemoControl } from './ShareMemoControl';
 import type { Memo } from '../../types/memo';
 import type { MemoUpdateOutcome } from '../../utils/memo/memo-bridge';
 import type { SaveStatus } from '../../hooks/useAutoSave';
+import { useLastSavedAt } from '../../hooks/useLastSavedAt';
 import { describeDeleteConfirm } from '../../utils/memo/save-status-presentation';
 import {
 	describeSaveStatus,
@@ -76,11 +77,6 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 	const [hasChanges, setHasChanges] = useState(false);
 
 	const pendingCreatedIdRef = useRef<string | null>(null);
-
-	const [lastSavedAt, setLastSavedAt] = useState<Date | null>(
-		memo?.updatedAt ? new Date(memo.updatedAt) : null,
-	);
-	const [, setTick] = useState(0);
 
 	const isSaving = createMemo.isPending || updateMemo.isPending;
 	const canSave = hasChanges && (!!title.trim() || !isEmptyDoc(content));
@@ -167,17 +163,10 @@ export const MemoEditor = ({ memo, isCreate = false }: MemoEditorProps) => {
 		onSave: handleSave,
 	});
 
-	useEffect(() => {
-		if (saveStatus === 'saved') {
-			setLastSavedAt(new Date());
-		}
-	}, [saveStatus]);
-
-	useEffect(() => {
-		if (!lastSavedAt) return;
-		const id = setInterval(() => setTick((n) => n + 1), 30 * 1000);
-		return () => clearInterval(id);
-	}, [lastSavedAt]);
+	const [lastSavedAt, setLastSavedAt] = useLastSavedAt(
+		saveStatus,
+		memo?.updatedAt ? new Date(memo.updatedAt) : null,
+	);
 
 	const memoId = memo?.id;
 	useEffect(() => {
